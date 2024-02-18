@@ -178,3 +178,70 @@ export async function chatWithOpenAI(
   }
 }
 
+export async function promptAndGenerateImage() {
+  try {
+    let prompt = await editor.prompt("Enter a prompt for DALL·E:");
+    if (!prompt) {
+      await editor.flashNotification("No prompt entered. Operation cancelled.", "error");
+      return;
+    }
+    const aiRewrittenPromptResponse = await chatWithOpenAI("Please rewrite the following prompt for better image generation:", [
+      { role: "user", content: prompt }
+    ]);
+    const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message.content.trim();
+    if (!aiRewrittenPrompt) {
+      await editor.flashNotification("Failed to rewrite prompt for better image generation.", "error");
+      return;
+    }
+    prompt = aiRewrittenPrompt;
+
+    const imageData = await generateImageWithDallE(prompt, 1);
+    if (imageData && imageData.data && imageData.data.length > 0) {
+      const imageUrl = imageData.data[0].url;
+      const markdownImg = `![${prompt}](${imageUrl})\n*${prompt}*`;
+      // TODO: Should download this image and insert it as an attachment instead of using the remote url
+      await editor.insertAtCursor(markdownImg);
+      await editor.flashNotification("Image generated and inserted with caption successfully.");
+    } else {
+      await editor.flashNotification("Failed to generate image.", "error");
+    }
+  } catch (error) {
+    console.error("Error generating image with DALL·E:", error);
+    await editor.flashNotification("Error generating image.", "error");
+  }
+}
+
+export async function generateImageWithDallE(
+  prompt: string,
+  n: 1,
+  size: "1024x1024" | "512x512" = "512x512",
+) {
+  try {
+    if (!apiKey) await initializeOpenAI();
+    await editor.flashNotification("Contacting DALL·E, please wait...");
+    const response = await fetch("https://api.openai.com/v1/images/generations", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "dall-e-2",
+        prompt: prompt,
+        n: n,
+        size: size,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error calling DALL·E image generation endpoint:", error);
+    throw error;
+  }
+}
+

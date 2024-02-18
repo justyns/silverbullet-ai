@@ -22,3 +22,7 @@ functions:
     path: sbai.ts:tagNoteWithAI
     command:
       name: "AI: Generate tags for note"
+  promptAndGenerateImage:
+    path: sbai.ts:promptAndGenerateImage
+    command:
+      name: "AI: Generate and insert image using DallE"
