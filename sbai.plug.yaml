@@ -14,3 +14,7 @@ functions:
     path: sbai.ts:insertSummary
     command:
       name: "AI: Insert Summary"
+  callOpenAI:
+    path: sbai.ts:callOpenAIwithNote
+    command:
+      name: "AI: Call OpenAI with Note context"

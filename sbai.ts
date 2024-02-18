@@ -6,22 +6,21 @@ let apiKey: string;
 
 async function initializeOpenAI() {
   apiKey = await readSecret("OPENAI_API_KEY");
+  if (!apiKey) {
+    throw new Error("OpenAI API key is missing. Please set it in the secrets page.");
+  }
 }
 
 async function getSelectedText() {
   const selectedRange = await editor.getSelection();
-  if (
-    (selectedRange.from === 0 && selectedRange.to === 0) ||
-    (selectedRange.from === selectedRange.to)
-  ) {
-    return {
-      from: selectedRange.from,
-      to: selectedRange.to,
-      text: "",
-    };
+  let selectedText = "";
+  if (selectedRange.from === selectedRange.to) {
+    selectedText = "";
+  } else {
+    const pageText = await editor.getText();
+    selectedText = pageText.slice(selectedRange.from, selectedRange.to);
   }
-  const pageText = await editor.getText();
-  const selectedText = pageText.slice(selectedRange.from, selectedRange.to);
+
   return {
     from: selectedRange.from,
     to: selectedRange.to,
@@ -31,8 +30,8 @@ async function getSelectedText() {
 
 async function getSelectedTextOrNote() {
   const selectedTextInfo = await getSelectedText();
+  const pageText = await editor.getText();
   if (selectedTextInfo.text === "") {
-    const pageText = await editor.getText();
     return {
       from: 0,
       to: pageText.length,
@@ -40,7 +39,6 @@ async function getSelectedTextOrNote() {
       isWholeNote: true,
     };
   }
-  const pageText = await editor.getText();
   const isWholeNote = selectedTextInfo.from === 0 &&
     selectedTextInfo.to === pageText.length;
   return {
@@ -53,9 +51,9 @@ export async function summarizeNote() {
   const selectedTextInfo = await getSelectedTextOrNote();
   console.log("selectedTextInfo", selectedTextInfo);
   if (selectedTextInfo.text.length > 0) {
+    const noteName = await editor.getCurrentPage();
     const response = await chatWithOpenAI(
-      "Summarize this note. Use markdown for any formatting. The note name is " +
-        await editor.getCurrentPage(),
+      `Summarize this note. Use markdown for any formatting. The note name is ${noteName}`,
       [{ role: "user", content: selectedTextInfo.text }],
     );
     console.log("OpenAI response:", response);
@@ -65,6 +63,28 @@ export async function summarizeNote() {
     };
   }
   return { summary: "", selectedTextInfo: null };
+}
+
+export async function callOpenAIwithNote() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  const userPrompt = await editor.prompt("Please enter a prompt to send to the LLM.");
+  const noteName = await editor.getCurrentPage();
+  const currentDate = new Date();
+  const dateString = currentDate.toISOString().split('T')[0];
+  const dayString = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const response = await chatWithOpenAI(
+    `You are an AI note assistant. Today is ${dayString}, ${dateString}. The current note name is "${noteName}". Follow the user prompt below as closely as possible. \n${userPrompt}`,
+    [{ role: "user", content: selectedTextInfo.text }],
+  );
+  if (selectedTextInfo.isWholeNote) {
+    await editor.insertAtCursor(response.choices[0].message.content);
+  } else {
+    await editor.replaceRange(
+      selectedTextInfo.from,
+      selectedTextInfo.to,
+      response.choices[0].message.content,
+    );
+  }
 }
 
 export async function openSummaryPanel() {
@@ -130,3 +150,4 @@ export async function chatWithOpenAI(
     throw error;
   }
 }
+
