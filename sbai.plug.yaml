@@ -1,0 +1,16 @@
+name: sbai
+requiredPermissions:
+  - fetch
+functions:
+  summarizeNote:
+    path: sbai.ts:openSummaryPanel
+    command:
+      name: "AI: Summarize Note and open summary"
+  replaceWithSummary:
+    path: sbai.ts:replaceWithSummary
+    command:
+      name: "AI: Replace with Summary"
+  insertSummary:
+    path: sbai.ts:insertSummary
+    command:
+      name: "AI: Insert Summary"

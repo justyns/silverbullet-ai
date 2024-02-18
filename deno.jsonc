@@ -1,8 +1,9 @@
 {
   "importMap": "import_map.json",
   "tasks": {
-    "build": "silverbullet plug:compile hello.plug.yaml",
-    "watch": "silverbullet plug:compile hello.plug.yaml -w"
+    "build": "silverbullet plug:compile --debug --info --importmap import_map.json sbai.plug.yaml",
+    "build-release": "silverbullet plug:compile --info --importmap import_map.json sbai.plug.yaml",
+    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json sbai.plug.yaml -w"
   },
   "lint": {
     "rules": {

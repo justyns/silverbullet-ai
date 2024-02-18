@@ -1,0 +1,6 @@
+test-space/
+*.js
+*.js.map
+*.db-shm
+*.db-wal
+*.db
