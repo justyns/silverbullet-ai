@@ -1,14 +1,19 @@
 // import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { editor, markdown } from "$sb/syscalls.ts";
-import { extractFrontmatter, prepareFrontmatterDispatch } from "$sb/lib/frontmatter.ts";
+import {
+  extractFrontmatter,
+  prepareFrontmatterDispatch,
+} from "$sb/lib/frontmatter.ts";
 
 let apiKey: string;
 
 async function initializeOpenAI() {
   apiKey = await readSecret("OPENAI_API_KEY");
   if (!apiKey) {
-    throw new Error("OpenAI API key is missing. Please set it in the secrets page.");
+    throw new Error(
+      "OpenAI API key is missing. Please set it in the secrets page.",
+    );
   }
 }
 
@@ -68,11 +73,15 @@ export async function summarizeNote() {
 
 export async function callOpenAIwithNote() {
   const selectedTextInfo = await getSelectedTextOrNote();
-  const userPrompt = await editor.prompt("Please enter a prompt to send to the LLM.");
+  const userPrompt = await editor.prompt(
+    "Please enter a prompt to send to the LLM.",
+  );
   const noteName = await editor.getCurrentPage();
   const currentDate = new Date();
-  const dateString = currentDate.toISOString().split('T')[0];
-  const dayString = currentDate.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateString = currentDate.toISOString().split("T")[0];
+  const dayString = currentDate.toLocaleDateString("en-US", {
+    weekday: "long",
+  });
   const response = await chatWithOpenAI(
     `You are an AI note assistant. Today is ${dayString}, ${dateString}. The current note name is "${noteName}". Follow the user prompt below as closely as possible. \n${userPrompt}`,
     [{ role: "user", content: selectedTextInfo.text }],
@@ -125,7 +134,8 @@ export async function tagNoteWithAI() {
     `You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.\n\n${noteContent}`,
     [],
   );
-  const tags = response.choices[0].message.content.trim().replace(/,/g, '').split(/\s+/);
+  const tags = response.choices[0].message.content.trim().replace(/,/g, "")
+    .split(/\s+/);
 
   // Extract current frontmatter from the note
   const tree = await markdown.parseMarkdown(noteContent);
@@ -140,7 +150,7 @@ export async function tagNoteWithAI() {
   const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
   console.log("updatedNoteContent", frontMatterChange);
 
-  await editor.dispatch(frontMatterChange)
+  await editor.dispatch(frontMatterChange);
   await editor.flashNotification("Note tagged successfully.");
 }
 
@@ -182,15 +192,25 @@ export async function promptAndGenerateImage() {
   try {
     let prompt = await editor.prompt("Enter a prompt for DALL·E:");
     if (!prompt) {
-      await editor.flashNotification("No prompt entered. Operation cancelled.", "error");
+      await editor.flashNotification(
+        "No prompt entered. Operation cancelled.",
+        "error",
+      );
       return;
     }
-    const aiRewrittenPromptResponse = await chatWithOpenAI("Please rewrite the following prompt for better image generation:", [
-      { role: "user", content: prompt }
-    ]);
-    const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message.content.trim();
+    const aiRewrittenPromptResponse = await chatWithOpenAI(
+      "Please rewrite the following prompt for better image generation:",
+      [
+        { role: "user", content: prompt },
+      ],
+    );
+    const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message
+      .content.trim();
     if (!aiRewrittenPrompt) {
-      await editor.flashNotification("Failed to rewrite prompt for better image generation.", "error");
+      await editor.flashNotification(
+        "Failed to rewrite prompt for better image generation.",
+        "error",
+      );
       return;
     }
     prompt = aiRewrittenPrompt;
@@ -201,7 +221,9 @@ export async function promptAndGenerateImage() {
       const markdownImg = `![${prompt}](${imageUrl})\n*${prompt}*`;
       // TODO: Should download this image and insert it as an attachment instead of using the remote url
       await editor.insertAtCursor(markdownImg);
-      await editor.flashNotification("Image generated and inserted with caption successfully.");
+      await editor.flashNotification(
+        "Image generated and inserted with caption successfully.",
+      );
     } else {
       await editor.flashNotification("Failed to generate image.", "error");
     }
@@ -219,19 +241,22 @@ export async function generateImageWithDallE(
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting DALL·E, please wait...");
-    const response = await fetch("https://api.openai.com/v1/images/generations", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      "https://api.openai.com/v1/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "dall-e-2",
+          prompt: prompt,
+          n: n,
+          size: size,
+        }),
       },
-      body: JSON.stringify({
-        model: "dall-e-2",
-        prompt: prompt,
-        n: n,
-        size: size,
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error, status: ${response.status}`);
@@ -244,4 +269,3 @@ export async function generateImageWithDallE(
     throw error;
   }
 }
-
