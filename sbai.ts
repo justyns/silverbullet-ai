@@ -1,4 +1,4 @@
-// import { readSetting } from "$sb/lib/settings_page.ts";
+import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { editor, markdown } from "$sb/syscalls.ts";
 import {
@@ -7,6 +7,13 @@ import {
 } from "$sb/lib/frontmatter.ts";
 
 let apiKey: string;
+let aiSettings: {
+  summarizePrompt: string;
+  tagPrompt: string;
+  imagePrompt: string;
+  temperature: number;
+  maxTokens: number;
+};
 
 async function initializeOpenAI() {
   apiKey = await readSecret("OPENAI_API_KEY");
@@ -15,6 +22,14 @@ async function initializeOpenAI() {
       "OpenAI API key is missing. Please set it in the secrets page.",
     );
   }
+  const defaultSettings = {
+    summarizePrompt: "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
+    tagPrompt: "You are an AI tagging assistant. Given the note titled \"${noteName}\" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
+    imagePrompt: "Please rewrite the following prompt for better image generation:",
+    temperature: 0.5,
+    maxTokens: 100
+  };
+  aiSettings = await readSetting("ai", defaultSettings);
 }
 
 async function getSelectedText() {
