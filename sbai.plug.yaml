@@ -18,3 +18,7 @@ functions:
     path: sbai.ts:callOpenAIwithNote
     command:
       name: "AI: Call OpenAI with Note context"
+  tagNoteWithAI:
+    path: sbai.ts:tagNoteWithAI
+    command:
+      name: "AI: Generate tags for note"

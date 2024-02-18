@@ -1,6 +1,7 @@
 // import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
-import { editor } from "$sb/syscalls.ts";
+import { editor, markdown } from "$sb/syscalls.ts";
+import { extractFrontmatter, prepareFrontmatterDispatch } from "$sb/lib/frontmatter.ts";
 
 let apiKey: string;
 
@@ -115,6 +116,32 @@ export async function insertSummary() {
       selectedTextInfo.to,
     );
   }
+}
+
+export async function tagNoteWithAI() {
+  const noteContent = await editor.getText();
+  const noteName = await editor.getCurrentPage();
+  const response = await chatWithOpenAI(
+    `You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.\n\n${noteContent}`,
+    [],
+  );
+  const tags = response.choices[0].message.content.trim().replace(/,/g, '').split(/\s+/);
+
+  // Extract current frontmatter from the note
+  const tree = await markdown.parseMarkdown(noteContent);
+  const frontMatter = await extractFrontmatter(tree);
+
+  // Add new tags to the existing ones in the frontmatter
+  const updatedTags = [...new Set([...(frontMatter.tags || []), ...tags])];
+  frontMatter.tags = updatedTags;
+
+  console.log("Current frontmatter:", frontMatter);
+  // Prepare the updated frontmatter and apply it to the note
+  const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
+  console.log("updatedNoteContent", frontMatterChange);
+
+  await editor.dispatch(frontMatterChange)
+  await editor.flashNotification("Note tagged successfully.");
 }
 
 export async function chatWithOpenAI(
