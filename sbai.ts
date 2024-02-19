@@ -1,7 +1,5 @@
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
-// import OpenAI from 'https://deno.land/x/openai@v4.28.0/mod.ts';
-// import OpenAI from "npm:openai";
-import { SSE } from 'npm:sse.js@2.2.0';
+import { SSE } from "npm:sse.js@2.2.0";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { editor, markdown, space } from "$sb/syscalls.ts";
@@ -10,7 +8,6 @@ import {
   prepareFrontmatterDispatch,
 } from "$sb/lib/frontmatter.ts";
 
-// let openai: OpenAI;
 let apiKey: string;
 let aiSettings: {
   summarizePrompt: string;
@@ -31,14 +28,15 @@ async function initializeOpenAI() {
     );
   }
   const defaultSettings = {
-    summarizePrompt:
-      "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
-    tagPrompt:
-      'You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.',
-    imagePrompt:
-      "Please rewrite the following prompt for better image generation:",
-    temperature: 0.5,
-    maxTokens: 1000,
+    // TODO: These aren't used yet
+    // summarizePrompt:
+    //   "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
+    // tagPrompt:
+    //   'You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.',
+    // imagePrompt:
+    //   "Please rewrite the following prompt for better image generation:",
+    // temperature: 0.5,
+    // maxTokens: 1000,
     defaultTextModel: "gpt-3.5-turbo",
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
@@ -46,12 +44,6 @@ async function initializeOpenAI() {
   aiSettings = await readSetting("ai", {});
   aiSettings = { ...defaultSettings, ...aiSettings };
   console.log("aiSettings", aiSettings);
-
-  // if (!openai) {
-  //   console.log("Deno build", Deno.build);
-  //   console.log("Deno build os", Deno.build.os);
-  //   openai = new OpenAI({ apiKey: apiKey, baseURL: aiSettings.openAIBaseUrl });
-  // }
 }
 
 async function getSelectedText() {
@@ -164,8 +156,7 @@ export async function callOpenAIWithSelectionAsPrompt() {
     "You are an AI note assistant in a markdown-based note tool.",
     [{
       role: "user",
-      content:
-        `${selectedTextInfo.text}`,
+      content: `${selectedTextInfo.text}`,
     }],
   );
   if (selectedTextInfo.isWholeNote) {
@@ -265,34 +256,6 @@ export async function streamOpenAIWithSelectionAsPrompt() {
   );
 }
 
-// TODO: I can't get the openai library to work, something to do with deno.build.os not getting defined?
-// export async function streamChatWithOpenAI(
-//   systemMessage: string,
-//   userMessage: string,
-// ) {
-//   try {
-//     if (!apiKey || !openai) await initializeOpenAI();
-//     await editor.flashNotification("Contacting LLM, please wait...");
-
-
-//     const stream = await openai.chat.completions.create({
-//       model: 'gpt-4-turbo',
-//       messages: [
-//         { role: 'system', content: systemMessage },
-//         { role: 'user', content: userMessage }
-//       ],
-//       stream: true,
-//     });
-//     for await (const chunk of stream) {
-//       await editor.insertAtCursor(chunk.choices[0]?.delta?.content || '');
-//     }
-//   } catch (error) {
-//     console.error("Error streaming from OpenAI chat endpoint:", error);
-//     throw error;
-//   }
-// }
-
-
 export async function streamChatWithOpenAI(
   systemMessage: string,
   userMessage: string,
@@ -303,7 +266,7 @@ export async function streamChatWithOpenAI(
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
     const sseOptions = {
-      method: 'POST',
+      method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
@@ -312,8 +275,8 @@ export async function streamChatWithOpenAI(
         model: aiSettings.defaultTextModel,
         stream: true,
         messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: userMessage }
+          { role: "system", content: systemMessage },
+          { role: "user", content: userMessage },
         ],
       }),
       withCredentials: false,
@@ -321,18 +284,17 @@ export async function streamChatWithOpenAI(
 
     const source = new SSE(sseUrl, sseOptions);
 
-    source.addEventListener('message', function(e) {
+    source.addEventListener("message", function (e) {
       try {
         const data = JSON.parse(e.data);
         // TODO: If the user moves the cursor, this sort of breaks and puts things where it shouldnt
-        editor.insertAtCursor(data.choices[0]?.delta?.content || '');
+        editor.insertAtCursor(data.choices[0]?.delta?.content || "");
       } catch (error) {
         console.error("Error processing message event:", error);
       }
     });
 
     source.stream();
-
   } catch (error) {
     console.error("Error streaming from OpenAI chat endpoint:", error);
     throw error;
@@ -346,20 +308,23 @@ export async function chatWithOpenAI(
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting LLM, please wait...");
-    const response = await fetch(aiSettings.openAIBaseUrl + "/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
+    const response = await fetch(
+      aiSettings.openAIBaseUrl + "/chat/completions",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: aiSettings.defaultTextModel,
+          messages: [
+            { role: "system", content: systemMessage },
+            ...userMessages,
+          ],
+        }),
       },
-      body: JSON.stringify({
-        model: aiSettings.defaultTextModel,
-        messages: [
-          { role: "system", content: systemMessage },
-          ...userMessages,
-        ],
-      }),
-    });
+    );
 
     if (!response.ok) {
       throw new Error(`HTTP error, status: ${response.status}`);
@@ -409,7 +374,11 @@ export async function promptAndGenerateImage() {
       await space.writeAttachment(prefix + finalFileName, decodedImage);
 
       const markdownImg = `![${prompt}](/${
-        encodeURI(prefix.startsWith('/') ? prefix + finalFileName : '/' + prefix + finalFileName)
+        encodeURI(
+          prefix.startsWith("/")
+            ? prefix + finalFileName
+            : "/" + prefix + finalFileName,
+        )
       })\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
