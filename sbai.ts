@@ -25,9 +25,12 @@ async function initializeOpenAI() {
     );
   }
   const defaultSettings = {
-    summarizePrompt: "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
-    tagPrompt: "You are an AI tagging assistant. Given the note titled \"${noteName}\" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
-    imagePrompt: "Please rewrite the following prompt for better image generation:",
+    summarizePrompt:
+      "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
+    tagPrompt:
+      'You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.',
+    imagePrompt:
+      "Please rewrite the following prompt for better image generation:",
     temperature: 0.5,
     maxTokens: 1000,
     defaultTextModel: "gpt-3.5-turbo",
@@ -84,7 +87,11 @@ export async function summarizeNote() {
     const noteName = await editor.getCurrentPage();
     const response = await chatWithOpenAI(
       "You are an AI Note assistant here to help summarize your personal notes.",
-      [{ role: "user", content: `Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${noteName}.\n\n${selectedTextInfo.text}` }],
+      [{
+        role: "user",
+        content:
+          `Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${noteName}.\n\n${selectedTextInfo.text}`,
+      }],
     );
     console.log("OpenAI response:", response);
     return {
@@ -95,6 +102,11 @@ export async function summarizeNote() {
   return { summary: "", selectedTextInfo: null };
 }
 
+/**
+ * Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
+ * If the user has no text selected, the entire note is used as the note content.
+ * The response is inserted at the cursor position.
+ */
 export async function callOpenAIwithNote() {
   const selectedTextInfo = await getSelectedTextOrNote();
   const userPrompt = await editor.prompt(
@@ -108,7 +120,11 @@ export async function callOpenAIwithNote() {
   });
   const response = await chatWithOpenAI(
     "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-    [{ role: "user", content: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}` }],
+    [{
+      role: "user",
+      content:
+        `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+    }],
   );
   if (selectedTextInfo.isWholeNote) {
     await editor.insertAtCursor(response.choices[0].message.content);
@@ -121,6 +137,10 @@ export async function callOpenAIwithNote() {
   }
 }
 
+/**
+ * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+ * text.  Opens the resulting summary in a temporary right pane.
+ */
 export async function openSummaryPanel() {
   const { summary } = await summarizeNote();
   if (summary) {
@@ -130,6 +150,10 @@ export async function openSummaryPanel() {
   }
 }
 
+/**
+ * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+ * text.  Replaces the selected text with the summary.
+ */
 export async function replaceWithSummary() {
   const { summary, selectedTextInfo } = await summarizeNote();
   if (summary && selectedTextInfo) {
@@ -141,6 +165,10 @@ export async function replaceWithSummary() {
   }
 }
 
+/**
+ * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+ * text.  Inserts the summary at the cursor's position.
+ */
 export async function insertSummary() {
   const { summary, selectedTextInfo } = await summarizeNote();
   if (summary && selectedTextInfo) {
@@ -152,15 +180,19 @@ export async function insertSummary() {
 }
 
 /**
- * Tags the current note using AI.
- * Extracts tags from the note content and updates the note's frontmatter.
+ * Asks the LLM to generate tags for the current note.
+ * Generated tags are added to the note's frontmatter.
  */
 export async function tagNoteWithAI() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
   const response = await chatWithOpenAI(
     "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
-    [{ role: "user", content: `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}` }],
+    [{
+      role: "user",
+      content:
+        `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}`,
+    }],
   );
   const tags = response.choices[0].message.content.trim().replace(/,/g, "")
     .split(/\s+/);
@@ -220,6 +252,10 @@ function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
 }
 
+/**
+ * Prompts the user for a custom prompt to send to DALL·E, then sends the prompt to DALL·E to generate an image.
+ * The resulting image is then uploaded to the space and inserted into the note with a caption.
+ */
 export async function promptAndGenerateImage() {
   try {
     const prompt = await editor.prompt("Enter a prompt for DALL·E:");
@@ -230,24 +266,6 @@ export async function promptAndGenerateImage() {
       );
       return;
     }
-
-    // dall-e-3 rewrites the prompt automatically, so this isn't needed now
-    // const aiRewrittenPromptResponse = await chatWithOpenAI(
-    //   "Please rewrite the following prompt for better image generation:",
-    //   [
-    //     { role: "user", content: prompt },
-    //   ],
-    // );
-    // const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message
-    //   .content.trim();
-    // if (!aiRewrittenPrompt) {
-    //   await editor.flashNotification(
-    //     "Failed to rewrite prompt for better image generation.",
-    //     "error",
-    //   );
-    //   return;
-    // }
-    // prompt = aiRewrittenPrompt;
 
     const imageData = await generateImageWithDallE(prompt, 1);
     if (imageData && imageData.data && imageData.data.length > 0) {
@@ -265,7 +283,9 @@ export async function promptAndGenerateImage() {
       // Upload the image to the space
       await space.writeAttachment(prefix + finalFileName, decodedImage);
 
-      const markdownImg = `![${prompt}](${encodeURI(prefix + finalFileName)})\n*${revisedPrompt}*`;
+      const markdownImg = `![${prompt}](${
+        encodeURI(prefix + finalFileName)
+      })\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
@@ -283,7 +303,7 @@ export async function generateImageWithDallE(
   prompt: string,
   n: 1,
   size: "1024x1024" | "512x512" = "1024x1024",
-  quality: "hd" | "standard" = "hd"
+  quality: "hd" | "standard" = "hd",
 ) {
   try {
     if (!apiKey) await initializeOpenAI();

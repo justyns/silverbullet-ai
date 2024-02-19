@@ -20,12 +20,20 @@ This plug integrates OpenAI functionalities into SilverBullet, allowing users to
 TODO: Better descriptions of what these do
 
 <!-- start-commands-and-functions -->
-- **AI: Summarize Note and open summary**: summarizeNote
-- **AI: Replace with Summary**: replaceWithSummary
-- **AI: Insert Summary**: insertSummary
-- **AI: Call OpenAI with Note context**: callOpenAI
-- **AI: Generate tags for note**: tagNoteWithAI
-- **AI: Generate and insert image using DallE**: promptAndGenerateImage
+- **AI: Summarize Note and open summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+text.  Opens the resulting summary in a temporary right pane.
+- **AI: Replace with Summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+text.  Replaces the selected text with the summary.
+- **AI: Insert Summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+text.  Inserts the summary at the cursor's position.
+- **AI: Call OpenAI with Note context**: Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
+If the user has no text selected, the entire note is used as the note content.
+The response is inserted at the cursor position.
+- **AI: Generate tags for note**: Asks the LLM to generate tags for the current note.
+Generated tags are added to the note's frontmatter.
+- **AI: Generate and insert image using DallE**: Prompts the user for a custom prompt to send to DALL·E, then sends the prompt to DALL·E to generate an image.
+The resulting image is then uploaded to the space and inserted into the note with a caption.
+
 <!-- end-commands-and-functions -->
 
 ## Usage
@@ -81,7 +89,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.2
+- ghr:justyns/silverbullet-ai/0.0.3
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
