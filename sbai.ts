@@ -247,6 +247,10 @@ export async function tagNoteWithAI() {
   await editor.flashNotification("Note tagged successfully.");
 }
 
+
+/**
+ * Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
+ */
 export async function streamOpenAIWithSelectionAsPrompt() {
   const selectedTextInfo = await getSelectedTextOrNote();
 
@@ -373,13 +377,9 @@ export async function promptAndGenerateImage() {
       // Upload the image to the space
       await space.writeAttachment(prefix + finalFileName, decodedImage);
 
-      const markdownImg = `![${prompt}](/${
-        encodeURI(
-          prefix.startsWith("/")
-            ? prefix + finalFileName
-            : "/" + prefix + finalFileName,
-        )
-      })\n*${revisedPrompt}*`;
+      // And then insert it with the prompt dall-e rewrote for us
+      // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long.  I'd like to let the user provide a template for how this looks.
+      const markdownImg = `![${prompt}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
