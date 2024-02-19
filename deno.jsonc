@@ -3,7 +3,8 @@
   "tasks": {
     "build": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml",
     "build-release": "silverbullet plug:compile --info --importmap import_map.json silverbullet-ai.plug.yaml && git add -f silverbullet-ai.plug.js",
-    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml -w"
+    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml -w",
+    "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts"
   },
   "lint": {
     "rules": {

@@ -15,6 +15,19 @@ This plug integrates OpenAI functionalities into SilverBullet, allowing users to
 - **Generate Tags for Note**: Generates tags for the current note using AI.
 - **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
 
+### Available commands
+
+TODO: Better descriptions of what these do
+
+<!-- start-commands-and-functions -->
+- **AI: Summarize Note and open summary**: summarizeNote
+- **AI: Replace with Summary**: replaceWithSummary
+- **AI: Insert Summary**: insertSummary
+- **AI: Call OpenAI with Note context**: callOpenAI
+- **AI: Generate tags for note**: tagNoteWithAI
+- **AI: Generate and insert image using DallE**: promptAndGenerateImage
+<!-- end-commands-and-functions -->
+
 ## Usage
 
 After installing the plug, you can access its features through the command palette. Make sure to set `OPENAI_API_KEY` in the SECRETS page for the plug to function correctly.
@@ -68,7 +81,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.1
+- ghr:justyns/silverbullet-ai/0.0.2
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
