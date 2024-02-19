@@ -238,7 +238,8 @@ export async function promptAndGenerateImage() {
     const imageData = await generateImageWithDallE(prompt, 1);
     if (imageData && imageData.data && imageData.data.length > 0) {
       const imageUrl = imageData.data[0].url;
-      const markdownImg = `![${prompt}](${imageUrl})\n*${prompt}*`;
+      const revisedPrompt = imageData.data[0].revised_prompt;
+      const markdownImg = `![${prompt}](${imageUrl})\n*${revisedPrompt}*`;
       // TODO: Should download this image and insert it as an attachment instead of using the remote url
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
