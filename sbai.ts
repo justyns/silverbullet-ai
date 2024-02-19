@@ -1,6 +1,7 @@
+import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
-import { editor, markdown } from "$sb/syscalls.ts";
+import { editor, markdown, space } from "$sb/syscalls.ts";
 import {
   extractFrontmatter,
   prepareFrontmatterDispatch,
@@ -71,6 +72,11 @@ async function getSelectedTextOrNote() {
   };
 }
 
+/**
+ * Summarizes the selected text or the entire note if no text is selected.
+ * Utilizes OpenAI to generate a summary.
+ * Returns an object containing the summary and the selected text information.
+ */
 export async function summarizeNote() {
   const selectedTextInfo = await getSelectedTextOrNote();
   console.log("selectedTextInfo", selectedTextInfo);
@@ -145,6 +151,10 @@ export async function insertSummary() {
   }
 }
 
+/**
+ * Tags the current note using AI.
+ * Extracts tags from the note content and updates the note's frontmatter.
+ */
 export async function tagNoteWithAI() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
@@ -206,6 +216,10 @@ export async function chatWithOpenAI(
   }
 }
 
+function folderName(path: string) {
+  return path.split("/").slice(0, -1).join("/");
+}
+
 export async function promptAndGenerateImage() {
   try {
     const prompt = await editor.prompt("Enter a prompt for DALL·E:");
@@ -237,10 +251,21 @@ export async function promptAndGenerateImage() {
 
     const imageData = await generateImageWithDallE(prompt, 1);
     if (imageData && imageData.data && imageData.data.length > 0) {
-      const imageUrl = imageData.data[0].url;
+      const base64Image = imageData.data[0].b64_json;
       const revisedPrompt = imageData.data[0].revised_prompt;
-      const markdownImg = `![${prompt}](${imageUrl})\n*${revisedPrompt}*`;
-      // TODO: Should download this image and insert it as an attachment instead of using the remote url
+      const decodedImage = new Uint8Array(decodeBase64(base64Image));
+
+      // Generate a unique filename for the image
+      const finalFileName = `dall-e-${Date.now()}.png`;
+      let prefix = folderName(await editor.getCurrentPage()) + "/";
+      if (prefix === "/") {
+        prefix = "";
+      }
+
+      // Upload the image to the space
+      await space.writeAttachment(prefix + finalFileName, decodedImage);
+
+      const markdownImg = `![${prompt}](${encodeURI(prefix + finalFileName)})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
@@ -277,6 +302,7 @@ export async function generateImageWithDallE(
           quality: quality,
           n: n,
           size: size,
+          response_format: "b64_json",
         }),
       },
     );
