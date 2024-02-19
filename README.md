@@ -48,13 +48,34 @@ OPENAI_API_KEY: "openai key here"
 
 ### Configuration
 
-To change the text generation model used by all commands, open your `SETTINGS` page and change the setting below:
+To change the text generation model used by all commands, or other configurable options, open your `SETTINGS` page and change the setting below:
 
 ```yaml
+# The settings below are examples of changes, not defaults
 ai:
   # By default, gpt-3.5-turbo is used.  Change the model below if desired.
   defaultTextModel: gpt-4-0125-preview
+  # Any openai compatible API _should_ be usable, but no testing is done on that currently
+  # Be sure to include the /v1 in the url if needed
+  # the model above may also need to be changed
+  openAIBaseUrl: http://localhost:8080/v1
+  dallEBaseUrl: http://localhost:8080/v1
+  
+  # Example for ollama using mistral as the model:
+  openAIBaseUrl: http://localhost:11434/v1
+  defaultTextModel: mistral
 ```
+
+## Cost
+
+While this plugin is free to use, OpenAI does charge for their API usage.  Please see their [pricing page](https://openai.com/pricing) for cost of the various apis.
+
+As of 2024-02, here's a rough idea of what to expect:
+
+- Dall-E image generation, HD 1024x1024; $0.080 per image
+- GPT-4-turbo; $0.01 per 1k input tokens, $0.03 per 1k output tokens
+- GPT-3.5-turbo; $0.0005 per 1k input tokens, $0.0015 per 1k output tokens
+- Per the above pricing page, a rough estimate is that 1000 tokens is about 750 words
 
 ## Build
 To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:

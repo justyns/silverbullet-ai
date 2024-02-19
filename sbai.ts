@@ -15,6 +15,8 @@ let aiSettings: {
   temperature: number;
   maxTokens: number;
   defaultTextModel: string;
+  openAIBaseUrl: string;
+  dallEBaseUrl: string;
 };
 
 async function initializeOpenAI() {
@@ -34,6 +36,8 @@ async function initializeOpenAI() {
     temperature: 0.5,
     maxTokens: 1000,
     defaultTextModel: "gpt-3.5-turbo",
+    openAIBaseUrl: "https://api.openai.com/v1",
+    dallEBaseUrl: "https://api.openai.com/v1",
   };
   aiSettings = await readSetting("ai", defaultSettings);
   console.log("aiSettings", aiSettings);
@@ -220,8 +224,8 @@ export async function chatWithOpenAI(
 ) {
   try {
     if (!apiKey) await initializeOpenAI();
-    await editor.flashNotification("Contacting OpenAI, please wait...");
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    await editor.flashNotification("Contacting LLM, please wait...");
+    const response = await fetch(aiSettings.openAIBaseUrl + "/chat/completions", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${apiKey}`,
@@ -309,7 +313,7 @@ export async function generateImageWithDallE(
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting DALL·E, please wait...");
     const response = await fetch(
-      "https://api.openai.com/v1/images/generations",
+      aiSettings.dallEBaseUrl + "/images/generations",
       {
         method: "POST",
         headers: {
