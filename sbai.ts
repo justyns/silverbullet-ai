@@ -208,7 +208,7 @@ export async function chatWithOpenAI(
 
 export async function promptAndGenerateImage() {
   try {
-    let prompt = await editor.prompt("Enter a prompt for DALL·E:");
+    const prompt = await editor.prompt("Enter a prompt for DALL·E:");
     if (!prompt) {
       await editor.flashNotification(
         "No prompt entered. Operation cancelled.",
@@ -216,22 +216,24 @@ export async function promptAndGenerateImage() {
       );
       return;
     }
-    const aiRewrittenPromptResponse = await chatWithOpenAI(
-      "Please rewrite the following prompt for better image generation:",
-      [
-        { role: "user", content: prompt },
-      ],
-    );
-    const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message
-      .content.trim();
-    if (!aiRewrittenPrompt) {
-      await editor.flashNotification(
-        "Failed to rewrite prompt for better image generation.",
-        "error",
-      );
-      return;
-    }
-    prompt = aiRewrittenPrompt;
+
+    // dall-e-3 rewrites the prompt automatically, so this isn't needed now
+    // const aiRewrittenPromptResponse = await chatWithOpenAI(
+    //   "Please rewrite the following prompt for better image generation:",
+    //   [
+    //     { role: "user", content: prompt },
+    //   ],
+    // );
+    // const aiRewrittenPrompt = aiRewrittenPromptResponse.choices[0].message
+    //   .content.trim();
+    // if (!aiRewrittenPrompt) {
+    //   await editor.flashNotification(
+    //     "Failed to rewrite prompt for better image generation.",
+    //     "error",
+    //   );
+    //   return;
+    // }
+    // prompt = aiRewrittenPrompt;
 
     const imageData = await generateImageWithDallE(prompt, 1);
     if (imageData && imageData.data && imageData.data.length > 0) {
@@ -254,7 +256,8 @@ export async function promptAndGenerateImage() {
 export async function generateImageWithDallE(
   prompt: string,
   n: 1,
-  size: "1024x1024" | "512x512" = "512x512",
+  size: "1024x1024" | "512x512" = "1024x1024",
+  quality: "hd" | "standard" = "hd"
 ) {
   try {
     if (!apiKey) await initializeOpenAI();
@@ -270,6 +273,7 @@ export async function generateImageWithDallE(
         body: JSON.stringify({
           model: "dall-e-3",
           prompt: prompt,
+          quality: quality,
           n: n,
           size: size,
         }),
