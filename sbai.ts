@@ -13,6 +13,7 @@ let aiSettings: {
   imagePrompt: string;
   temperature: number;
   maxTokens: number;
+  defaultTextModel: string;
 };
 
 async function initializeOpenAI() {
@@ -27,9 +28,11 @@ async function initializeOpenAI() {
     tagPrompt: "You are an AI tagging assistant. Given the note titled \"${noteName}\" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
     imagePrompt: "Please rewrite the following prompt for better image generation:",
     temperature: 0.5,
-    maxTokens: 100
+    maxTokens: 1000,
+    defaultTextModel: "gpt-3.5-turbo",
   };
   aiSettings = await readSetting("ai", defaultSettings);
+  console.log("aiSettings", aiSettings);
 }
 
 async function getSelectedText() {
@@ -74,8 +77,8 @@ export async function summarizeNote() {
   if (selectedTextInfo.text.length > 0) {
     const noteName = await editor.getCurrentPage();
     const response = await chatWithOpenAI(
-      `Summarize this note. Use markdown for any formatting. The note name is ${noteName}`,
-      [{ role: "user", content: selectedTextInfo.text }],
+      "You are an AI Note assistant here to help summarize your personal notes.",
+      [{ role: "user", content: `Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${noteName}.\n\n${selectedTextInfo.text}` }],
     );
     console.log("OpenAI response:", response);
     return {
@@ -98,8 +101,8 @@ export async function callOpenAIwithNote() {
     weekday: "long",
   });
   const response = await chatWithOpenAI(
-    `You are an AI note assistant. Today is ${dayString}, ${dateString}. The current note name is "${noteName}". Follow the user prompt below as closely as possible. \n${userPrompt}`,
-    [{ role: "user", content: selectedTextInfo.text }],
+    "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+    [{ role: "user", content: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}` }],
   );
   if (selectedTextInfo.isWholeNote) {
     await editor.insertAtCursor(response.choices[0].message.content);
@@ -136,7 +139,7 @@ export async function insertSummary() {
   const { summary, selectedTextInfo } = await summarizeNote();
   if (summary && selectedTextInfo) {
     await editor.insertAtPos(
-      "\n\n**Summary:** " + summary,
+      "\n\n" + summary,
       selectedTextInfo.to,
     );
   }
@@ -146,8 +149,8 @@ export async function tagNoteWithAI() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
   const response = await chatWithOpenAI(
-    `You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.\n\n${noteContent}`,
-    [],
+    "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
+    [{ role: "user", content: `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}` }],
   );
   const tags = response.choices[0].message.content.trim().replace(/,/g, "")
     .split(/\s+/);
@@ -183,7 +186,7 @@ export async function chatWithOpenAI(
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: aiSettings.defaultTextModel,
         messages: [
           { role: "system", content: systemMessage },
           ...userMessages,
@@ -265,7 +268,7 @@ export async function generateImageWithDallE(
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "dall-e-2",
+          model: "dall-e-3",
           prompt: prompt,
           n: n,
           size: size,

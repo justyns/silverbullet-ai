@@ -19,6 +19,21 @@ This plug integrates OpenAI functionalities into SilverBullet, allowing users to
 
 After installing the plug, you can access its features through the command palette. Make sure to set `OPENAI_API_KEY` in the SECRETS page for the plug to function correctly.
 
+If you do not have a SECRETS page, create a new page named `SECRETS` with content similar to the following:
+
+```yaml
+OPENAI_API_KEY: "openai key here"
+```
+
+### Configuration
+
+To change the text generation model used by all commands, open your `SETTINGS` page and change the setting below:
+
+```yaml
+ai:
+  # By default, gpt-3.5-turbo is used.  Change the model below if desired.
+  defaultTextModel: gpt-4-0125-preview
+```
 
 ## Build
 To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
