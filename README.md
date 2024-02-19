@@ -60,8 +60,15 @@ SilverBullet will automatically sync and load the new version of the plug (or sp
 
 Add the following to to your `PLUGS` file, run `Plugs: Update` command and off you go!
 
-```
+For in-development code from the main branch:
+```yaml
 - github:justyns/silverbullet-ai/sbai.plug.js
+```
+
+For the latest "release" code, mostly also still in development for now:
+
+```yaml
+- ghr:justyns/silverbullet-ai/0.0.1
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
