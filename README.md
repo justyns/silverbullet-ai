@@ -17,7 +17,7 @@ This plug integrates OpenAI functionalities into SilverBullet, allowing users to
 
 ### Available commands
 
-TODO: Better descriptions of what these do
+The list below are the commands available in this plugin.
 
 <!-- start-commands-and-functions -->
 - **AI: Summarize Note and open summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
@@ -114,7 +114,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.3
+- ghr:justyns/silverbullet-ai/0.0.4
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.

@@ -315,8 +315,8 @@ export async function promptAndGenerateImage() {
       // Upload the image to the space
       await space.writeAttachment(prefix + finalFileName, decodedImage);
 
-      const markdownImg = `![${prompt}](${
-        encodeURI(prefix + finalFileName)
+      const markdownImg = `![${prompt}](/${
+        encodeURI(prefix.startsWith('/') ? prefix + finalFileName : '/' + prefix + finalFileName)
       })\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
