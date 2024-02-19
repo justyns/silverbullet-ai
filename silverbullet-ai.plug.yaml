@@ -30,3 +30,7 @@ functions:
     path: sbai.ts:callOpenAIWithSelectionAsPrompt
     command:
       name: "AI: Call OpenAI with selected text as prompt"
+  streamOpenAIWithSelectionAsPrompt:
+    path: sbai.ts:streamOpenAIWithSelectionAsPrompt
+    command:
+      name: "AI: test stream"

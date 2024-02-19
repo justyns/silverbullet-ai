@@ -1,4 +1,7 @@
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
+// import OpenAI from 'https://deno.land/x/openai@v4.28.0/mod.ts';
+// import OpenAI from "npm:openai";
+import { SSE } from 'npm:sse.js@2.2.0';
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { editor, markdown, space } from "$sb/syscalls.ts";
@@ -7,6 +10,7 @@ import {
   prepareFrontmatterDispatch,
 } from "$sb/lib/frontmatter.ts";
 
+// let openai: OpenAI;
 let apiKey: string;
 let aiSettings: {
   summarizePrompt: string;
@@ -42,6 +46,12 @@ async function initializeOpenAI() {
   aiSettings = await readSetting("ai", {});
   aiSettings = { ...defaultSettings, ...aiSettings };
   console.log("aiSettings", aiSettings);
+
+  // if (!openai) {
+  //   console.log("Deno build", Deno.build);
+  //   console.log("Deno build os", Deno.build.os);
+  //   openai = new OpenAI({ apiKey: apiKey, baseURL: aiSettings.openAIBaseUrl });
+  // }
 }
 
 async function getSelectedText() {
@@ -244,6 +254,89 @@ export async function tagNoteWithAI() {
 
   await editor.dispatch(frontMatterChange);
   await editor.flashNotification("Note tagged successfully.");
+}
+
+export async function streamOpenAIWithSelectionAsPrompt() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+
+  await streamChatWithOpenAI(
+    "You are an AI note assistant in a markdown-based note tool.",
+    selectedTextInfo.text,
+  );
+}
+
+// TODO: I can't get the openai library to work, something to do with deno.build.os not getting defined?
+// export async function streamChatWithOpenAI(
+//   systemMessage: string,
+//   userMessage: string,
+// ) {
+//   try {
+//     if (!apiKey || !openai) await initializeOpenAI();
+//     await editor.flashNotification("Contacting LLM, please wait...");
+
+
+//     const stream = await openai.chat.completions.create({
+//       model: 'gpt-4-turbo',
+//       messages: [
+//         { role: 'system', content: systemMessage },
+//         { role: 'user', content: userMessage }
+//       ],
+//       stream: true,
+//     });
+//     for await (const chunk of stream) {
+//       await editor.insertAtCursor(chunk.choices[0]?.delta?.content || '');
+//     }
+//   } catch (error) {
+//     console.error("Error streaming from OpenAI chat endpoint:", error);
+//     throw error;
+//   }
+// }
+
+
+export async function streamChatWithOpenAI(
+  systemMessage: string,
+  userMessage: string,
+) {
+  try {
+    if (!apiKey) await initializeOpenAI();
+    await editor.flashNotification("Contacting LLM, please wait...");
+
+    const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
+    const sseOptions = {
+      method: 'POST',
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      payload: JSON.stringify({
+        model: aiSettings.defaultTextModel,
+        stream: true,
+        messages: [
+          { role: 'system', content: systemMessage },
+          { role: 'user', content: userMessage }
+        ],
+      }),
+      withCredentials: false,
+    };
+
+    const source = new SSE(sseUrl, sseOptions);
+
+    source.addEventListener('message', function(e) {
+      try {
+        const data = JSON.parse(e.data);
+        // TODO: If the user moves the cursor, this sort of breaks and puts things where it shouldnt
+        editor.insertAtCursor(data.choices[0]?.delta?.content || '');
+      } catch (error) {
+        console.error("Error processing message event:", error);
+      }
+    });
+
+    source.stream();
+
+  } catch (error) {
+    console.error("Error streaming from OpenAI chat endpoint:", error);
+    throw error;
+  }
 }
 
 export async function chatWithOpenAI(
