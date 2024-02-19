@@ -62,7 +62,7 @@ Add the following to to your `PLUGS` file, run `Plugs: Update` command and off y
 
 For in-development code from the main branch:
 ```yaml
-- github:justyns/silverbullet-ai/sbai.plug.js
+- github:justyns/silverbullet-ai/silverbullet-ai.plug.js
 ```
 
 For the latest "release" code, mostly also still in development for now:

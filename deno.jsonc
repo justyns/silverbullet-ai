@@ -1,9 +1,9 @@
 {
   "importMap": "import_map.json",
   "tasks": {
-    "build": "silverbullet plug:compile --debug --info --importmap import_map.json sbai.plug.yaml",
-    "build-release": "silverbullet plug:compile --info --importmap import_map.json sbai.plug.yaml && git add -f sbai.plug.js",
-    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json sbai.plug.yaml -w"
+    "build": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml",
+    "build-release": "silverbullet plug:compile --info --importmap import_map.json silverbullet-ai.plug.yaml && git add -f silverbullet-ai.plug.js",
+    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml -w"
   },
   "lint": {
     "rules": {

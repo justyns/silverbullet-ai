@@ -1,4 +1,4 @@
-name: sbai
+name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
