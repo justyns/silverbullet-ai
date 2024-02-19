@@ -39,7 +39,8 @@ async function initializeOpenAI() {
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
   };
-  aiSettings = await readSetting("ai", defaultSettings);
+  aiSettings = await readSetting("ai", {});
+  aiSettings = { ...defaultSettings, ...aiSettings };
   console.log("aiSettings", aiSettings);
 }
 
@@ -128,6 +129,33 @@ export async function callOpenAIwithNote() {
       role: "user",
       content:
         `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+    }],
+  );
+  if (selectedTextInfo.isWholeNote) {
+    await editor.insertAtCursor(response.choices[0].message.content);
+  } else {
+    await editor.replaceRange(
+      selectedTextInfo.from,
+      selectedTextInfo.to,
+      response.choices[0].message.content,
+    );
+  }
+}
+
+/**
+ * Uses either the selected text or the entire note as the prompt for the LLM.
+ * No pre-defined prompt will be sent with the request.
+ * The response is inserted at the cursor position if the whole note is used.  Otherwise
+ * it will replace the selected text.
+ */
+export async function callOpenAIWithSelectionAsPrompt() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  const response = await chatWithOpenAI(
+    "You are an AI note assistant in a markdown-based note tool.",
+    [{
+      role: "user",
+      content:
+        `${selectedTextInfo.text}`,
     }],
   );
   if (selectedTextInfo.isWholeNote) {

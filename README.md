@@ -33,6 +33,10 @@ The response is inserted at the cursor position.
 Generated tags are added to the note's frontmatter.
 - **AI: Generate and insert image using DallE**: Prompts the user for a custom prompt to send to DALL·E, then sends the prompt to DALL·E to generate an image.
 The resulting image is then uploaded to the space and inserted into the note with a caption.
+- **AI: Call OpenAI with selected text as prompt**: Uses either the selected text or the entire note as the prompt for the LLM.
+No pre-defined prompt will be sent with the request.
+The response is inserted at the cursor position if the whole note is used.  Otherwise
+it will replace the selected text.
 
 <!-- end-commands-and-functions -->
 

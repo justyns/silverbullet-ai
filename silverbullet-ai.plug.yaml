@@ -26,3 +26,7 @@ functions:
     path: sbai.ts:promptAndGenerateImage
     command:
       name: "AI: Generate and insert image using DallE"
+  callOpenAIWithSelectionAsPrompt:
+    path: sbai.ts:callOpenAIWithSelectionAsPrompt
+    command:
+      name: "AI: Call OpenAI with selected text as prompt"
