@@ -247,28 +247,88 @@ export async function tagNoteWithAI() {
   await editor.flashNotification("Note tagged successfully.");
 }
 
-
 /**
  * Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
  */
 export async function streamOpenAIWithSelectionAsPrompt() {
   const selectedTextInfo = await getSelectedTextOrNote();
 
-  await streamChatWithOpenAI(
-    "You are an AI note assistant in a markdown-based note tool.",
-    selectedTextInfo.text,
-  );
+  await streamChatWithOpenAI({
+    systemMessage:
+      "You are an AI note assistant in a markdown-based note tool.",
+    userMessage: selectedTextInfo.text,
+  });
+}
+
+/**
+ * Streams a conversation with the LLM, but uses the current page as a sort of chat history.
+ */
+export async function streamChatOnPage() {
+  const messages = await convertPageToMessages();
+  await editor.insertAtCursor("\n\n**assistant**: ");
+  await streamChatWithOpenAI(messages);
+}
+
+/**
+ * Converts the current page into a list of messages for the LLM.
+ * Each message is a line of text, with the role being the bolded word at the beginning of the line.
+ * Each message can also be multiple lines.
+ *
+ * Valid roles are system, assistant, and user.
+ *
+ * @returns {Array<{ role: string; content: string }>}
+ */
+export async function convertPageToMessages() {
+  const pageText = await editor.getText();
+  const lines = pageText.split("\n");
+  const messages = [];
+  let currentRole = "";
+  let contentBuffer = "";
+
+  lines.forEach((line) => {
+    const match = line.match(/^\*\*(\w+)\*\*:/);
+    if (match) {
+      const newRole = match[1].toLowerCase();
+      if (currentRole && currentRole !== newRole) {
+        messages.push({ role: currentRole, content: contentBuffer.trim() });
+        contentBuffer = "";
+      }
+      currentRole = newRole;
+      contentBuffer += line.replace(/^\*\*(\w+)\*\*:/, "").trim() + "\n";
+    } else if (currentRole) {
+      contentBuffer += line.trim() + "\n";
+    }
+  });
+  if (contentBuffer && currentRole) {
+    messages.push({ role: currentRole, content: contentBuffer.trim() });
+  }
+
+  return messages;
 }
 
 export async function streamChatWithOpenAI(
-  systemMessage: string,
-  userMessage: string,
+  messages: Array<{ role: string; content: string }> | {
+    systemMessage: string;
+    userMessage: string;
+  },
 ) {
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting LLM, please wait...");
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
+    let isInteractiveChat = false;
+    let payloadMessages;
+    if ("systemMessage" in messages && "userMessage" in messages) {
+      payloadMessages = [
+        { role: "system", content: messages.systemMessage },
+        { role: "user", content: messages.userMessage },
+      ];
+    } else {
+      payloadMessages = messages;
+      isInteractiveChat = true;
+    }
+
     const sseOptions = {
       method: "POST",
       headers: {
@@ -278,10 +338,7 @@ export async function streamChatWithOpenAI(
       payload: JSON.stringify({
         model: aiSettings.defaultTextModel,
         stream: true,
-        messages: [
-          { role: "system", content: systemMessage },
-          { role: "user", content: userMessage },
-        ],
+        messages: payloadMessages,
       }),
       withCredentials: false,
     };
@@ -289,13 +346,29 @@ export async function streamChatWithOpenAI(
     const source = new SSE(sseUrl, sseOptions);
 
     source.addEventListener("message", function (e) {
+      console.log(e.data);
       try {
-        const data = JSON.parse(e.data);
-        // TODO: If the user moves the cursor, this sort of breaks and puts things where it shouldnt
-        editor.insertAtCursor(data.choices[0]?.delta?.content || "");
+        // When done, we get [DONE} instead of an end event for some reason
+        if (e.data == "[DONE]") {
+          if (isInteractiveChat) {
+            editor.insertAtCursor("\n\n**user**: ");
+          }
+          source.close();
+        } else {
+          const data = JSON.parse(e.data);
+          editor.insertAtCursor(data.choices[0]?.delta?.content || "");
+        }
       } catch (error) {
-        console.error("Error processing message event:", error);
+        console.error("Error processing message event:", error, e.data);
       }
+    });
+
+    // This is never really triggered
+    source.addEventListener("end", function () {
+      if (isInteractiveChat) {
+        editor.insertAtCursor("\n\n**user**: ");
+      }
+      source.close();
     });
 
     source.stream();

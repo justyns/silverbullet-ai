@@ -34,3 +34,7 @@ functions:
     path: sbai.ts:streamOpenAIWithSelectionAsPrompt
     command:
       name: "AI: test stream"
+  streamChatOnPage:
+    path: sbai.ts:streamChatOnPage
+    command:
+      name: "AI: Chat on current page"
