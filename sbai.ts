@@ -265,6 +265,10 @@ export async function streamOpenAIWithSelectionAsPrompt() {
  */
 export async function streamChatOnPage() {
   const messages = await convertPageToMessages();
+  if (messages.length === 0) {
+    await editor.flashNotification("Error: The page does not match the required format for a chat.");
+    return;
+  }
   await editor.insertAtCursor("\n\n**assistant**: ");
   await streamChatWithOpenAI(messages);
 }
@@ -346,7 +350,7 @@ export async function streamChatWithOpenAI(
     const source = new SSE(sseUrl, sseOptions);
 
     source.addEventListener("message", function (e) {
-      console.log(e.data);
+      // console.log(e.data);
       try {
         // When done, we get [DONE} instead of an end event for some reason
         if (e.data == "[DONE]") {
