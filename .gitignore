@@ -4,3 +4,4 @@ test-space/
 *.db-shm
 *.db-wal
 *.db
+.DS_Store
