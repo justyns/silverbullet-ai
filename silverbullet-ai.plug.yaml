@@ -33,7 +33,7 @@ functions:
   streamOpenAIWithSelectionAsPrompt:
     path: sbai.ts:streamOpenAIWithSelectionAsPrompt
     command:
-      name: "AI: test stream"
+      name: "AI: Stream response with selection or note as prompt"
   streamChatOnPage:
     path: sbai.ts:streamChatOnPage
     command:

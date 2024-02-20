@@ -37,7 +37,7 @@ The resulting image is then uploaded to the space and inserted into the note wit
 No pre-defined prompt will be sent with the request.
 The response is inserted at the cursor position if the whole note is used.  Otherwise
 it will replace the selected text.
-- **AI: test stream**: Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
+- **AI: Stream response with selection or note as prompt**: Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
 - **AI: Chat on current page**: Streams a conversation with the LLM, but uses the current page as a sort of chat history.
 
 <!-- end-commands-and-functions -->
