@@ -44,35 +44,55 @@ it will replace the selected text.
 
 ## Usage
 
-After installing the plug, you can access its features through the command palette. Make sure to set `OPENAI_API_KEY` in the SECRETS page for the plug to function correctly.
+After installing the plug, you can access its features through the command palette. To ensure the plug functions correctly, you must set the `OPENAI_API_KEY` on the SECRETS page.
 
-If you do not have a SECRETS page, create a new page named `SECRETS` with content similar to the following:
+If you do not have a SECRETS page, create one and name it `SECRETS`. Then, insert a YAML block as shown below, replacing `"openai key here"` with your actual OpenAI API key:
 
-```yaml
-OPENAI_API_KEY: "openai key here"
-```
+    ```yaml
+    OPENAI_API_KEY: "openai key here"
+    ```
+
+OPENAI_API_KEY is required for any model currently, but may not get used for local models that don't use keys.
 
 ### Configuration
 
 To change the text generation model used by all commands, or other configurable options, open your `SETTINGS` page and change the setting below:
 
 ```yaml
-# The settings below are examples of changes, not defaults
 ai:
-  # By default, gpt-3.5-turbo is used.  Change the model below if desired.
-  defaultTextModel: gpt-4-0125-preview
+  # By default, gpt-3.5-turbo is used, but can be changed if desired.
+  # defaultTextModel: gpt-4-0125-preview
+  defaultTextModel: gpt-3.5-turbo
   # Any openai compatible API _should_ be usable, but no testing is done on that currently
-  # Be sure to include the /v1 in the url if needed
-  # the model above may also need to be changed
-  openAIBaseUrl: http://localhost:8080/v1
-  dallEBaseUrl: http://localhost:8080/v1
-  
-  # Example for ollama using mistral as the model:
-  openAIBaseUrl: http://localhost:11434/v1
-  defaultTextModel: mistral
+  openAIBaseUrl: "https://api.openai.com/v1",
+  dallEBaseUrl: "https://api.openai.com/v1",
 ```
 
-## Cost
+### Ollama
+
+To use Ollama locally, make sure you have it running first and the desired models downloaded.  Then, set the `openAIBaseUrl` to the url of your ollama instance:
+
+```yaml
+ai:
+  # Run `ollama list` to see a list of models downloaded
+  defaultTextModel: phi
+  openAIBaseUrl: http://localhost:11434/v1
+```
+
+### Mistral.ai
+
+Mistral.ai is a hosted service that offers an openai-compatible api.  You can use it with settings like this:
+
+```yaml
+ai:
+  defaultTextModel: mistral-medium
+  openAIBaseUrl: https://api.mistral.ai/v1
+```
+
+`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from their web console.
+
+
+## Cost (OpenAI)
 
 While this plugin is free to use, OpenAI does charge for their API usage.  Please see their [pricing page](https://openai.com/pricing) for cost of the various apis.
 
@@ -82,6 +102,8 @@ As of 2024-02, here's a rough idea of what to expect:
 - GPT-4-turbo; $0.01 per 1k input tokens, $0.03 per 1k output tokens
 - GPT-3.5-turbo; $0.0005 per 1k input tokens, $0.0015 per 1k output tokens
 - Per the above pricing page, a rough estimate is that 1000 tokens is about 750 words
+
+<!-- TODO: Add pricing for mistral.ai -->
 
 ## Build
 To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
@@ -120,3 +142,5 @@ For the latest "release" code, mostly also still in development for now:
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
+
+After installing, be sure to make the necessary config changes in SETTINGS and SECRETS.
