@@ -23,9 +23,10 @@ let aiSettings: {
 async function initializeOpenAI() {
   apiKey = await readSecret("OPENAI_API_KEY");
   if (!apiKey) {
-    throw new Error(
-      "OpenAI API key is missing. Please set it in the secrets page.",
-    );
+    const errorMessage =
+      "OpenAI API key is missing. Please set it in the secrets page.";
+    await editor.flashNotification(errorMessage, "error");
+    throw new Error(errorMessage);
   }
   const defaultSettings = {
     // TODO: These aren't used yet
@@ -266,7 +267,9 @@ export async function streamOpenAIWithSelectionAsPrompt() {
 export async function streamChatOnPage() {
   const messages = await convertPageToMessages();
   if (messages.length === 0) {
-    await editor.flashNotification("Error: The page does not match the required format for a chat.");
+    await editor.flashNotification(
+      "Error: The page does not match the required format for a chat.",
+    );
     return;
   }
   await editor.insertAtCursor("\n\n**assistant**: ");
@@ -378,6 +381,10 @@ export async function streamChatWithOpenAI(
     source.stream();
   } catch (error) {
     console.error("Error streaming from OpenAI chat endpoint:", error);
+    await editor.flashNotification(
+      "Error streaming from OpenAI chat endpoint.",
+      "error",
+    );
     throw error;
   }
 }
@@ -388,6 +395,13 @@ export async function chatWithOpenAI(
 ) {
   try {
     if (!apiKey) await initializeOpenAI();
+    if (!apiKey || !aiSettings || !aiSettings.openAIBaseUrl) {
+      await editor.flashNotification(
+        "API key or AI settings are not properly configured.",
+        "error",
+      );
+      throw new Error("API key or AI settings are not properly configured.");
+    }
     await editor.flashNotification("Contacting LLM, please wait...");
     const response = await fetch(
       aiSettings.openAIBaseUrl + "/chat/completions",
@@ -412,9 +426,16 @@ export async function chatWithOpenAI(
     }
 
     const data = await response.json();
+    if (!data || !data.choices || data.choices.length === 0) {
+      throw new Error("Invalid response from OpenAI.");
+    }
     return data;
   } catch (error) {
     console.error("Error calling OpenAI chat endpoint:", error);
+    await editor.flashNotification(
+      "Error calling OpenAI chat endpoint.",
+      "error",
+    );
     throw error;
   }
 }
@@ -430,7 +451,7 @@ function folderName(path: string) {
 export async function promptAndGenerateImage() {
   try {
     const prompt = await editor.prompt("Enter a prompt for DALL·E:");
-    if (!prompt) {
+    if (!prompt || !prompt.trim()) {
       await editor.flashNotification(
         "No prompt entered. Operation cancelled.",
         "error",
