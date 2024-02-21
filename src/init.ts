@@ -15,7 +15,11 @@ let aiSettings: {
 };
 
 async function initializeOpenAI() {
-  apiKey = await readSecret("OPENAI_API_KEY");
+  const newApiKey = await readSecret("OPENAI_API_KEY");
+  if (newApiKey !== apiKey) {
+    apiKey = newApiKey;
+    await editor.flashNotification("silverbullet-ai API key updated");
+  }
   if (!apiKey) {
     const errorMessage =
       "OpenAI API key is missing. Please set it in the secrets page.";
@@ -36,9 +40,16 @@ async function initializeOpenAI() {
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
   };
-  aiSettings = await readSetting("ai", {});
-  aiSettings = { ...defaultSettings, ...aiSettings };
-  console.log("aiSettings", aiSettings);
+  const newSettings = await readSetting("ai", {});
+  const newCombinedSettings = { ...defaultSettings, ...newSettings };
+  if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
+    console.log("aiSettings updating from", aiSettings);
+    aiSettings = newCombinedSettings;
+    console.log("aiSettings updated to", aiSettings);
+    await editor.flashNotification("silverbullet-ai settings updated");
+  } else {
+    console.log("aiSettings unchanged", aiSettings);
+  }
 }
 
 export { aiSettings, apiKey, initializeOpenAI };

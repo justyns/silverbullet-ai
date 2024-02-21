@@ -10,6 +10,18 @@ import { getSelectedTextOrNote } from "./src/editorUtils.ts";
 import { convertPageToMessages, folderName } from "./src/utils.ts";
 
 /**
+ * Reloads the api key and aiSettings object if one of the pages change.
+ * This should prevent us from having to reload or refresh when changing the settings.
+ * TODO: This gets triggered when other settings are changed too, but shouldn't make a difference
+ *       when there are no changes to the objects we care about.
+ */
+export async function reloadConfig(pageName: string) {
+  if (pageName === "SETTINGS" || pageName === "SECRETS") {
+    await initializeOpenAI();
+  }
+}
+
+/**
  * Summarizes the selected text or the entire note if no text is selected.
  * Utilizes OpenAI to generate a summary.
  * Returns an object containing the summary and the selected text information.

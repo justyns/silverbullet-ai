@@ -2,6 +2,12 @@ name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
+  reloadConfig:
+    path: sbai.ts:reloadConfig
+    command:
+      name: "AI: Reload Config"
+    events:
+      - page:saved
   summarizeNote:
     path: sbai.ts:openSummaryPanel
     command:
