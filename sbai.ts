@@ -1,87 +1,13 @@
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { readSetting } from "$sb/lib/settings_page.ts";
-import { readSecret } from "$sb/lib/secrets_page.ts";
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import {
   extractFrontmatter,
   prepareFrontmatterDispatch,
 } from "$sb/lib/frontmatter.ts";
-
-let apiKey: string;
-let aiSettings: {
-  summarizePrompt: string;
-  tagPrompt: string;
-  imagePrompt: string;
-  temperature: number;
-  maxTokens: number;
-  defaultTextModel: string;
-  openAIBaseUrl: string;
-  dallEBaseUrl: string;
-};
-
-async function initializeOpenAI() {
-  apiKey = await readSecret("OPENAI_API_KEY");
-  if (!apiKey) {
-    const errorMessage =
-      "OpenAI API key is missing. Please set it in the secrets page.";
-    await editor.flashNotification(errorMessage, "error");
-    throw new Error(errorMessage);
-  }
-  const defaultSettings = {
-    // TODO: These aren't used yet
-    // summarizePrompt:
-    //   "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
-    // tagPrompt:
-    //   'You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.',
-    // imagePrompt:
-    //   "Please rewrite the following prompt for better image generation:",
-    // temperature: 0.5,
-    // maxTokens: 1000,
-    defaultTextModel: "gpt-3.5-turbo",
-    openAIBaseUrl: "https://api.openai.com/v1",
-    dallEBaseUrl: "https://api.openai.com/v1",
-  };
-  aiSettings = await readSetting("ai", {});
-  aiSettings = { ...defaultSettings, ...aiSettings };
-  console.log("aiSettings", aiSettings);
-}
-
-async function getSelectedText() {
-  const selectedRange = await editor.getSelection();
-  let selectedText = "";
-  if (selectedRange.from === selectedRange.to) {
-    selectedText = "";
-  } else {
-    const pageText = await editor.getText();
-    selectedText = pageText.slice(selectedRange.from, selectedRange.to);
-  }
-
-  return {
-    from: selectedRange.from,
-    to: selectedRange.to,
-    text: selectedText,
-  };
-}
-
-async function getSelectedTextOrNote() {
-  const selectedTextInfo = await getSelectedText();
-  const pageText = await editor.getText();
-  if (selectedTextInfo.text === "") {
-    return {
-      from: 0,
-      to: pageText.length,
-      text: pageText,
-      isWholeNote: true,
-    };
-  }
-  const isWholeNote = selectedTextInfo.from === 0 &&
-    selectedTextInfo.to === pageText.length;
-  return {
-    ...selectedTextInfo,
-    isWholeNote: isWholeNote,
-  };
-}
+import { aiSettings, apiKey, initializeOpenAI } from "./src/init.ts";
+import { getSelectedTextOrNote } from "./src/editorUtils.ts";
+import { convertPageToMessages, folderName } from "./src/utils.ts";
 
 /**
  * Summarizes the selected text or the entire note if no text is selected.
@@ -276,43 +202,6 @@ export async function streamChatOnPage() {
   await streamChatWithOpenAI(messages);
 }
 
-/**
- * Converts the current page into a list of messages for the LLM.
- * Each message is a line of text, with the role being the bolded word at the beginning of the line.
- * Each message can also be multiple lines.
- *
- * Valid roles are system, assistant, and user.
- *
- * @returns {Array<{ role: string; content: string }>}
- */
-export async function convertPageToMessages() {
-  const pageText = await editor.getText();
-  const lines = pageText.split("\n");
-  const messages = [];
-  let currentRole = "";
-  let contentBuffer = "";
-
-  lines.forEach((line) => {
-    const match = line.match(/^\*\*(\w+)\*\*:/);
-    if (match) {
-      const newRole = match[1].toLowerCase();
-      if (currentRole && currentRole !== newRole) {
-        messages.push({ role: currentRole, content: contentBuffer.trim() });
-        contentBuffer = "";
-      }
-      currentRole = newRole;
-      contentBuffer += line.replace(/^\*\*(\w+)\*\*:/, "").trim() + "\n";
-    } else if (currentRole) {
-      contentBuffer += line.trim() + "\n";
-    }
-  });
-  if (contentBuffer && currentRole) {
-    messages.push({ role: currentRole, content: contentBuffer.trim() });
-  }
-
-  return messages;
-}
-
 export async function streamChatWithOpenAI(
   messages: Array<{ role: string; content: string }> | {
     systemMessage: string;
@@ -438,10 +327,6 @@ export async function chatWithOpenAI(
     );
     throw error;
   }
-}
-
-function folderName(path: string) {
-  return path.split("/").slice(0, -1).join("/");
 }
 
 /**
