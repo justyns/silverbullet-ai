@@ -4,9 +4,13 @@ import {
 } from "$sb/lib/frontmatter.ts";
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
-import { getSelectedTextOrNote } from "./src/editorUtils.ts";
+import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import { initializeOpenAI } from "./src/init.ts";
-import { chatWithOpenAI, generateImageWithDallE, streamChatWithOpenAI } from "./src/openai.ts";
+import {
+  chatWithOpenAI,
+  generateImageWithDallE,
+  streamChatWithOpenAI,
+} from "./src/openai.ts";
 import { convertPageToMessages, folderName } from "./src/utils.ts";
 
 /**
@@ -201,6 +205,7 @@ export async function streamOpenAIWithSelectionAsPrompt() {
 
 /**
  * Streams a conversation with the LLM, but uses the current page as a sort of chat history.
+ * New responses are always appended to the end of the page.
  */
 export async function streamChatOnPage() {
   const messages = await convertPageToMessages();
@@ -210,8 +215,12 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  await editor.insertAtCursor("\n\n**assistant**: ");
+  // await editor.insertAtCursor("\n\n**assistant**: ");
+  const currentPageLength = await getPageLength();
+  await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
   await streamChatWithOpenAI(messages);
+  const newPageLength = await getPageLength();
+  await editor.insertAtPos("\n\n**user**: ", newPageLength);
 }
 
 /**

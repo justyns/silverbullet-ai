@@ -1,13 +1,14 @@
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { apiKey, aiSettings, initializeOpenAI } from "./init.ts";
+import { aiSettings, apiKey, initializeOpenAI } from "./init.ts";
+import { getPageLength } from "./editorUtils.ts";
 
 export async function streamChatWithOpenAI(
   messages: Array<{ role: string; content: string }> | {
     systemMessage: string;
     userMessage: string;
   },
-) {
+): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting LLM, please wait...");
@@ -40,19 +41,21 @@ export async function streamChatWithOpenAI(
     };
 
     const source = new SSE(sseUrl, sseOptions);
+    let cursorPos: number;
+    cursorPos = await getPageLength();
+    console.log("cursorPos before addeventlistener", cursorPos);
 
     source.addEventListener("message", function (e) {
       // console.log(e.data);
       try {
         // When done, we get [DONE} instead of an end event for some reason
         if (e.data == "[DONE]") {
-          if (isInteractiveChat) {
-            editor.insertAtCursor("\n\n**user**: ");
-          }
           source.close();
         } else {
           const data = JSON.parse(e.data);
-          editor.insertAtCursor(data.choices[0]?.delta?.content || "");
+          const msg = data.choices[0]?.delta?.content || "";
+          editor.insertAtPos(msg, cursorPos);
+          cursorPos += msg.length;
         }
       } catch (error) {
         console.error("Error processing message event:", error, e.data);
@@ -61,9 +64,6 @@ export async function streamChatWithOpenAI(
 
     // This is never really triggered
     source.addEventListener("end", function () {
-      if (isInteractiveChat) {
-        editor.insertAtCursor("\n\n**user**: ");
-      }
       source.close();
     });
 
@@ -78,6 +78,9 @@ export async function streamChatWithOpenAI(
   }
 }
 
+/**
+ * This is the non-streaming version.  I'll probably get rid of it soon in favor of always streaming the response.
+ */
 export async function chatWithOpenAI(
   systemMessage: string,
   userMessages: Array<{ role: string; content: string }>,

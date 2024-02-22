@@ -36,4 +36,9 @@ async function getSelectedTextOrNote() {
   };
 }
 
-export { getSelectedText, getSelectedTextOrNote };
+async function getPageLength() {
+  const pageText = await editor.getText();
+  return pageText.length;
+}
+
+export { getPageLength, getSelectedText, getSelectedTextOrNote };
