@@ -4,18 +4,12 @@ requiredPermissions:
 functions:
   reloadConfig:
     path: sbai.ts:reloadConfig
-    command:
-      name: "AI: Reload Config"
     events:
       - page:saved
   summarizeNote:
     path: sbai.ts:openSummaryPanel
     command:
       name: "AI: Summarize Note and open summary"
-  replaceWithSummary:
-    path: sbai.ts:replaceWithSummary
-    command:
-      name: "AI: Replace with Summary"
   insertSummary:
     path: sbai.ts:insertSummary
     command:
@@ -23,7 +17,7 @@ functions:
   callOpenAI:
     path: sbai.ts:callOpenAIwithNote
     command:
-      name: "AI: Call OpenAI with Note context"
+      name: "AI: Call OpenAI with Note as context"
   tagNoteWithAI:
     path: sbai.ts:tagNoteWithAI
     command:
@@ -32,10 +26,6 @@ functions:
     path: sbai.ts:promptAndGenerateImage
     command:
       name: "AI: Generate and insert image using DallE"
-  callOpenAIWithSelectionAsPrompt:
-    path: sbai.ts:callOpenAIWithSelectionAsPrompt
-    command:
-      name: "AI: Call OpenAI with selected text as prompt"
   streamOpenAIWithSelectionAsPrompt:
     path: sbai.ts:streamOpenAIWithSelectionAsPrompt
     command:

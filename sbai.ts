@@ -55,12 +55,12 @@ export async function summarizeNote() {
 /**
  * Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
  * If the user has no text selected, the entire note is used as the note content.
- * The response is inserted at the cursor position.
+ * The response is streamed to the cursor position.
  */
 export async function callOpenAIwithNote() {
   const selectedTextInfo = await getSelectedTextOrNote();
   const userPrompt = await editor.prompt(
-    "Please enter a prompt to send to the LLM.",
+    "Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context.",
   );
   const noteName = await editor.getCurrentPage();
   const currentDate = new Date();
@@ -68,49 +68,11 @@ export async function callOpenAIwithNote() {
   const dayString = currentDate.toLocaleDateString("en-US", {
     weekday: "long",
   });
-  const response = await chatWithOpenAI(
-    "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-    [{
-      role: "user",
-      content:
-        `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
-    }],
-  );
-  if (selectedTextInfo.isWholeNote) {
-    await editor.insertAtCursor(response.choices[0].message.content);
-  } else {
-    await editor.replaceRange(
-      selectedTextInfo.from,
-      selectedTextInfo.to,
-      response.choices[0].message.content,
-    );
-  }
-}
 
-/**
- * Uses either the selected text or the entire note as the prompt for the LLM.
- * No pre-defined prompt will be sent with the request.
- * The response is inserted at the cursor position if the whole note is used.  Otherwise
- * it will replace the selected text.
- */
-export async function callOpenAIWithSelectionAsPrompt() {
-  const selectedTextInfo = await getSelectedTextOrNote();
-  const response = await chatWithOpenAI(
-    "You are an AI note assistant in a markdown-based note tool.",
-    [{
-      role: "user",
-      content: `${selectedTextInfo.text}`,
-    }],
-  );
-  if (selectedTextInfo.isWholeNote) {
-    await editor.insertAtCursor(response.choices[0].message.content);
-  } else {
-    await editor.replaceRange(
-      selectedTextInfo.from,
-      selectedTextInfo.to,
-      response.choices[0].message.content,
-    );
-  }
+  await streamChatWithOpenAI({
+    systemMessage: "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+    userMessage: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+  }, selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to);
 }
 
 /**
@@ -123,21 +85,6 @@ export async function openSummaryPanel() {
     await editor.showPanel("rhs", 2, summary);
   } else {
     await editor.flashNotification("No summary available.");
-  }
-}
-
-/**
- * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
- * text.  Replaces the selected text with the summary.
- */
-export async function replaceWithSummary() {
-  const { summary, selectedTextInfo } = await summarizeNote();
-  if (summary && selectedTextInfo) {
-    await editor.replaceRange(
-      selectedTextInfo.from,
-      selectedTextInfo.to,
-      summary,
-    );
   }
 }
 
@@ -163,7 +110,7 @@ export async function tagNoteWithAI() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
   const response = await chatWithOpenAI(
-    "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.",
+    "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparringly, do not treat them as keywords.",
     [{
       role: "user",
       content:

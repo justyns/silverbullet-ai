@@ -8,6 +8,7 @@ export async function streamChatWithOpenAI(
     systemMessage: string;
     userMessage: string;
   },
+  cursorStart: number | undefined = undefined
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
@@ -45,7 +46,11 @@ export async function streamChatWithOpenAI(
 
     const source = new SSE(sseUrl, sseOptions);
     let cursorPos: number;
-    cursorPos = await getPageLength();
+    if (!cursorStart) {
+      cursorPos = await getPageLength();
+    } else {
+      cursorPos = cursorStart;
+    }
     console.log("cursorPos before addeventlistener", cursorPos);
 
     source.addEventListener("message", function (e) {

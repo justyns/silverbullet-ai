@@ -22,23 +22,18 @@ The list below are the commands available in this plugin.
 <!-- start-commands-and-functions -->
 - **AI: Summarize Note and open summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
 text.  Opens the resulting summary in a temporary right pane.
-- **AI: Replace with Summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
-text.  Replaces the selected text with the summary.
 - **AI: Insert Summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
 text.  Inserts the summary at the cursor's position.
-- **AI: Call OpenAI with Note context**: Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
+- **AI: Call OpenAI with Note as context**: Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
 If the user has no text selected, the entire note is used as the note content.
-The response is inserted at the cursor position.
+The response is streamed to the cursor position.
 - **AI: Generate tags for note**: Asks the LLM to generate tags for the current note.
 Generated tags are added to the note's frontmatter.
 - **AI: Generate and insert image using DallE**: Prompts the user for a custom prompt to send to DALL·E, then sends the prompt to DALL·E to generate an image.
 The resulting image is then uploaded to the space and inserted into the note with a caption.
-- **AI: Call OpenAI with selected text as prompt**: Uses either the selected text or the entire note as the prompt for the LLM.
-No pre-defined prompt will be sent with the request.
-The response is inserted at the cursor position if the whole note is used.  Otherwise
-it will replace the selected text.
 - **AI: Stream response with selection or note as prompt**: Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
 - **AI: Chat on current page**: Streams a conversation with the LLM, but uses the current page as a sort of chat history.
+New responses are always appended to the end of the page.
 
 <!-- end-commands-and-functions -->
 
