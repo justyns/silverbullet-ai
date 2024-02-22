@@ -36,7 +36,7 @@ export async function summarizeNote() {
   if (selectedTextInfo.text.length > 0) {
     const noteName = await editor.getCurrentPage();
     const response = await chatWithOpenAI(
-      "You are an AI Note assistant here to help summarize your personal notes.",
+      "You are an AI Note assistant here to help summarize the user's personal notes.",
       [{
         role: "user",
         content:

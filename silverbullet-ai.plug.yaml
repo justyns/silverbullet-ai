@@ -34,3 +34,5 @@ functions:
     path: sbai.ts:streamChatOnPage
     command:
       name: "AI: Chat on current page"
+      key: "Ctrl-Shift-Enter"
+      mac: "Cmd-Shift-Enter"

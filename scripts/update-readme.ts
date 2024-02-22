@@ -35,7 +35,7 @@ async function updateReadme(tag: string) {
 
   // Extract documentation for each command using jsdoc/tsdoc comments
   for (const [key, value] of Object.entries(commands)) {
-    if (typeof value === "object" && value.path) {
+    if (typeof value === "object" && value.path && value.command?.name) {
       const docs = extractDocsForFunction(value.path);
       console.log(`Documentation for ${key}: ${docs}`);
       commandsMarkdown += `- **${value.command.name}**: ${docs}\n`;

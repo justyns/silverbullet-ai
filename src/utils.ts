@@ -17,7 +17,7 @@ export async function convertPageToMessages() {
   const pageText = await editor.getText();
   const lines = pageText.split("\n");
   const messages = [];
-  let currentRole = "";
+  let currentRole = "user";
   let contentBuffer = "";
 
   lines.forEach((line) => {
