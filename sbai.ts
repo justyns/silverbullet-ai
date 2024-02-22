@@ -219,8 +219,9 @@ export async function streamChatOnPage() {
   const currentPageLength = await getPageLength();
   await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
   await streamChatWithOpenAI(messages);
-  const newPageLength = await getPageLength();
-  await editor.insertAtPos("\n\n**user**: ", newPageLength);
+  // TODO: How to wait for the stream to finish before adding user:
+  // const newPageLength = await getPageLength();
+  // await editor.insertAtPos("\n\n**user**: ", newPageLength);
 }
 
 /**

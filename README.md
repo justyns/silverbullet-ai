@@ -77,7 +77,10 @@ ai:
   # Run `ollama list` to see a list of models downloaded
   defaultTextModel: phi
   openAIBaseUrl: http://localhost:11434/v1
+  requireAuth: false
 ```
+
+**requireAuth**: When using Ollama and chrome, requireAuth needs to be set to false so that the Authorization header isn't set.  Otherwise you will get a CORS error.
 
 ### Mistral.ai
 

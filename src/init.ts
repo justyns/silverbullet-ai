@@ -12,6 +12,7 @@ let aiSettings: {
   defaultTextModel: string;
   openAIBaseUrl: string;
   dallEBaseUrl: string;
+  requireAuth: boolean;
 };
 
 async function initializeOpenAI() {
@@ -39,6 +40,7 @@ async function initializeOpenAI() {
     defaultTextModel: "gpt-3.5-turbo",
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
+    requireAuth: true,
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };

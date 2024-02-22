@@ -26,12 +26,15 @@ export async function streamChatWithOpenAI(
       isInteractiveChat = true;
     }
 
+    var headers = {
+      "Content-Type": "application/json",
+    };
+    if (aiSettings.requireAuth) {
+      headers['Authorization'] = `Bearer ${apiKey}`;
+    }
     const sseOptions = {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
+      headers: headers,
       payload: JSON.stringify({
         model: aiSettings.defaultTextModel,
         stream: true,
@@ -48,9 +51,12 @@ export async function streamChatWithOpenAI(
     source.addEventListener("message", function (e) {
       // console.log(e.data);
       try {
-        // When done, we get [DONE} instead of an end event for some reason
+        // When done, we get [DONE]
         if (e.data == "[DONE]") {
-          source.close();
+          source.close()
+          if (isInteractiveChat) {
+            editor.insertAtPos("\n\n**user**: ", cursorPos);
+          }
         } else {
           const data = JSON.parse(e.data);
           const msg = data.choices[0]?.delta?.content || "";
