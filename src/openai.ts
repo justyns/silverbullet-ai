@@ -68,6 +68,7 @@ export async function streamChatWithOpenAI(
           editor.insertAtPos(msg, cursorPos);
           cursorPos += msg.length;
         }
+        editor.moveCursor(cursorPos, true);
       } catch (error) {
         console.error("Error processing message event:", error, e.data);
       }
