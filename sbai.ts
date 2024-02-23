@@ -70,8 +70,10 @@ export async function callOpenAIwithNote() {
   });
 
   await streamChatWithOpenAI({
-    systemMessage: "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-    userMessage: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+    systemMessage:
+      "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+    userMessage:
+      `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
   }, selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to);
 }
 

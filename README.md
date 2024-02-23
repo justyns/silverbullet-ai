@@ -136,7 +136,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.5
+- ghr:justyns/silverbullet-ai/0.0.6
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.

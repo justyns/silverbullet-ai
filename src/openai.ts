@@ -8,7 +8,7 @@ export async function streamChatWithOpenAI(
     systemMessage: string;
     userMessage: string;
   },
-  cursorStart: number | undefined = undefined
+  cursorStart: number | undefined = undefined,
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
@@ -31,7 +31,7 @@ export async function streamChatWithOpenAI(
       "Content-Type": "application/json",
     };
     if (aiSettings.requireAuth) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
     const sseOptions = {
       method: "POST",
@@ -58,7 +58,7 @@ export async function streamChatWithOpenAI(
       try {
         // When done, we get [DONE]
         if (e.data == "[DONE]") {
-          source.close()
+          source.close();
           if (isInteractiveChat) {
             editor.insertAtPos("\n\n**user**: ", cursorPos);
           }
