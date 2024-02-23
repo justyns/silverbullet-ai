@@ -2,6 +2,10 @@ name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
+  # aiPromptSlashCommplete:
+  #   path: src/prompts.ts:aiPromptSlashComplete
+  #   events:
+  #   - slash:complete
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:
@@ -36,3 +40,8 @@ functions:
       name: "AI: Chat on current page"
       key: "Ctrl-Shift-Enter"
       mac: "Cmd-Shift-Enter"
+  insertAiPromptFromTemplate:
+    path: src/prompts.ts:insertAiPromptFromTemplate
+    command:
+      name: "AI: Execute AI Prompt from Custom Template"
+
