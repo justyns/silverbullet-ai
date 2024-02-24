@@ -54,7 +54,7 @@ export async function streamChatWithOpenAI(
     // const loadingMsg = `![loading](data:image/gif;base64,${loadingImg})`;
     // const loadingMsg = `<span class="loader"></span>`;
     // TODO: Get a simple css loading spinner to work
-    const loadingMsg = `… … …`;
+    const loadingMsg = ` 🤔 Thinking …`;
     await editor.insertAtPos(loadingMsg, cursorPos);
     let stillLoading = true;
 
