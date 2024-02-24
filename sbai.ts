@@ -205,7 +205,7 @@ export async function promptAndGenerateImage() {
 
       // And then insert it with the prompt dall-e rewrote for us
       // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long.  I'd like to let the user provide a template for how this looks.
-      const markdownImg = `![${prompt}](${finalFileName})\n*${revisedPrompt}*`;
+      const markdownImg = `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
