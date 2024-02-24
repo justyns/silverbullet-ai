@@ -8,27 +8,31 @@ import { getPageLength } from "./editorUtils.ts";
 // TODO: this doesn't work yet, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
-): Promise<SlashCompletion[]> {
+): Promise<{ options: SlashCompletion[] }> {
   const allTemplates = await queryObjects<TemplateObject>("template", {
     filter: ["attr", ["attr", "aiprompt"], "slashCommand"],
   }, 5);
-  return allTemplates.map((template) => {
-    const aiPromptTemplate = template.aiprompt!;
-    console.log("ai prompt template: ", aiPromptTemplate);
+  return {
+    options: allTemplates.map((template) => {
+      const aiPromptTemplate = template.aiprompt!;
+      console.log("ai prompt template: ", aiPromptTemplate);
 
-    return {
-      label: aiPromptTemplate.slashCommand,
-      detail: template.description,
-      order: aiPromptTemplate.order || 0,
-      templatePage: template.ref,
-      pageName: completeEvent.pageName,
-      // TODO: Replace with real function later
-      invoke: "prompts.insertAiPromptFromTemplate",
-      //   invoke: "prompts.insertAiPromptTemplate",
-    };
-  });
+      return {
+        label: aiPromptTemplate.slashCommand,
+        detail: template.description,
+        order: aiPromptTemplate.order || 0,
+        templatePage: template.ref,
+        pageName: completeEvent.pageName,
+        invoke: "prompts.insertAiPromptFromTemplate",
+      };
+    }),
+  };
 }
 
+/**
+ * Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
+ * Valid templates must have a value for aiprompt.description in the frontmatter.
+ */
 export async function insertAiPromptFromTemplate() {
   // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
   const aiPromptTemplates = await queryObjects<TemplateObject>("template", {

@@ -34,6 +34,8 @@ The resulting image is then uploaded to the space and inserted into the note wit
 - **AI: Stream response with selection or note as prompt**: Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
 - **AI: Chat on current page**: Streams a conversation with the LLM, but uses the current page as a sort of chat history.
 New responses are always appended to the end of the page.
+- **AI: Execute AI Prompt from Custom Template**: Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
+Valid templates must have a value for aiprompt.description in the frontmatter.
 
 <!-- end-commands-and-functions -->
 

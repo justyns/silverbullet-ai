@@ -65,7 +65,7 @@ export async function streamChatWithOpenAI(
         currentStateIndex = (currentStateIndex + 1) % spinnerStates.length;
         loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} …`;
         await editor.replaceRange(cursorPos, replaceTo, loadingMsg);
-        await new Promise(resolve => setTimeout(resolve, 250));
+        await new Promise((resolve) => setTimeout(resolve, 250));
       }
     };
     // updateLoadingSpinner(); // Start updating the spinner in the background
