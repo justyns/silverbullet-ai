@@ -49,27 +49,39 @@ export async function streamChatWithOpenAI(
     } else {
       cursorPos = cursorStart;
     }
-    // console.log("cursorPos before addeventlistener", cursorPos);
-
-    // const loadingMsg = `![loading](data:image/gif;base64,${loadingImg})`;
-    // const loadingMsg = `<span class="loader"></span>`;
-    // TODO: Get a simple css loading spinner to work
-    const loadingMsg = ` 🤔 Thinking …`;
+    // TODO: Leaving this here for now, but it doesn't quite work.  Need to fix it later.
+    // const spinnerStates = ['⏳', '⌛️', '⏳', '⌛️'];
+    // const spinnerStates = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    // const spinnerStates = ["…    ", "……  ", "……… ", "………"];
+    // let currentStateIndex = 0;
+    // let loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} `;
+    let loadingMsg = ` 🤔 Thinking …… `;
     await editor.insertAtPos(loadingMsg, cursorPos);
     let stillLoading = true;
 
+    const updateLoadingSpinner = async () => {
+      while (stillLoading) {
+        const replaceTo = cursorPos + loadingMsg.length;
+        currentStateIndex = (currentStateIndex + 1) % spinnerStates.length;
+        loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} …`;
+        await editor.replaceRange(cursorPos, replaceTo, loadingMsg);
+        await new Promise(resolve => setTimeout(resolve, 250));
+      }
+    };
+    // updateLoadingSpinner(); // Start updating the spinner in the background
+    // await new Promise(resolve => setTimeout(resolve, 10000));
+
     source.addEventListener("message", function (e) {
-      // console.log(e.data);
       try {
-        // When done, we get [DONE]
         if (e.data == "[DONE]") {
           source.close();
+          stillLoading = false;
         } else {
           const data = JSON.parse(e.data);
           const msg = data.choices[0]?.delta?.content || "";
           if (stillLoading) {
-            editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
             stillLoading = false;
+            editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
           } else {
             editor.insertAtPos(msg, cursorPos);
           }
@@ -83,7 +95,6 @@ export async function streamChatWithOpenAI(
       }
     });
 
-    // This is never really triggered
     source.addEventListener("end", function () {
       source.close();
     });
