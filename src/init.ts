@@ -19,7 +19,7 @@ async function initializeOpenAI() {
   const newApiKey = await readSecret("OPENAI_API_KEY");
   if (newApiKey !== apiKey) {
     apiKey = newApiKey;
-    await editor.flashNotification("silverbullet-ai API key updated");
+    console.log("silverbullet-ai API key updated");
   }
   if (!apiKey) {
     const errorMessage =
@@ -48,7 +48,6 @@ async function initializeOpenAI() {
     console.log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
     console.log("aiSettings updated to", aiSettings);
-    await editor.flashNotification("silverbullet-ai settings updated");
   } else {
     console.log("aiSettings unchanged", aiSettings);
   }
