@@ -24,7 +24,7 @@ export async function aiPromptSlashComplete(
       pageName: completeEvent.pageName,
       // TODO: Replace with real function later
       invoke: "prompts.insertAiPromptFromTemplate",
-    //   invoke: "prompts.insertAiPromptTemplate",
+      //   invoke: "prompts.insertAiPromptTemplate",
     };
   });
 }

@@ -13,7 +13,6 @@ export async function streamChatWithOpenAI(
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
-    await editor.flashNotification("Contacting LLM, please wait...");
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
     let payloadMessages;
@@ -50,7 +49,14 @@ export async function streamChatWithOpenAI(
     } else {
       cursorPos = cursorStart;
     }
-    console.log("cursorPos before addeventlistener", cursorPos);
+    // console.log("cursorPos before addeventlistener", cursorPos);
+
+    // const loadingMsg = `![loading](data:image/gif;base64,${loadingImg})`;
+    // const loadingMsg = `<span class="loader"></span>`;
+    // TODO: Get a simple css loading spinner to work
+    const loadingMsg = `… … …`;
+    await editor.insertAtPos(loadingMsg, cursorPos);
+    let stillLoading = true;
 
     source.addEventListener("message", function (e) {
       // console.log(e.data);
@@ -61,7 +67,12 @@ export async function streamChatWithOpenAI(
         } else {
           const data = JSON.parse(e.data);
           const msg = data.choices[0]?.delta?.content || "";
-          editor.insertAtPos(msg, cursorPos);
+          if (stillLoading) {
+            editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
+            stillLoading = false;
+          } else {
+            editor.insertAtPos(msg, cursorPos);
+          }
           cursorPos += msg.length;
         }
         if (cursorFollow) {
@@ -104,7 +115,6 @@ export async function chatWithOpenAI(
       );
       throw new Error("API key or AI settings are not properly configured.");
     }
-    await editor.flashNotification("Contacting LLM, please wait...");
     const response = await fetch(
       aiSettings.openAIBaseUrl + "/chat/completions",
       {
