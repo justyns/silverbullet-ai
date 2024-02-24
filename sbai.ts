@@ -164,13 +164,12 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  // await editor.insertAtCursor("\n\n**assistant**: ");
   const currentPageLength = await getPageLength();
   await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
-  await streamChatWithOpenAI(messages);
-  // TODO: How to wait for the stream to finish before adding user:
-  // const newPageLength = await getPageLength();
-  // await editor.insertAtPos("\n\n**user**: ", newPageLength);
+  const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
+  await editor.insertAtPos("\n\n**user**: ", newPageLength);
+  await editor.moveCursor(newPageLength + "\n\n**user**: ".length);
+  await streamChatWithOpenAI(messages, newPageLength);
 }
 
 /**

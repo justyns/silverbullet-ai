@@ -9,13 +9,13 @@ export async function streamChatWithOpenAI(
     userMessage: string;
   },
   cursorStart: number | undefined = undefined,
+  cursorFollow: boolean = false,
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting LLM, please wait...");
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
-    let isInteractiveChat = false;
     let payloadMessages;
     if ("systemMessage" in messages && "userMessage" in messages) {
       payloadMessages = [
@@ -24,7 +24,6 @@ export async function streamChatWithOpenAI(
       ];
     } else {
       payloadMessages = messages;
-      isInteractiveChat = true;
     }
 
     var headers = {
@@ -59,16 +58,15 @@ export async function streamChatWithOpenAI(
         // When done, we get [DONE]
         if (e.data == "[DONE]") {
           source.close();
-          if (isInteractiveChat) {
-            editor.insertAtPos("\n\n**user**: ", cursorPos);
-          }
         } else {
           const data = JSON.parse(e.data);
           const msg = data.choices[0]?.delta?.content || "";
           editor.insertAtPos(msg, cursorPos);
           cursorPos += msg.length;
         }
-        editor.moveCursor(cursorPos, true);
+        if (cursorFollow) {
+          editor.moveCursor(cursorPos, true);
+        }
       } catch (error) {
         console.error("Error processing message event:", error, e.data);
       }
