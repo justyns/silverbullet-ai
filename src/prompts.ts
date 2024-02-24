@@ -5,26 +5,29 @@ import { streamChatWithOpenAI } from "./openai.ts";
 import { renderTemplate } from "$sbplugs/template/api.ts";
 import { getPageLength } from "./editorUtils.ts";
 
-// TODO: this doesn't work, see https://github.com/silverbulletmd/silverbullet/issues/742
-// export async function aiPromptSlashComplete(
-//   completeEvent: CompleteEvent,
-// ): Promise<SlashCompletion[]> {
-//   const allTemplates = await queryObjects<TemplateObject>("template", {
-//     filter: ["attr", ["attr", ["attr", "hooks"], "aiprompt"], "slashCommand"],
-//   }, 5);
-//   return allTemplates.map((template) => {
-//     const aiPromptTemplate = template.hooks!.aiprompt!;
+// TODO: this doesn't work yet, see https://github.com/silverbulletmd/silverbullet/issues/742
+export async function aiPromptSlashComplete(
+  completeEvent: CompleteEvent,
+): Promise<SlashCompletion[]> {
+  const allTemplates = await queryObjects<TemplateObject>("template", {
+    filter: ["attr", ["attr", "aiprompt"], "slashCommand"],
+  }, 5);
+  return allTemplates.map((template) => {
+    const aiPromptTemplate = template.aiprompt!;
+    console.log("ai prompt template: ", aiPromptTemplate);
 
-//     return {
-//       label: aiPromptTemplate.slashCommand,
-//       detail: template.description,
-//       order: aiPromptTemplate.order || 0,
-//       templatePage: template.ref,
-//       pageName: completeEvent.pageName,
-//       invoke: "prompts.insertAiPromptTemplate",
-//     };
-//   });
-// }
+    return {
+      label: aiPromptTemplate.slashCommand,
+      detail: template.description,
+      order: aiPromptTemplate.order || 0,
+      templatePage: template.ref,
+      pageName: completeEvent.pageName,
+      // TODO: Replace with real function later
+      invoke: "prompts.insertAiPromptFromTemplate",
+    //   invoke: "prompts.insertAiPromptTemplate",
+    };
+  });
+}
 
 export async function insertAiPromptFromTemplate() {
   // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
@@ -43,6 +46,7 @@ export async function insertAiPromptFromTemplate() {
         systemPrompt: templateObj.aiprompt.systemPrompt ||
           "You are an AI note assistant. Please follow the prompt instructions.",
         insertAt: templateObj.aiprompt.insertAt || "cursor",
+        // parseAs: templateObj.aiprompt.parseAs || "markdown",
       };
     }),
     `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
