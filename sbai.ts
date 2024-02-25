@@ -70,8 +70,10 @@ export async function callOpenAIwithNote() {
   });
 
   await streamChatWithOpenAI({
-    systemMessage: "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-    userMessage: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+    systemMessage:
+      "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+    userMessage:
+      `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
   }, selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to);
 }
 
@@ -162,13 +164,12 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  // await editor.insertAtCursor("\n\n**assistant**: ");
   const currentPageLength = await getPageLength();
   await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
-  await streamChatWithOpenAI(messages);
-  // TODO: How to wait for the stream to finish before adding user:
-  // const newPageLength = await getPageLength();
-  // await editor.insertAtPos("\n\n**user**: ", newPageLength);
+  const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
+  await editor.insertAtPos("\n\n**user**: ", newPageLength);
+  await editor.moveCursor(newPageLength + "\n\n**user**: ".length);
+  await streamChatWithOpenAI(messages, newPageLength);
 }
 
 /**
@@ -204,7 +205,8 @@ export async function promptAndGenerateImage() {
 
       // And then insert it with the prompt dall-e rewrote for us
       // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long.  I'd like to let the user provide a template for how this looks.
-      const markdownImg = `![${prompt}](${finalFileName})\n*${revisedPrompt}*`;
+      const markdownImg =
+        `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
@@ -215,5 +217,29 @@ export async function promptAndGenerateImage() {
   } catch (error) {
     console.error("Error generating image with DALL·E:", error);
     await editor.flashNotification("Error generating image.", "error");
+  }
+}
+
+/**
+ * Function for use in templates, doesn't stream responses or insert anything into the editor - just returns the response
+ */
+export async function queryOpenAI(
+  userPrompt: string,
+  systemPrompt: string | undefined,
+): Promise<any> {
+  try {
+    const messages = [];
+    messages.push({ role: "user", content: userPrompt });
+    const defaultSystemPrompt =
+      "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";
+
+    const response = await chatWithOpenAI(
+      systemPrompt || defaultSystemPrompt,
+      messages,
+    );
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error querying OpenAI:", error);
+    throw error;
   }
 }

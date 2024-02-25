@@ -8,14 +8,13 @@ export async function streamChatWithOpenAI(
     systemMessage: string;
     userMessage: string;
   },
-  cursorStart: number | undefined = undefined
+  cursorStart: number | undefined = undefined,
+  cursorFollow: boolean = false,
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
-    await editor.flashNotification("Contacting LLM, please wait...");
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
-    let isInteractiveChat = false;
     let payloadMessages;
     if ("systemMessage" in messages && "userMessage" in messages) {
       payloadMessages = [
@@ -24,14 +23,13 @@ export async function streamChatWithOpenAI(
       ];
     } else {
       payloadMessages = messages;
-      isInteractiveChat = true;
     }
 
     var headers = {
       "Content-Type": "application/json",
     };
     if (aiSettings.requireAuth) {
-      headers['Authorization'] = `Bearer ${apiKey}`;
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
     const sseOptions = {
       method: "POST",
@@ -51,30 +49,52 @@ export async function streamChatWithOpenAI(
     } else {
       cursorPos = cursorStart;
     }
-    console.log("cursorPos before addeventlistener", cursorPos);
+    // TODO: Leaving this here for now, but it doesn't quite work.  Need to fix it later.
+    // const spinnerStates = ['⏳', '⌛️', '⏳', '⌛️'];
+    // const spinnerStates = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
+    // const spinnerStates = ["…    ", "……  ", "……… ", "………"];
+    // let currentStateIndex = 0;
+    // let loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} `;
+    let loadingMsg = ` 🤔 Thinking …… `;
+    await editor.insertAtPos(loadingMsg, cursorPos);
+    let stillLoading = true;
+
+    const updateLoadingSpinner = async () => {
+      while (stillLoading) {
+        const replaceTo = cursorPos + loadingMsg.length;
+        currentStateIndex = (currentStateIndex + 1) % spinnerStates.length;
+        loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} …`;
+        await editor.replaceRange(cursorPos, replaceTo, loadingMsg);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    };
+    // updateLoadingSpinner(); // Start updating the spinner in the background
+    // await new Promise(resolve => setTimeout(resolve, 10000));
 
     source.addEventListener("message", function (e) {
-      // console.log(e.data);
       try {
-        // When done, we get [DONE]
         if (e.data == "[DONE]") {
-          source.close()
-          if (isInteractiveChat) {
-            editor.insertAtPos("\n\n**user**: ", cursorPos);
-          }
+          source.close();
+          stillLoading = false;
         } else {
           const data = JSON.parse(e.data);
           const msg = data.choices[0]?.delta?.content || "";
-          editor.insertAtPos(msg, cursorPos);
+          if (stillLoading) {
+            stillLoading = false;
+            editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
+          } else {
+            editor.insertAtPos(msg, cursorPos);
+          }
           cursorPos += msg.length;
         }
-        editor.moveCursor(cursorPos, true);
+        if (cursorFollow) {
+          editor.moveCursor(cursorPos, true);
+        }
       } catch (error) {
         console.error("Error processing message event:", error, e.data);
       }
     });
 
-    // This is never really triggered
     source.addEventListener("end", function () {
       source.close();
     });
@@ -106,7 +126,6 @@ export async function chatWithOpenAI(
       );
       throw new Error("API key or AI settings are not properly configured.");
     }
-    await editor.flashNotification("Contacting LLM, please wait...");
     const response = await fetch(
       aiSettings.openAIBaseUrl + "/chat/completions",
       {

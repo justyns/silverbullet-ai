@@ -2,6 +2,15 @@ name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
+  # TODO: Re-enable after edge is released (0.7.2?)
+  # aiPromptSlashCommplete:
+  #   path: src/prompts.ts:aiPromptSlashComplete
+  #   events:
+  #   - slash:complete
+  queryOpenAI:
+    path: sbai.ts:queryOpenAI
+    # command:
+    #   name: "queryOpenAI"
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:
@@ -36,3 +45,8 @@ functions:
       name: "AI: Chat on current page"
       key: "Ctrl-Shift-Enter"
       mac: "Cmd-Shift-Enter"
+  insertAiPromptFromTemplate:
+    path: src/prompts.ts:insertAiPromptFromTemplate
+    command:
+      name: "AI: Execute AI Prompt from Custom Template"
+

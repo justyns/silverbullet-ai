@@ -34,6 +34,8 @@ The resulting image is then uploaded to the space and inserted into the note wit
 - **AI: Stream response with selection or note as prompt**: Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
 - **AI: Chat on current page**: Streams a conversation with the LLM, but uses the current page as a sort of chat history.
 New responses are always appended to the end of the page.
+- **AI: Execute AI Prompt from Custom Template**: Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
+Valid templates must have a value for aiprompt.description in the frontmatter.
 
 <!-- end-commands-and-functions -->
 
@@ -63,7 +65,7 @@ ai:
   dallEBaseUrl: "https://api.openai.com/v1",
 ```
 
-### Ollama
+#### Ollama
 
 To use Ollama locally, make sure you have it running first and the desired models downloaded.  Then, set the `openAIBaseUrl` to the url of your ollama instance:
 
@@ -77,7 +79,7 @@ ai:
 
 **requireAuth**: When using Ollama and chrome, requireAuth needs to be set to false so that the Authorization header isn't set.  Otherwise you will get a CORS error.
 
-### Mistral.ai
+#### Mistral.ai
 
 Mistral.ai is a hosted service that offers an openai-compatible api.  You can use it with settings like this:
 
@@ -88,6 +90,67 @@ ai:
 ```
 
 `OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from their web console.
+
+### Templated Prompts
+
+**NOTE:** All built-in prompts will be replaced with templated prompts eventually.
+
+As of 0.0.6, you can use template notes to create your own custom prompts to send to the LLM.
+
+Template notes make use of all of the template language available to SilverBullet. 
+
+To be a templated prompt, the note must have the following frontmatter:
+
+- `tags` must include `template` and `aiPrompt`
+- `aiprompt` object must exist and have a `description` key
+- Optionally, `aiprompt.systemPrompt` can be specified to override the system prompt
+
+For example, here is a templated prompt to summarize the current note and insert the summary at the cursor:
+
+``` markdown
+---
+tags:
+- template
+- aiPrompt
+
+aiprompt:
+  description: "Generate a summary of the current page."
+---
+
+Generate a short and concise summary of the note below. 
+
+title: {{@page.name}}
+Everything below is the content of the note: 
+{{readPage(@page.ref)}}
+```
+
+With the above note saved as `AI: Generate note summary`, you can run the `AI: Execute AI Prompt from Custom Template` command from the command palette, select the `AI: Generate note summary` template, and the summary will be streamed to the current cursor position.
+
+Another example prompt is to pull in remote pages via federation and ask the llm to generate a space script for you:
+
+```
+---
+tags:
+- template
+- aiPrompt
+
+aiprompt:
+  description: "Describe the space script functionality you want and generate it"
+  systemPrompt: "You are an expert javascript developer.  Help the user develop new functionality for their personal note taking tool."
+  slashCommand: aiSpaceScript
+---
+
+SilverBullet space script documentation:
+
+{{readPage([[!silverbullet.md/Space%20Script]])}}
+
+
+Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain silverbullet.registerFunction or silverbullet.registerCommand.
+
+title: {{@page.name}}
+Everything below is the content of the note: 
+{{readPage(@page.ref)}}
+```
 
 
 ## Cost (OpenAI)
@@ -136,7 +199,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.5
+- ghr:justyns/silverbullet-ai/0.0.6
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
