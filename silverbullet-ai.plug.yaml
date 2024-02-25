@@ -8,8 +8,8 @@ functions:
     - slash:complete
   queryOpenAI:
     path: sbai.ts:queryOpenAI
-    command:
-      name: "queryOpenAI"
+    # command:
+    #   name: "queryOpenAI"
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:

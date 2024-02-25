@@ -219,3 +219,27 @@ export async function promptAndGenerateImage() {
     await editor.flashNotification("Error generating image.", "error");
   }
 }
+
+/**
+ * Function for use in templates, doesn't stream responses or insert anything into the editor - just returns the response
+ */
+export async function queryOpenAI(
+  userPrompt: string,
+  systemPrompt: string | undefined,
+): Promise<any> {
+  try {
+    const messages = [];
+    messages.push({ role: "user", content: userPrompt });
+    const defaultSystemPrompt =
+      "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";
+
+    const response = await chatWithOpenAI(
+      systemPrompt || defaultSystemPrompt,
+      messages,
+    );
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error querying OpenAI:", error);
+    throw error;
+  }
+}
