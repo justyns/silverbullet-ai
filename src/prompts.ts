@@ -48,7 +48,7 @@ export async function insertAiPromptFromTemplate(
 ) {
   let selectedTemplate;
 
-  if (!slashCompletion) {
+  if (!slashCompletion || !slashCompletion.templatePage) {
     // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
     const aiPromptTemplates = await queryObjects<TemplateObject>("template", {
       filter: ["attr", ["attr", "aiprompt"], "description"],
