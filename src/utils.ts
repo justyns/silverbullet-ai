@@ -1,6 +1,6 @@
 import { editor } from "$sb/syscalls.ts";
 
-function folderName(path: string) {
+export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
 }
 
@@ -41,4 +41,21 @@ export async function convertPageToMessages() {
   return messages;
 }
 
-export { folderName };
+// Borrowed from https://github.com/joekrill/silverbullet-treeview/blob/main/compatability.ts
+// TODO: There's probably a library for comparing semver versions, but this works for now (thanks chatgpt)
+export async function supportsPlugSlashComplete() {
+  try {
+    const ver = await syscall("system.getVersion");
+    const [major, minor, patch] = ver.split(".").map(Number);
+    const [reqMajor, reqMinor, reqPatch] = "0.7.2".split(".").map(Number);
+    if (major > reqMajor) return true;
+    if (major === reqMajor && minor > reqMinor) return true;
+    if (major === reqMajor && minor === reqMinor && patch >= reqPatch) {
+      return true;
+    }
+    return false;
+  } catch (_err) {
+    // system.getVersion was added in edge before 0.7.2, so assume this wont' work if the call doesn't succeed
+    return false;
+  }
+}

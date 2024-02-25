@@ -29,12 +29,13 @@
     "turndown-plugin-gfm": "https://cdn.skypack.dev/@joplin/turndown-plugin-gfm@1.0.45",
 
     "$common/": "https://deno.land/x/silverbullet@0.7.1/common/",
-    "$lib/": "https://deno.land/x/silverbullet@0.7.1/lib/",
+    "$lib/": "../silverbullet/lib/",
     "$type/": "https://deno.land/x/silverbullet@0.7.1/type/",
 
     "preact": "https://esm.sh/preact@10.11.1",
     "$sb/": "https://deno.land/x/silverbullet@0.7.1/plug-api/",
     "$sbplugs/": "https://deno.land/x/silverbullet@0.7.1/plugs/",
+    "$plugos/": "https://deno.land/x/silverbullet@0.7.1/plugos/",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "$std/": "https://deno.land/std@0.189.0/"
   }

@@ -1,14 +1,24 @@
-import { CompleteEvent, SlashCompletion, TemplateObject } from "$type/types.ts";
-import { editor, space } from "$sb/syscalls.ts";
+import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
+import { editor, markdown, space } from "$sb/syscalls.ts";
 import { queryObjects } from "$sbplugs/index/plug_api.ts";
-import { streamChatWithOpenAI } from "./openai.ts";
 import { renderTemplate } from "$sbplugs/template/api.ts";
+import {
+  CompleteEvent,
+  SlashCompletion,
+  SlashCompletionOption,
+  TemplateObject,
+} from "$type/types.ts";
 import { getPageLength } from "./editorUtils.ts";
+import { streamChatWithOpenAI } from "./openai.ts";
+import { supportsPlugSlashComplete } from "./utils.ts";
 
-// TODO: this doesn't work yet, see https://github.com/silverbulletmd/silverbullet/issues/742
+// TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
-): Promise<{ options: SlashCompletion[] }> {
+): Promise<{ options: SlashCompletion[] } | void> {
+  if (!supportsPlugSlashComplete()) {
+    return;
+  }
   const allTemplates = await queryObjects<TemplateObject>("template", {
     filter: ["attr", ["attr", "aiprompt"], "slashCommand"],
   }, 5);
@@ -19,11 +29,11 @@ export async function aiPromptSlashComplete(
 
       return {
         label: aiPromptTemplate.slashCommand,
-        detail: template.description,
+        detail: aiPromptTemplate.description || template.description,
         order: aiPromptTemplate.order || 0,
         templatePage: template.ref,
         pageName: completeEvent.pageName,
-        invoke: "prompts.insertAiPromptFromTemplate",
+        invoke: "silverbullet-ai.insertAiPromptFromTemplate",
       };
     }),
   };
@@ -33,28 +43,46 @@ export async function aiPromptSlashComplete(
  * Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
  * Valid templates must have a value for aiprompt.description in the frontmatter.
  */
-export async function insertAiPromptFromTemplate() {
-  // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
-  const aiPromptTemplates = await queryObjects<TemplateObject>("template", {
-    filter: ["attr", ["attr", "aiprompt"], "description"],
-  });
+export async function insertAiPromptFromTemplate(
+  slashCompletion: SlashCompletionOption | undefined,
+) {
+  let selectedTemplate;
 
-  const selectedTemplate = await editor.filterBox(
-    "Prompt Template",
-    aiPromptTemplates.map((templateObj) => {
-      const niceName = templateObj.ref.split("/").pop()!;
-      return {
-        ...templateObj,
-        description: templateObj.aiprompt.description || templateObj.ref,
-        name: templateObj.aiprompt.displayName || niceName,
-        systemPrompt: templateObj.aiprompt.systemPrompt ||
-          "You are an AI note assistant. Please follow the prompt instructions.",
-        insertAt: templateObj.aiprompt.insertAt || "cursor",
-        // parseAs: templateObj.aiprompt.parseAs || "markdown",
-      };
-    }),
-    `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
-  );
+  if (!slashCompletion) {
+    // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
+    const aiPromptTemplates = await queryObjects<TemplateObject>("template", {
+      filter: ["attr", ["attr", "aiprompt"], "description"],
+    });
+
+    selectedTemplate = await editor.filterBox(
+      "Prompt Template",
+      aiPromptTemplates.map((templateObj) => {
+        const niceName = templateObj.ref.split("/").pop()!;
+        return {
+          ...templateObj,
+          description: templateObj.aiprompt.description || templateObj.ref,
+          name: templateObj.aiprompt.displayName || niceName,
+          systemPrompt: templateObj.aiprompt.systemPrompt ||
+            "You are an AI note assistant. Please follow the prompt instructions.",
+          insertAt: templateObj.aiprompt.insertAt || "cursor",
+          // parseAs: templateObj.aiprompt.parseAs || "markdown",
+        };
+      }),
+      `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
+    );
+  } else {
+    console.log("selectedTemplate from slash completion: ", slashCompletion);
+    const templatePage = await space.readPage(slashCompletion.templatePage);
+    const tree = await markdown.parseMarkdown(templatePage);
+    const { aiprompt } = await extractFrontmatter(tree);
+    console.log("templatePage from slash completion: ", templatePage);
+    selectedTemplate = {
+      ref: slashCompletion.templatePage,
+      systemPrompt: aiprompt.systemPrompt ||
+        "You are an AI note assistant. Please follow the prompt instructions.",
+      insertAt: aiprompt.insertAt || "cursor",
+    };
+  }
 
   if (!selectedTemplate) {
     await editor.flashNotification("No template selected");
@@ -67,7 +95,8 @@ export async function insertAiPromptFromTemplate() {
     "cursor",
     "page-start",
     "page-end",
-    "frontmatter",
+    // "frontmatter",
+    // "modal",
   ];
   if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
     console.error(
@@ -99,6 +128,9 @@ export async function insertAiPromptFromTemplate() {
         `rendering in frontmatter not supported yet`,
         "error",
       );
+      break;
+    case "modal":
+      // TODO: How do we handle modals?
       break;
     case "cursor":
     default:
