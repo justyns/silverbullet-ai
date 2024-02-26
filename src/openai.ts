@@ -10,11 +10,16 @@ import {
   initializeOpenAI,
 } from "./init.ts";
 
+import { ProviderInterface } from "./interfaces.ts";
+import { MessageSquare } from "https://esm.sh/preact-feather@4.2.1?external=preact";
+
 type StreamChatOptions = {
   messages: Array<ChatMessage> | {
-    systemMessage: string;
+    systemMessage?: string;
     userMessage: string;
   };
+  stream?: boolean;
+  onDataReceived?: (data: any) => void;
   cursorStart?: number;
   cursorFollow?: boolean;
   scrollIntoView?: boolean;
@@ -25,6 +30,131 @@ type HttpHeaders = {
   "Content-Type": string;
   "Authorization"?: string;
 };
+
+export class OpenAIProvider implements ProviderInterface {
+  name = 'OpenAI';
+  baseUrl: string;
+  apiKey: string;
+  requireAuth: boolean;
+  modelName: string;
+
+  constructor(apiKey: string, modelName: string, baseUrl: string, requireAuth: boolean) {
+    this.apiKey = apiKey;
+    this.modelName = modelName;
+    this.baseUrl = baseUrl;
+    this.requireAuth = requireAuth;
+  }
+
+  async chatWithAI({messages, stream, onDataReceived}: StreamChatOptions): Promise<any> {
+    if (stream) {
+      return await this.streamChat({messages, onDataReceived});
+    } else {
+      return await this.nonStreamingChat(messages);
+    }
+  }
+
+  async streamChat(options: StreamChatOptions): Promise<void> {
+    const {messages, onDataReceived} = options;
+
+    try {
+      const sseUrl = `${this.baseUrl}/chat/completions`;
+
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      const sseOptions = {
+        method: "POST",
+        headers: headers,
+        payload: JSON.stringify({
+          model: this.modelName,
+          stream: true,
+          messages: messages,
+        }),
+        withCredentials: false,
+      };
+
+      const source = new SSE(sseUrl, sseOptions);
+
+      source.addEventListener("message", function (e) {
+        try {
+          if (e.data == "[DONE]") {
+            source.close();
+          } else {
+            const data = JSON.parse(e.data);
+            const msg = data.choices[0]?.delta?.content || "";
+            // TODO: Send msg to a callback that should be registered to the interface
+            if (onDataReceived) {
+              onDataReceived(msg);
+            }
+          }
+        } catch (error) {
+          console.error("Error processing message event:", error, e.data);
+        }
+      });
+
+      source.addEventListener("end", function () {
+        source.close();
+      });
+
+      source.stream();
+    } catch (error) {
+      console.error("Error streaming from OpenAI chat endpoint:", error);
+      await editor.flashNotification(
+        "Error streaming from OpenAI chat endpoint.",
+        "error",
+      );
+      throw error;
+    }
+  }
+
+  async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {
+    try {
+      const body = JSON.stringify({
+        model: this.modelName,
+        messages: messages
+      });
+
+      const headers = {
+        "Authorization": `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json",
+      };
+
+
+      const response = await nativeFetch(
+        this.baseUrl + "/chat/completions",
+        {
+          method: "POST",
+          headers: headers,
+          body: body,
+        },
+      );
+
+      if (!response.ok) {
+        console.error("http response: ", response);
+        console.error("http response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data || !data.choices || data.choices.length === 0) {
+        throw new Error("Invalid response from OpenAI.");
+      }
+      return data;
+    } catch (error) {
+      console.error("Error calling OpenAI chat endpoint:", error);
+      await editor.flashNotification(
+        "Error calling OpenAI chat endpoint.",
+        "error",
+      );
+      throw error;
+    }
+  }
+}
 
 export async function streamChatWithOpenAI({
   messages,
@@ -173,14 +303,14 @@ export async function chatWithOpenAI(
       ],
     });
 
-    console.log("Sending body", body);
+    // console.log("Sending body", body);
 
     const headers = {
       "Authorization": `Bearer ${apiKey}`,
       "Content-Type": "application/json",
     };
 
-    console.log("Request headers:", headers);
+    // console.log("Request headers:", headers);
 
     const response = await nativeFetch(
       aiSettings.openAIBaseUrl + "/chat/completions",

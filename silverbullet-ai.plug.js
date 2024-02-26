@@ -1,27 +1,1748 @@
-var Ae=Object.defineProperty;var x=(e,t)=>{for(var r in t)Ae(e,r,{get:t[r],enumerable:!0})};var $=typeof window>"u"&&typeof globalThis.WebSocketPair>"u";typeof Deno>"u"&&(self.Deno={args:[],build:{arch:"x86_64"},env:{get(){}}});var B=new Map,j=0;function N(e){self.postMessage(e)}$&&(globalThis.syscall=async(e,...t)=>await new Promise((r,n)=>{j++,B.set(j,{resolve:r,reject:n}),N({type:"sys",id:j,name:e,args:t})}));function G(e,t){$&&(self.addEventListener("message",r=>{(async()=>{let n=r.data;switch(n.type){case"inv":{let o=e[n.name];if(!o)throw new Error(`Function not loaded: ${n.name}`);try{let i=await Promise.resolve(o(...n.args||[]));N({type:"invr",id:n.id,result:i})}catch(i){console.error("An exception was thrown as a result of invoking function",n.name,"error:",i.message),N({type:"invr",id:n.id,error:i.message})}}break;case"sysr":{let o=n.id,i=B.get(o);if(!i)throw Error("Invalid request id");B.delete(o),n.error?i.reject(new Error(n.error)):i.resolve(n.result)}break}})().catch(console.error)}),N({type:"manifest",manifest:t}))}function Te(e){let t=atob(e),r=t.length,n=new Uint8Array(r);for(let o=0;o<r;o++)n[o]=t.charCodeAt(o);return n}function Y(e){typeof e=="string"&&(e=new TextEncoder().encode(e));let t="",r=e.byteLength;for(let n=0;n<r;n++)t+=String.fromCharCode(e[n]);return btoa(t)}async function Se(e,t){if(typeof e!="string"){let r=new Uint8Array(await e.arrayBuffer()),n=r.length>0?Y(r):void 0;t={method:e.method,headers:Object.fromEntries(e.headers.entries()),base64Body:n},e=e.url}return syscall("sandboxFetch.fetch",e,t)}globalThis.nativeFetch=globalThis.fetch;function ve(){globalThis.fetch=async function(e,t){let r=t&&t.body?Y(new Uint8Array(await new Response(t.body).arrayBuffer())):void 0,n=await Se(e,t&&{method:t.method,headers:t.headers,base64Body:r});return new Response(n.base64Body?Te(n.base64Body):null,{status:n.status,headers:n.headers})}}$&&ve();function q(e){if(e.children)for(let t of e.children){if(t.parent)return;t.parent=e,q(t)}}function W(e,t){if(t(e))return[e];let r=[];if(e.children)for(let n of e.children)r=[...r,...W(n,t)];return r}async function z(e,t){if(await t(e))return[e];let r=[];if(e.children)for(let n of e.children)r=[...r,...await z(n,t)];return r}async function _(e,t){if(e.children){let r=e.children.slice();for(let n of r){let o=await t(n);if(o!==void 0){let i=e.children.indexOf(n);o?e.children.splice(i,1,o):e.children.splice(i,1)}else await _(n,t)}}}function V(e,t){return W(e,r=>r.type===t)[0]}function H(e,t){W(e,t)}async function Q(e,t){await z(e,t)}function P(e){if(!e)return"";let t=[];if(e.text!==void 0)return e.text;for(let r of e.children)t.push(P(r));return t.join("")}function F(e){if(!e||typeof e!="object")return e;if(Array.isArray(e))return e.map(F);let t={};for(let r of Object.keys(e)){let n=r.split("."),o=t;for(let i=0;i<n.length-1;i++){let c=n[i];o[c]||(o[c]={}),o=o[c]}o[n[n.length-1]]=F(e[r])}return t}var a={};x(a,{confirm:()=>Ze,dispatch:()=>Je,downloadFile:()=>$e,filterBox:()=>_e,flashNotification:()=>We,fold:()=>nt,foldAll:()=>it,getCurrentPage:()=>be,getCursor:()=>Oe,getSelection:()=>Me,getText:()=>Ee,getUiOption:()=>et,goHistory:()=>Be,hidePanel:()=>Ge,insertAtCursor:()=>Qe,insertAtPos:()=>Ye,moveCursor:()=>He,navigate:()=>ke,openCommandPalette:()=>Le,openPageNavigator:()=>Ue,openSearchPanel:()=>ct,openUrl:()=>je,prompt:()=>Xe,reloadPage:()=>Ke,reloadSettingsAndCommands:()=>De,reloadUI:()=>Re,replaceRange:()=>ze,save:()=>Fe,setPage:()=>Ce,setSelection:()=>Ne,setText:()=>Ie,setUiOption:()=>tt,showPanel:()=>Ve,toggleFold:()=>st,unfold:()=>ot,unfoldAll:()=>at,uploadFile:()=>qe,vimEx:()=>rt});typeof self>"u"&&(self={syscall:()=>{throw new Error("Not implemented here")}});var s=globalThis.syscall;function be(){return s("editor.getCurrentPage")}function Ce(e){return s("editor.setPage",e)}function Ee(){return s("editor.getText")}function Ie(e){return s("editor.setText",e)}function Oe(){return s("editor.getCursor")}function Me(){return s("editor.getSelection")}function Ne(e,t){return s("editor.setSelection",e,t)}function Fe(){return s("editor.save")}function ke(e,t=!1,r=!1){return s("editor.navigate",e,t,r)}function Ue(e="page"){return s("editor.openPageNavigator",e)}function Le(){return s("editor.openCommandPalette")}function Ke(){return s("editor.reloadPage")}function Re(){return s("editor.reloadUI")}function De(){return s("editor.reloadSettingsAndCommands")}function je(e,t=!1){return s("editor.openUrl",e,t)}function Be(e){return s("editor.goHistory",e)}function $e(e,t){return s("editor.downloadFile",e,t)}function qe(e,t){return s("editor.uploadFile",e,t)}function We(e,t="info"){return s("editor.flashNotification",e,t)}function _e(e,t,r="",n=""){return s("editor.filterBox",e,t,r,n)}function Ve(e,t,r,n=""){return s("editor.showPanel",e,t,r,n)}function Ge(e){return s("editor.hidePanel",e)}function Ye(e,t){return s("editor.insertAtPos",e,t)}function ze(e,t,r){return s("editor.replaceRange",e,t,r)}function He(e,t=!1){return s("editor.moveCursor",e,t)}function Qe(e){return s("editor.insertAtCursor",e)}function Je(e){return s("editor.dispatch",e)}function Xe(e,t=""){return s("editor.prompt",e,t)}function Ze(e){return s("editor.confirm",e)}function et(e){return s("editor.getUiOption",e)}function tt(e,t){return s("editor.setUiOption",e,t)}function rt(e){return s("editor.vimEx",e)}function nt(){return s("editor.fold")}function ot(){return s("editor.unfold")}function st(){return s("editor.toggleFold")}function it(){return s("editor.foldAll")}function at(){return s("editor.unfoldAll")}function ct(){return s("editor.openSearchPanel")}var y={};x(y,{parseMarkdown:()=>lt});function lt(e){return s("markdown.parseMarkdown",e)}var g={};x(g,{deleteAttachment:()=>wt,deleteFile:()=>bt,deletePage:()=>ft,getAttachmentMeta:()=>yt,getFileMeta:()=>St,getPageMeta:()=>pt,listAttachments:()=>ht,listFiles:()=>At,listPages:()=>mt,listPlugs:()=>gt,readAttachment:()=>xt,readFile:()=>Tt,readPage:()=>ut,writeAttachment:()=>Pt,writeFile:()=>vt,writePage:()=>dt});function mt(e=!1){return s("space.listPages",e)}function pt(e){return s("space.getPageMeta",e)}function ut(e){return s("space.readPage",e)}function dt(e,t){return s("space.writePage",e,t)}function ft(e){return s("space.deletePage",e)}function gt(){return s("space.listPlugs")}function ht(){return s("space.listAttachments")}function yt(e){return s("space.getAttachmentMeta",e)}function xt(e){return s("space.readAttachment",e)}function Pt(e,t){return s("space.writeAttachment",e,t)}function wt(e){return s("space.deleteAttachment",e)}function At(){return s("space.listFiles")}function Tt(e){return s("space.readFile",e)}function St(e){return s("space.getFileMeta",e)}function vt(e,t){return s("space.writeFile",e,t)}function bt(e){return s("space.deleteFile",e)}var k={};x(k,{getEnv:()=>Nt,getMode:()=>Ft,getVersion:()=>kt,invokeCommand:()=>Et,invokeFunction:()=>Ct,listCommands:()=>It,listSyscalls:()=>Ot,reloadPlugs:()=>Mt});function Ct(e,...t){return s("system.invokeFunction",e,...t)}function Et(e,t){return s("system.invokeCommand",e,t)}function It(){return s("system.listCommands")}function Ot(){return s("system.listSyscalls")}function Mt(){s("system.reloadPlugs")}function Nt(){return s("system.getEnv")}function Ft(){return s("system.getMode")}function kt(){return s("system.getVersion")}var C={};x(C,{parseTemplate:()=>jt,renderTemplate:()=>Dt});function Dt(e,t,r={}){return s("template.renderTemplate",e,t,r)}function jt(e){return s("template.parseTemplate",e)}var f={};x(f,{parse:()=>_t,stringify:()=>Vt});function _t(e){return s("yaml.parse",e)}function Vt(e){return s("yaml.stringify",e)}async function w(e,t={}){let r={tags:[]},n=[];return q(e),await _(e,async o=>{if(o.type==="Paragraph"&&o.parent?.type==="Document"){let i=!0,c=new Set;for(let l of o.children)if(l.text){if(l.text.startsWith(`
-`)&&l.text!==`
-`)break;if(l.text.trim()){i=!1;break}}else if(l.type==="Hashtag"){let m=l.children[0].text.substring(1);c.add(m),(t.removeTags===!0||t.removeTags?.includes(m))&&(l.children[0].text="")}else if(l.type){i=!1;break}i&&n.push(...c)}if(o.type==="FrontMatter"){let i=o.children[1].children[0],c=P(i);try{let l=await f.parse(c),m={...l};if(r={...r,...l},r.tags||(r.tags=[]),typeof r.tags=="string"&&n.push(...r.tags.split(/,\s*|\s+/)),Array.isArray(r.tags)&&n.push(...r.tags),t.removeKeys&&t.removeKeys.length>0){let p=!1;for(let u of t.removeKeys)u in m&&(delete m[u],p=!0);p&&(i.text=await f.stringify(m))}if(Object.keys(m).length===0||t.removeFrontmatterSection)return null}catch(l){console.warn("Could not parse frontmatter",l.message)}}}),r.tags=[...new Set([...n.map(o=>o.replace(/^#/,""))])],r=F(r),r}async function J(e,t){let r=null;if(await Q(e,async n=>{if(n.type==="FrontMatter"){let o=n.children[1].children[0],i=P(o);try{let c="";if(typeof t=="string")c=i+t+`
-`;else{let m={...await f.parse(i),...t};c=await f.stringify(m)}r={changes:{from:o.from,to:o.to,insert:c}}}catch(c){console.error("Error parsing YAML",c)}return!0}return!1}),!r){let n="";typeof t=="string"?n=t+`
-`:n=await f.stringify(t),r={changes:{from:0,to:0,insert:`---
-`+n+`---
-`}}}return r}var Or=new TextEncoder;function X(e){let t=atob(e),r=t.length,n=new Uint8Array(r);for(let o=0;o<r;o++)n[o]=t.charCodeAt(o);return n}async function zt(){let e=await a.getSelection(),t="";return e.from===e.to?t="":t=(await a.getText()).slice(e.from,e.to),{from:e.from,to:e.to,text:t}}async function U(){let e=await zt(),t=await a.getText();if(e.text==="")return{from:0,to:t.length,text:t,isWholeNote:!0};let r=e.from===0&&e.to===t.length;return{...e,isWholeNote:r}}async function A(){return(await a.getText()).length}async function Ht(e,t){let r=await g.readPage(e),n=await y.parseMarkdown(r),o;return H(n,i=>{if(i.type!=="FencedCode")return!1;let c=V(i,"CodeInfo");if(t&&!c||t&&!t.includes(c.children[0].text))return!1;let l=V(i,"CodeText");return l?(o=l.children[0].text,!0):!1}),o}async function L(e,t=["yaml"]){let r=await Ht(e,t);if(r!==void 0)try{return f.parse(r)}catch(n){throw console.error("YAML Page parser error",n),new Error(`YAML Error: ${n.message}`)}}async function Z(e){try{let r=(await L("SECRETS",["yaml","secrets"]))[e];if(r===void 0)throw new Error(`No such secret: ${e}`);return r}catch(t){throw t.message==="Not found"?new Error(`No such secret: ${e}`):t}}var Qt="SETTINGS";async function ee(e,t){try{let n=(await L(Qt,["yaml"])||{})[e];return n===void 0?t:n}catch(r){if(r.message==="Not found")return t;throw r}}var h,d,E;async function T(){let e=await Z("OPENAI_API_KEY");if(e!==h&&(h=e,console.log("silverbullet-ai API key updated")),!h){let o="OpenAI API key is missing. Please set it in the secrets page.";throw await a.flashNotification(o,"error"),new Error(o)}let t={defaultTextModel:"gpt-3.5-turbo",openAIBaseUrl:"https://api.openai.com/v1",dallEBaseUrl:"https://api.openai.com/v1",requireAuth:!0,chat:{}},r=await ee("ai",{}),n={...t,...r};JSON.stringify(d)!==JSON.stringify(n)?(console.log("aiSettings updating from",d),d=n,console.log("aiSettings updated to",d)):console.log("aiSettings unchanged",d),E={role:"system",content:"This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet."},d.chat.userInformation&&(E.content+=`
-The user has provided the following information about their self: ${d.chat.userInformation}`),d.chat.userInstructions&&(E.content+=`
-The user has provided the following instructions for the chat, follow them as closely as possible: ${d.chat.userInstructions}`)}var I=function(e,t){if(!(this instanceof I))return new I(e,t);this.INITIALIZING=-1,this.CONNECTING=0,this.OPEN=1,this.CLOSED=2,this.url=e,t=t||{},this.headers=t.headers||{},this.payload=t.payload!==void 0?t.payload:"",this.method=t.method||this.payload&&"POST"||"GET",this.withCredentials=!!t.withCredentials,this.debug=!!t.debug,this.FIELD_SEPARATOR=":",this.listeners={},this.xhr=null,this.readyState=this.INITIALIZING,this.progress=0,this.chunk="",this.addEventListener=function(r,n){this.listeners[r]===void 0&&(this.listeners[r]=[]),this.listeners[r].indexOf(n)===-1&&this.listeners[r].push(n)},this.removeEventListener=function(r,n){if(this.listeners[r]!==void 0){var o=[];this.listeners[r].forEach(function(i){i!==n&&o.push(i)}),o.length===0?delete this.listeners[r]:this.listeners[r]=o}},this.dispatchEvent=function(r){if(!r)return!0;this.debug&&console.debug(r),r.source=this;var n="on"+r.type;return this.hasOwnProperty(n)&&(this[n].call(this,r),r.defaultPrevented)?!1:this.listeners[r.type]?this.listeners[r.type].every(function(o){return o(r),!r.defaultPrevented}):!0},this._setReadyState=function(r){var n=new CustomEvent("readystatechange");n.readyState=r,this.readyState=r,this.dispatchEvent(n)},this._onStreamFailure=function(r){var n=new CustomEvent("error");n.data=r.currentTarget.response,this.dispatchEvent(n),this.close()},this._onStreamAbort=function(r){this.dispatchEvent(new CustomEvent("abort")),this.close()},this._onStreamProgress=function(r){if(this.xhr){if(this.xhr.status!==200){this._onStreamFailure(r);return}this.readyState==this.CONNECTING&&(this.dispatchEvent(new CustomEvent("open")),this._setReadyState(this.OPEN));var n=this.xhr.responseText.substring(this.progress);this.progress+=n.length;var o=(this.chunk+n).split(/(\r\n\r\n|\r\r|\n\n)/g),i=o.pop();o.forEach(function(c){c.trim().length>0&&this.dispatchEvent(this._parseEventChunk(c))}.bind(this)),this.chunk=i}},this._onStreamLoaded=function(r){this._onStreamProgress(r),this.dispatchEvent(this._parseEventChunk(this.chunk)),this.chunk=""},this._parseEventChunk=function(r){if(!r||r.length===0)return null;this.debug&&console.debug(r);var n={id:null,retry:null,data:null,event:null};r.split(/\n|\r\n|\r/).forEach(function(i){var c=i.indexOf(this.FIELD_SEPARATOR),l,m;if(c>0){var p=i[c+1]===" "?2:1;l=i.substring(0,c),m=i.substring(c+p)}else if(c<0)l=i,m="";else return;l in n&&(l==="data"&&n[l]!==null?n.data+=`
-`+m:n[l]=m)}.bind(this));var o=new CustomEvent(n.event||"message");return o.data=n.data||"",o.id=n.id,o},this._checkStreamClosed=function(){this.xhr&&this.xhr.readyState===XMLHttpRequest.DONE&&this._setReadyState(this.CLOSED)},this.stream=function(){if(!this.xhr){this._setReadyState(this.CONNECTING),this.xhr=new XMLHttpRequest,this.xhr.addEventListener("progress",this._onStreamProgress.bind(this)),this.xhr.addEventListener("load",this._onStreamLoaded.bind(this)),this.xhr.addEventListener("readystatechange",this._checkStreamClosed.bind(this)),this.xhr.addEventListener("error",this._onStreamFailure.bind(this)),this.xhr.addEventListener("abort",this._onStreamAbort.bind(this)),this.xhr.open(this.method,this.url);for(var r in this.headers)this.xhr.setRequestHeader(r,this.headers[r]);this.xhr.withCredentials=this.withCredentials,this.xhr.send(this.payload)}},this.close=function(){this.readyState!==this.CLOSED&&(this.xhr.abort(),this.xhr=null,this._setReadyState(this.CLOSED))},(t.start===void 0||t.start)&&this.stream()};typeof exports<"u"&&(exports.SSE=I);async function S({messages:e,cursorStart:t=void 0,cursorFollow:r=!1,scrollIntoView:n=!0,includeChatSystemPrompt:o=!1}){try{h||await T();let c=`${d.openAIBaseUrl}/chat/completions`,l=[];o&&l.push(E),"systemMessage"in e&&"userMessage"in e?l.push({role:"system",content:e.systemMessage},{role:"user",content:e.userMessage}):l.push(...e);var i={"Content-Type":"application/json"};d.requireAuth&&(i.Authorization=`Bearer ${h}`);let m={method:"POST",headers:i,payload:JSON.stringify({model:d.defaultTextModel,stream:!0,messages:l}),withCredentials:!1},p=new I(c,m),u;t?u=t:u=await A();let v=" \u{1F914} Thinking \u2026\u2026 ";await a.insertAtPos(v,u);let O=!0,Jt=async()=>{for(;O;){let b=u+v.length;currentStateIndex=(currentStateIndex+1)%spinnerStates.length,v=` \u{1F914} Thinking ${spinnerStates[currentStateIndex]} \u2026`,await a.replaceRange(u,b,v),await new Promise(M=>setTimeout(M,250))}};p.addEventListener("message",function(b){try{if(b.data=="[DONE]")p.close(),O=!1;else{let D=JSON.parse(b.data).choices[0]?.delta?.content||"";O?(O=!1,a.replaceRange(u,u+v.length,D)):a.insertAtPos(D,u),u+=D.length}r&&a.moveCursor(u,!0)}catch(M){console.error("Error processing message event:",M,b.data)}}),p.addEventListener("end",function(){p.close()}),p.stream()}catch(c){throw console.error("Error streaming from OpenAI chat endpoint:",c),await a.flashNotification("Error streaming from OpenAI chat endpoint.","error"),c}}async function K(e,t){try{if(h||await T(),!h||!d||!d.openAIBaseUrl)throw await a.flashNotification("API key or AI settings are not properly configured.","error"),new Error("API key or AI settings are not properly configured.");let r=JSON.stringify({model:d.defaultTextModel,messages:[{role:"system",content:e},...t]});console.log("Sending body",r);let n={Authorization:`Bearer ${h}`,"Content-Type":"application/json"};console.log("Request headers:",n);let o=await nativeFetch(d.openAIBaseUrl+"/chat/completions",{method:"POST",headers:n,body:r});if(!o.ok)throw console.error("http response: ",o),console.error("http response body: ",await o.json()),new Error(`HTTP error, status: ${o.status}`);let i=await o.json();if(!i||!i.choices||i.choices.length===0)throw new Error("Invalid response from OpenAI.");return i}catch(r){throw console.error("Error calling OpenAI chat endpoint:",r),await a.flashNotification("Error calling OpenAI chat endpoint.","error"),r}}async function te(e,t,r="1024x1024",n="hd"){try{h||await T(),await a.flashNotification("Contacting DALL\xB7E, please wait...");let o=await nativeFetch(d.dallEBaseUrl+"/images/generations",{method:"POST",headers:{Authorization:`Bearer ${h}`,"Content-Type":"application/json"},body:JSON.stringify({model:"dall-e-3",prompt:e,quality:n,n:t,size:r,response_format:"b64_json"})});if(!o.ok)throw new Error(`HTTP error, status: ${o.status}`);return await o.json()}catch(o){throw console.error("Error calling DALL\xB7E image generation endpoint:",o),o}}function re(e){return e.split("/").slice(0,-1).join("/")}async function ne(){let t=(await a.getText()).split(`
-`),r=[],n="user",o="";return t.forEach(i=>{let c=i.match(/^\*\*(\w+)\*\*:/);if(c){let l=c[1].toLowerCase();n&&n!==l&&(r.push({role:n,content:o.trim()}),o=""),n=l,o+=i.replace(/^\*\*(\w+)\*\*:/,"").trim()+`
-`}else n&&(o+=i.trim()+`
-`)}),o&&n&&r.push({role:n,content:o.trim()}),r}async function oe(e){(e==="SETTINGS"||e==="SECRETS")&&await T()}async function se(){let e=await U();if(console.log("selectedTextInfo",e),e.text.length>0){let t=await a.getCurrentPage(),r=await K("You are an AI Note assistant here to help summarize the user's personal notes.",[{role:"user",content:`Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${t}.
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 
-${e.text}`}]);return console.log("OpenAI response:",r),{summary:r.choices[0].message.content,selectedTextInfo:e}}return{summary:"",selectedTextInfo:null}}async function ie(){let e=await U(),t=await a.prompt("Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context."),r=await a.getCurrentPage(),n=new Date,o=n.toISOString().split("T")[0],i=n.toLocaleDateString("en-US",{weekday:"long"});await S({messages:{systemMessage:"You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",userMessage:`Note Context: Today is ${i}, ${o}. The current note name is "${r}".
-User Prompt: ${t}
+// https://deno.land/x/silverbullet@0.7.1/plugos/worker_runtime.ts
+var runningAsWebWorker = typeof window === "undefined" && // @ts-ignore: globalThis
+typeof globalThis.WebSocketPair === "undefined";
+if (typeof Deno === "undefined") {
+  self.Deno = {
+    args: [],
+    // @ts-ignore: Deno hack
+    build: {
+      arch: "x86_64"
+    },
+    env: {
+      // @ts-ignore: Deno hack
+      get() {
+      }
+    }
+  };
+}
+var pendingRequests = /* @__PURE__ */ new Map();
+var syscallReqId = 0;
+function workerPostMessage(msg) {
+  self.postMessage(msg);
+}
+if (runningAsWebWorker) {
+  globalThis.syscall = async (name, ...args) => {
+    return await new Promise((resolve, reject) => {
+      syscallReqId++;
+      pendingRequests.set(syscallReqId, { resolve, reject });
+      workerPostMessage({
+        type: "sys",
+        id: syscallReqId,
+        name,
+        args
+      });
+    });
+  };
+}
+function setupMessageListener(functionMapping2, manifest2) {
+  if (!runningAsWebWorker) {
+    return;
+  }
+  self.addEventListener("message", (event) => {
+    (async () => {
+      const data = event.data;
+      switch (data.type) {
+        case "inv":
+          {
+            const fn = functionMapping2[data.name];
+            if (!fn) {
+              throw new Error(`Function not loaded: ${data.name}`);
+            }
+            try {
+              const result = await Promise.resolve(fn(...data.args || []));
+              workerPostMessage({
+                type: "invr",
+                id: data.id,
+                result
+              });
+            } catch (e) {
+              console.error(
+                "An exception was thrown as a result of invoking function",
+                data.name,
+                "error:",
+                e.message
+              );
+              workerPostMessage({
+                type: "invr",
+                id: data.id,
+                error: e.message
+              });
+            }
+          }
+          break;
+        case "sysr":
+          {
+            const syscallId = data.id;
+            const lookup = pendingRequests.get(syscallId);
+            if (!lookup) {
+              throw Error("Invalid request id");
+            }
+            pendingRequests.delete(syscallId);
+            if (data.error) {
+              lookup.reject(new Error(data.error));
+            } else {
+              lookup.resolve(data.result);
+            }
+          }
+          break;
+      }
+    })().catch(console.error);
+  });
+  workerPostMessage({
+    type: "manifest",
+    manifest: manifest2
+  });
+}
+function base64Decode(s) {
+  const binString = atob(s);
+  const len = binString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return bytes;
+}
+function base64Encode(buffer) {
+  if (typeof buffer === "string") {
+    buffer = new TextEncoder().encode(buffer);
+  }
+  let binary = "";
+  const len = buffer.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(buffer[i]);
+  }
+  return btoa(binary);
+}
+async function sandboxFetch(reqInfo, options) {
+  if (typeof reqInfo !== "string") {
+    const body = new Uint8Array(await reqInfo.arrayBuffer());
+    const encodedBody = body.length > 0 ? base64Encode(body) : void 0;
+    options = {
+      method: reqInfo.method,
+      headers: Object.fromEntries(reqInfo.headers.entries()),
+      base64Body: encodedBody
+    };
+    reqInfo = reqInfo.url;
+  }
+  return syscall("sandboxFetch.fetch", reqInfo, options);
+}
+globalThis.nativeFetch = globalThis.fetch;
+function monkeyPatchFetch() {
+  globalThis.fetch = async function(reqInfo, init) {
+    const encodedBody = init && init.body ? base64Encode(
+      new Uint8Array(await new Response(init.body).arrayBuffer())
+    ) : void 0;
+    const r = await sandboxFetch(
+      reqInfo,
+      init && {
+        method: init.method,
+        headers: init.headers,
+        base64Body: encodedBody
+      }
+    );
+    return new Response(r.base64Body ? base64Decode(r.base64Body) : null, {
+      status: r.status,
+      headers: r.headers
+    });
+  };
+}
+if (runningAsWebWorker) {
+  monkeyPatchFetch();
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet/lib/tree.ts
+function addParentPointers(tree) {
+  if (!tree.children) {
+    return;
+  }
+  for (const child of tree.children) {
+    if (child.parent) {
+      return;
+    }
+    child.parent = tree;
+    addParentPointers(child);
+  }
+}
+function collectNodesMatching(tree, matchFn) {
+  if (matchFn(tree)) {
+    return [tree];
+  }
+  let results = [];
+  if (tree.children) {
+    for (const child of tree.children) {
+      results = [...results, ...collectNodesMatching(child, matchFn)];
+    }
+  }
+  return results;
+}
+async function collectNodesMatchingAsync(tree, matchFn) {
+  if (await matchFn(tree)) {
+    return [tree];
+  }
+  let results = [];
+  if (tree.children) {
+    for (const child of tree.children) {
+      results = [
+        ...results,
+        ...await collectNodesMatchingAsync(child, matchFn)
+      ];
+    }
+  }
+  return results;
+}
+async function replaceNodesMatchingAsync(tree, substituteFn) {
+  if (tree.children) {
+    const children = tree.children.slice();
+    for (const child of children) {
+      const subst = await substituteFn(child);
+      if (subst !== void 0) {
+        const pos = tree.children.indexOf(child);
+        if (subst) {
+          tree.children.splice(pos, 1, subst);
+        } else {
+          tree.children.splice(pos, 1);
+        }
+      } else {
+        await replaceNodesMatchingAsync(child, substituteFn);
+      }
+    }
+  }
+}
+function findNodeOfType(tree, nodeType) {
+  return collectNodesMatching(tree, (n) => n.type === nodeType)[0];
+}
+function traverseTree(tree, matchFn) {
+  collectNodesMatching(tree, matchFn);
+}
+async function traverseTreeAsync(tree, matchFn) {
+  await collectNodesMatchingAsync(tree, matchFn);
+}
+function renderToText(tree) {
+  if (!tree) {
+    return "";
+  }
+  const pieces = [];
+  if (tree.text !== void 0) {
+    return tree.text;
+  }
+  for (const child of tree.children) {
+    pieces.push(renderToText(child));
+  }
+  return pieces.join("");
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet/lib/json.ts
+function expandPropertyNames(a) {
+  if (!a) {
+    return a;
+  }
+  if (typeof a !== "object") {
+    return a;
+  }
+  if (Array.isArray(a)) {
+    return a.map(expandPropertyNames);
+  }
+  const expanded = {};
+  for (const key of Object.keys(a)) {
+    const parts = key.split(".");
+    let target = expanded;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!target[part]) {
+        target[part] = {};
+      }
+      target = target[part];
+    }
+    target[parts[parts.length - 1]] = expandPropertyNames(a[key]);
+  }
+  return expanded;
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/editor.ts
+var editor_exports = {};
+__export(editor_exports, {
+  confirm: () => confirm,
+  dispatch: () => dispatch,
+  downloadFile: () => downloadFile,
+  filterBox: () => filterBox,
+  flashNotification: () => flashNotification,
+  fold: () => fold,
+  foldAll: () => foldAll,
+  getCurrentPage: () => getCurrentPage,
+  getCursor: () => getCursor,
+  getSelection: () => getSelection,
+  getText: () => getText,
+  getUiOption: () => getUiOption,
+  goHistory: () => goHistory,
+  hidePanel: () => hidePanel,
+  insertAtCursor: () => insertAtCursor,
+  insertAtPos: () => insertAtPos,
+  moveCursor: () => moveCursor,
+  navigate: () => navigate,
+  openCommandPalette: () => openCommandPalette,
+  openPageNavigator: () => openPageNavigator,
+  openSearchPanel: () => openSearchPanel,
+  openUrl: () => openUrl,
+  prompt: () => prompt,
+  reloadPage: () => reloadPage,
+  reloadSettingsAndCommands: () => reloadSettingsAndCommands,
+  reloadUI: () => reloadUI,
+  replaceRange: () => replaceRange,
+  save: () => save,
+  setPage: () => setPage,
+  setSelection: () => setSelection,
+  setText: () => setText,
+  setUiOption: () => setUiOption,
+  showPanel: () => showPanel,
+  toggleFold: () => toggleFold,
+  unfold: () => unfold,
+  unfoldAll: () => unfoldAll,
+  uploadFile: () => uploadFile,
+  vimEx: () => vimEx
+});
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscall.ts
+if (typeof self === "undefined") {
+  self = {
+    syscall: () => {
+      throw new Error("Not implemented here");
+    }
+  };
+}
+var syscall2 = globalThis.syscall;
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/editor.ts
+function getCurrentPage() {
+  return syscall2("editor.getCurrentPage");
+}
+function setPage(newName) {
+  return syscall2("editor.setPage", newName);
+}
+function getText() {
+  return syscall2("editor.getText");
+}
+function setText(newText) {
+  return syscall2("editor.setText", newText);
+}
+function getCursor() {
+  return syscall2("editor.getCursor");
+}
+function getSelection() {
+  return syscall2("editor.getSelection");
+}
+function setSelection(from, to) {
+  return syscall2("editor.setSelection", from, to);
+}
+function save() {
+  return syscall2("editor.save");
+}
+function navigate(pageRef, replaceState = false, newWindow = false) {
+  return syscall2("editor.navigate", pageRef, replaceState, newWindow);
+}
+function openPageNavigator(mode = "page") {
+  return syscall2("editor.openPageNavigator", mode);
+}
+function openCommandPalette() {
+  return syscall2("editor.openCommandPalette");
+}
+function reloadPage() {
+  return syscall2("editor.reloadPage");
+}
+function reloadUI() {
+  return syscall2("editor.reloadUI");
+}
+function reloadSettingsAndCommands() {
+  return syscall2("editor.reloadSettingsAndCommands");
+}
+function openUrl(url, existingWindow = false) {
+  return syscall2("editor.openUrl", url, existingWindow);
+}
+function goHistory(delta) {
+  return syscall2("editor.goHistory", delta);
+}
+function downloadFile(filename, dataUrl) {
+  return syscall2("editor.downloadFile", filename, dataUrl);
+}
+function uploadFile(accept, capture) {
+  return syscall2("editor.uploadFile", accept, capture);
+}
+function flashNotification(message, type = "info") {
+  return syscall2("editor.flashNotification", message, type);
+}
+function filterBox(label, options, helpText = "", placeHolder = "") {
+  return syscall2("editor.filterBox", label, options, helpText, placeHolder);
+}
+function showPanel(id, mode, html, script = "") {
+  return syscall2("editor.showPanel", id, mode, html, script);
+}
+function hidePanel(id) {
+  return syscall2("editor.hidePanel", id);
+}
+function insertAtPos(text, pos) {
+  return syscall2("editor.insertAtPos", text, pos);
+}
+function replaceRange(from, to, text) {
+  return syscall2("editor.replaceRange", from, to, text);
+}
+function moveCursor(pos, center = false) {
+  return syscall2("editor.moveCursor", pos, center);
+}
+function insertAtCursor(text) {
+  return syscall2("editor.insertAtCursor", text);
+}
+function dispatch(change) {
+  return syscall2("editor.dispatch", change);
+}
+function prompt(message, defaultValue = "") {
+  return syscall2("editor.prompt", message, defaultValue);
+}
+function confirm(message) {
+  return syscall2("editor.confirm", message);
+}
+function getUiOption(key) {
+  return syscall2("editor.getUiOption", key);
+}
+function setUiOption(key, value) {
+  return syscall2("editor.setUiOption", key, value);
+}
+function vimEx(exCommand) {
+  return syscall2("editor.vimEx", exCommand);
+}
+function fold() {
+  return syscall2("editor.fold");
+}
+function unfold() {
+  return syscall2("editor.unfold");
+}
+function toggleFold() {
+  return syscall2("editor.toggleFold");
+}
+function foldAll() {
+  return syscall2("editor.foldAll");
+}
+function unfoldAll() {
+  return syscall2("editor.unfoldAll");
+}
+function openSearchPanel() {
+  return syscall2("editor.openSearchPanel");
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/markdown.ts
+var markdown_exports = {};
+__export(markdown_exports, {
+  parseMarkdown: () => parseMarkdown
+});
+function parseMarkdown(text) {
+  return syscall2("markdown.parseMarkdown", text);
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/space.ts
+var space_exports = {};
+__export(space_exports, {
+  deleteAttachment: () => deleteAttachment,
+  deleteFile: () => deleteFile,
+  deletePage: () => deletePage,
+  getAttachmentMeta: () => getAttachmentMeta,
+  getFileMeta: () => getFileMeta,
+  getPageMeta: () => getPageMeta,
+  listAttachments: () => listAttachments,
+  listFiles: () => listFiles,
+  listPages: () => listPages,
+  listPlugs: () => listPlugs,
+  readAttachment: () => readAttachment,
+  readFile: () => readFile,
+  readPage: () => readPage,
+  writeAttachment: () => writeAttachment,
+  writeFile: () => writeFile,
+  writePage: () => writePage
+});
+function listPages(unfiltered = false) {
+  return syscall2("space.listPages", unfiltered);
+}
+function getPageMeta(name) {
+  return syscall2("space.getPageMeta", name);
+}
+function readPage(name) {
+  return syscall2("space.readPage", name);
+}
+function writePage(name, text) {
+  return syscall2("space.writePage", name, text);
+}
+function deletePage(name) {
+  return syscall2("space.deletePage", name);
+}
+function listPlugs() {
+  return syscall2("space.listPlugs");
+}
+function listAttachments() {
+  return syscall2("space.listAttachments");
+}
+function getAttachmentMeta(name) {
+  return syscall2("space.getAttachmentMeta", name);
+}
+function readAttachment(name) {
+  return syscall2("space.readAttachment", name);
+}
+function writeAttachment(name, data) {
+  return syscall2("space.writeAttachment", name, data);
+}
+function deleteAttachment(name) {
+  return syscall2("space.deleteAttachment", name);
+}
+function listFiles() {
+  return syscall2("space.listFiles");
+}
+function readFile(name) {
+  return syscall2("space.readFile", name);
+}
+function getFileMeta(name) {
+  return syscall2("space.getFileMeta", name);
+}
+function writeFile(name, data) {
+  return syscall2("space.writeFile", name, data);
+}
+function deleteFile(name) {
+  return syscall2("space.deleteFile", name);
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/system.ts
+var system_exports = {};
+__export(system_exports, {
+  getEnv: () => getEnv,
+  getMode: () => getMode,
+  getVersion: () => getVersion,
+  invokeCommand: () => invokeCommand,
+  invokeFunction: () => invokeFunction,
+  listCommands: () => listCommands,
+  listSyscalls: () => listSyscalls,
+  reloadPlugs: () => reloadPlugs
+});
+function invokeFunction(name, ...args) {
+  return syscall2("system.invokeFunction", name, ...args);
+}
+function invokeCommand(name, args) {
+  return syscall2("system.invokeCommand", name, args);
+}
+function listCommands() {
+  return syscall2("system.listCommands");
+}
+function listSyscalls() {
+  return syscall2("system.listSyscalls");
+}
+function reloadPlugs() {
+  syscall2("system.reloadPlugs");
+}
+function getEnv() {
+  return syscall2("system.getEnv");
+}
+function getMode() {
+  return syscall2("system.getMode");
+}
+function getVersion() {
+  return syscall2("system.getVersion");
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/template.ts
+var template_exports = {};
+__export(template_exports, {
+  parseTemplate: () => parseTemplate,
+  renderTemplate: () => renderTemplate
+});
+function renderTemplate(template, obj, globals = {}) {
+  return syscall2("template.renderTemplate", template, obj, globals);
+}
+function parseTemplate(template) {
+  return syscall2("template.parseTemplate", template);
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/syscalls/yaml.ts
+var yaml_exports = {};
+__export(yaml_exports, {
+  parse: () => parse,
+  stringify: () => stringify
+});
+function parse(text) {
+  return syscall2("yaml.parse", text);
+}
+function stringify(obj) {
+  return syscall2("yaml.stringify", obj);
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/lib/frontmatter.ts
+async function extractFrontmatter(tree, options = {}) {
+  let data = {
+    tags: []
+  };
+  const tags = [];
+  addParentPointers(tree);
+  await replaceNodesMatchingAsync(tree, async (t) => {
+    if (t.type === "Paragraph" && t.parent?.type === "Document") {
+      let onlyTags = true;
+      const collectedTags = /* @__PURE__ */ new Set();
+      for (const child of t.children) {
+        if (child.text) {
+          if (child.text.startsWith("\n") && child.text !== "\n") {
+            break;
+          }
+          if (child.text.trim()) {
+            onlyTags = false;
+            break;
+          }
+        } else if (child.type === "Hashtag") {
+          const tagname = child.children[0].text.substring(1);
+          collectedTags.add(tagname);
+          if (options.removeTags === true || options.removeTags?.includes(tagname)) {
+            child.children[0].text = "";
+          }
+        } else if (child.type) {
+          onlyTags = false;
+          break;
+        }
+      }
+      if (onlyTags) {
+        tags.push(...collectedTags);
+      }
+    }
+    if (t.type === "FrontMatter") {
+      const yamlNode = t.children[1].children[0];
+      const yamlText = renderToText(yamlNode);
+      try {
+        const parsedData = await yaml_exports.parse(yamlText);
+        const newData = { ...parsedData };
+        data = { ...data, ...parsedData };
+        if (!data.tags) {
+          data.tags = [];
+        }
+        if (typeof data.tags === "string") {
+          tags.push(...data.tags.split(/,\s*|\s+/));
+        }
+        if (Array.isArray(data.tags)) {
+          tags.push(...data.tags);
+        }
+        if (options.removeKeys && options.removeKeys.length > 0) {
+          let removedOne = false;
+          for (const key of options.removeKeys) {
+            if (key in newData) {
+              delete newData[key];
+              removedOne = true;
+            }
+          }
+          if (removedOne) {
+            yamlNode.text = await yaml_exports.stringify(newData);
+          }
+        }
+        if (Object.keys(newData).length === 0 || options.removeFrontmatterSection) {
+          return null;
+        }
+      } catch (e) {
+        console.warn("Could not parse frontmatter", e.message);
+      }
+    }
+    return void 0;
+  });
+  data.tags = [.../* @__PURE__ */ new Set([...tags.map((t) => t.replace(/^#/, ""))])];
+  data = expandPropertyNames(data);
+  return data;
+}
+async function prepareFrontmatterDispatch(tree, data) {
+  let dispatchData = null;
+  await traverseTreeAsync(tree, async (t) => {
+    if (t.type === "FrontMatter") {
+      const bodyNode = t.children[1].children[0];
+      const yamlText = renderToText(bodyNode);
+      try {
+        let frontmatterText = "";
+        if (typeof data === "string") {
+          frontmatterText = yamlText + data + "\n";
+        } else {
+          const parsedYaml = await yaml_exports.parse(yamlText);
+          const newData = { ...parsedYaml, ...data };
+          frontmatterText = await yaml_exports.stringify(newData);
+        }
+        dispatchData = {
+          changes: {
+            from: bodyNode.from,
+            to: bodyNode.to,
+            insert: frontmatterText
+          }
+        };
+      } catch (e) {
+        console.error("Error parsing YAML", e);
+      }
+      return true;
+    }
+    return false;
+  });
+  if (!dispatchData) {
+    let frontmatterText = "";
+    if (typeof data === "string") {
+      frontmatterText = data + "\n";
+    } else {
+      frontmatterText = await yaml_exports.stringify(data);
+    }
+    const fullFrontmatterText = "---\n" + frontmatterText + "---\n";
+    dispatchData = {
+      changes: {
+        from: 0,
+        to: 0,
+        insert: fullFrontmatterText
+      }
+    };
+  }
+  return dispatchData;
+}
+
+// https://deno.land/std@0.216.0/encoding/_util.ts
+var encoder = new TextEncoder();
+
+// https://deno.land/std@0.216.0/encoding/base64.ts
+function decodeBase64(b64) {
+  const binString = atob(b64);
+  const size = binString.length;
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/src/editorUtils.ts
+async function getSelectedText() {
+  const selectedRange = await editor_exports.getSelection();
+  let selectedText = "";
+  if (selectedRange.from === selectedRange.to) {
+    selectedText = "";
+  } else {
+    const pageText = await editor_exports.getText();
+    selectedText = pageText.slice(selectedRange.from, selectedRange.to);
+  }
+  return {
+    from: selectedRange.from,
+    to: selectedRange.to,
+    text: selectedText
+  };
+}
+async function getSelectedTextOrNote() {
+  const selectedTextInfo = await getSelectedText();
+  const pageText = await editor_exports.getText();
+  if (selectedTextInfo.text === "") {
+    return {
+      from: 0,
+      to: pageText.length,
+      text: pageText,
+      isWholeNote: true
+    };
+  }
+  const isWholeNote = selectedTextInfo.from === 0 && selectedTextInfo.to === pageText.length;
+  return {
+    ...selectedTextInfo,
+    isWholeNote
+  };
+}
+async function getPageLength() {
+  const pageText = await editor_exports.getText();
+  return pageText.length;
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/lib/yaml_page.ts
+async function readCodeBlockPage(pageName, allowedLanguages) {
+  const text = await space_exports.readPage(pageName);
+  const tree = await markdown_exports.parseMarkdown(text);
+  let codeText;
+  traverseTree(tree, (t) => {
+    if (t.type !== "FencedCode") {
+      return false;
+    }
+    const codeInfoNode = findNodeOfType(t, "CodeInfo");
+    if (allowedLanguages && !codeInfoNode) {
+      return false;
+    }
+    if (allowedLanguages && !allowedLanguages.includes(codeInfoNode.children[0].text)) {
+      return false;
+    }
+    const codeTextNode = findNodeOfType(t, "CodeText");
+    if (!codeTextNode) {
+      return false;
+    }
+    codeText = codeTextNode.children[0].text;
+    return true;
+  });
+  return codeText;
+}
+async function readYamlPage(pageName, allowedLanguages = ["yaml"]) {
+  const codeText = await readCodeBlockPage(pageName, allowedLanguages);
+  if (codeText === void 0) {
+    return void 0;
+  }
+  try {
+    return yaml_exports.parse(codeText);
+  } catch (e) {
+    console.error("YAML Page parser error", e);
+    throw new Error(`YAML Error: ${e.message}`);
+  }
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/lib/secrets_page.ts
+async function readSecret(key) {
+  try {
+    const allSecrets = await readYamlPage("SECRETS", ["yaml", "secrets"]);
+    const val = allSecrets[key];
+    if (val === void 0) {
+      throw new Error(`No such secret: ${key}`);
+    }
+    return val;
+  } catch (e) {
+    if (e.message === "Not found") {
+      throw new Error(`No such secret: ${key}`);
+    }
+    throw e;
+  }
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plug-api/lib/settings_page.ts
+var SETTINGS_PAGE = "SETTINGS";
+async function readSetting(key, defaultValue) {
+  try {
+    const allSettings = await readYamlPage(SETTINGS_PAGE, ["yaml"]) || {};
+    const val = allSettings[key];
+    return val === void 0 ? defaultValue : val;
+  } catch (e) {
+    if (e.message === "Not found") {
+      return defaultValue;
+    }
+    throw e;
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/src/init.ts
+var apiKey;
+var aiSettings;
+var chatSystemPrompt;
+async function initializeOpenAI() {
+  const newApiKey = await readSecret("OPENAI_API_KEY");
+  if (newApiKey !== apiKey) {
+    apiKey = newApiKey;
+    console.log("silverbullet-ai API key updated");
+  }
+  if (!apiKey) {
+    const errorMessage = "OpenAI API key is missing. Please set it in the secrets page.";
+    await editor_exports.flashNotification(errorMessage, "error");
+    throw new Error(errorMessage);
+  }
+  const defaultSettings = {
+    // TODO: These aren't used yet
+    // summarizePrompt:
+    //   "Summarize this note. Use markdown for any formatting. The note name is ${noteName}",
+    // tagPrompt:
+    //   'You are an AI tagging assistant. Given the note titled "${noteName}" with the content below, please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.',
+    // imagePrompt:
+    //   "Please rewrite the following prompt for better image generation:",
+    // temperature: 0.5,
+    // maxTokens: 1000,
+    defaultTextModel: "gpt-3.5-turbo",
+    openAIBaseUrl: "https://api.openai.com/v1",
+    dallEBaseUrl: "https://api.openai.com/v1",
+    requireAuth: true,
+    chat: {}
+  };
+  const newSettings = await readSetting("ai", {});
+  const newCombinedSettings = { ...defaultSettings, ...newSettings };
+  if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
+    console.log("aiSettings updating from", aiSettings);
+    aiSettings = newCombinedSettings;
+    console.log("aiSettings updated to", aiSettings);
+  } else {
+    console.log("aiSettings unchanged", aiSettings);
+  }
+  chatSystemPrompt = {
+    role: "system",
+    content: `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet.`
+  };
+  if (aiSettings.chat.userInformation) {
+    chatSystemPrompt.content += `
+The user has provided the following information about their self: ${aiSettings.chat.userInformation}`;
+  }
+  if (aiSettings.chat.userInstructions) {
+    chatSystemPrompt.content += `
+The user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
+  }
+}
+
+// ../../../../../../Users/justyns/Library/Caches/deno/deno_esbuild/sse.js@2.2.0/node_modules/sse.js/lib/sse.js
+var SSE = function(url, options) {
+  if (!(this instanceof SSE)) {
+    return new SSE(url, options);
+  }
+  this.INITIALIZING = -1;
+  this.CONNECTING = 0;
+  this.OPEN = 1;
+  this.CLOSED = 2;
+  this.url = url;
+  options = options || {};
+  this.headers = options.headers || {};
+  this.payload = options.payload !== void 0 ? options.payload : "";
+  this.method = options.method || (this.payload && "POST" || "GET");
+  this.withCredentials = !!options.withCredentials;
+  this.debug = !!options.debug;
+  this.FIELD_SEPARATOR = ":";
+  this.listeners = {};
+  this.xhr = null;
+  this.readyState = this.INITIALIZING;
+  this.progress = 0;
+  this.chunk = "";
+  this.addEventListener = function(type, listener) {
+    if (this.listeners[type] === void 0) {
+      this.listeners[type] = [];
+    }
+    if (this.listeners[type].indexOf(listener) === -1) {
+      this.listeners[type].push(listener);
+    }
+  };
+  this.removeEventListener = function(type, listener) {
+    if (this.listeners[type] === void 0) {
+      return;
+    }
+    var filtered = [];
+    this.listeners[type].forEach(function(element) {
+      if (element !== listener) {
+        filtered.push(element);
+      }
+    });
+    if (filtered.length === 0) {
+      delete this.listeners[type];
+    } else {
+      this.listeners[type] = filtered;
+    }
+  };
+  this.dispatchEvent = function(e) {
+    if (!e) {
+      return true;
+    }
+    if (this.debug) {
+      console.debug(e);
+    }
+    e.source = this;
+    var onHandler = "on" + e.type;
+    if (this.hasOwnProperty(onHandler)) {
+      this[onHandler].call(this, e);
+      if (e.defaultPrevented) {
+        return false;
+      }
+    }
+    if (this.listeners[e.type]) {
+      return this.listeners[e.type].every(function(callback) {
+        callback(e);
+        return !e.defaultPrevented;
+      });
+    }
+    return true;
+  };
+  this._setReadyState = function(state) {
+    var event = new CustomEvent("readystatechange");
+    event.readyState = state;
+    this.readyState = state;
+    this.dispatchEvent(event);
+  };
+  this._onStreamFailure = function(e) {
+    var event = new CustomEvent("error");
+    event.data = e.currentTarget.response;
+    this.dispatchEvent(event);
+    this.close();
+  };
+  this._onStreamAbort = function(e) {
+    this.dispatchEvent(new CustomEvent("abort"));
+    this.close();
+  };
+  this._onStreamProgress = function(e) {
+    if (!this.xhr) {
+      return;
+    }
+    if (this.xhr.status !== 200) {
+      this._onStreamFailure(e);
+      return;
+    }
+    if (this.readyState == this.CONNECTING) {
+      this.dispatchEvent(new CustomEvent("open"));
+      this._setReadyState(this.OPEN);
+    }
+    var data = this.xhr.responseText.substring(this.progress);
+    this.progress += data.length;
+    var parts = (this.chunk + data).split(/(\r\n\r\n|\r\r|\n\n)/g);
+    var lastPart = parts.pop();
+    parts.forEach(function(part) {
+      if (part.trim().length > 0) {
+        this.dispatchEvent(this._parseEventChunk(part));
+      }
+    }.bind(this));
+    this.chunk = lastPart;
+  };
+  this._onStreamLoaded = function(e) {
+    this._onStreamProgress(e);
+    this.dispatchEvent(this._parseEventChunk(this.chunk));
+    this.chunk = "";
+  };
+  this._parseEventChunk = function(chunk) {
+    if (!chunk || chunk.length === 0) {
+      return null;
+    }
+    if (this.debug) {
+      console.debug(chunk);
+    }
+    var e = { "id": null, "retry": null, "data": null, "event": null };
+    chunk.split(/\n|\r\n|\r/).forEach(function(line) {
+      var index = line.indexOf(this.FIELD_SEPARATOR);
+      var field, value;
+      if (index > 0) {
+        var skip = line[index + 1] === " " ? 2 : 1;
+        field = line.substring(0, index);
+        value = line.substring(index + skip);
+      } else if (index < 0) {
+        field = line;
+        value = "";
+      } else {
+        return;
+      }
+      if (!(field in e)) {
+        return;
+      }
+      if (field === "data" && e[field] !== null) {
+        e["data"] += "\n" + value;
+      } else {
+        e[field] = value;
+      }
+    }.bind(this));
+    var event = new CustomEvent(e.event || "message");
+    event.data = e.data || "";
+    event.id = e.id;
+    return event;
+  };
+  this._checkStreamClosed = function() {
+    if (!this.xhr) {
+      return;
+    }
+    if (this.xhr.readyState === XMLHttpRequest.DONE) {
+      this._setReadyState(this.CLOSED);
+    }
+  };
+  this.stream = function() {
+    if (this.xhr) {
+      return;
+    }
+    this._setReadyState(this.CONNECTING);
+    this.xhr = new XMLHttpRequest();
+    this.xhr.addEventListener("progress", this._onStreamProgress.bind(this));
+    this.xhr.addEventListener("load", this._onStreamLoaded.bind(this));
+    this.xhr.addEventListener("readystatechange", this._checkStreamClosed.bind(this));
+    this.xhr.addEventListener("error", this._onStreamFailure.bind(this));
+    this.xhr.addEventListener("abort", this._onStreamAbort.bind(this));
+    this.xhr.open(this.method, this.url);
+    for (var header in this.headers) {
+      this.xhr.setRequestHeader(header, this.headers[header]);
+    }
+    this.xhr.withCredentials = this.withCredentials;
+    this.xhr.send(this.payload);
+  };
+  this.close = function() {
+    if (this.readyState === this.CLOSED) {
+      return;
+    }
+    this.xhr.abort();
+    this.xhr = null;
+    this._setReadyState(this.CLOSED);
+  };
+  if (options.start === void 0 || options.start) {
+    this.stream();
+  }
+};
+if (typeof exports !== "undefined") {
+  exports.SSE = SSE;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/src/openai.ts
+async function streamChatWithOpenAI({
+  messages,
+  cursorStart = void 0,
+  cursorFollow = false,
+  scrollIntoView = true,
+  includeChatSystemPrompt = false
+}) {
+  try {
+    if (!apiKey)
+      await initializeOpenAI();
+    const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
+    const payloadMessages = [];
+    if (includeChatSystemPrompt) {
+      payloadMessages.push(chatSystemPrompt);
+    }
+    if ("systemMessage" in messages && "userMessage" in messages) {
+      payloadMessages.push(
+        { role: "system", content: messages.systemMessage },
+        { role: "user", content: messages.userMessage }
+      );
+    } else {
+      payloadMessages.push(...messages);
+    }
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (aiSettings.requireAuth) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+    }
+    const sseOptions = {
+      method: "POST",
+      headers,
+      payload: JSON.stringify({
+        model: aiSettings.defaultTextModel,
+        stream: true,
+        messages: payloadMessages
+      }),
+      withCredentials: false
+    };
+    const source = new SSE(sseUrl, sseOptions);
+    let cursorPos;
+    if (!cursorStart) {
+      cursorPos = await getPageLength();
+    } else {
+      cursorPos = cursorStart;
+    }
+    let loadingMsg = ` \u{1F914} Thinking \u2026\u2026 `;
+    await editor_exports.insertAtPos(loadingMsg, cursorPos);
+    let stillLoading = true;
+    const updateLoadingSpinner = async () => {
+      while (stillLoading) {
+        const replaceTo = cursorPos + loadingMsg.length;
+        currentStateIndex = (currentStateIndex + 1) % spinnerStates.length;
+        loadingMsg = ` \u{1F914} Thinking ${spinnerStates[currentStateIndex]} \u2026`;
+        await editor_exports.replaceRange(cursorPos, replaceTo, loadingMsg);
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    };
+    source.addEventListener("message", function(e) {
+      try {
+        if (e.data == "[DONE]") {
+          source.close();
+          stillLoading = false;
+        } else {
+          const data = JSON.parse(e.data);
+          const msg = data.choices[0]?.delta?.content || "";
+          if (stillLoading) {
+            stillLoading = false;
+            editor_exports.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
+          } else {
+            editor_exports.insertAtPos(msg, cursorPos);
+          }
+          cursorPos += msg.length;
+        }
+        if (cursorFollow) {
+          editor_exports.moveCursor(cursorPos, true);
+        }
+        if (scrollIntoView) {
+        }
+      } catch (error) {
+        console.error("Error processing message event:", error, e.data);
+      }
+    });
+    source.addEventListener("end", function() {
+      source.close();
+    });
+    source.stream();
+  } catch (error) {
+    console.error("Error streaming from OpenAI chat endpoint:", error);
+    await editor_exports.flashNotification(
+      "Error streaming from OpenAI chat endpoint.",
+      "error"
+    );
+    throw error;
+  }
+}
+async function chatWithOpenAI(systemMessage, userMessages) {
+  try {
+    if (!apiKey)
+      await initializeOpenAI();
+    if (!apiKey || !aiSettings || !aiSettings.openAIBaseUrl) {
+      await editor_exports.flashNotification(
+        "API key or AI settings are not properly configured.",
+        "error"
+      );
+      throw new Error("API key or AI settings are not properly configured.");
+    }
+    const body = JSON.stringify({
+      model: aiSettings.defaultTextModel,
+      messages: [
+        { role: "system", content: systemMessage },
+        ...userMessages
+      ]
+    });
+    console.log("Sending body", body);
+    const headers = {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    };
+    console.log("Request headers:", headers);
+    const response = await nativeFetch(
+      aiSettings.openAIBaseUrl + "/chat/completions",
+      {
+        method: "POST",
+        headers,
+        body
+      }
+    );
+    if (!response.ok) {
+      console.error("http response: ", response);
+      console.error("http response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data || !data.choices || data.choices.length === 0) {
+      throw new Error("Invalid response from OpenAI.");
+    }
+    return data;
+  } catch (error) {
+    console.error("Error calling OpenAI chat endpoint:", error);
+    await editor_exports.flashNotification(
+      "Error calling OpenAI chat endpoint.",
+      "error"
+    );
+    throw error;
+  }
+}
+async function generateImageWithDallE(prompt2, n, size = "1024x1024", quality = "hd") {
+  try {
+    if (!apiKey)
+      await initializeOpenAI();
+    await editor_exports.flashNotification("Contacting DALL\xB7E, please wait...");
+    const response = await nativeFetch(
+      aiSettings.dallEBaseUrl + "/images/generations",
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "dall-e-3",
+          prompt: prompt2,
+          quality,
+          n,
+          size,
+          response_format: "b64_json"
+        })
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error calling DALL\xB7E image generation endpoint:", error);
+    throw error;
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/src/utils.ts
+function folderName(path) {
+  return path.split("/").slice(0, -1).join("/");
+}
+async function convertPageToMessages() {
+  const pageText = await editor_exports.getText();
+  const lines = pageText.split("\n");
+  const messages = [];
+  let currentRole = "user";
+  let contentBuffer = "";
+  lines.forEach((line) => {
+    const match = line.match(/^\*\*(\w+)\*\*:/);
+    if (match) {
+      const newRole = match[1].toLowerCase();
+      if (currentRole && currentRole !== newRole) {
+        messages.push(
+          { role: currentRole, content: contentBuffer.trim() }
+        );
+        contentBuffer = "";
+      }
+      currentRole = newRole;
+      contentBuffer += line.replace(/^\*\*(\w+)\*\*:/, "").trim() + "\n";
+    } else if (currentRole) {
+      contentBuffer += line.trim() + "\n";
+    }
+  });
+  if (contentBuffer && currentRole) {
+    messages.push(
+      { role: currentRole, content: contentBuffer.trim() }
+    );
+  }
+  return messages;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/sbai.ts
+async function reloadConfig(pageName) {
+  if (pageName === "SETTINGS" || pageName === "SECRETS") {
+    await initializeOpenAI();
+  }
+}
+async function summarizeNote() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  console.log("selectedTextInfo", selectedTextInfo);
+  if (selectedTextInfo.text.length > 0) {
+    const noteName = await editor_exports.getCurrentPage();
+    const response = await chatWithOpenAI(
+      "You are an AI Note assistant here to help summarize the user's personal notes.",
+      [{
+        role: "user",
+        content: `Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${noteName}.
+
+${selectedTextInfo.text}`
+      }]
+    );
+    console.log("OpenAI response:", response);
+    return {
+      summary: response.choices[0].message.content,
+      selectedTextInfo
+    };
+  }
+  return { summary: "", selectedTextInfo: null };
+}
+async function callOpenAIwithNote() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  const userPrompt = await editor_exports.prompt(
+    "Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context."
+  );
+  const noteName = await editor_exports.getCurrentPage();
+  const currentDate = /* @__PURE__ */ new Date();
+  const dateString = currentDate.toISOString().split("T")[0];
+  const dayString = currentDate.toLocaleDateString("en-US", {
+    weekday: "long"
+  });
+  await streamChatWithOpenAI({
+    messages: {
+      systemMessage: "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+      userMessage: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".
+User Prompt: ${userPrompt}
 Note Content:
-${e.text}`},cursorStart:e.isWholeNote?void 0:e.to})}async function ae(){let{summary:e}=await se();e?await a.showPanel("rhs",2,e):await a.flashNotification("No summary available.")}async function ce(){let{summary:e,selectedTextInfo:t}=await se();e&&t&&await a.insertAtPos(`
+${selectedTextInfo.text}`
+    },
+    cursorStart: selectedTextInfo.isWholeNote ? void 0 : selectedTextInfo.to
+  });
+}
+async function openSummaryPanel() {
+  const { summary } = await summarizeNote();
+  if (summary) {
+    await editor_exports.showPanel("rhs", 2, summary);
+  } else {
+    await editor_exports.flashNotification("No summary available.");
+  }
+}
+async function insertSummary() {
+  const { summary, selectedTextInfo } = await summarizeNote();
+  if (summary && selectedTextInfo) {
+    await editor_exports.insertAtPos(
+      "\n\n" + summary,
+      selectedTextInfo.to
+    );
+  }
+}
+async function tagNoteWithAI() {
+  const noteContent = await editor_exports.getText();
+  const noteName = await editor_exports.getCurrentPage();
+  const response = await chatWithOpenAI(
+    "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparringly, do not treat them as keywords.",
+    [{
+      role: "user",
+      content: `Given the note titled "${noteName}" with the content below, please provide tags.
 
-`+e,t.to)}async function le(){let e=await a.getText(),t=await a.getCurrentPage(),n=(await K("You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparringly, do not treat them as keywords.",[{role:"user",content:`Given the note titled "${t}" with the content below, please provide tags.
+${noteContent}`
+    }]
+  );
+  const tags = response.choices[0].message.content.trim().replace(/,/g, "").split(/\s+/);
+  const tree = await markdown_exports.parseMarkdown(noteContent);
+  const frontMatter = await extractFrontmatter(tree);
+  const updatedTags = [.../* @__PURE__ */ new Set([...frontMatter.tags || [], ...tags])];
+  frontMatter.tags = updatedTags;
+  console.log("Current frontmatter:", frontMatter);
+  const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
+  console.log("updatedNoteContent", frontMatterChange);
+  await editor_exports.dispatch(frontMatterChange);
+  await editor_exports.flashNotification("Note tagged successfully.");
+}
+async function streamOpenAIWithSelectionAsPrompt() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  await streamChatWithOpenAI({
+    messages: {
+      systemMessage: "You are an AI note assistant in a markdown-based note tool.",
+      userMessage: selectedTextInfo.text
+    }
+  });
+}
+async function streamChatOnPage() {
+  const messages = await convertPageToMessages();
+  if (messages.length === 0) {
+    await editor_exports.flashNotification(
+      "Error: The page does not match the required format for a chat."
+    );
+    return;
+  }
+  const currentPageLength = await getPageLength();
+  await editor_exports.insertAtPos("\n\n**assistant**: ", currentPageLength);
+  const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
+  await editor_exports.insertAtPos("\n\n**user**: ", newPageLength);
+  await editor_exports.moveCursor(newPageLength + "\n\n**user**: ".length);
+  await streamChatWithOpenAI({
+    messages,
+    cursorStart: newPageLength,
+    scrollIntoView: true,
+    includeChatSystemPrompt: true
+  });
+}
+async function promptAndGenerateImage() {
+  try {
+    const prompt2 = await editor_exports.prompt("Enter a prompt for DALL\xB7E:");
+    if (!prompt2 || !prompt2.trim()) {
+      await editor_exports.flashNotification(
+        "No prompt entered. Operation cancelled.",
+        "error"
+      );
+      return;
+    }
+    const imageData = await generateImageWithDallE(prompt2, 1);
+    if (imageData && imageData.data && imageData.data.length > 0) {
+      const base64Image = imageData.data[0].b64_json;
+      const revisedPrompt = imageData.data[0].revised_prompt;
+      const decodedImage = new Uint8Array(decodeBase64(base64Image));
+      const finalFileName = `dall-e-${Date.now()}.png`;
+      let prefix = folderName(await editor_exports.getCurrentPage()) + "/";
+      if (prefix === "/") {
+        prefix = "";
+      }
+      await space_exports.writeAttachment(prefix + finalFileName, decodedImage);
+      const markdownImg = `![${finalFileName}](${finalFileName})
+*${revisedPrompt}*`;
+      await editor_exports.insertAtCursor(markdownImg);
+      await editor_exports.flashNotification(
+        "Image generated and inserted with caption successfully."
+      );
+    } else {
+      await editor_exports.flashNotification("Failed to generate image.", "error");
+    }
+  } catch (error) {
+    console.error("Error generating image with DALL\xB7E:", error);
+    await editor_exports.flashNotification("Error generating image.", "error");
+  }
+}
+async function queryOpenAI(userPrompt, systemPrompt) {
+  try {
+    const messages = [];
+    messages.push({ role: "user", content: userPrompt });
+    const defaultSystemPrompt = "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";
+    const response = await chatWithOpenAI(
+      systemPrompt || defaultSystemPrompt,
+      messages
+    );
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error querying OpenAI:", error);
+    throw error;
+  }
+}
 
-${e}`}])).choices[0].message.content.trim().replace(/,/g,"").split(/\s+/),o=await y.parseMarkdown(e),i=await w(o),c=[...new Set([...i.tags||[],...n])];i.tags=c,console.log("Current frontmatter:",i);let l=await J(o,i);console.log("updatedNoteContent",l),await a.dispatch(l),await a.flashNotification("Note tagged successfully.")}async function me(){let e=await U();await S({messages:{systemMessage:"You are an AI note assistant in a markdown-based note tool.",userMessage:e.text}})}async function pe(){let e=await ne();if(e.length===0){await a.flashNotification("Error: The page does not match the required format for a chat.");return}let t=await A();await a.insertAtPos(`
+// ../../../../../../Users/justyns/dev/silverbullet/lib/limited_map.ts
+var LimitedMap = class {
+  constructor(maxSize, initialJson = {}) {
+    this.maxSize = maxSize;
+    this.map = new Map(Object.entries(initialJson));
+  }
+  map;
+  /**
+   * @param key
+   * @param value
+   * @param ttl time to live (in ms)
+   */
+  set(key, value, ttl) {
+    const entry = { value, la: Date.now() };
+    if (ttl) {
+      const existingEntry = this.map.get(key);
+      if (existingEntry?.expTimer) {
+        clearTimeout(existingEntry.expTimer);
+      }
+      entry.expTimer = setTimeout(() => {
+        this.map.delete(key);
+      }, ttl);
+    }
+    if (this.map.size >= this.maxSize) {
+      const oldestKey = this.getOldestKey();
+      this.map.delete(oldestKey);
+    }
+    this.map.set(key, entry);
+  }
+  get(key) {
+    const entry = this.map.get(key);
+    if (entry) {
+      entry.la = Date.now();
+      return entry.value;
+    }
+    return void 0;
+  }
+  remove(key) {
+    this.map.delete(key);
+  }
+  toJSON() {
+    return Object.fromEntries(this.map.entries());
+  }
+  getOldestKey() {
+    let oldestKey;
+    let oldestTimestamp;
+    for (const [key, entry] of this.map.entries()) {
+      if (!oldestTimestamp || entry.la < oldestTimestamp) {
+        oldestKey = key;
+        oldestTimestamp = entry.la;
+      }
+    }
+    return oldestKey;
+  }
+};
 
-**assistant**: `,t);let r=t+17;await a.insertAtPos(`
+// ../../../../../../Users/justyns/dev/silverbullet/lib/memory_cache.ts
+var cache = new LimitedMap(50);
+async function ttlCache(key, fn, ttlSecs) {
+  if (!ttlSecs) {
+    return fn(key);
+  }
+  const serializedKey = JSON.stringify(key);
+  const cached = cache.get(serializedKey);
+  if (cached) {
+    return cached;
+  }
+  const result = await fn(key);
+  cache.set(serializedKey, result, ttlSecs * 1e3);
+  return result;
+}
 
-**user**: `,r),await a.moveCursor(r+12),await S({messages:e,cursorStart:r,scrollIntoView:!0,includeChatSystemPrompt:!0})}async function ue(){try{let e=await a.prompt("Enter a prompt for DALL\xB7E:");if(!e||!e.trim()){await a.flashNotification("No prompt entered. Operation cancelled.","error");return}let t=await te(e,1);if(t&&t.data&&t.data.length>0){let r=t.data[0].b64_json,n=t.data[0].revised_prompt,o=new Uint8Array(X(r)),i=`dall-e-${Date.now()}.png`,c=re(await a.getCurrentPage())+"/";c==="/"&&(c=""),await g.writeAttachment(c+i,o);let l=`![${i}](${i})
-*${n}*`;await a.insertAtCursor(l),await a.flashNotification("Image generated and inserted with caption successfully.")}else await a.flashNotification("Failed to generate image.","error")}catch(e){console.error("Error generating image with DALL\xB7E:",e),await a.flashNotification("Error generating image.","error")}}async function de(e,t){try{let r=[];return r.push({role:"user",content:e}),(await K(t||"You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.",r)).choices[0].message.content}catch(r){throw console.error("Error querying OpenAI:",r),r}}var R=class{constructor(t,r={}){this.maxSize=t;this.map=new Map(Object.entries(r))}map;set(t,r,n){let o={value:r,la:Date.now()};if(n){let i=this.map.get(t);i?.expTimer&&clearTimeout(i.expTimer),o.expTimer=setTimeout(()=>{this.map.delete(t)},n)}if(this.map.size>=this.maxSize){let i=this.getOldestKey();this.map.delete(i)}this.map.set(t,o)}get(t){let r=this.map.get(t);if(r)return r.la=Date.now(),r.value}remove(t){this.map.delete(t)}toJSON(){return Object.fromEntries(this.map.entries())}getOldestKey(){let t,r;for(let[n,o]of this.map.entries())(!r||o.la<r)&&(t=n,r=o.la);return t}};var fe=new R(50);async function ge(e,t,r){if(!r)return t(e);let n=JSON.stringify(e),o=fe.get(n);if(o)return o;let i=await t(e);return fe.set(n,i,r*1e3),i}function he(e,t,r){return ge(t,()=>k.invokeFunction("index.queryObjects",e,t),r)}async function ye(e,t={},r={}){try{let n=await y.parseMarkdown(e),o=await w(n,{removeFrontmatterSection:!0,removeTags:["template"]});e=P(n).trimStart();let i;return o.frontmatter&&(typeof o.frontmatter=="string"?i=o.frontmatter:i=await f.stringify(o.frontmatter),i=await C.renderTemplate(i,t,r)),{frontmatter:o,renderedFrontmatter:i,text:await C.renderTemplate(e,t,r)}}catch(n){throw console.error("Error rendering template",n),n}}async function xe(e){let t;if(!e||!e.templatePage){let m=await he("template",{filter:["attr",["attr","aiprompt"],"description"]});t=await a.filterBox("Prompt Template",m.map(p=>{let u=p.ref.split("/").pop();return{...p,description:p.aiprompt.description||p.ref,name:p.aiprompt.displayName||u,systemPrompt:p.aiprompt.systemPrompt||"You are an AI note assistant. Please follow the prompt instructions.",insertAt:p.aiprompt.insertAt||"cursor"}}),"Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.")}else{console.log("selectedTemplate from slash completion: ",e);let m=await g.readPage(e.templatePage),p=await y.parseMarkdown(m),{aiprompt:u}=await w(p);console.log("templatePage from slash completion: ",m),t={ref:e.templatePage,systemPrompt:u.systemPrompt||"You are an AI note assistant. Please follow the prompt instructions.",insertAt:u.insertAt||"cursor"}}if(!t){await a.flashNotification("No template selected");return}console.log("User selected prompt template: ",t);let r=["cursor","page-start","page-end"];if(!r.includes(t.insertAt)){console.error(`Invalid insertAt value: ${t.insertAt}. It must be one of ${r.join(", ")}`),await a.flashNotification(`Invalid insertAt value: ${t.insertAt}. Please select a valid option.`,"error");return}let n=await g.readPage(t.ref),o=await a.getCurrentPage(),i=await g.getPageMeta(o),c;switch(t.insertAt){case"page-start":c=0;break;case"page-end":c=await A();break;case"frontmatter":await a.flashNotification("rendering in frontmatter not supported yet","error");break;case"modal":break;case"cursor":default:c=await a.getCursor()}let l=await ye(n,i,{page:i});await S({messages:{systemMessage:t.systemPrompt,userMessage:l.text},cursorStart:c})}var Pe={queryOpenAI:de,reloadConfig:oe,summarizeNote:ae,insertSummary:ce,callOpenAI:ie,tagNoteWithAI:le,promptAndGenerateImage:ue,streamOpenAIWithSelectionAsPrompt:me,streamChatOnPage:pe,insertAiPromptFromTemplate:xe},we={name:"silverbullet-ai",requiredPermissions:["fetch"],functions:{queryOpenAI:{path:"sbai.ts:queryOpenAI"},reloadConfig:{path:"sbai.ts:reloadConfig",events:["page:saved"]},summarizeNote:{path:"sbai.ts:openSummaryPanel",command:{name:"AI: Summarize Note and open summary"}},insertSummary:{path:"sbai.ts:insertSummary",command:{name:"AI: Insert Summary"}},callOpenAI:{path:"sbai.ts:callOpenAIwithNote",command:{name:"AI: Call OpenAI with Note as context"}},tagNoteWithAI:{path:"sbai.ts:tagNoteWithAI",command:{name:"AI: Generate tags for note"}},promptAndGenerateImage:{path:"sbai.ts:promptAndGenerateImage",command:{name:"AI: Generate and insert image using DallE"}},streamOpenAIWithSelectionAsPrompt:{path:"sbai.ts:streamOpenAIWithSelectionAsPrompt",command:{name:"AI: Stream response with selection or note as prompt"}},streamChatOnPage:{path:"sbai.ts:streamChatOnPage",command:{name:"AI: Chat on current page",key:"Ctrl-Shift-Enter",mac:"Cmd-Shift-Enter"}},insertAiPromptFromTemplate:{path:"src/prompts.ts:insertAiPromptFromTemplate",command:{name:"AI: Execute AI Prompt from Custom Template"}}},assets:{}},qn={manifest:we,functionMapping:Pe};G(Pe,we);export{qn as plug};
+// https://deno.land/x/silverbullet@0.7.3/plugs/index/plug_api.ts
+function queryObjects(tag, query, ttlSecs) {
+  return ttlCache(
+    query,
+    () => system_exports.invokeFunction("index.queryObjects", tag, query),
+    ttlSecs
+    // no-op when undefined
+  );
+}
+
+// https://deno.land/x/silverbullet@0.7.3/plugs/template/api.ts
+async function renderTemplate2(templateText, data = {}, variables = {}) {
+  try {
+    const tree = await markdown_exports.parseMarkdown(templateText);
+    const frontmatter = await extractFrontmatter(
+      tree,
+      {
+        removeFrontmatterSection: true,
+        removeTags: ["template"]
+      }
+    );
+    templateText = renderToText(tree).trimStart();
+    let frontmatterText;
+    if (frontmatter.frontmatter) {
+      if (typeof frontmatter.frontmatter === "string") {
+        frontmatterText = frontmatter.frontmatter;
+      } else {
+        frontmatterText = await yaml_exports.stringify(frontmatter.frontmatter);
+      }
+      frontmatterText = await template_exports.renderTemplate(
+        frontmatterText,
+        data,
+        variables
+      );
+    }
+    return {
+      frontmatter,
+      renderedFrontmatter: frontmatterText,
+      text: await template_exports.renderTemplate(templateText, data, variables)
+    };
+  } catch (e) {
+    console.error("Error rendering template", e);
+    throw e;
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/src/prompts.ts
+async function insertAiPromptFromTemplate(slashCompletion) {
+  let selectedTemplate;
+  if (!slashCompletion || !slashCompletion.templatePage) {
+    const aiPromptTemplates = await queryObjects("template", {
+      filter: ["attr", ["attr", "aiprompt"], "description"]
+    });
+    selectedTemplate = await editor_exports.filterBox(
+      "Prompt Template",
+      aiPromptTemplates.map((templateObj) => {
+        const niceName = templateObj.ref.split("/").pop();
+        return {
+          ...templateObj,
+          description: templateObj.aiprompt.description || templateObj.ref,
+          name: templateObj.aiprompt.displayName || niceName,
+          systemPrompt: templateObj.aiprompt.systemPrompt || "You are an AI note assistant. Please follow the prompt instructions.",
+          insertAt: templateObj.aiprompt.insertAt || "cursor"
+          // parseAs: templateObj.aiprompt.parseAs || "markdown",
+        };
+      }),
+      `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`
+    );
+  } else {
+    console.log("selectedTemplate from slash completion: ", slashCompletion);
+    const templatePage = await space_exports.readPage(slashCompletion.templatePage);
+    const tree = await markdown_exports.parseMarkdown(templatePage);
+    const { aiprompt } = await extractFrontmatter(tree);
+    console.log("templatePage from slash completion: ", templatePage);
+    selectedTemplate = {
+      ref: slashCompletion.templatePage,
+      systemPrompt: aiprompt.systemPrompt || "You are an AI note assistant. Please follow the prompt instructions.",
+      insertAt: aiprompt.insertAt || "cursor"
+    };
+  }
+  if (!selectedTemplate) {
+    await editor_exports.flashNotification("No template selected");
+    return;
+  }
+  console.log("User selected prompt template: ", selectedTemplate);
+  const validInsertAtOptions = [
+    "cursor",
+    "page-start",
+    "page-end"
+    // "frontmatter",
+    // "modal",
+  ];
+  if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
+    console.error(
+      `Invalid insertAt value: ${selectedTemplate.insertAt}. It must be one of ${validInsertAtOptions.join(", ")}`
+    );
+    await editor_exports.flashNotification(
+      `Invalid insertAt value: ${selectedTemplate.insertAt}. Please select a valid option.`,
+      "error"
+    );
+    return;
+  }
+  const templateText = await space_exports.readPage(selectedTemplate.ref);
+  const currentPage = await editor_exports.getCurrentPage();
+  const pageMeta = await space_exports.getPageMeta(currentPage);
+  let cursorPos;
+  switch (selectedTemplate.insertAt) {
+    case "page-start":
+      cursorPos = 0;
+      break;
+    case "page-end":
+      cursorPos = await getPageLength();
+      break;
+    case "frontmatter":
+      await editor_exports.flashNotification(
+        `rendering in frontmatter not supported yet`,
+        "error"
+      );
+      break;
+    case "modal":
+      break;
+    case "cursor":
+    default:
+      cursorPos = await editor_exports.getCursor();
+  }
+  const renderedTemplate = await renderTemplate2(templateText, pageMeta, {
+    page: pageMeta
+  });
+  await streamChatWithOpenAI({
+    messages: {
+      systemMessage: selectedTemplate.systemPrompt,
+      userMessage: renderedTemplate.text
+    },
+    cursorStart: cursorPos
+  });
+}
+
+// f0aea78a.js
+var functionMapping = {
+  queryOpenAI,
+  reloadConfig,
+  summarizeNote: openSummaryPanel,
+  insertSummary,
+  callOpenAI: callOpenAIwithNote,
+  tagNoteWithAI,
+  promptAndGenerateImage,
+  streamOpenAIWithSelectionAsPrompt,
+  streamChatOnPage,
+  insertAiPromptFromTemplate
+};
+var manifest = {
+  "name": "silverbullet-ai",
+  "requiredPermissions": [
+    "fetch"
+  ],
+  "functions": {
+    "queryOpenAI": {
+      "path": "sbai.ts:queryOpenAI"
+    },
+    "reloadConfig": {
+      "path": "sbai.ts:reloadConfig",
+      "events": [
+        "page:saved"
+      ]
+    },
+    "summarizeNote": {
+      "path": "sbai.ts:openSummaryPanel",
+      "command": {
+        "name": "AI: Summarize Note and open summary"
+      }
+    },
+    "insertSummary": {
+      "path": "sbai.ts:insertSummary",
+      "command": {
+        "name": "AI: Insert Summary"
+      }
+    },
+    "callOpenAI": {
+      "path": "sbai.ts:callOpenAIwithNote",
+      "command": {
+        "name": "AI: Call OpenAI with Note as context"
+      }
+    },
+    "tagNoteWithAI": {
+      "path": "sbai.ts:tagNoteWithAI",
+      "command": {
+        "name": "AI: Generate tags for note"
+      }
+    },
+    "promptAndGenerateImage": {
+      "path": "sbai.ts:promptAndGenerateImage",
+      "command": {
+        "name": "AI: Generate and insert image using DallE"
+      }
+    },
+    "streamOpenAIWithSelectionAsPrompt": {
+      "path": "sbai.ts:streamOpenAIWithSelectionAsPrompt",
+      "command": {
+        "name": "AI: Stream response with selection or note as prompt"
+      }
+    },
+    "streamChatOnPage": {
+      "path": "sbai.ts:streamChatOnPage",
+      "command": {
+        "name": "AI: Chat on current page",
+        "key": "Ctrl-Shift-Enter",
+        "mac": "Cmd-Shift-Enter"
+      }
+    },
+    "insertAiPromptFromTemplate": {
+      "path": "src/prompts.ts:insertAiPromptFromTemplate",
+      "command": {
+        "name": "AI: Execute AI Prompt from Custom Template"
+      }
+    }
+  },
+  "assets": {}
+};
+var plug = { manifest, functionMapping };
+setupMessageListener(functionMapping, manifest);
+export {
+  plug
+};
+//# sourceMappingURL=silverbullet-ai.plug.js.map
