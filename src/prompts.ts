@@ -145,7 +145,10 @@ export async function insertAiPromptFromTemplate(
   //   console.log("Rendered template:", renderedTemplate);
 
   await streamChatWithOpenAI({
-    systemMessage: selectedTemplate.systemPrompt,
-    userMessage: renderedTemplate.text,
-  }, cursorPos);
+    messages: {
+      systemMessage: selectedTemplate.systemPrompt,
+      userMessage: renderedTemplate.text,
+    },
+    cursorStart: cursorPos,
+  });
 }

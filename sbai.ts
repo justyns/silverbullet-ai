@@ -70,11 +70,14 @@ export async function callOpenAIwithNote() {
   });
 
   await streamChatWithOpenAI({
-    systemMessage:
-      "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-    userMessage:
-      `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
-  }, selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to);
+    messages: {
+      systemMessage:
+        "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+      userMessage:
+        `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+    },
+    cursorStart: selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to,
+  });
 }
 
 /**
@@ -146,9 +149,11 @@ export async function streamOpenAIWithSelectionAsPrompt() {
   const selectedTextInfo = await getSelectedTextOrNote();
 
   await streamChatWithOpenAI({
-    systemMessage:
-      "You are an AI note assistant in a markdown-based note tool.",
-    userMessage: selectedTextInfo.text,
+    messages: {
+      systemMessage:
+        "You are an AI note assistant in a markdown-based note tool.",
+      userMessage: selectedTextInfo.text,
+    },
   });
 }
 
@@ -169,7 +174,12 @@ export async function streamChatOnPage() {
   const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
   await editor.insertAtPos("\n\n**user**: ", newPageLength);
   await editor.moveCursor(newPageLength + "\n\n**user**: ".length);
-  await streamChatWithOpenAI(messages, newPageLength);
+  await streamChatWithOpenAI({
+    messages: messages,
+    cursorStart: newPageLength,
+    scrollIntoView: true,
+    includeChatSystemPrompt: true,
+  });
 }
 
 /**
