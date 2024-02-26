@@ -91,6 +91,18 @@ ai:
 
 `OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from their web console.
 
+#### Perplexity.ai
+
+Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards).  You can use it with settings like this:
+
+```yaml
+ai:
+  defaultTextModel: sonar-medium-online
+  openAIBaseUrl: https://api.perplexity.ai
+```
+
+`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from [their web console](https://www.perplexity.ai/settings/api).
+
 ### Templated Prompts
 
 **NOTE:** All built-in prompts will be replaced with templated prompts eventually.
