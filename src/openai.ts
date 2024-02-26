@@ -21,6 +21,11 @@ type StreamChatOptions = {
   includeChatSystemPrompt?: boolean;
 };
 
+type HttpHeaders = {
+  "Content-Type": string;
+  "Authorization"?: string;
+};
+
 export async function streamChatWithOpenAI({
   messages,
   cursorStart = undefined,
@@ -32,7 +37,7 @@ export async function streamChatWithOpenAI({
     if (!apiKey) await initializeOpenAI();
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
-    let payloadMessages: ChatMessage[] = [];
+    const payloadMessages: ChatMessage[] = [];
     if (includeChatSystemPrompt) {
       payloadMessages.push(chatSystemPrompt);
     }
@@ -45,7 +50,7 @@ export async function streamChatWithOpenAI({
       payloadMessages.push(...messages);
     }
 
-    var headers = {
+    const headers: HttpHeaders = {
       "Content-Type": "application/json",
     };
     if (aiSettings.requireAuth) {
