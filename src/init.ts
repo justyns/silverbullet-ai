@@ -1,9 +1,18 @@
-import { readSetting } from "$sb/lib/settings_page.ts";
 import { readSecret } from "$sb/lib/secrets_page.ts";
+import { readSetting } from "$sb/lib/settings_page.ts";
 import { editor } from "$sb/syscalls.ts";
 
-let apiKey: string;
-let aiSettings: {
+export type ChatMessage = {
+  content: string;
+  role: "user" | "assistant" | "system";
+};
+
+type ChatSettings = {
+  userInformation: string;
+  userInstructions: string;
+};
+
+type AISettings = {
   summarizePrompt: string;
   tagPrompt: string;
   imagePrompt: string;
@@ -13,7 +22,12 @@ let aiSettings: {
   openAIBaseUrl: string;
   dallEBaseUrl: string;
   requireAuth: boolean;
+  chat: ChatSettings;
 };
+
+let apiKey: string;
+let aiSettings: AISettings;
+let chatSystemPrompt: ChatMessage;
 
 async function initializeOpenAI() {
   const newApiKey = await readSecret("OPENAI_API_KEY");
@@ -41,6 +55,7 @@ async function initializeOpenAI() {
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
     requireAuth: true,
+    chat: {},
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
@@ -51,6 +66,20 @@ async function initializeOpenAI() {
   } else {
     console.log("aiSettings unchanged", aiSettings);
   }
+
+  chatSystemPrompt = {
+    role: "system",
+    content:
+      `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet.`,
+  };
+  if (aiSettings.chat.userInformation) {
+    chatSystemPrompt.content +=
+      `\nThe user has provided the following information about their self: ${aiSettings.chat.userInformation}`;
+  }
+  if (aiSettings.chat.userInstructions) {
+    chatSystemPrompt.content +=
+      `\nThe user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
+  }
 }
 
-export { aiSettings, apiKey, initializeOpenAI };
+export { aiSettings, apiKey, chatSystemPrompt, initializeOpenAI };

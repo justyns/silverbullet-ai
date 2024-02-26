@@ -1,4 +1,5 @@
 import { editor } from "$sb/syscalls.ts";
+import { ChatMessage } from "./init.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -11,12 +12,12 @@ export function folderName(path: string) {
  *
  * Valid roles are system, assistant, and user.
  *
- * @returns {Array<{ role: string; content: string }>}
+ * @returns {Array<ChatMessage>}
  */
 export async function convertPageToMessages() {
   const pageText = await editor.getText();
   const lines = pageText.split("\n");
-  const messages = [];
+  const messages: ChatMessage[] = [];
   let currentRole = "user";
   let contentBuffer = "";
 
@@ -25,7 +26,9 @@ export async function convertPageToMessages() {
     if (match) {
       const newRole = match[1].toLowerCase();
       if (currentRole && currentRole !== newRole) {
-        messages.push({ role: currentRole, content: contentBuffer.trim() });
+        messages.push(
+          { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
+        );
         contentBuffer = "";
       }
       currentRole = newRole;
@@ -35,7 +38,9 @@ export async function convertPageToMessages() {
     }
   });
   if (contentBuffer && currentRole) {
-    messages.push({ role: currentRole, content: contentBuffer.trim() });
+    messages.push(
+      { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
+    );
   }
 
   return messages;

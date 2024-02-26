@@ -2,29 +2,47 @@ import "$sb/lib/native_fetch.ts";
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { getPageLength } from "./editorUtils.ts";
-import { aiSettings, apiKey, initializeOpenAI } from "./init.ts";
+import {
+  aiSettings,
+  apiKey,
+  ChatMessage,
+  chatSystemPrompt,
+  initializeOpenAI,
+} from "./init.ts";
 
-export async function streamChatWithOpenAI(
-  messages: Array<{ role: string; content: string }> | {
+type StreamChatOptions = {
+  messages: Array<ChatMessage> | {
     systemMessage: string;
     userMessage: string;
-  },
-  cursorStart: number | undefined = undefined,
-  cursorFollow: boolean = false,
-  scrollIntoView: boolean = true,
-): Promise<void> {
+  };
+  cursorStart?: number;
+  cursorFollow?: boolean;
+  scrollIntoView?: boolean;
+  includeChatSystemPrompt?: boolean;
+};
+
+export async function streamChatWithOpenAI({
+  messages,
+  cursorStart = undefined,
+  cursorFollow = false,
+  scrollIntoView = true,
+  includeChatSystemPrompt = false,
+}: StreamChatOptions): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
 
     const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
-    let payloadMessages;
+    let payloadMessages: ChatMessage[] = [];
+    if (includeChatSystemPrompt) {
+      payloadMessages.push(chatSystemPrompt);
+    }
     if ("systemMessage" in messages && "userMessage" in messages) {
-      payloadMessages = [
-        { role: "system", content: messages.systemMessage },
-        { role: "user", content: messages.userMessage },
-      ];
+      payloadMessages.push(
+        { role: "system", content: messages.systemMessage } as ChatMessage,
+        { role: "user", content: messages.userMessage } as ChatMessage,
+      );
     } else {
-      payloadMessages = messages;
+      payloadMessages.push(...messages);
     }
 
     var headers = {
