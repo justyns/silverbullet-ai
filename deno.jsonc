@@ -15,7 +15,8 @@
     "exclude": [
       "*.md",
       "**/*.md",
-      "*.plug.js"
+      "*.plug.js",
+      "**/*.plug.js"
     ]
   }
 }
