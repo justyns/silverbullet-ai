@@ -1,7 +1,8 @@
+import "$sb/lib/native_fetch.ts";
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { aiSettings, apiKey, initializeOpenAI } from "./init.ts";
 import { getPageLength } from "./editorUtils.ts";
+import { aiSettings, apiKey, initializeOpenAI } from "./init.ts";
 
 export async function streamChatWithOpenAI(
   messages: Array<{ role: string; content: string }> | {
@@ -10,6 +11,7 @@ export async function streamChatWithOpenAI(
   },
   cursorStart: number | undefined = undefined,
   cursorFollow: boolean = false,
+  scrollIntoView: boolean = true,
 ): Promise<void> {
   try {
     if (!apiKey) await initializeOpenAI();
@@ -90,6 +92,19 @@ export async function streamChatWithOpenAI(
         if (cursorFollow) {
           editor.moveCursor(cursorPos, true);
         }
+        if (scrollIntoView) {
+          // TODO:
+          // editor.dispatch({
+          //   effects: [
+          //     EditorView.scrollIntoView(
+          //       pos,
+          //       {
+          //         y: "center",
+          //       },
+          //     ),
+          //   ],
+          // });
+        }
       } catch (error) {
         console.error("Error processing message event:", error, e.data);
       }
@@ -126,25 +141,36 @@ export async function chatWithOpenAI(
       );
       throw new Error("API key or AI settings are not properly configured.");
     }
-    const response = await fetch(
+
+    const body = JSON.stringify({
+      model: aiSettings.defaultTextModel,
+      messages: [
+        { role: "system", content: systemMessage },
+        ...userMessages,
+      ],
+    });
+
+    console.log("Sending body", body);
+
+    const headers = {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    };
+
+    console.log("Request headers:", headers);
+
+    const response = await nativeFetch(
       aiSettings.openAIBaseUrl + "/chat/completions",
       {
         method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: aiSettings.defaultTextModel,
-          messages: [
-            { role: "system", content: systemMessage },
-            ...userMessages,
-          ],
-        }),
+        headers: headers,
+        body: body,
       },
     );
 
     if (!response.ok) {
+      console.error("http response: ", response);
+      console.error("http response body: ", await response.json());
       throw new Error(`HTTP error, status: ${response.status}`);
     }
 
@@ -172,7 +198,7 @@ export async function generateImageWithDallE(
   try {
     if (!apiKey) await initializeOpenAI();
     await editor.flashNotification("Contacting DALL·E, please wait...");
-    const response = await fetch(
+    const response = await nativeFetch(
       aiSettings.dallEBaseUrl + "/images/generations",
       {
         method: "POST",
