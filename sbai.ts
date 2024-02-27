@@ -5,12 +5,14 @@ import {
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
-import { initializeOpenAI } from "./src/init.ts";
 import {
-  chatWithOpenAI,
-  generateImageWithDallE,
-  streamChatWithOpenAI,
-} from "./src/openai.ts";
+  ChatMessage,
+  chatSystemPrompt,
+  currentAIProvider,
+  initializeOpenAI,
+  initIfNeeded,
+} from "./src/init.ts";
+import { generateImageWithDallE } from "./src/openai.ts";
 import { convertPageToMessages, folderName } from "./src/utils.ts";
 
 /**
@@ -23,33 +25,6 @@ export async function reloadConfig(pageName: string) {
   if (pageName === "SETTINGS" || pageName === "SECRETS") {
     await initializeOpenAI();
   }
-}
-
-/**
- * Summarizes the selected text or the entire note if no text is selected.
- * Utilizes OpenAI to generate a summary.
- * Returns an object containing the summary and the selected text information.
- */
-export async function summarizeNote() {
-  const selectedTextInfo = await getSelectedTextOrNote();
-  console.log("selectedTextInfo", selectedTextInfo);
-  if (selectedTextInfo.text.length > 0) {
-    const noteName = await editor.getCurrentPage();
-    const response = await chatWithOpenAI(
-      "You are an AI Note assistant here to help summarize the user's personal notes.",
-      [{
-        role: "user",
-        content:
-          `Please summarize this note using markdown for any formatting.  Your summary will be appended to the end of this note, do not include any of the note contents yourself.  Keep the summary brief. The note name is ${noteName}.\n\n${selectedTextInfo.text}`,
-      }],
-    );
-    console.log("OpenAI response:", response);
-    return {
-      summary: response.choices[0].message.content,
-      selectedTextInfo: selectedTextInfo,
-    };
-  }
-  return { summary: "", selectedTextInfo: null };
 }
 
 /**
@@ -69,15 +44,21 @@ export async function callOpenAIwithNote() {
     weekday: "long",
   });
 
-  await streamChatWithOpenAI({
-    messages: {
-      systemMessage:
-        "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-      userMessage:
-        `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
-    },
-    cursorStart: selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to,
-  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+      },
+      {
+        role: "user",
+        content:
+          `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+      },
+    ],
+    stream: true,
+  }, selectedTextInfo.to);
 }
 
 /**
@@ -94,34 +75,27 @@ export async function openSummaryPanel() {
 }
 
 /**
- * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
- * text.  Inserts the summary at the cursor's position.
- */
-export async function insertSummary() {
-  const { summary, selectedTextInfo } = await summarizeNote();
-  if (summary && selectedTextInfo) {
-    await editor.insertAtPos(
-      "\n\n" + summary,
-      selectedTextInfo.to,
-    );
-  }
-}
-
-/**
  * Asks the LLM to generate tags for the current note.
  * Generated tags are added to the note's frontmatter.
  */
 export async function tagNoteWithAI() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
-  const response = await chatWithOpenAI(
-    "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparringly, do not treat them as keywords.",
-    [{
-      role: "user",
-      content:
-        `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}`,
-    }],
-  );
+  const response = await currentAIProvider.chatWithAI({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparingly, do not treat them as keywords.",
+      },
+      {
+        role: "user",
+        content:
+          `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}`,
+      },
+    ],
+    stream: false,
+  });
   const tags = response.choices[0].message.content.trim().replace(/,/g, "")
     .split(/\s+/);
 
@@ -147,14 +121,18 @@ export async function tagNoteWithAI() {
  */
 export async function streamOpenAIWithSelectionAsPrompt() {
   const selectedTextInfo = await getSelectedTextOrNote();
+  const cursorPos = selectedTextInfo.to;
 
-  await streamChatWithOpenAI({
-    messages: {
-      systemMessage:
-        "You are an AI note assistant in a markdown-based note tool.",
-      userMessage: selectedTextInfo.text,
-    },
-  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content: "You are an AI note assistant in a markdown-based note tool.",
+      },
+      { role: "user", content: selectedTextInfo.text },
+    ],
+    stream: true,
+  }, cursorPos);
 }
 
 /**
@@ -162,6 +140,7 @@ export async function streamOpenAIWithSelectionAsPrompt() {
  * New responses are always appended to the end of the page.
  */
 export async function streamChatOnPage() {
+  await initIfNeeded();
   const messages = await convertPageToMessages();
   if (messages.length === 0) {
     await editor.flashNotification(
@@ -169,17 +148,24 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  const currentPageLength = await getPageLength();
-  await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
-  const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
-  await editor.insertAtPos("\n\n**user**: ", newPageLength);
-  await editor.moveCursor(newPageLength + "\n\n**user**: ".length);
-  await streamChatWithOpenAI({
-    messages: messages,
-    cursorStart: newPageLength,
-    scrollIntoView: true,
-    includeChatSystemPrompt: true,
-  });
+  messages.unshift(chatSystemPrompt);
+  let cursorPos = await getPageLength();
+  await editor.insertAtPos("\n\n**assistant**: ", cursorPos);
+  cursorPos += "\n\n**assistant**: ".length;
+  await editor.insertAtPos("\n\n**user**: ", cursorPos);
+
+  // Move cursor to the next **user** prompt, but leave cursorPos at the assistant prompt
+  await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
+
+  try {
+    await currentAIProvider.streamChatIntoEditor({
+      messages: messages,
+      stream: true,
+    }, cursorPos);
+  } catch (error) {
+    console.error("Error streaming chat on page:", error);
+    await editor.flashNotification("Error streaming chat on page.", "error");
+  }
 }
 
 /**
@@ -235,18 +221,22 @@ export async function promptAndGenerateImage() {
  */
 export async function queryOpenAI(
   userPrompt: string,
-  systemPrompt: string | undefined,
-): Promise<any> {
+  systemPrompt?: string,
+): Promise<string> {
   try {
-    const messages = [];
-    messages.push({ role: "user", content: userPrompt });
+    const messages: ChatMessage[] = [];
     const defaultSystemPrompt =
       "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";
+    messages.push({
+      role: "system",
+      content: systemPrompt || defaultSystemPrompt,
+    });
+    messages.push({ role: "user", content: userPrompt });
 
-    const response = await chatWithOpenAI(
-      systemPrompt || defaultSystemPrompt,
-      messages,
-    );
+    const response = await currentAIProvider.chatWithAI({
+      messages: messages,
+      stream: false,
+    });
     return response.choices[0].message.content;
   } catch (error) {
     console.error("Error querying OpenAI:", error);

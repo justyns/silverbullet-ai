@@ -14,6 +14,7 @@
   "fmt": {
     "exclude": [
       "*.md",
+      ".*.md",
       "**/*.md",
       "*.plug.js",
       "**/*.plug.js"
