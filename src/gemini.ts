@@ -43,13 +43,34 @@ export class GeminiProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const payloadContents = messages.map((message: ChatMessage) => {
-        const role = message.role === "system"
-          ? "user"
-          : message.role === "assistant"
-          ? "model"
-          : "user";
-        return { role: role, parts: [{ text: message.content }] };
+      const payloadContents = [];
+      let previousRole = "";
+      messages.forEach((message: ChatMessage) => {
+        let role;
+        if (message.role === "system" || message.role === "user") {
+          // No conept of "system" messages
+          role = "user";
+        } else if (message.role === "assistant") {
+          role = "model";
+        }
+        // First and last messages must be user messages
+        if (
+          role === "model" &&
+          (payloadContents.length === 0 || previousRole === "model")
+        ) {
+          // TODO: Do something else?
+          // Skip model message if it's the first or follows another model message
+        } else if (role === "user" && previousRole === "user") {
+          // Merge with previous message if two user messages in a row
+          payloadContents[payloadContents.length - 1].parts[0].text += " " +
+            message.content;
+        } else {
+          payloadContents.push({
+            role: role,
+            parts: [{ text: message.content }],
+          });
+        }
+        previousRole = role;
       });
 
       console.log("payloadContents", payloadContents);
@@ -58,25 +79,25 @@ export class GeminiProvider extends AbstractProvider {
         method: "POST",
         headers: headers,
         payload: JSON.stringify({
-          contents: payloadContents[1],
+          contents: payloadContents,
         }),
         withCredentials: false,
       };
 
-      console.log("Starting gemini api call to ", sseUrl);
-      console.log("sseOptions", sseOptions);
+      // console.log("Starting gemini api call to ", sseUrl);
+      // console.log("sseOptions", sseOptions);
 
       const source = new SSE(sseUrl, sseOptions);
       let fullMsg = "";
 
       source.addEventListener("message", (e: MessageEvent) => {
         try {
-          console.log("Received message from Gemini: ", e.data);
+          // console.log("Received message from Gemini: ", e.data);
           if (e.data == "[DONE]") {
             source.close();
             return fullMsg;
           } else if (!e.data) {
-            console.log("Received empty message from Gemini");
+            console.error("Received empty message from Gemini");
             console.log("source: ", source);
           } else {
             const data = JSON.parse(e.data);
