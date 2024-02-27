@@ -95,6 +95,11 @@ export class OpenAIProvider extends AbstractProvider {
         return fullMsg;
       });
 
+      source.addEventListener("error", (e: Event) => {
+        console.error("SSE error:", e);
+        source.close();
+      });
+
       source.stream();
     } catch (error) {
       console.error("Error streaming from OpenAI chat endpoint:", error);

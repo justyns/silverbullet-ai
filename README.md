@@ -109,6 +109,22 @@ ai:
 
 `OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from [their web console](https://www.perplexity.ai/settings/api).
 
+#### Google Gemini (Experimental)
+
+Google does not offer an openai-compatible api, so consider the support for Gemini to be very experimental for now.
+
+To configure it, you can use these settings:
+
+```yaml
+ai:
+  secretName: GOOGLE_AI_STUDIO_KEY
+  provider: Gemini
+  defaultTextModel: gemini-pro
+```
+
+**Note**: The secretName defined means you need to put the api key from [google ai studio](https://aistudio.google.com/app/apikey) in your SECRETS file as `GOOGLE_AI_STUDIO_KEY`.
+
+
 #### Chat Custom Instructions
 
 OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) a while back to help improve the responses from ChatGPT.  We are emulating that feature by allowing a system prompt to be injected into each new chat session.

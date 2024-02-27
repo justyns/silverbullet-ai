@@ -3,6 +3,7 @@ import { readSetting } from "$sb/lib/settings_page.ts";
 import { editor } from "$sb/syscalls.ts";
 import { ProviderInterface } from "./interfaces.ts";
 import { OpenAIProvider } from "./openai.ts";
+import { GeminiProvider } from "./gemini.ts";
 
 export type ChatMessage = {
   content: string;
@@ -24,7 +25,9 @@ type AISettings = {
   openAIBaseUrl: string;
   dallEBaseUrl: string;
   requireAuth: boolean;
+  secretName: string;
   chat: ChatSettings;
+  provider: "OpenAI" | "Gemini";
 };
 
 let apiKey: string;
@@ -39,17 +42,6 @@ export async function initIfNeeded() {
 }
 
 async function initializeOpenAI() {
-  const newApiKey = await readSecret("OPENAI_API_KEY");
-  if (newApiKey !== apiKey) {
-    apiKey = newApiKey;
-    console.log("silverbullet-ai API key updated");
-  }
-  if (!apiKey) {
-    const errorMessage =
-      "OpenAI API key is missing. Please set it in the secrets page.";
-    await editor.flashNotification(errorMessage, "error");
-    throw new Error(errorMessage);
-  }
   const defaultSettings = {
     // TODO: These aren't used yet
     // summarizePrompt:
@@ -64,6 +56,8 @@ async function initializeOpenAI() {
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
     requireAuth: true,
+    secretName: "OPENAI_API_KEY",
+    provider: "OpenAI",
     chat: {},
   };
   const newSettings = await readSetting("ai", {});
@@ -76,13 +70,31 @@ async function initializeOpenAI() {
     console.log("aiSettings unchanged", aiSettings);
   }
 
-  // Always use the openai provider for now
-  currentAIProvider = new OpenAIProvider(
-    apiKey,
-    aiSettings.defaultTextModel,
-    aiSettings.openAIBaseUrl,
-    aiSettings.requireAuth,
-  );
+  const newApiKey = await readSecret(aiSettings.secretName);
+  if (newApiKey !== apiKey) {
+    apiKey = newApiKey;
+    console.log("silverbullet-ai API key updated");
+  }
+  if (!apiKey) {
+    const errorMessage =
+      "AI API key is missing. Please set it in the secrets page.";
+    await editor.flashNotification(errorMessage, "error");
+    throw new Error(errorMessage);
+  }
+
+  if (aiSettings.provider === "OpenAI") {
+    currentAIProvider = new OpenAIProvider(
+      apiKey,
+      aiSettings.defaultTextModel,
+      aiSettings.openAIBaseUrl,
+      aiSettings.requireAuth,
+    );
+  } else if (aiSettings.provider === "Gemini") {
+    currentAIProvider = new GeminiProvider(
+      apiKey,
+      aiSettings.defaultTextModel,
+    );
+  }
 
   chatSystemPrompt = {
     role: "system",
