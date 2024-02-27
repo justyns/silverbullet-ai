@@ -1,6 +1,8 @@
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { editor } from "$sb/syscalls.ts";
+import { ProviderInterface } from "./interfaces.ts";
+import { OpenAIProvider } from "./openai.ts";
 
 export type ChatMessage = {
   content: string;
@@ -28,6 +30,13 @@ type AISettings = {
 let apiKey: string;
 let aiSettings: AISettings;
 let chatSystemPrompt: ChatMessage;
+let currentAIProvider: ProviderInterface;
+
+export async function initIfNeeded() {
+  if (!apiKey || !currentAIProvider || !aiSettings) {
+    await initializeOpenAI();
+  }
+}
 
 async function initializeOpenAI() {
   const newApiKey = await readSecret("OPENAI_API_KEY");
@@ -67,6 +76,9 @@ async function initializeOpenAI() {
     console.log("aiSettings unchanged", aiSettings);
   }
 
+  // Always use the openai provider for now
+  currentAIProvider = new OpenAIProvider(apiKey, aiSettings.defaultTextModel, aiSettings.openAIBaseUrl, aiSettings.requireAuth);
+
   chatSystemPrompt = {
     role: "system",
     content:
@@ -82,4 +94,4 @@ async function initializeOpenAI() {
   }
 }
 
-export { aiSettings, apiKey, chatSystemPrompt, initializeOpenAI };
+export { aiSettings, apiKey, chatSystemPrompt, initializeOpenAI, currentAIProvider };

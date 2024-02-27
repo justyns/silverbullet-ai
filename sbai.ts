@@ -5,7 +5,7 @@ import {
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
-import { initializeOpenAI } from "./src/init.ts";
+import { initializeOpenAI, initIfNeeded, currentAIProvider, chatSystemPrompt } from "./src/init.ts";
 import {
   chatWithOpenAI,
   generateImageWithDallE,
@@ -162,6 +162,7 @@ export async function streamOpenAIWithSelectionAsPrompt() {
  * New responses are always appended to the end of the page.
  */
 export async function streamChatOnPage() {
+  await initIfNeeded();
   const messages = await convertPageToMessages();
   if (messages.length === 0) {
     await editor.flashNotification(
@@ -169,17 +170,39 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  const currentPageLength = await getPageLength();
-  await editor.insertAtPos("\n\n**assistant**: ", currentPageLength);
-  const newPageLength = currentPageLength + "\n\n**assistant**: ".length;
-  await editor.insertAtPos("\n\n**user**: ", newPageLength);
-  await editor.moveCursor(newPageLength + "\n\n**user**: ".length);
-  await streamChatWithOpenAI({
-    messages: messages,
-    cursorStart: newPageLength,
-    scrollIntoView: true,
-    includeChatSystemPrompt: true,
-  });
+  messages.unshift(chatSystemPrompt);
+  let cursorPos = await getPageLength();
+  await editor.insertAtPos("\n\n**assistant**: ", cursorPos);
+  cursorPos += "\n\n**assistant**: ".length;
+  await editor.insertAtPos("\n\n**user**: ", cursorPos);
+
+  // Move cursor to the next **user** prompt, but leave cursorPos at the assistant prompt
+  await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
+
+  const loadingMsg = "🤔 Thinking … ";
+  await editor.insertAtPos(loadingMsg, cursorPos);
+  let stillLoading = true;
+
+  const onDataReceived = (data: string) => {
+    if (stillLoading) {
+      editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, data);
+      stillLoading = false;
+    } else {
+      editor.insertAtPos(data, cursorPos);
+    }
+    cursorPos += data.length;
+  };
+
+  try {
+    await currentAIProvider.chatWithAI({
+      messages: messages,
+      stream: true,
+      onDataReceived: onDataReceived,
+    });
+  } catch (error) {
+    console.error("Error streaming chat on page:", error);
+    await editor.flashNotification("Error streaming chat on page.", "error");
+  }
 }
 
 /**
