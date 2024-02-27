@@ -77,7 +77,12 @@ async function initializeOpenAI() {
   }
 
   // Always use the openai provider for now
-  currentAIProvider = new OpenAIProvider(apiKey, aiSettings.defaultTextModel, aiSettings.openAIBaseUrl, aiSettings.requireAuth);
+  currentAIProvider = new OpenAIProvider(
+    apiKey,
+    aiSettings.defaultTextModel,
+    aiSettings.openAIBaseUrl,
+    aiSettings.requireAuth,
+  );
 
   chatSystemPrompt = {
     role: "system",
@@ -94,4 +99,10 @@ async function initializeOpenAI() {
   }
 }
 
-export { aiSettings, apiKey, chatSystemPrompt, initializeOpenAI, currentAIProvider };
+export {
+  aiSettings,
+  apiKey,
+  chatSystemPrompt,
+  currentAIProvider,
+  initializeOpenAI,
+};

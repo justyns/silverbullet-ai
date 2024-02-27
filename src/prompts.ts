@@ -9,7 +9,7 @@ import {
   TemplateObject,
 } from "$type/types.ts";
 import { getPageLength } from "./editorUtils.ts";
-import { streamChatWithOpenAI } from "./openai.ts";
+import { currentAIProvider } from "./src/init.ts";
 import { supportsPlugSlashComplete } from "./utils.ts";
 
 // TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
@@ -144,11 +144,11 @@ export async function insertAiPromptFromTemplate(
   });
   //   console.log("Rendered template:", renderedTemplate);
 
-  await streamChatWithOpenAI({
-    messages: {
-      systemMessage: selectedTemplate.systemPrompt,
-      userMessage: renderedTemplate.text,
-    },
-    cursorStart: cursorPos,
-  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      { role: "system", content: selectedTemplate.systemPrompt },
+      { role: "user", content: renderedTemplate.text },
+    ],
+    stream: true,
+  }, cursorPos);
 }

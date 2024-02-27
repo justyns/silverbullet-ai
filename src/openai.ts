@@ -10,14 +10,10 @@ import {
   initializeOpenAI,
 } from "./init.ts";
 
-import { ProviderInterface } from "./interfaces.ts";
-import { MessageSquare } from "https://esm.sh/preact-feather@4.2.1?external=preact";
+import { AbstractProvider } from "./interfaces.ts";
 
 type StreamChatOptions = {
-  messages: Array<ChatMessage> | {
-    systemMessage?: string;
-    userMessage: string;
-  };
+  messages: Array<ChatMessage>;
   stream?: boolean;
   onDataReceived?: (data: any) => void;
   cursorStart?: number;
@@ -31,30 +27,32 @@ type HttpHeaders = {
   "Authorization"?: string;
 };
 
-export class OpenAIProvider implements ProviderInterface {
-  name = 'OpenAI';
-  baseUrl: string;
-  apiKey: string;
+export class OpenAIProvider extends AbstractProvider {
+  name = "OpenAI";
   requireAuth: boolean;
-  modelName: string;
 
-  constructor(apiKey: string, modelName: string, baseUrl: string, requireAuth: boolean) {
-    this.apiKey = apiKey;
-    this.modelName = modelName;
-    this.baseUrl = baseUrl;
+  constructor(
+    apiKey: string,
+    modelName: string,
+    baseUrl: string,
+    requireAuth: boolean,
+  ) {
+    super("OpenAI", apiKey, baseUrl, modelName);
     this.requireAuth = requireAuth;
   }
 
-  async chatWithAI({messages, stream, onDataReceived}: StreamChatOptions): Promise<any> {
+  async chatWithAI(
+    { messages, stream, onDataReceived }: StreamChatOptions,
+  ): Promise<any> {
     if (stream) {
-      return await this.streamChat({messages, onDataReceived});
+      return await this.streamChat({ messages, onDataReceived });
     } else {
       return await this.nonStreamingChat(messages);
     }
   }
 
   async streamChat(options: StreamChatOptions): Promise<void> {
-    const {messages, onDataReceived} = options;
+    const { messages, onDataReceived } = options;
 
     try {
       const sseUrl = `${this.baseUrl}/chat/completions`;
@@ -116,14 +114,13 @@ export class OpenAIProvider implements ProviderInterface {
     try {
       const body = JSON.stringify({
         model: this.modelName,
-        messages: messages
+        messages: messages,
       });
 
       const headers = {
         "Authorization": `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       };
-
 
       const response = await nativeFetch(
         this.baseUrl + "/chat/completions",
@@ -153,128 +150,6 @@ export class OpenAIProvider implements ProviderInterface {
       );
       throw error;
     }
-  }
-}
-
-export async function streamChatWithOpenAI({
-  messages,
-  cursorStart = undefined,
-  cursorFollow = false,
-  scrollIntoView = true,
-  includeChatSystemPrompt = false,
-}: StreamChatOptions): Promise<void> {
-  try {
-    if (!apiKey) await initializeOpenAI();
-
-    const sseUrl = `${aiSettings.openAIBaseUrl}/chat/completions`;
-    const payloadMessages: ChatMessage[] = [];
-    if (includeChatSystemPrompt) {
-      payloadMessages.push(chatSystemPrompt);
-    }
-    if ("systemMessage" in messages && "userMessage" in messages) {
-      payloadMessages.push(
-        { role: "system", content: messages.systemMessage } as ChatMessage,
-        { role: "user", content: messages.userMessage } as ChatMessage,
-      );
-    } else {
-      payloadMessages.push(...messages);
-    }
-
-    const headers: HttpHeaders = {
-      "Content-Type": "application/json",
-    };
-    if (aiSettings.requireAuth) {
-      headers["Authorization"] = `Bearer ${apiKey}`;
-    }
-    const sseOptions = {
-      method: "POST",
-      headers: headers,
-      payload: JSON.stringify({
-        model: aiSettings.defaultTextModel,
-        stream: true,
-        messages: payloadMessages,
-      }),
-      withCredentials: false,
-    };
-
-    const source = new SSE(sseUrl, sseOptions);
-    let cursorPos: number;
-    if (!cursorStart) {
-      cursorPos = await getPageLength();
-    } else {
-      cursorPos = cursorStart;
-    }
-    // TODO: Leaving this here for now, but it doesn't quite work.  Need to fix it later.
-    // const spinnerStates = ['⏳', '⌛️', '⏳', '⌛️'];
-    // const spinnerStates = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-    // const spinnerStates = ["…    ", "……  ", "……… ", "………"];
-    // let currentStateIndex = 0;
-    // let loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} `;
-    let loadingMsg = ` 🤔 Thinking …… `;
-    await editor.insertAtPos(loadingMsg, cursorPos);
-    let stillLoading = true;
-
-    const updateLoadingSpinner = async () => {
-      while (stillLoading) {
-        const replaceTo = cursorPos + loadingMsg.length;
-        currentStateIndex = (currentStateIndex + 1) % spinnerStates.length;
-        loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} …`;
-        await editor.replaceRange(cursorPos, replaceTo, loadingMsg);
-        await new Promise((resolve) => setTimeout(resolve, 250));
-      }
-    };
-    // updateLoadingSpinner(); // Start updating the spinner in the background
-    // await new Promise(resolve => setTimeout(resolve, 10000));
-
-    source.addEventListener("message", function (e) {
-      try {
-        if (e.data == "[DONE]") {
-          source.close();
-          stillLoading = false;
-        } else {
-          const data = JSON.parse(e.data);
-          const msg = data.choices[0]?.delta?.content || "";
-          if (stillLoading) {
-            stillLoading = false;
-            editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, msg);
-          } else {
-            editor.insertAtPos(msg, cursorPos);
-          }
-          cursorPos += msg.length;
-        }
-        if (cursorFollow) {
-          editor.moveCursor(cursorPos, true);
-        }
-        if (scrollIntoView) {
-          // TODO:
-          // editor.dispatch({
-          //   effects: [
-          //     EditorView.scrollIntoView(
-          //       pos,
-          //       {
-          //         y: "center",
-          //       },
-          //     ),
-          //   ],
-          // });
-        }
-      } catch (error) {
-        console.error("Error processing message event:", error, e.data);
-      }
-    });
-
-    source.addEventListener("end", function () {
-      source.close();
-    });
-
-    source.stream();
-  } catch (error) {
-    console.error("Error streaming from OpenAI chat endpoint:", error);
-    await editor.flashNotification(
-      "Error streaming from OpenAI chat endpoint.",
-      "error",
-    );
-    throw error;
   }
 }
 

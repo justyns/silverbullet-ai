@@ -5,12 +5,13 @@ import {
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
-import { initializeOpenAI, initIfNeeded, currentAIProvider, chatSystemPrompt } from "./src/init.ts";
 import {
-  chatWithOpenAI,
-  generateImageWithDallE,
-  streamChatWithOpenAI,
-} from "./src/openai.ts";
+  chatSystemPrompt,
+  currentAIProvider,
+  initializeOpenAI,
+  initIfNeeded,
+} from "./src/init.ts";
+import { chatWithOpenAI, generateImageWithDallE } from "./src/openai.ts";
 import { convertPageToMessages, folderName } from "./src/utils.ts";
 
 /**
@@ -69,15 +70,21 @@ export async function callOpenAIwithNote() {
     weekday: "long",
   });
 
-  await streamChatWithOpenAI({
-    messages: {
-      systemMessage:
-        "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
-      userMessage:
-        `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
-    },
-    cursorStart: selectedTextInfo.isWholeNote ? undefined : selectedTextInfo.to,
-  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+      },
+      {
+        role: "user",
+        content:
+          `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".\nUser Prompt: ${userPrompt}\nNote Content:\n${selectedTextInfo.text}`,
+      },
+    ],
+    stream: true,
+  }, selectedTextInfo.to);
 }
 
 /**
@@ -147,14 +154,18 @@ export async function tagNoteWithAI() {
  */
 export async function streamOpenAIWithSelectionAsPrompt() {
   const selectedTextInfo = await getSelectedTextOrNote();
+  const cursorPos = selectedTextInfo.to;
 
-  await streamChatWithOpenAI({
-    messages: {
-      systemMessage:
-        "You are an AI note assistant in a markdown-based note tool.",
-      userMessage: selectedTextInfo.text,
-    },
-  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content: "You are an AI note assistant in a markdown-based note tool.",
+      },
+      { role: "user", content: selectedTextInfo.text },
+    ],
+    stream: true,
+  }, cursorPos);
 }
 
 /**
@@ -179,26 +190,11 @@ export async function streamChatOnPage() {
   // Move cursor to the next **user** prompt, but leave cursorPos at the assistant prompt
   await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
 
-  const loadingMsg = "🤔 Thinking … ";
-  await editor.insertAtPos(loadingMsg, cursorPos);
-  let stillLoading = true;
-
-  const onDataReceived = (data: string) => {
-    if (stillLoading) {
-      editor.replaceRange(cursorPos, cursorPos + loadingMsg.length, data);
-      stillLoading = false;
-    } else {
-      editor.insertAtPos(data, cursorPos);
-    }
-    cursorPos += data.length;
-  };
-
   try {
-    await currentAIProvider.chatWithAI({
+    await currentAIProvider.streamChatIntoEditor({
       messages: messages,
       stream: true,
-      onDataReceived: onDataReceived,
-    });
+    }, cursorPos);
   } catch (error) {
     console.error("Error streaming chat on page:", error);
     await editor.flashNotification("Error streaming chat on page.", "error");
