@@ -9,7 +9,7 @@ import {
   TemplateObject,
 } from "$type/types.ts";
 import { getPageLength } from "./editorUtils.ts";
-import { currentAIProvider } from "./src/init.ts";
+import { currentAIProvider } from "./init.ts";
 import { supportsPlugSlashComplete } from "./utils.ts";
 
 // TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
@@ -131,6 +131,9 @@ export async function insertAiPromptFromTemplate(
       break;
     case "modal":
       // TODO: How do we handle modals?
+      break;
+    case "replace":
+      // TODO: Replace selection
       break;
     case "cursor":
     default:

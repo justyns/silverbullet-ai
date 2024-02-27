@@ -1,14 +1,7 @@
 import "$sb/lib/native_fetch.ts";
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { getPageLength } from "./editorUtils.ts";
-import {
-  aiSettings,
-  apiKey,
-  ChatMessage,
-  chatSystemPrompt,
-  initializeOpenAI,
-} from "./init.ts";
+import { aiSettings, apiKey, ChatMessage, initializeOpenAI } from "./init.ts";
 
 import { AbstractProvider } from "./interfaces.ts";
 
@@ -150,70 +143,6 @@ export class OpenAIProvider extends AbstractProvider {
       );
       throw error;
     }
-  }
-}
-
-/**
- * This is the non-streaming version.  I'll probably get rid of it soon in favor of always streaming the response.
- */
-export async function chatWithOpenAI(
-  systemMessage: string,
-  userMessages: Array<{ role: string; content: string }>,
-) {
-  try {
-    if (!apiKey) await initializeOpenAI();
-    if (!apiKey || !aiSettings || !aiSettings.openAIBaseUrl) {
-      await editor.flashNotification(
-        "API key or AI settings are not properly configured.",
-        "error",
-      );
-      throw new Error("API key or AI settings are not properly configured.");
-    }
-
-    const body = JSON.stringify({
-      model: aiSettings.defaultTextModel,
-      messages: [
-        { role: "system", content: systemMessage },
-        ...userMessages,
-      ],
-    });
-
-    // console.log("Sending body", body);
-
-    const headers = {
-      "Authorization": `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    };
-
-    // console.log("Request headers:", headers);
-
-    const response = await nativeFetch(
-      aiSettings.openAIBaseUrl + "/chat/completions",
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
-    );
-
-    if (!response.ok) {
-      console.error("http response: ", response);
-      console.error("http response body: ", await response.json());
-      throw new Error(`HTTP error, status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    if (!data || !data.choices || data.choices.length === 0) {
-      throw new Error("Invalid response from OpenAI.");
-    }
-    return data;
-  } catch (error) {
-    console.error("Error calling OpenAI chat endpoint:", error);
-    await editor.flashNotification(
-      "Error calling OpenAI chat endpoint.",
-      "error",
-    );
-    throw error;
   }
 }
 
