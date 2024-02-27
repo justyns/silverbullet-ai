@@ -44,7 +44,7 @@ export class OpenAIProvider extends AbstractProvider {
     }
   }
 
-  async streamChat(options: StreamChatOptions): Promise<void> {
+  async streamChat(options: StreamChatOptions): Promise<string> {
     const { messages, onDataReceived } = options;
 
     try {
@@ -70,15 +70,17 @@ export class OpenAIProvider extends AbstractProvider {
       };
 
       const source = new SSE(sseUrl, sseOptions);
+      let fullMsg = "";
 
       source.addEventListener("message", function (e) {
         try {
           if (e.data == "[DONE]") {
             source.close();
+            return fullMsg;
           } else {
             const data = JSON.parse(e.data);
             const msg = data.choices[0]?.delta?.content || "";
-            // TODO: Send msg to a callback that should be registered to the interface
+            fullMsg += msg;
             if (onDataReceived) {
               onDataReceived(msg);
             }
@@ -90,6 +92,7 @@ export class OpenAIProvider extends AbstractProvider {
 
       source.addEventListener("end", function () {
         source.close();
+        return fullMsg;
       });
 
       source.stream();
@@ -101,6 +104,7 @@ export class OpenAIProvider extends AbstractProvider {
       );
       throw error;
     }
+    return "";
   }
 
   async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {
@@ -146,6 +150,7 @@ export class OpenAIProvider extends AbstractProvider {
   }
 }
 
+// TODO: Make an interface for image generating models too
 export async function generateImageWithDallE(
   prompt: string,
   n: 1,

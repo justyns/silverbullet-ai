@@ -19,10 +19,6 @@ functions:
     path: sbai.ts:openSummaryPanel
     command:
       name: "AI: Summarize Note and open summary"
-  insertSummary:
-    path: sbai.ts:insertSummary
-    command:
-      name: "AI: Insert Summary"
   callOpenAI:
     path: sbai.ts:callOpenAIwithNote
     command:

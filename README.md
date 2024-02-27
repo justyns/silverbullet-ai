@@ -22,8 +22,6 @@ The list below are the commands available in this plugin.
 <!-- start-commands-and-functions -->
 - **AI: Summarize Note and open summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
 text.  Opens the resulting summary in a temporary right pane.
-- **AI: Insert Summary**: Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
-text.  Inserts the summary at the cursor's position.
 - **AI: Call OpenAI with Note as context**: Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
 If the user has no text selected, the entire note is used as the note content.
 The response is streamed to the cursor position.
