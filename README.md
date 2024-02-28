@@ -1,10 +1,12 @@
 # SilverBullet AI Plug
 
-**WIP Notice**: This plug is still in early development and may not work as expected. Please report any issues you encounter, or feature ideas.  Currently an OpenAI api key is required, but support for local LLMs will be added in the future.
+This plug integrates various LLMs (Large Language Models) into [SilverBullet](https://silverbullet.md/), the markdown-based note taking tool, allowing users to perform various AI-related tasks directly within their notes. It requires SilverBullet to work, and also access to either a self-hosted or SaaS LLM such as Ollama, OpenAI (ChatGPT), Google Gemini, etc.
+
+silverbullet-ai is very new and is still in early development.  It may not work as expected.  Please report any issues you encounter, or feature ideas.
+
+If you are new here, start with either the `AI: Chat on current page` command or the custom templated prompts!
 
 **Warning**: Please backup your notes before using this plug.  It inserts and replaces text at certain points and isn't well-tested yet, so back up your data!
-
-This plug integrates OpenAI functionalities into SilverBullet, allowing users to perform various AI-related tasks directly within their notes. It requires the SilverBullet platform and an OpenAI API key to work.
 
 ## Features
 
@@ -124,6 +126,7 @@ ai:
 
 **Note**: The secretName defined means you need to put the api key from [google ai studio](https://aistudio.google.com/app/apikey) in your SECRETS file as `GOOGLE_AI_STUDIO_KEY`.
 
+**Note 2**: AI Studio is not the same as the Gemini App (previously Bard).  You may have access to https://gemini.google.com/app but it does not offer an api key needed for integrating 3rd party tools.  Instead, you need access to https://aistudio.google.com/app specifically.
 
 #### Chat Custom Instructions
 
