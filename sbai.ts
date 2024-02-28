@@ -33,6 +33,7 @@ export async function reloadConfig(pageName: string) {
  * The response is streamed to the cursor position.
  */
 export async function callOpenAIwithNote() {
+  await initIfNeeded();
   const selectedTextInfo = await getSelectedTextOrNote();
   const userPrompt = await editor.prompt(
     "Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context.",
@@ -79,6 +80,7 @@ export async function openSummaryPanel() {
  * Generated tags are added to the note's frontmatter.
  */
 export async function tagNoteWithAI() {
+  await initIfNeeded();
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
   const response = await currentAIProvider.chatWithAI({
@@ -173,6 +175,8 @@ export async function streamChatOnPage() {
  * The resulting image is then uploaded to the space and inserted into the note with a caption.
  */
 export async function promptAndGenerateImage() {
+  await initIfNeeded();
+
   try {
     const prompt = await editor.prompt("Enter a prompt for DALL·E:");
     if (!prompt || !prompt.trim()) {
@@ -224,6 +228,7 @@ export async function queryOpenAI(
   systemPrompt?: string,
 ): Promise<string> {
   try {
+    await initIfNeeded();
     const messages: ChatMessage[] = [];
     const defaultSystemPrompt =
       "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";

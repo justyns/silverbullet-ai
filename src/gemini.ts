@@ -1,10 +1,19 @@
 import { SSE } from "npm:sse.js@2.2.0";
-import { apiKey, ChatMessage, initializeOpenAI } from "./init.ts";
+import { ChatMessage } from "./init.ts";
 import { AbstractProvider, StreamChatOptions } from "./interfaces.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
   "Authorization"?: string;
+};
+
+type GeminiChatPart = {
+  text: string;
+};
+
+type GeminiChatContent = {
+  parts: GeminiChatPart[];
+  role: string;
 };
 
 export class GeminiProvider extends AbstractProvider {
@@ -18,10 +27,25 @@ export class GeminiProvider extends AbstractProvider {
     super("Gemini", apiKey, baseUrl, modelName);
   }
 
+  async listModels(): Promise<any> {
+    const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.models || [];
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+      throw error;
+    }
+  }
+
   async chatWithAI(
     { messages, stream, onDataReceived }: StreamChatOptions,
   ): Promise<any> {
-    console.log("Starting chat with Gemini: ", messages);
+    // console.log("Starting chat with Gemini: ", messages);
     if (stream) {
       return await this.streamChat({ messages, onDataReceived });
     } else {
@@ -34,8 +58,6 @@ export class GeminiProvider extends AbstractProvider {
     const { messages, onDataReceived } = options;
 
     try {
-      if (!apiKey) await initializeOpenAI();
-
       const sseUrl =
         `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
 
@@ -43,12 +65,12 @@ export class GeminiProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const payloadContents = [];
+      const payloadContents: GeminiChatContent[] = [];
       let previousRole = "";
       messages.forEach((message: ChatMessage) => {
-        let role;
+        let role = "user";
         if (message.role === "system" || message.role === "user") {
-          // No conept of "system" messages
+          // No concept of "system" messages
           role = "user";
         } else if (message.role === "assistant") {
           role = "model";
@@ -73,7 +95,7 @@ export class GeminiProvider extends AbstractProvider {
         previousRole = role;
       });
 
-      console.log("payloadContents", payloadContents);
+      // console.log("payloadContents", payloadContents);
 
       const sseOptions = {
         method: "POST",
@@ -122,7 +144,7 @@ export class GeminiProvider extends AbstractProvider {
       });
 
       source.stream();
-      console.log("source.stream started");
+      // console.log("source.stream started");
     } catch (error) {
       console.error("Error streaming from Gemini chat endpoint:", error);
       throw error;

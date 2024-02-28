@@ -41,6 +41,9 @@ export abstract class AbstractProvider implements ProviderInterface {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.modelName = modelName;
+    console.log(
+      `New AI Provider initialized: ${this.name}, Base URL: ${this.baseUrl}, Model Name: ${this.modelName}`,
+    );
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;
@@ -63,14 +66,26 @@ export abstract class AbstractProvider implements ProviderInterface {
     // let loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} `;
 
     const onData = (data: string) => {
-      if (stillLoading) {
-        editor.replaceRange(cursorPos, cursorPos + loadingMessage.length, data);
-        stillLoading = false;
-      } else {
-        editor.insertAtPos(data, cursorPos);
+      try {
+        if (stillLoading) {
+          editor.replaceRange(
+            cursorPos,
+            cursorPos + loadingMessage.length,
+            data,
+          );
+          stillLoading = false;
+        } else {
+          editor.insertAtPos(data, cursorPos);
+        }
+        cursorPos += data.length;
+        if (onDataReceived) onDataReceived(data);
+      } catch (error) {
+        console.error("Error handling chat stream data:", error);
+        editor.flashNotification(
+          "An error occurred while processing chat data.",
+          "error",
+        );
       }
-      cursorPos += data.length;
-      if (onDataReceived) onDataReceived(data);
     };
 
     await this.chatWithAI({ ...options, onDataReceived: onData });

@@ -94,6 +94,9 @@ async function initializeOpenAI() {
       apiKey,
       aiSettings.defaultTextModel,
     );
+  } else {
+    console.error(`Unsupported AI provider: ${aiSettings.provider}.`);
+    throw new Error(`Unsupported AI provider: ${aiSettings.provider}. Please configure a supported provider.`);
   }
 
   chatSystemPrompt = {

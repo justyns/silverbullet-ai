@@ -9,7 +9,7 @@ import {
   TemplateObject,
 } from "$type/types.ts";
 import { getPageLength } from "./editorUtils.ts";
-import { currentAIProvider } from "./init.ts";
+import { ChatMessage, currentAIProvider, initIfNeeded } from "./init.ts";
 import { supportsPlugSlashComplete } from "./utils.ts";
 
 // TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
@@ -78,7 +78,7 @@ export async function insertAiPromptFromTemplate(
     console.log("templatePage from slash completion: ", templatePage);
     selectedTemplate = {
       ref: slashCompletion.templatePage,
-      systemPrompt: aiprompt.systemPrompt ||
+      systemPrompt: aiprompt.systemPrompt || aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",
     };
@@ -97,6 +97,7 @@ export async function insertAiPromptFromTemplate(
     "page-end",
     // "frontmatter",
     // "modal",
+    // "replace",
   ];
   if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
     console.error(
@@ -111,9 +112,21 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
-  const templateText = await space.readPage(selectedTemplate.ref);
-  const currentPage = await editor.getCurrentPage();
-  const pageMeta = await space.getPageMeta(currentPage);
+  await initIfNeeded();
+
+  let templateText, currentPage, pageMeta;
+  try {
+    templateText = await space.readPage(selectedTemplate.ref);
+    currentPage = await editor.getCurrentPage();
+    pageMeta = await space.getPageMeta(currentPage);
+  } catch (error) {
+    console.error("Error fetching template details or page metadata", error);
+    await editor.flashNotification(
+      "Error fetching template details or page metadata",
+      "error",
+    );
+    return;
+  }
 
   let cursorPos;
   switch (selectedTemplate.insertAt) {
@@ -140,18 +153,25 @@ export async function insertAiPromptFromTemplate(
       cursorPos = await editor.getCursor();
   }
 
-  //   console.log("templatetext: ", templateText);
+  console.log("templatetext: ", templateText);
 
   const renderedTemplate = await renderTemplate(templateText, pageMeta, {
     page: pageMeta,
   });
-  //   console.log("Rendered template:", renderedTemplate);
+  console.log("Rendered template:", renderedTemplate);
 
+  const messages: ChatMessage[] = [{
+    role: "user",
+    content: renderedTemplate.text,
+  }];
+  if (selectedTemplate.systemPrompt) {
+    messages.unshift({
+      role: "system",
+      content: selectedTemplate.systemPrompt,
+    });
+  }
   await currentAIProvider.streamChatIntoEditor({
-    messages: [
-      { role: "system", content: selectedTemplate.systemPrompt },
-      { role: "user", content: renderedTemplate.text },
-    ],
+    messages: messages,
     stream: true,
   }, cursorPos);
 }
