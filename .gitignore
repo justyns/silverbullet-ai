@@ -5,3 +5,4 @@ test-space/
 *.db-wal
 *.db
 .DS_Store
+silverbullet-ai.plug.js
