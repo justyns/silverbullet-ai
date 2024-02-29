@@ -96,8 +96,12 @@ export async function enrichChatMessages(
         continue;
       }
       if (!hasMatch) {
-        enrichedContent +=
-          `\n\nBase your answer on the content of the following referenced pages (referenced above using the [[page name]] format). In these listings ~~~ is used to mark the page's content start and end:`;
+        enrichedContent += `\n\n${
+          "Base your answer on the content of the following referenced pages " +
+          "(referenced above using the [[page name]] format). In these listings ~~~ " +
+          "is used to mark the page's content start and end. If context is missing, " +
+          "always ask me to link directly to a page mentioned in the context if."
+        }`;
         hasMatch = true;
       }
       try {
