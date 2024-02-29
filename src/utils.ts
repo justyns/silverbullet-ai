@@ -1,5 +1,5 @@
-import { editor } from "$sb/syscalls.ts";
-import { ChatMessage } from "./init.ts";
+import { editor, space } from "$sb/syscalls.ts";
+import { aiSettings, ChatMessage } from "./init.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -11,10 +11,8 @@ export function folderName(path: string) {
  * Each message can also be multiple lines.
  *
  * Valid roles are system, assistant, and user.
- *
- * @returns {Array<ChatMessage>}
  */
-export async function convertPageToMessages() {
+export async function convertPageToMessages(): Promise<Array<ChatMessage>> {
   const pageText = await editor.getText();
   const lines = pageText.split("\n");
   const messages: ChatMessage[] = [];
@@ -48,7 +46,7 @@ export async function convertPageToMessages() {
 
 // Borrowed from https://github.com/joekrill/silverbullet-treeview/blob/main/compatability.ts
 // TODO: There's probably a library for comparing semver versions, but this works for now (thanks chatgpt)
-export async function supportsPlugSlashComplete() {
+export async function supportsPlugSlashComplete(): Promise<boolean> {
   try {
     const ver = await syscall("system.getVersion");
     const [major, minor, patch] = ver.split(".").map(Number);
@@ -63,4 +61,70 @@ export async function supportsPlugSlashComplete() {
     // system.getVersion was added in edge before 0.7.2, so assume this wont' work if the call doesn't succeed
     return false;
   }
+}
+
+/**
+ * Parses an array of ChatMessages and enriches them with additional content.
+ */
+export async function enrichChatMessages(
+  messages: ChatMessage[],
+): Promise<ChatMessage[]> {
+  const enrichedMessages: ChatMessage[] = [];
+
+  for (const message of messages) {
+    let enrichedContent = message.content;
+    if (message.role === "assistant") {
+      enrichedMessages.push(message);
+      continue;
+    }
+
+    if (aiSettings.chat.parseWikiLinks) {
+      // Parse wiki links and provide them as context
+      enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+    }
+
+    enrichedMessages.push({ ...message, content: enrichedContent });
+  }
+
+  return enrichedMessages;
+}
+
+/**
+ * Enriches content by finding wiki links and appending related page content.
+ */
+async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
+  const seenPages: string[] = [];
+  let enrichedContent = content;
+  // Regular expression to find wiki links in the format [[PageName]]
+  const wikiLinkRegex = /\[\[([^\]]+)\]\]/g;
+  let match;
+  let hasMatch = false;
+
+  while ((match = wikiLinkRegex.exec(content)) !== null) {
+    const pageName = match[1];
+    if (seenPages.includes(pageName)) {
+      // Only include _new_ page contexts
+      continue;
+    }
+    if (!hasMatch) {
+      enrichedContent += `\n\n${
+        "Base your answer on the content of the following referenced pages " +
+        "(referenced above using the [[page name]] format). In these listings ~~~ " +
+        "is used to mark the page's content start and end. If context is missing, " +
+        "always ask me to link directly to a page mentioned in the context if."
+      }`;
+      hasMatch = true;
+    }
+    try {
+      // Attempt to pull the page with the name specified in the wiki link
+      const pageContent = await space.readPage(pageName);
+      seenPages.push(pageName);
+      enrichedContent +=
+        `\n\nContent of the [[${pageName}]] page:\n~~~\n${pageContent}\n~~~\n`;
+    } catch (error) {
+      console.error(`Error fetching page '${pageName}':`, error);
+    }
+  }
+
+  return enrichedContent;
 }

@@ -13,6 +13,7 @@ export type ChatMessage = {
 type ChatSettings = {
   userInformation: string;
   userInstructions: string;
+  parseWikiLinks: boolean;
 };
 
 type AISettings = {
@@ -60,8 +61,18 @@ async function initializeOpenAI() {
     provider: "OpenAI",
     chat: {},
   };
+  const defaultChatSettings: ChatSettings = {
+    userInformation: "",
+    userInstructions: "",
+    parseWikiLinks: true,
+  };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
+  newCombinedSettings.chat = {
+    ...defaultChatSettings,
+    ...(newSettings.chat || {}),
+  };
+
   if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
     console.log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
@@ -96,7 +107,9 @@ async function initializeOpenAI() {
     );
   } else {
     console.error(`Unsupported AI provider: ${aiSettings.provider}.`);
-    throw new Error(`Unsupported AI provider: ${aiSettings.provider}. Please configure a supported provider.`);
+    throw new Error(
+      `Unsupported AI provider: ${aiSettings.provider}. Please configure a supported provider.`,
+    );
   }
 
   chatSystemPrompt = {
