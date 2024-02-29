@@ -13,7 +13,11 @@ import {
   initIfNeeded,
 } from "./src/init.ts";
 import { generateImageWithDallE } from "./src/openai.ts";
-import { convertPageToMessages, folderName } from "./src/utils.ts";
+import {
+  convertPageToMessages,
+  enrichChatMessages,
+  folderName,
+} from "./src/utils.ts";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.
@@ -151,6 +155,9 @@ export async function streamChatOnPage() {
     return;
   }
   messages.unshift(chatSystemPrompt);
+  const enrichedMessages = await enrichChatMessages(messages);
+  console.log("enrichedMessages", enrichedMessages);
+
   let cursorPos = await getPageLength();
   await editor.insertAtPos("\n\n**assistant**: ", cursorPos);
   cursorPos += "\n\n**assistant**: ".length;
@@ -161,7 +168,7 @@ export async function streamChatOnPage() {
 
   try {
     await currentAIProvider.streamChatIntoEditor({
-      messages: messages,
+      messages: enrichedMessages,
       stream: true,
     }, cursorPos);
   } catch (error) {
