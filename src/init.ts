@@ -13,6 +13,7 @@ export type ChatMessage = {
 type ChatSettings = {
   userInformation: string;
   userInstructions: string;
+  parseWikiLinks: boolean;
 };
 
 type AISettings = {
@@ -58,7 +59,9 @@ async function initializeOpenAI() {
     requireAuth: true,
     secretName: "OPENAI_API_KEY",
     provider: "OpenAI",
-    chat: {},
+    chat: {
+      parseWikiLinks: true,
+    },
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
