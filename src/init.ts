@@ -59,12 +59,20 @@ async function initializeOpenAI() {
     requireAuth: true,
     secretName: "OPENAI_API_KEY",
     provider: "OpenAI",
-    chat: {
-      parseWikiLinks: true,
-    },
+    chat: {},
+  };
+  const defaultChatSettings: ChatSettings = {
+    userInformation: "",
+    userInstructions: "",
+    parseWikiLinks: true,
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
+  newCombinedSettings.chat = {
+    ...defaultChatSettings,
+    ...(newSettings.chat || {}),
+  };
+
   if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
     console.log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
