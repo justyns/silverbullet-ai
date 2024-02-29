@@ -67,7 +67,17 @@ export abstract class AbstractProvider implements ProviderInterface {
 
     const onData = (data: string) => {
       try {
+        if (!data) {
+          console.log("No data received from LLM");
+          return;
+        }
         if (stillLoading) {
+          if (["`", "-", "*"].includes(data.charAt(0))) {
+            // Sometimes we get a response that is _only_ a code block, or a markdown list/etc
+            // To let SB parse them better, we just add a new line before rendering it
+            console.log("First character of response is:", data.charAt(0));
+            data = "\n" + data;
+          }
           editor.replaceRange(
             cursorPos,
             cursorPos + loadingMessage.length,
