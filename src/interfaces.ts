@@ -20,9 +20,21 @@ export interface ProviderInterface {
   ) => Promise<void>;
 }
 
-export interface ModelInterface {
+export type ImageGenerationOptions = {
+  numImages: number;
+  prompt: string;
+  size: "1024x1024" | "512x512";
+  quality: "hd" | "standard";
+};
+
+export interface ImageProviderInterface {
   name: string;
-  provider: ProviderInterface;
+  apiKey: string;
+  baseUrl: string;
+  modelName: string;
+  generateImage: (
+    options: ImageGenerationOptions,
+  ) => Promise<string>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -57,13 +69,6 @@ export abstract class AbstractProvider implements ProviderInterface {
     let cursorPos = cursorStart ?? await getPageLength();
     await editor.insertAtPos(loadingMessage, cursorPos);
     let stillLoading = true;
-
-    // TODO: Leaving this here for now, Need to try it again later
-    // const spinnerStates = ['⏳', '⌛️', '⏳', '⌛️'];
-    // const spinnerStates = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-    // const spinnerStates = ["…    ", "……  ", "……… ", "………"];
-    // let currentStateIndex = 0;
-    // let loadingMsg = ` 🤔 Thinking ${spinnerStates[currentStateIndex]} `;
 
     const onData = (data: string) => {
       try {
@@ -100,4 +105,30 @@ export abstract class AbstractProvider implements ProviderInterface {
 
     await this.chatWithAI({ ...options, onDataReceived: onData });
   }
+}
+
+export abstract class AbstractImageProvider implements ImageProviderInterface {
+  apiKey: string;
+  baseUrl: string;
+  name: string;
+  modelName: string;
+  requireAuth: boolean;
+
+  constructor(
+    apiKey: string,
+    baseUrl: string,
+    name: string,
+    modelName: string,
+    requireAuth: boolean = true,
+  ) {
+    this.apiKey = apiKey;
+    this.baseUrl = baseUrl;
+    this.name = name;
+    this.modelName = modelName;
+    this.requireAuth = requireAuth;
+  }
+
+  abstract generateImage(
+    options: ImageGenerationOptions,
+  ): Promise<string>;
 }

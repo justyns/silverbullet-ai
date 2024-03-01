@@ -2,8 +2,9 @@ import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore } from "$sb/syscalls.ts";
 import { GeminiProvider } from "./gemini.ts";
-import { ProviderInterface } from "./interfaces.ts";
+import { ImageProviderInterface, ProviderInterface } from "./interfaces.ts";
 import { OpenAIProvider } from "./openai.ts";
+import { DallEProvider } from "./dalle.ts";
 
 export type ChatMessage = {
   content: string;
@@ -21,8 +22,13 @@ enum Provider {
   Gemini = "gemini",
 }
 
+enum ImageProvider {
+  DallE = "dalle",
+}
+
 export type AISettings = {
   textModels: ModelConfig[];
+  imageModels: ImageModelConfig[];
   chat: ChatSettings;
 
   // These are deprecated and will be removed in a future release
@@ -51,11 +57,23 @@ export type ModelConfig = {
   requireAuth?: boolean;
 };
 
+export type ImageModelConfig = {
+  name: string;
+  description: string;
+  modelName: string;
+  provider: ImageProvider;
+  secretName: string;
+  baseUrl?: string;
+  requireAuth?: boolean;
+};
+
 export let apiKey: string;
 export let aiSettings: AISettings;
 export let chatSystemPrompt: ChatMessage;
 export let currentAIProvider: ProviderInterface;
+export let currentImageProvider: ImageProviderInterface;
 export let currentModel: ModelConfig;
+export let currentImageModel: ImageModelConfig;
 
 export async function initIfNeeded() {
   const selectedModel = await getSelectedTextModel();
@@ -71,6 +89,14 @@ export async function getSelectedTextModel() {
   return await clientStore.get("ai.selectedTextModel");
 }
 
+export async function getSelectedImageModel() {
+  return await clientStore.get("ai.selectedImageModel");
+}
+
+export async function setSelectedImageModel(model: ImageModelConfig) {
+  await clientStore.set("ai.selectedImageModel", model);
+}
+
 export async function setSelectedTextModel(model: ModelConfig) {
   await clientStore.set("ai.selectedTextModel", model);
 }
@@ -82,6 +108,33 @@ async function getAndConfigureModel() {
     throw new Error("No text model selected or available as default.");
   }
   await configureSelectedModel(selectedModel);
+}
+
+async function getAndConfigureImageModel() {
+  const selectedImageModel = await getSelectedImageModel() ||
+    aiSettings.imageModels[0];
+  if (!selectedImageModel) {
+    throw new Error("No image model selected or available as default.");
+  }
+  await configureSelectedImageModel(selectedImageModel);
+}
+
+function setupImageProvider(model: ImageModelConfig) {
+  const providerName = model.provider.toLowerCase();
+  console.log("Provider name", providerName);
+  switch (providerName) {
+    case ImageProvider.DallE:
+      currentImageProvider = new DallEProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.dallEBaseUrl,
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported image provider: ${model.provider}. Please configure a supported provider.`,
+      );
+  }
 }
 
 function setupAIProvider(model: ModelConfig) {
@@ -123,6 +176,26 @@ export async function configureSelectedModel(model: ModelConfig) {
 
   currentModel = model;
   setupAIProvider(model);
+}
+
+export async function configureSelectedImageModel(model: ImageModelConfig) {
+  console.log("configureSelectedImageModel called with:", model);
+  if (!model) {
+    throw new Error("No image model provided to configure");
+  }
+  const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+  if (newApiKey !== apiKey) {
+    apiKey = newApiKey;
+    console.log("API key updated for image model");
+  }
+  if (!apiKey) {
+    throw new Error(
+      "AI API key is missing for image model. Please set it in the secrets page.",
+    );
+  }
+
+  currentImageModel = model;
+  setupImageProvider(model);
 }
 
 async function loadAndMergeSettings() {
@@ -199,6 +272,7 @@ export async function initializeOpenAI(configure = true) {
 
   if (configure) {
     await getAndConfigureModel();
+    await getAndConfigureImageModel();
   }
 
   chatSystemPrompt = {
