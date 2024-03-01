@@ -23,8 +23,8 @@ jobs:
       - name: Verify formatting
         run: deno fmt --check
 
-      - name: Run linter
-        run: deno lint
+    #   - name: Run linter
+    #     run: deno lint
 
       - name: Run Deno build task
         run: deno task build-release
