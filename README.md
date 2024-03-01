@@ -36,6 +36,8 @@ The resulting image is then uploaded to the space and inserted into the note wit
 New responses are always appended to the end of the page.
 - **AI: Execute AI Prompt from Custom Template**: Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
 Valid templates must have a value for aiprompt.description in the frontmatter.
+- **AI: Select Text Model from Config**: undefined
+- **AI: Select Image Model from Config**: undefined
 
 <!-- end-commands-and-functions -->
 
@@ -49,7 +51,9 @@ If you do not have a SECRETS page, create one and name it `SECRETS`. Then, inser
     OPENAI_API_KEY: "openai key here"
     ```
 
-OPENAI_API_KEY is required for any model currently, but may not get used for local models that don't use keys.
+OPENAI_API_KEY is required for any openai api compatible model currently, but may not get used for local models that don't use keys.
+
+The secret does not necessary have to be `OPENAI_API_KEY`, it can be any name you want as long as you also change the `secretName` for the model to match.  This allows you to have multiple api keys for the same provider as an example.
 
 ### Configuration
 
@@ -57,12 +61,32 @@ To change the text generation model used by all commands, or other configurable 
 
 ```yaml
 ai:
-  # By default, gpt-3.5-turbo is used, but can be changed if desired.
-  # defaultTextModel: gpt-4-0125-preview
-  defaultTextModel: gpt-3.5-turbo
-  # Any openai compatible API _should_ be usable, but no testing is done on that currently
-  openAIBaseUrl: "https://api.openai.com/v1",
-  dallEBaseUrl: "https://api.openai.com/v1",
+  # configure one or more image models.  Only OpenAI's api is currently supported
+  imageModels:
+  - name: dall-e-3
+    modelName: dall-e-3
+    provider: dalle
+  - name: dall-e-2
+    modelName: dall-e-2
+    provider: dalle
+
+  # Configure one or more text models
+  # Provider may be openai or gemini.  Most local or self-hosted LLMs offer an openai compatible api, so choose openai as the provider for those and change the baseUrl accordingly.
+  textModels:
+  - name: ollama-phi-2
+    modelName: phi-2
+    provider: openai
+    baseUrl: http://localhost:11434/v1
+    requireAuth: false
+  - name: gpt-4-turbo
+    provider: openai
+    modelName: gpt-4-0125-preview
+  - name: gpt-4-vision-preview
+    provider: openai
+    modelName: gpt-4-vision-preview
+  - name: gpt-3-turbo
+    provider: openai
+    modelName: gpt-3.5-turbo-0125
   
   # Chat section is optional, but may help provide better results when using the Chat On Page command
   chat:
@@ -79,10 +103,13 @@ To use Ollama locally, make sure you have it running first and the desired model
 
 ```yaml
 ai:
-  # Run `ollama list` to see a list of models downloaded
-  defaultTextModel: phi
-  openAIBaseUrl: http://localhost:11434/v1
-  requireAuth: false
+  textModels:
+  - name: ollama-phi-2
+    # Run `ollama list` to see a list of models downloaded
+    modelName: phi
+    provider: openai
+    baseUrl: http://localhost:11434/v1
+    requireAuth: false
 ```
 
 **requireAuth**: When using Ollama and chrome, requireAuth needs to be set to false so that the Authorization header isn't set.  Otherwise you will get a CORS error.
@@ -93,11 +120,16 @@ Mistral.ai is a hosted service that offers an openai-compatible api.  You can us
 
 ```yaml
 ai:
-  defaultTextModel: mistral-medium
-  openAIBaseUrl: https://api.mistral.ai/v1
+  textModels:
+    - name: mistral-medium
+      modelName: mistral-medium
+      provider: openai
+      baseUrl: https://api.mistral.ai/v1
+      secretName: MISTRAL_API_KEY
 ```
 
-`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from their web console.
+`MISTRAL_API_KEY` also needs to be set in `SECRETS` using an api key generated from their web console.
+
 
 #### Perplexity.ai
 
@@ -105,8 +137,11 @@ Perplexity.ai is another hosted service that offers an openai-compatible api and
 
 ```yaml
 ai:
-  defaultTextModel: sonar-medium-online
-  openAIBaseUrl: https://api.perplexity.ai
+  textModels:
+    - name: sonar-medium-online
+      modelName: sonar-medium-online
+      provider: openai
+      baseUrl: https://api.perplexity.ai
 ```
 
 `OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from [their web console](https://www.perplexity.ai/settings/api).
@@ -119,14 +154,36 @@ To configure it, you can use these settings:
 
 ```yaml
 ai:
-  secretName: GOOGLE_AI_STUDIO_KEY
-  provider: Gemini
-  defaultTextModel: gemini-pro
+  textModels:
+    - name: gemini-pro
+      modelName: gemini-pro
+      provider: gemini
+      baseUrl: https://api.gemini.ai/v1
+      secretName: GOOGLE_AI_STUDIO_KEY
 ```
 
 **Note**: The secretName defined means you need to put the api key from [google ai studio](https://aistudio.google.com/app/apikey) in your SECRETS file as `GOOGLE_AI_STUDIO_KEY`.
 
 **Note 2**: AI Studio is not the same as the Gemini App (previously Bard).  You may have access to https://gemini.google.com/app but it does not offer an api key needed for integrating 3rd party tools.  Instead, you need access to https://aistudio.google.com/app specifically.
+
+
+#### Dall-E
+
+Dall-E can be configured to use for generating images with these settings:
+
+```yaml
+ai:
+  imageModels:
+  - name: dall-e-3
+    modelName: dall-e-3
+    provider: dalle
+  - name: dall-e-2
+    modelName: dall-e-2
+    provider: dalle
+```
+
+`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated in the OpenAI web console.
+`baseUrl` can also be set to another api compatible with openai/dall-e.
 
 #### Chat Custom Instructions
 

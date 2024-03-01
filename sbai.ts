@@ -6,11 +6,19 @@ import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import {
+  aiSettings,
   ChatMessage,
   chatSystemPrompt,
+  configureSelectedImageModel,
+  configureSelectedModel,
   currentAIProvider,
+  currentImageProvider,
+  ImageModelConfig,
   initializeOpenAI,
   initIfNeeded,
+  ModelConfig,
+  setSelectedImageModel,
+  setSelectedTextModel,
 } from "./src/init.ts";
 import { generateImageWithDallE } from "./src/openai.ts";
 import {
@@ -18,6 +26,7 @@ import {
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
+import { ImageGenerationOptions } from "./src/interfaces.ts";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.
@@ -27,8 +36,59 @@ import {
  */
 export async function reloadConfig(pageName: string) {
   if (pageName === "SETTINGS" || pageName === "SECRETS") {
-    await initializeOpenAI();
+    await initializeOpenAI(true);
   }
+}
+
+export async function selectModelFromConfig() {
+  if (!aiSettings || !aiSettings.textModels) {
+    await initializeOpenAI(false);
+  }
+  const modelOptions = aiSettings.textModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`,
+  }));
+  const selectedModel = await editor.filterBox("Select a model", modelOptions);
+
+  if (!selectedModel) {
+    await editor.flashNotification("No model selected.", "error");
+    return;
+  }
+  const selectedModelName = selectedModel.name;
+  await setSelectedTextModel(selectedModel as ModelConfig);
+  await configureSelectedModel(selectedModel as ModelConfig);
+
+  await editor.flashNotification(`Selected model: ${selectedModelName}`);
+  console.log(`Selected model:`, selectedModel);
+}
+
+export async function selectImageModelFromConfig() {
+  if (!aiSettings || !aiSettings.imageModels) {
+    await initializeOpenAI(false);
+  }
+  const imageModelOptions = aiSettings.imageModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`,
+  }));
+  const selectedImageModel = await editor.filterBox(
+    "Select an image model",
+    imageModelOptions,
+  );
+
+  if (!selectedImageModel) {
+    await editor.flashNotification("No image model selected.", "error");
+    return;
+  }
+  const selectedImageModelName = selectedImageModel.name;
+  await setSelectedImageModel(selectedImageModel as ImageModelConfig);
+  await configureSelectedImageModel(selectedImageModel as ImageModelConfig);
+
+  await editor.flashNotification(
+    `Selected image model: ${selectedImageModelName}`,
+  );
+  console.log(`Selected image model:`, selectedImageModel);
 }
 
 /**
@@ -194,7 +254,14 @@ export async function promptAndGenerateImage() {
       return;
     }
 
-    const imageData = await generateImageWithDallE(prompt, 1);
+    const imageOptions: ImageGenerationOptions = {
+      prompt: prompt,
+      numImages: 1,
+      size: "1024x1024",
+      quality: "hd",
+    };
+    const imageData = await currentImageProvider.generateImage(imageOptions);
+
     if (imageData && imageData.data && imageData.data.length > 0) {
       const base64Image = imageData.data[0].b64_json;
       const revisedPrompt = imageData.data[0].revised_prompt;

@@ -1,7 +1,7 @@
 import "$sb/lib/native_fetch.ts";
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { aiSettings, apiKey, ChatMessage, initializeOpenAI } from "./init.ts";
+import { ChatMessage } from "./init.ts";
 
 import { AbstractProvider } from "./interfaces.ts";
 
@@ -152,46 +152,5 @@ export class OpenAIProvider extends AbstractProvider {
       );
       throw error;
     }
-  }
-}
-
-// TODO: Make an interface for image generating models too
-export async function generateImageWithDallE(
-  prompt: string,
-  n: 1,
-  size: "1024x1024" | "512x512" = "1024x1024",
-  quality: "hd" | "standard" = "hd",
-) {
-  try {
-    if (!apiKey) await initializeOpenAI();
-    await editor.flashNotification("Contacting DALL·E, please wait...");
-    const response = await nativeFetch(
-      aiSettings.dallEBaseUrl + "/images/generations",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "dall-e-3",
-          prompt: prompt,
-          quality: quality,
-          n: n,
-          size: size,
-          response_format: "b64_json",
-        }),
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`HTTP error, status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error calling DALL·E image generation endpoint:", error);
-    throw error;
   }
 }
