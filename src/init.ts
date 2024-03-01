@@ -1,6 +1,6 @@
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
-import { clientStore, editor } from "$sb/syscalls.ts";
+import { clientStore } from "$sb/syscalls.ts";
 import { GeminiProvider } from "./gemini.ts";
 import { ProviderInterface } from "./interfaces.ts";
 import { OpenAIProvider } from "./openai.ts";
@@ -37,6 +37,7 @@ export type AISettings = {
   requireAuth: boolean;
   secretName: string;
   provider: Provider;
+  backwardsCompat: boolean;
   // Above is left for backwards compatibility
 };
 
@@ -75,13 +76,13 @@ export async function setSelectedTextModel(model: ModelConfig) {
 }
 
 async function getAndConfigureModel() {
-  const selectedModel = await getSelectedTextModel() || aiSettings.textModels[0];
+  const selectedModel = await getSelectedTextModel() ||
+    aiSettings.textModels[0];
   if (!selectedModel) {
     throw new Error("No text model selected or available as default.");
   }
   await configureSelectedModel(selectedModel);
 }
-
 
 function setupAIProvider(model: ModelConfig) {
   const providerName = model.provider.toLowerCase();
@@ -98,7 +99,9 @@ function setupAIProvider(model: ModelConfig) {
       currentAIProvider = new GeminiProvider(apiKey, model.modelName);
       break;
     default:
-      throw new Error(`Unsupported AI provider: ${model.provider}. Please configure a supported provider.`);
+      throw new Error(
+        `Unsupported AI provider: ${model.provider}. Please configure a supported provider.`,
+      );
   }
 }
 
@@ -113,7 +116,9 @@ export async function configureSelectedModel(model: ModelConfig) {
     console.log("API key updated");
   }
   if (!apiKey) {
-    throw new Error("AI API key is missing. Please set it in the secrets page.");
+    throw new Error(
+      "AI API key is missing. Please set it in the secrets page.",
+    );
   }
 
   currentModel = model;
@@ -136,6 +141,11 @@ async function loadAndMergeSettings() {
     parseWikiLinks: true,
   };
   const newSettings = await readSetting("ai", {});
+  if (newSettings.defaultTextModel) {
+    newSettings.backwardsCompat = true;
+  } else {
+    newSettings.backwardsCompat = false;
+  }
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
   newCombinedSettings.chat = {
     ...defaultChatSettings,
@@ -162,11 +172,14 @@ export async function initializeOpenAI(configure = true) {
     ];
     await setSelectedTextModel(newCombinedSettings.textModels[0]);
   } else if (
-    newCombinedSettings.textModels.length > 0 && newCombinedSettings.defaultTextModel
+    newCombinedSettings.textModels.length > 0 &&
+    newCombinedSettings.backwardsCompat
   ) {
     errorMessage =
       "Both textModels and defaultTextModel found in ai settings. Please remove defaultTextModel.";
-  } else if (!newCombinedSettings.textModels && !newCombinedSettings.defaultTextModel) {
+  } else if (
+    !newCombinedSettings.textModels && !newCombinedSettings.defaultTextModel
+  ) {
     errorMessage = "No textModels found in ai settings";
   }
 

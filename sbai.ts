@@ -6,14 +6,14 @@ import { editor, markdown, space } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import {
-  ChatMessage,
-  ModelConfig,
   aiSettings,
+  ChatMessage,
   chatSystemPrompt,
   configureSelectedModel,
   currentAIProvider,
-  initIfNeeded,
   initializeOpenAI,
+  initIfNeeded,
+  ModelConfig,
   setSelectedTextModel,
 } from "./src/init.ts";
 import { generateImageWithDallE } from "./src/openai.ts";
