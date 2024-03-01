@@ -16,6 +16,11 @@ export type ChatSettings = {
   parseWikiLinks: boolean;
 };
 
+enum Provider {
+  OpenAI = "openai",
+  Gemini = "gemini",
+}
+
 export type AISettings = {
   textModels: ModelConfig[];
   chat: ChatSettings;
@@ -31,7 +36,7 @@ export type AISettings = {
   dallEBaseUrl: string;
   requireAuth: boolean;
   secretName: string;
-  provider: "OpenAI" | "Gemini";
+  provider: Provider;
   // Above is left for backwards compatibility
 };
 
@@ -39,7 +44,7 @@ export type ModelConfig = {
   name: string;
   description: string;
   modelName: string;
-  provider: "openai" | "gemini";
+  provider: Provider;
   secretName: string;
   baseUrl?: string;
   requireAuth?: boolean;
@@ -81,7 +86,7 @@ async function getAndConfigureModel() {
 function setupAIProvider(model: ModelConfig) {
   const providerName = model.provider.toLowerCase();
   switch (providerName) {
-    case "openai":
+    case Provider.OpenAI:
       currentAIProvider = new OpenAIProvider(
         apiKey,
         model.modelName,
@@ -89,7 +94,7 @@ function setupAIProvider(model: ModelConfig) {
         model.requireAuth || aiSettings.requireAuth,
       );
       break;
-    case "gemini":
+    case Provider.Gemini:
       currentAIProvider = new GeminiProvider(apiKey, model.modelName);
       break;
     default:
