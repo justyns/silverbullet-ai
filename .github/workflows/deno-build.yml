@@ -1,22 +1,30 @@
-name: Deno Build and Commit
+name: Deno build test and push
 
 on:
   push:
-    branches:
-      - main
-      - '*'
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
 jobs:
-  build-and-commit:
+  test:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
+      - name: Setup repo
         uses: actions/checkout@v3
 
-      - name: Set up Deno
-        uses: denoland/setup-deno@v1
+      - name: Setup Deno
+        # uses: denoland/setup-deno@v1
+        uses: denoland/setup-deno@61fe2df320078202e33d7d5ad347e7dcfa0e8f31  # v1.1.2
         with:
-          deno-version: latest
+          deno-version: v1.x
+
+      - name: Verify formatting
+        run: deno fmt --check
+
+      - name: Run linter
+        run: deno lint
 
       - name: Run Deno build task
         run: deno task build-release
