@@ -69,54 +69,54 @@ export async function setSelectedTextModel(model: ModelConfig) {
   await clientStore.set("ai.selectedTextModel", model);
 }
 
-export async function configureSelectedModel(model: ModelConfig) {
-  console.log("configureSelectedModel called with:", model);
-  if (!model) {
-    model = await getSelectedTextModel();
-    if (!model) {
-      throw new Error("No model provided to configure");
-    }
+async function getAndConfigureModel() {
+  const selectedModel = await getSelectedTextModel() || aiSettings.textModels[0];
+  if (!selectedModel) {
+    throw new Error("No text model selected or available as default.");
   }
-  const secretName = model.secretName || "OPENAI_API_KEY";
-  const newApiKey = await readSecret(secretName);
-  if (newApiKey !== apiKey) {
-    apiKey = newApiKey;
-    console.log("silverbullet-ai API key updated");
-  }
-  if (!apiKey) {
-    const errorMessage =
-      "AI API key is missing. Please set it in the secrets page.";
-    await editor.flashNotification(errorMessage, "error");
-    throw new Error(errorMessage);
-  }
+  await configureSelectedModel(selectedModel);
+}
 
-  currentModel = model;
-  const providerName = (model.provider || "openai").toLowerCase();
 
-  if (providerName === "openai") {
-    currentAIProvider = new OpenAIProvider(
-      apiKey,
-      model.modelName,
-      model.baseUrl || aiSettings.openAIBaseUrl,
-      model.requireAuth || aiSettings.requireAuth,
-    );
-  } else if (providerName === "gemini") {
-    currentAIProvider = new GeminiProvider(
-      apiKey,
-      model.modelName,
-    );
-  } else {
-    console.error(`Unsupported AI provider: ${model.provider}.`);
-    throw new Error(
-      `Unsupported AI provider: ${model.provider}. Please configure a supported provider.`,
-    );
+function setupAIProvider(model: ModelConfig) {
+  const providerName = model.provider.toLowerCase();
+  switch (providerName) {
+    case "openai":
+      currentAIProvider = new OpenAIProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.openAIBaseUrl,
+        model.requireAuth || aiSettings.requireAuth,
+      );
+      break;
+    case "gemini":
+      currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      break;
+    default:
+      throw new Error(`Unsupported AI provider: ${model.provider}. Please configure a supported provider.`);
   }
 }
 
-export async function initializeOpenAI(configure = true) {
+export async function configureSelectedModel(model: ModelConfig) {
+  console.log("configureSelectedModel called with:", model);
+  if (!model) {
+    throw new Error("No model provided to configure");
+  }
+  const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+  if (newApiKey !== apiKey) {
+    apiKey = newApiKey;
+    console.log("API key updated");
+  }
+  if (!apiKey) {
+    throw new Error("AI API key is missing. Please set it in the secrets page.");
+  }
+
+  currentModel = model;
+  setupAIProvider(model);
+}
+
+async function loadAndMergeSettings() {
   const defaultSettings = {
-    // temperature: 0.5,
-    // maxTokens: 1000,
     defaultTextModel: "gpt-3.5-turbo",
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
@@ -137,25 +137,31 @@ export async function initializeOpenAI(configure = true) {
     ...(newSettings.chat || {}),
   };
 
+  return newCombinedSettings;
+}
+
+export async function initializeOpenAI(configure = true) {
+  const newCombinedSettings = await loadAndMergeSettings();
+
   let errorMessage = "";
-  if (!newSettings.textModels && newSettings.defaultTextModel) {
+  if (!newCombinedSettings.textModels && newCombinedSettings.defaultTextModel) {
     // Backwards compatibility - if there isn't a textModels object, use the old behavior of config
     newCombinedSettings.textModels = [
       {
         name: "default",
         description: "Default model",
-        modelName: newSettings.defaultTextModel,
-        provider: newSettings.provider,
-        secretName: newSettings.secretName,
+        modelName: newCombinedSettings.defaultTextModel,
+        provider: newCombinedSettings.provider,
+        secretName: newCombinedSettings.secretName,
       },
     ];
     await setSelectedTextModel(newCombinedSettings.textModels[0]);
   } else if (
-    newSettings.textModels.length > 0 && newSettings.defaultTextModel
+    newCombinedSettings.textModels.length > 0 && newCombinedSettings.defaultTextModel
   ) {
     errorMessage =
       "Both textModels and defaultTextModel found in ai settings. Please remove defaultTextModel.";
-  } else if (!newSettings.textModels && !newSettings.defaultTextModel) {
+  } else if (!newCombinedSettings.textModels && !newCombinedSettings.defaultTextModel) {
     errorMessage = "No textModels found in ai settings";
   }
 
@@ -173,31 +179,8 @@ export async function initializeOpenAI(configure = true) {
     console.log("aiSettings unchanged", aiSettings);
   }
 
-  if (!configure) {
-    return;
-  }
-
-  const newModel = await getSelectedTextModel();
-  if (!newModel) {
-    const errorMessage = "No text model selected";
-    // await editor.flashNotification(errorMessage, "error");
-    throw new Error(errorMessage);
-  } else {
-    const existingModel = aiSettings.textModels.find((model) =>
-      model.name === newModel.name
-    );
-    if (!existingModel) {
-      const errorMessage = "Selected text model does not exist in aiSettings";
-      // await editor.flashNotification(errorMessage, "error");
-      throw new Error(errorMessage);
-    } else if (JSON.stringify(existingModel) !== JSON.stringify(newModel)) {
-      await setSelectedTextModel(existingModel);
-      await configureSelectedModel(existingModel);
-      const infoMessage = "Using the text model configuration from aiSettings";
-      await editor.flashNotification(infoMessage, "info");
-    } else {
-      await configureSelectedModel(currentModel);
-    }
+  if (configure) {
+    await getAndConfigureModel();
   }
 
   chatSystemPrompt = {
