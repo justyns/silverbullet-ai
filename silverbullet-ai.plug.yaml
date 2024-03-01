@@ -45,4 +45,9 @@ functions:
     path: src/prompts.ts:insertAiPromptFromTemplate
     command:
       name: "AI: Execute AI Prompt from Custom Template"
+  selectModel:
+    path: sbai.ts:selectModelFromConfig
+    command:
+      name: "AI: Select Model from Config"
+
 

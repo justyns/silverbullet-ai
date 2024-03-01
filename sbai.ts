@@ -7,10 +7,14 @@ import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import {
   ChatMessage,
+  ModelConfig,
+  aiSettings,
   chatSystemPrompt,
+  configureSelectedModel,
   currentAIProvider,
-  initializeOpenAI,
   initIfNeeded,
+  initializeOpenAI,
+  setSelectedTextModel,
 } from "./src/init.ts";
 import { generateImageWithDallE } from "./src/openai.ts";
 import {
@@ -27,8 +31,31 @@ import {
  */
 export async function reloadConfig(pageName: string) {
   if (pageName === "SETTINGS" || pageName === "SECRETS") {
-    await initializeOpenAI();
+    await initializeOpenAI(true);
   }
+}
+
+export async function selectModelFromConfig() {
+  if (!aiSettings || !aiSettings.textModels) {
+    await initializeOpenAI(false);
+  }
+  const modelOptions = aiSettings.textModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`,
+  }));
+  const selectedModel = await editor.filterBox("Select a model", modelOptions);
+
+  if (!selectedModel) {
+    await editor.flashNotification("No model selected.", "error");
+    return;
+  }
+  const selectedModelName = selectedModel.name;
+  await setSelectedTextModel(selectedModel as ModelConfig);
+  await configureSelectedModel(selectedModel as ModelConfig);
+
+  await editor.flashNotification(`Selected model: ${selectedModelName}`);
+  console.log(`Selected model:`, selectedModel);
 }
 
 /**
