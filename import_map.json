@@ -29,7 +29,7 @@
     "turndown-plugin-gfm": "https://cdn.skypack.dev/@joplin/turndown-plugin-gfm@1.0.45",
 
     "$common/": "https://deno.land/x/silverbullet@0.7.3/common/",
-    "$lib/": "../silverbullet/lib/",
+    "$lib/": "https://deno.land/x/silverbullet@0.7.3/lib/",
     "$type/": "https://deno.land/x/silverbullet@0.7.3/type/",
 
     "preact": "https://esm.sh/preact@10.11.1",

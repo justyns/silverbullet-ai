@@ -26,6 +26,18 @@ jobs:
     #   - name: Run linter
     #     run: deno lint
 
+      - name: Setup silverbullet
+        run: deno install -f --name silverbullet  --unstable-kv --unstable-worker-options -A https://get.silverbullet.md
+    
+      - name: Add Deno bin to PATH
+        run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
+
+      - name: Verify PATH
+        run: echo $PATH
+
+      - name: Silverbullet version
+        run: silverbullet --version
+
       - name: Run Deno build task
         run: deno task build-release
 
