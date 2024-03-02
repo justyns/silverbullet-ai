@@ -1,6 +1,6 @@
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
-import { AbstractProvider, StreamChatOptions } from "./interfaces.ts";
+import { AbstractProvider, sseEvent, StreamChatOptions } from "./interfaces.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -47,14 +47,14 @@ export class GeminiProvider extends AbstractProvider {
   ): Promise<any> {
     // console.log("Starting chat with Gemini: ", messages);
     if (stream) {
-      return await this.streamChat({ messages, onDataReceived });
+      return await this.streamChat({ messages, stream, onDataReceived });
     } else {
       // TODO: Implement non-streaming for gemini
       console.error("Non-streaming chat not implemented for Gemini.");
     }
   }
 
-  async streamChat(options: StreamChatOptions): Promise<void> {
+  streamChat(options: StreamChatOptions) {
     const { messages, onDataReceived } = options;
 
     try {
@@ -112,7 +112,7 @@ export class GeminiProvider extends AbstractProvider {
       const source = new SSE(sseUrl, sseOptions);
       let fullMsg = "";
 
-      source.addEventListener("message", (e: MessageEvent) => {
+      source.addEventListener("message", (e: sseEvent) => {
         try {
           // console.log("Received message from Gemini: ", e.data);
           if (e.data == "[DONE]") {
@@ -138,7 +138,7 @@ export class GeminiProvider extends AbstractProvider {
         return fullMsg;
       });
 
-      source.addEventListener("error", (e: Event) => {
+      source.addEventListener("error", (e: sseEvent) => {
         console.error("SSE error:", e);
         source.close();
       });

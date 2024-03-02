@@ -3,7 +3,7 @@ import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
 
-import { AbstractProvider } from "./interfaces.ts";
+import { AbstractProvider, sseEvent } from "./interfaces.ts";
 
 type StreamChatOptions = {
   messages: Array<ChatMessage>;
@@ -72,7 +72,7 @@ export class OpenAIProvider extends AbstractProvider {
       const source = new SSE(sseUrl, sseOptions);
       let fullMsg = "";
 
-      source.addEventListener("message", function (e) {
+      source.addEventListener("message", function (e: sseEvent) {
         try {
           if (e.data == "[DONE]") {
             source.close();
@@ -95,7 +95,7 @@ export class OpenAIProvider extends AbstractProvider {
         return fullMsg;
       });
 
-      source.addEventListener("error", (e: Event) => {
+      source.addEventListener("error", (e: sseEvent) => {
         console.error("SSE error:", e);
         source.close();
       });

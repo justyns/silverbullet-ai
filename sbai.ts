@@ -20,13 +20,12 @@ import {
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
-import { generateImageWithDallE } from "./src/openai.ts";
+import { ImageGenerationOptions } from "./src/interfaces.ts";
 import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
-import { ImageGenerationOptions } from "./src/interfaces.ts";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.

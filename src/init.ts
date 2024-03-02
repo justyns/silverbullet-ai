@@ -1,10 +1,10 @@
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore } from "$sb/syscalls.ts";
+import { DallEProvider } from "./dalle.ts";
 import { GeminiProvider } from "./gemini.ts";
 import { ImageProviderInterface, ProviderInterface } from "./interfaces.ts";
 import { OpenAIProvider } from "./openai.ts";
-import { DallEProvider } from "./dalle.ts";
 
 export type ChatMessage = {
   content: string;

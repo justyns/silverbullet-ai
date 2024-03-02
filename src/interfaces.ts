@@ -2,7 +2,11 @@ import { editor } from "$sb/syscalls.ts";
 import { getPageLength } from "./editorUtils.ts";
 import { ChatMessage } from "./init.ts";
 
-type StreamChatOptions = {
+export type sseEvent = {
+  data: string;
+};
+
+export type StreamChatOptions = {
   messages: Array<ChatMessage>;
   stream: boolean;
   onDataReceived?: (data: any) => void;
