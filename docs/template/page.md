@@ -11,16 +11,29 @@
 
 <body>
     <div class="sidebar">
-        <h2>Pages</h2>
+        <h2>SilverBullet AI Docs</h2>
         <nav>
             <ul>
-                {{#each {sidebar order by navOrder asc}}}
-                {{#if name = "index"}}
+                <!-- TODO: Make this whole thing dynamic, not just the section at the bottom -->
                 <li><a href="/" class="{{#if isIndex}}active{{/if}}">Home</a></li>
-                {{else}}
-                <!-- TODO: This doesn't work for the class -->
-                <li><a href="{{name}}" class="{{#if name = pageName}}active{{/if}}">{{name}}</a></li>
-                {{/if}}
+                <li>
+                    <a href="javascript:void(0)" class="collapsible">Configuration</a>
+                    <ul>
+                        {{#each {page where name =~ /^Configuration\// order by navOrder asc}}}
+                        <li><a href="{{name}}">{{replace(name, "Configuration/", "")}}</a></li>
+                        {{/each}}
+                    </ul>
+                </li>
+                <li>
+                    <a href="javascript:void(0)" class="collapsible">Providers</a>
+                    <ul>
+                        {{#each {page where name =~ /^Providers\// order by navOrder asc}}}
+                        <li><a href="{{name}}">{{replace(name, "Providers/", "")}}</a></li>
+                        {{/each}}
+                    </ul>
+                </li>
+                {{#each {sidebar order by navOrder asc}}}
+                <li><a href="{{name}}">{{name}}</a></li>
                 {{/each}}
             </ul>
         </nav>
@@ -32,6 +45,21 @@
         {{body}}
     </div>
 </body>
+<script>
+    var coll = document.getElementsByClassName("collapsible");
+    var i;
 
+    for (i = 0; i < coll.length; i++) {
+      coll[i].addEventListener("click", function() {
+        this.classList.toggle("active");
+        var content = this.nextElementSibling;
+        if (content.style.display === "block") {
+          content.style.display = "none";
+        } else {
+          content.style.display = "block";
+        }
+      });
+    }
+</script>
 </html>
 ```
