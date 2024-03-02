@@ -7,3 +7,4 @@ test-space/
 .DS_Store
 silverbullet-ai.plug.js
 docs/_public
+!docs/_plug
