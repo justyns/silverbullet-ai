@@ -6,68 +6,31 @@
     <base href="/" />
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{#if !isIndex}}{{pageName}} — {{config.title}}{{else}}{{config.title}}{{/if}}</title>
-    <style>
-        body {
-            font-family: georgia, times, serif;
-            font-size: 14pt;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-            padding-left: 20px;
-            padding-right: 20px;
-        }
-
-        table {
-            width: 100%;
-            border-spacing: 0;
-        }
-
-        thead tr {
-            background-color: #333;
-            color: #eee;
-        }
-
-        th,
-        td {
-            padding: 8px;
-        }
-
-        tbody tr:nth-of-type(even) {
-            background-color: #f3f3f3;
-        }
-
-        ul li p {
-            margin: 0;
-        }
-
-        a[href] {
-            text-decoration: none;
-        }
-
-        blockquote {
-            border-left: 1px solid #333;
-            margin-left: 2px;
-            padding-left: 10px;
-        }
-
-        pre {
-           background-color: #f2eeee;
-           border: 1px solid #cecece;
-           padding: 5px;
-           overflow-x: scroll;
-        }
-
-        img {
-            max-width: 90%;
-        }
-    </style>
+    <link rel="stylesheet" href="/style.css">
 </head>
 
 <body>
-    {{#if !isIndex}}
-    <h1>{{pageName}}</h1>
-    {{/if}}
-    {{body}}
+    <div class="sidebar">
+        <h2>Pages</h2>
+        <nav>
+            <ul>
+                {{#each {sidebar order by navOrder asc}}}
+                {{#if name = "index"}}
+                <li><a href="/" class="{{#if isIndex}}active{{/if}}">Home</a></li>
+                {{else}}
+                <!-- TODO: This doesn't work for the class -->
+                <li><a href="{{name}}" class="{{#if name = pageName}}active{{/if}}">{{name}}</a></li>
+                {{/if}}
+                {{/each}}
+            </ul>
+        </nav>
+    </div>
+    <div class="content">
+        {{#if !isIndex}}
+        <h1>{{pageName}}</h1>
+        {{/if}}
+        {{body}}
+    </div>
 </body>
 
 </html>
