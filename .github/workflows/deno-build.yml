@@ -25,6 +25,9 @@ jobs:
 
       - name: Verify formatting
         run: deno fmt --check
+      
+      - name: Run Deno test
+        run: deno test
 
     #   - name: Run linter
     #     run: deno lint
