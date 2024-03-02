@@ -1,4 +1,11 @@
+---
+tags: provider
+textProvider: true
+imageProvider: false
+---
+
 Google does not offer an openai-compatible api, so consider the support for Gemini to be very experimental for now.
+
 
 
 To configure it, you can use these settings:

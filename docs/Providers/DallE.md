@@ -1,3 +1,9 @@
+---
+tags: provider
+textProvider: false
+imageProvider: true
+---
+
 Dall-E can be configured to use for generating images with these settings:
 
 ```yaml

@@ -1,3 +1,9 @@
+---
+tags: provider
+textProvider: true
+imageProvider: false
+---
+
 To use Ollama locally, make sure you have it running first and the desired models downloaded.  Then, set the `openAIBaseUrl` to the url of your ollama instance:
 
 ```yaml

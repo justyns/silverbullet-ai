@@ -1,3 +1,9 @@
+---
+tags: provider
+textProvider: true
+imageProvider: false
+---
+
 Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards).  You can use it with settings like this:
 
 ```yaml
