@@ -1,20 +1,25 @@
 /* Thanks chatgpt for helping me with the color scheme and styling */
 
 :root {
-    --text-color-light: #333;
+    --text-color-light: #4F4F4F;
     --background-color-light: #fff;
-    --text-color-dark: #f8f8f2;
+    --text-color-dark: #E6E6E6;
     --background-color-dark: #282a36;
-    --accent-color: #8be9fd;
+    --accent-color-dark: #9AD1F5;
+    --accent-color-light: #62A8D1;
     --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     --sidebar-bg-dark: #44475a;
-    --sidebar-bg-light: #f3f3f3;
+    --sidebar-bg-light: #e2e2e2;
     --border-color-light: #ccc;
     --border-color-dark: #6272a4;
-    --sidebar-text-color: #f8f8f2;
-    --sidebar-hover-color: #50fa7b;
+    --sidebar-text-color-dark: #f8f8f2;
+    --sidebar-text-color-light: #333;
+    --sidebar-hover-color: #a0d9cc;
     --sidebar-sublist-bg: #383a59;
+    --sidebar-hover-color-light: #034f3d;
+    --sidebar-sublist-bg-light: #D3D3D3;
 }
+
 
 @media (prefers-color-scheme: dark) {
     body {
@@ -25,7 +30,7 @@
     a[href],
     thead tr,
     .sidebar a {
-        color: var(--accent-color);
+        color: var(--accent-color-dark);
     }
 
     tbody tr:nth-of-type(even),
@@ -34,7 +39,7 @@
     }
 
     .sidebar ul li a {
-        color: var(--sidebar-text-color);
+        color: var(--sidebar-text-color-dark);
     }
 
     .sidebar ul li a:hover {
@@ -47,9 +52,14 @@
         border-radius: 5px;
     }
 
+    .sidebar ul li {
+        list-style-type: circle;
+        margin-left: 20px;
+    }
+
     blockquote,
     pre {
-        border-left: 3px solid var(--accent-color);
+        border-left: 3px solid var(--accent-color-dark);
     }
 }
 
@@ -62,7 +72,7 @@
     a[href],
     thead tr,
     .sidebar a {
-        color: var(--accent-color);
+        color: var(--accent-color-light);
     }
 
     tbody tr:nth-of-type(even),
@@ -71,17 +81,22 @@
     }
 
     .sidebar ul li a {
-        color: var(--sidebar-text-color);
+        color: var(--sidebar-text-color-light);
     }
 
     .sidebar ul li a:hover {
-        color: var(--sidebar-hover-color);
+        color: var(--sidebar-hover-color-light);
     }
 
     .sidebar ul ul {
-        background-color: var(--sidebar-sublist-bg);
+        background-color: var(--sidebar-sublist-bg-light);
         padding: 10px;
         border-radius: 5px;
+    }
+
+    .sidebar ul li {
+        list-style-type: square;
+        margin-left: 20px;
     }
 
     blockquote,
@@ -126,7 +141,7 @@ body {
 
 @media (min-width: 768px) {
     .sidebar {
-        width: 200px;
+        width: 250px;
         height: auto;
     }
 }
