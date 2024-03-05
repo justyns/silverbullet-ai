@@ -53,8 +53,8 @@ export type ModelConfig = {
   modelName: string;
   provider: Provider;
   secretName: string;
+  requireAuth: boolean;
   baseUrl?: string;
-  requireAuth?: boolean;
 };
 
 export type ImageModelConfig = {
@@ -63,8 +63,8 @@ export type ImageModelConfig = {
   modelName: string;
   provider: ImageProvider;
   secretName: string;
+  requireAuth: boolean;
   baseUrl?: string;
-  requireAuth?: boolean;
 };
 
 export let apiKey: string;
@@ -162,6 +162,9 @@ export async function configureSelectedModel(model: ModelConfig) {
   console.log("configureSelectedModel called with:", model);
   if (!model) {
     throw new Error("No model provided to configure");
+  }
+  if (model.requireAuth === undefined) {
+    model.requireAuth = aiSettings.requireAuth;
   }
   if (model.requireAuth) {
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
@@ -276,7 +279,9 @@ export async function initializeOpenAI(configure = true) {
 
   if (configure) {
     await getAndConfigureModel();
-    await getAndConfigureImageModel();
+    if (aiSettings.imageModels && aiSettings.imageModels.length > 0) {
+      await getAndConfigureImageModel();
+    }
   }
 
   chatSystemPrompt = {
