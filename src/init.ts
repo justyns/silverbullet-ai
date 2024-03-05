@@ -5,6 +5,7 @@ import { DallEProvider } from "./dalle.ts";
 import { GeminiProvider } from "./gemini.ts";
 import { ImageProviderInterface, ProviderInterface } from "./interfaces.ts";
 import { OpenAIProvider } from "./openai.ts";
+import { ClaudeProvider } from "./anthropic.ts";
 
 export type ChatMessage = {
   content: string;
@@ -20,6 +21,7 @@ export type ChatSettings = {
 enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
+  Claude = "claude",
 }
 
 enum ImageProvider {
@@ -150,6 +152,9 @@ function setupAIProvider(model: ModelConfig) {
       break;
     case Provider.Gemini:
       currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      break;
+    case Provider.Claude:
+      currentAIProvider = new ClaudeProvider(apiKey, model.modelName);
       break;
     default:
       throw new Error(
