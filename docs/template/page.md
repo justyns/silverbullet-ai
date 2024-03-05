@@ -7,6 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{#if !isIndex}}{{pageName}} — {{config.title}}{{else}}{{config.title}}{{/if}}</title>
     <link rel="stylesheet" href="/style.css">
+    <!-- <link href=" https://cdn.jsdelivr.net/npm/prismjs@1.29.0/themes/prism.min.css " rel="stylesheet"> -->
 </head>
 
 <body>
@@ -44,6 +45,9 @@
         {{/if}}
         {{body}}
     </div>
+    <!-- TODO: Get syntax hilighting to work -->
+    <!-- <script src=" https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js "></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script> -->
 </body>
 </html>
 ```
