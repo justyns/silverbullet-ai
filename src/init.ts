@@ -163,12 +163,14 @@ export async function configureSelectedModel(model: ModelConfig) {
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
-  if (newApiKey !== apiKey) {
-    apiKey = newApiKey;
-    console.log("API key updated");
+  if (model.requireAuth) {
+    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    if (newApiKey !== apiKey) {
+      apiKey = newApiKey;
+      console.log("API key updated");
+    }
   }
-  if (!apiKey) {
+  if (model.requireAuth && !apiKey) {
     throw new Error(
       "AI API key is missing. Please set it in the secrets page.",
     );
@@ -183,12 +185,14 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
   if (!model) {
     throw new Error("No image model provided to configure");
   }
-  const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
-  if (newApiKey !== apiKey) {
-    apiKey = newApiKey;
-    console.log("API key updated for image model");
+  if (model.requireAuth) {
+    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    if (newApiKey !== apiKey) {
+      apiKey = newApiKey;
+      console.log("API key updated for image model");
+    }
   }
-  if (!apiKey) {
+  if (model.requireAuth && !apiKey) {
     throw new Error(
       "AI API key is missing for image model. Please set it in the secrets page.",
     );
