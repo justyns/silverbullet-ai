@@ -126,6 +126,48 @@ export async function callOpenAIwithNote() {
 }
 
 /**
+ * Summarizes the selected text or the entire note if no text is selected.
+ * Utilizes selected LLM to generate a summary.
+ * Returns an object containing the summary and the selected text information.
+ */
+export async function summarizeNote() {
+  await initIfNeeded();
+  const selectedTextInfo = await getSelectedTextOrNote();
+  console.log("selectedTextInfo", selectedTextInfo);
+  if (selectedTextInfo.text.length > 0) {
+    const noteName = await editor.getCurrentPage();
+    const response = await currentAIProvider.chatWithAI({
+      messages: [{
+        role: "user",
+        content:
+          `Please summarize this note using markdown for any formatting. Your summary will be appended to the end of this note, do not include any of the note contents yourself. Keep the summary brief. The note name is ${noteName}.\n\n${selectedTextInfo.text}`,
+      }],
+      stream: false,
+    });
+    console.log("OpenAI response:", response);
+    return {
+      summary: response,
+      selectedTextInfo: selectedTextInfo,
+    };
+  }
+  return { summary: "", selectedTextInfo: null };
+}
+
+/**
+ * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
+ * text.  Inserts the summary at the cursor's position.
+ */
+export async function insertSummary() {
+  const { summary, selectedTextInfo } = await summarizeNote();
+  if (summary && selectedTextInfo) {
+    await editor.insertAtPos(
+      "\n\n" + summary,
+      selectedTextInfo.to,
+    );
+  }
+}
+
+/**
  * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
  * text.  Opens the resulting summary in a temporary right pane.
  */
@@ -161,8 +203,7 @@ export async function tagNoteWithAI() {
     ],
     stream: false,
   });
-  const tags = response.choices[0].message.content.trim().replace(/,/g, "")
-    .split(/\s+/);
+  const tags = response.trim().replace(/,/g, "").split(/\s+/);
 
   // Extract current frontmatter from the note
   const tree = await markdown.parseMarkdown(noteContent);
@@ -315,7 +356,7 @@ export async function queryOpenAI(
       messages: messages,
       stream: false,
     });
-    return response.choices[0].message.content;
+    return response;
   } catch (error) {
     console.error("Error querying OpenAI:", error);
     throw error;

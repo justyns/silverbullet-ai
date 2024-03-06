@@ -1,3 +1,4 @@
+import "$sb/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
 import { AbstractProvider, sseEvent, StreamChatOptions } from "./interfaces.ts";
@@ -49,9 +50,40 @@ export class GeminiProvider extends AbstractProvider {
     if (stream) {
       return await this.streamChat({ messages, stream, onDataReceived });
     } else {
-      // TODO: Implement non-streaming for gemini
-      console.error("Non-streaming chat not implemented for Gemini.");
+      return await this.nonStreamingChat(messages);
     }
+  }
+
+  private mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
+    const payloadContents: GeminiChatContent[] = [];
+    let previousRole = "";
+    messages.forEach((message: ChatMessage) => {
+      let role = "user";
+      if (message.role === "system" || message.role === "user") {
+        // No concept of "system" messages in Gemini
+        role = "user";
+      } else if (message.role === "assistant") {
+        role = "model";
+      }
+      // First and last messages must be user messages
+      if (
+        role === "model" &&
+        (payloadContents.length === 0 || previousRole === "model")
+      ) {
+        // Skip model message if it's the first or follows another model message
+      } else if (role === "user" && previousRole === "user") {
+        // Merge with previous message if two user messages in a row
+        payloadContents[payloadContents.length - 1].parts[0].text += " " +
+          message.content;
+      } else {
+        payloadContents.push({
+          role: role,
+          parts: [{ text: message.content }],
+        });
+      }
+      previousRole = role;
+    });
+    return payloadContents;
   }
 
   streamChat(options: StreamChatOptions) {
@@ -65,35 +97,9 @@ export class GeminiProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const payloadContents: GeminiChatContent[] = [];
-      let previousRole = "";
-      messages.forEach((message: ChatMessage) => {
-        let role = "user";
-        if (message.role === "system" || message.role === "user") {
-          // No concept of "system" messages
-          role = "user";
-        } else if (message.role === "assistant") {
-          role = "model";
-        }
-        // First and last messages must be user messages
-        if (
-          role === "model" &&
-          (payloadContents.length === 0 || previousRole === "model")
-        ) {
-          // TODO: Do something else?
-          // Skip model message if it's the first or follows another model message
-        } else if (role === "user" && previousRole === "user") {
-          // Merge with previous message if two user messages in a row
-          payloadContents[payloadContents.length - 1].parts[0].text += " " +
-            message.content;
-        } else {
-          payloadContents.push({
-            role: role,
-            parts: [{ text: message.content }],
-          });
-        }
-        previousRole = role;
-      });
+      const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
+        messages,
+      );
 
       // console.log("payloadContents", payloadContents);
 
@@ -149,5 +155,29 @@ export class GeminiProvider extends AbstractProvider {
       console.error("Error streaming from Gemini chat endpoint:", error);
       throw error;
     }
+  }
+
+  async nonStreamingChat(messages: Array<ChatMessage>): Promise<string> {
+    const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
+      messages,
+    );
+
+    const response = await nativeFetch(
+      `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ contents: payloadContents }),
+      },
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const responseData = await response.json();
+    return responseData.candidates[0].content.parts[0].text;
   }
 }
