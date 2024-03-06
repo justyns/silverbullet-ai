@@ -143,7 +143,7 @@ export class OpenAIProvider extends AbstractProvider {
       if (!data || !data.choices || data.choices.length === 0) {
         throw new Error("Invalid response from OpenAI.");
       }
-      return data;
+      return data.choices[0].message.content;
     } catch (error) {
       console.error("Error calling OpenAI chat endpoint:", error);
       await editor.flashNotification(
