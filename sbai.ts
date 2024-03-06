@@ -203,8 +203,7 @@ export async function tagNoteWithAI() {
     ],
     stream: false,
   });
-  const tags = response.choices[0].message.content.trim().replace(/,/g, "")
-    .split(/\s+/);
+  const tags = response.trim().replace(/,/g, "").split(/\s+/);
 
   // Extract current frontmatter from the note
   const tree = await markdown.parseMarkdown(noteContent);
@@ -357,7 +356,7 @@ export async function queryOpenAI(
       messages: messages,
       stream: false,
     });
-    return response.choices[0].message.content;
+    return response;
   } catch (error) {
     console.error("Error querying OpenAI:", error);
     throw error;
