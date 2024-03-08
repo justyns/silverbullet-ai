@@ -8,3 +8,4 @@ test-space/
 silverbullet-ai.plug.js
 docs/_public
 !docs/_plug
+SECRETS.md

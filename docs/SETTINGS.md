@@ -26,4 +26,9 @@ publish:
   # Publish all pages with specific tag only (assuming publishAll is off)
   tags:
   - pub
+ai:
+  textModels:
+  - name: gpt-4-turbo
+    provider: openai
+    modelName: gpt-4-0125-preview
 ```

@@ -1,6 +1,6 @@
 
 
-In `SETTINGS`, the Chat section is optional, but may help provide better results when using the [[Commands/Chat On Page]] command.
+In `SETTINGS`, the Chat section is optional, but may help provide better results when using the [[Commands/AI: Chat on current page]] command.
 
 ```yaml
 ai:

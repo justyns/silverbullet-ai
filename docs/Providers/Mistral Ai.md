@@ -2,6 +2,7 @@
 tags: provider
 textProvider: true
 imageProvider: false
+apiProvider: openai
 ---
 
 Mistral.ai is a hosted service that offers an openai-compatible api.  You can use it with settings like this:
@@ -17,3 +18,6 @@ ai:
 ```
 
 `MISTRAL_API_KEY` also needs to be set in `SECRETS` using an api key generated from their web console.
+
+
+<!-- TODO: Add pricing for mistral.ai -->

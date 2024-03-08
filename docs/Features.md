@@ -1,3 +1,4 @@
+
 - **Summarize Note**: Summarizes the content of a note or selected text.
 - **Replace with Summary**: Replaces the selected text with its summary.
 - **Insert Summary**: Inserts a summary of the selected text or note at the cursor position.

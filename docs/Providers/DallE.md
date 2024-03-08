@@ -2,6 +2,7 @@
 tags: provider
 textProvider: false
 imageProvider: true
+apiProvider: dalle
 ---
 
 Dall-E can be configured to use for generating images with these settings:
