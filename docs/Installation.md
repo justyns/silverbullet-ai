@@ -1,6 +1,6 @@
 ---
 tags: sidebar
-navOrder: 1
+navOrder: 2
 ---
 
 Add the following to to your `PLUGS` file, run `Plugs: Update` command and off you go!
@@ -18,7 +18,7 @@ For the latest "release" code, mostly also still in development for now:
 
 You can also use the `Plugs: Add` command and enter the above url to install.
 
-After installing, be sure to make the necessary config changes in SETTINGS and SECRETS.
+After installing, be sure to make the necessary [[Configuration|config changes]] in **SETTINGS** and **SECRETS**.
 
 After installing the plug, you can access its features through the command palette. To ensure the plug functions correctly, you must set the `OPENAI_API_KEY` on the SECRETS page.
 
