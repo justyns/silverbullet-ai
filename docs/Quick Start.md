@@ -50,3 +50,5 @@ Run `AI: Select Text Model from Config`, choose one of the models you just confi
 Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+SHIFT+ENTER to start a chat session.
 
 And that’s it!  Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go futher.
+
+Also consider importing the [[AI Core Library]] for some helpful templates and snippets.

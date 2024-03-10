@@ -4,7 +4,7 @@ _SilverBullet AI_ is a plug that integrates various LLMs (Large Language Models)
 
 silverbullet-ai is very new and is still in early development.  It may not work as expected.  Please report any issues you encounter, or feature ideas.  You can do so through [Github Issues](https://github.com/justyns/silverbullet-ai/issues).
 
-If you are new here, start with [[Quick Start]]!
+If you are new here, start with [[Quick Start]], and then [[AI Core Library]]!
 
 **Warning**: Please backup your notes before using this plug.  It inserts and replaces text at certain points and isn't well-tested yet, so back up your data!
 
