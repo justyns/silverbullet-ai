@@ -6,3 +6,6 @@ test-space/
 *.db
 .DS_Store
 silverbullet-ai.plug.js
+docs/_public
+!docs/_plug
+SECRETS.md

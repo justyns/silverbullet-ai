@@ -39,6 +39,25 @@ async function updateReadme(tag: string) {
       const docs = extractDocsForFunction(value.path);
       console.log(`Documentation for ${key}: ${docs}`);
       commandsMarkdown += `- **${value.command.name}**: ${docs}\n`;
+      const commandDocsPath = `./docs/Commands/${value.command.name}.md`;
+      try {
+        await Deno.stat(commandDocsPath);
+        // File exists, ignore for now
+      } catch (error) {
+        if (error instanceof Deno.errors.NotFound) {
+          // Command doc does not exist, create a new one
+          if (docs) {
+            const commandDocsContent = `---
+tags: commands
+commandName: "${value.command.name}"
+commandSummary: "${docs.replace(/"/g, '\\"')}"
+---`;
+            await Deno.writeTextFile(commandDocsPath, commandDocsContent);
+          }
+        } else {
+          throw error;
+        }
+      }
     }
   }
 
