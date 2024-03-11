@@ -1,7 +1,10 @@
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
 import { AbstractProvider, sseEvent, StreamChatOptions } from "./interfaces.ts";
-import "$sb/lib/native_fetch.ts";
+import { syscall, editor } from "$sb/syscalls.ts";
+import { base64Decode, base64Encode } from "$lib/crypto.ts";
+import { ProxyFetchRequest } from "$common/proxy_fetch.ts";
+// import "$sb/lib/native_fetch.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -30,7 +33,7 @@ export class ClaudeProvider extends AbstractProvider {
   async chatWithAI(
     { messages, stream, onDataReceived }: StreamChatOptions,
   ): Promise<any> {
-    // console.log("Starting chat with Claude: ", messages);
+    console.log("Starting chat with Claude: ", messages);
     return await this.chatNoStream({ messages, stream, onDataReceived });
     // if (stream) {
     //   return await this.streamChat({ messages, stream, onDataReceived });
@@ -54,16 +57,25 @@ export class ClaudeProvider extends AbstractProvider {
       "anthropic-beta": "messages-2023-12-15",
     };
 
-    // TODO: Neither fetch nor nativeFetch in work..   nativeFetch fails because of cors just like sse+streaming
-    const response = await nativeFetch(`${this.baseUrl}/v1/messages`, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({
+    const body = JSON.stringify({
         model: this.modelName,
         messages: claudeMessages,
         stream: false,
-      }),
     });
+
+    const fetchOptions: ProxyFetchRequest = {
+      method: "POST",
+      headers: headers,
+      base64Body: base64Encode(body),
+    };
+
+    // TODO: Neither fetch nor nativeFetch in work..   nativeFetch fails because of cors just like sse+streaming
+    console.log("Calling sandboxFetch.fetch with: ", fetchOptions);
+    const response = await syscall("sandboxFetch.fetch", `${this.baseUrl}/v1/messages`, fetchOptions);
+    const responseBody = JSON.parse(new TextDecoder().decode(base64Decode(response.base64Body)));
+
+    console.log("response from chatNoStream: ", response);
+    console.log("response json from chatNoStream: ", responseBody);
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -78,6 +90,8 @@ export class ClaudeProvider extends AbstractProvider {
     // TODO: Streaming doesn't work because of CORS.  We could potentially proxy it through the server?
     //       ^ see https://github.com/anthropics/anthropic-sdk-typescript/issues/248 and the linked issues
     const { messages, onDataReceived } = options;
+
+    console.log("ASDFASDFASDFASDF Entered streamChat");
 
     try {
       const sseUrl = `${this.baseUrl}/v1/messages`;
