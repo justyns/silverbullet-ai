@@ -2,15 +2,12 @@ name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
-  # TODO: Re-enable after edge is released (0.7.2?)
-  # aiPromptSlashCommplete:
-  #   path: src/prompts.ts:aiPromptSlashComplete
-  #   events:
-  #   - slash:complete
+  aiPromptSlashCommplete:
+    path: src/prompts.ts:aiPromptSlashComplete
+    events:
+    - slash:complete
   queryOpenAI:
     path: sbai.ts:queryOpenAI
-    # command:
-    #   name: "queryOpenAI"
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:
