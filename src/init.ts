@@ -86,11 +86,23 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
-  return await clientStore.get("ai.selectedTextModel");
+  try {
+    return await clientStore.get("ai.selectedTextModel");
+  } catch (error) {
+    // This doesn't work in cli mode
+    // console.error("Error fetching selected text model:", error);
+    return undefined;
+  }
 }
 
 export async function getSelectedImageModel() {
-  return await clientStore.get("ai.selectedImageModel");
+  try {
+    return await clientStore.get("ai.selectedImageModel");
+  } catch (error) {
+    // This doesn't work in cli mode
+    // console.error("Error fetching selected image model:", error);
+    return undefined;
+  }
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
