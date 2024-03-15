@@ -28,14 +28,14 @@
     "turndown": "https://cdn.skypack.dev/turndown@7.1.1",
     "turndown-plugin-gfm": "https://cdn.skypack.dev/@joplin/turndown-plugin-gfm@1.0.45",
 
-    "$common/": "https://deno.land/x/silverbullet@0.7.3/common/",
-    "$lib/": "https://deno.land/x/silverbullet@0.7.3/lib/",
-    "$type/": "https://deno.land/x/silverbullet@0.7.3/type/",
+    "$common/": "https://deno.land/x/silverbullet@0.7.5/common/",
+    "$lib/": "https://deno.land/x/silverbullet@0.7.5/lib/",
+    "$type/": "https://deno.land/x/silverbullet@0.7.5/type/",
 
     "preact": "https://esm.sh/preact@10.11.1",
-    "$sb/": "https://deno.land/x/silverbullet@0.7.3/plug-api/",
-    "$sbplugs/": "https://deno.land/x/silverbullet@0.7.3/plugs/",
-    "$plugos/": "https://deno.land/x/silverbullet@0.7.3/plugos/",
+    "$sb/": "https://deno.land/x/silverbullet@0.7.5/plug-api/",
+    "$sbplugs/": "https://deno.land/x/silverbullet@0.7.5/plugs/",
+    "$plugos/": "https://deno.land/x/silverbullet@0.7.5/plugos/",
     "zod": "https://deno.land/x/zod@v3.22.4/mod.ts",
     "$std/": "https://deno.land/std@0.189.0/"
   }
