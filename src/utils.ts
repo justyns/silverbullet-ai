@@ -1,4 +1,4 @@
-import { editor, space } from "$sb/syscalls.ts";
+import { editor, events, space, system } from "$sb/syscalls.ts";
 import { aiSettings, ChatMessage } from "./init.ts";
 
 export function folderName(path: string) {
@@ -81,6 +81,33 @@ export async function enrichChatMessages(
     if (aiSettings.chat.parseWikiLinks) {
       // Parse wiki links and provide them as context
       enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+    }
+
+    const enrichFunctions = await events.dispatchEvent(
+      "ai:enrichMessage",
+      {
+        enrichedContent,
+        message,
+      },
+    );
+    console.log("Received custom enrich message functions", enrichFunctions);
+
+    for (const enrichFunction of enrichFunctions) {
+      if (Array.isArray(enrichFunction)) {
+        for (const func of enrichFunction) {
+          console.log("Enriching message with function", func);
+          enrichedContent = await system.invokeSpaceFunction(
+            func,
+            enrichedContent,
+          );
+        }
+      } else {
+        console.log("Enriching message with function", enrichFunction);
+        enrichedContent = await system.invokeSpaceFunction(
+          enrichFunction,
+          enrichedContent,
+        );
+      }
     }
 
     enrichedMessages.push({ ...message, content: enrichedContent });
