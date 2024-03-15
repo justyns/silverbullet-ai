@@ -15,6 +15,7 @@ export type ChatSettings = {
   userInformation: string;
   userInstructions: string;
   parseWikiLinks: boolean;
+  customEnrichFunctions: string[];
 };
 
 enum Provider {
@@ -231,6 +232,7 @@ async function loadAndMergeSettings() {
     userInformation: "",
     userInstructions: "",
     parseWikiLinks: true,
+    customEnrichFunctions: [],
   };
   const newSettings = await readSetting("ai", {});
   if (newSettings.defaultTextModel) {
