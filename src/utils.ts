@@ -1,4 +1,4 @@
-import { editor, space } from "$sb/syscalls.ts";
+import { editor, events, space, system } from "$sb/syscalls.ts";
 import { aiSettings, ChatMessage } from "./init.ts";
 
 export function folderName(path: string) {
@@ -81,6 +81,34 @@ export async function enrichChatMessages(
     if (aiSettings.chat.parseWikiLinks) {
       // Parse wiki links and provide them as context
       enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+    }
+
+    // Gather list of functions to run from event listeners
+    // This sends the message content even though the event listener can't directly
+    // modify it.  This could still be useful for detecting whether a different function
+    // should be added to the list based on regex/etc.
+    const enrichFunctions = await events.dispatchEvent(
+      "ai:enrichMessage",
+      {
+        enrichedContent,
+        message,
+      },
+    );
+
+    // And also combine with the plug settings
+    const combinedEnrichFunctions = enrichFunctions.flat().concat(
+      aiSettings.chat.customEnrichFunctions,
+    );
+
+    // then get rid of duplicates
+    const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];
+    console.log(
+      "Received custom enrich message functions",
+      finalEnrichFunctions,
+    );
+    for (const func of finalEnrichFunctions) {
+      // console.log("Enriching message with function", func);
+      enrichedContent = await system.invokeSpaceFunction(func, enrichedContent);
     }
 
     enrichedMessages.push({ ...message, content: enrichedContent });
