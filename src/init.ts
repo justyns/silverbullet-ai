@@ -18,6 +18,10 @@ export type ChatSettings = {
   customEnrichFunctions: string[];
 };
 
+export type PromptInstructions = {
+  pageRenameRules: string;
+};
+
 enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
@@ -31,6 +35,7 @@ export type AISettings = {
   textModels: ModelConfig[];
   imageModels: ImageModelConfig[];
   chat: ChatSettings;
+  promptInstructions: PromptInstructions;
 
   // These are deprecated and will be removed in a future release
   summarizePrompt: string;
@@ -227,12 +232,16 @@ async function loadAndMergeSettings() {
     secretName: "OPENAI_API_KEY",
     provider: "OpenAI",
     chat: {},
+    promptInstructions: {},
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
     userInstructions: "",
     parseWikiLinks: true,
     customEnrichFunctions: [],
+  };
+  const defaultPromptInstructions: PromptInstructions = {
+    pageRenameRules: "",
   };
   const newSettings = await readSetting("ai", {});
   if (newSettings.defaultTextModel) {
@@ -244,6 +253,10 @@ async function loadAndMergeSettings() {
   newCombinedSettings.chat = {
     ...defaultChatSettings,
     ...(newSettings.chat || {}),
+  };
+  newCombinedSettings.promptInstructions = {
+    ...defaultPromptInstructions,
+    ...(newSettings.promptInstructions || {}),
   };
 
   return newCombinedSettings;

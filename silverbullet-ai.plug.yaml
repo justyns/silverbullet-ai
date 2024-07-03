@@ -46,6 +46,10 @@ functions:
     path: src/prompts.ts:insertAiPromptFromTemplate
     command:
       name: "AI: Execute AI Prompt from Custom Template"
+  suggestPageName:
+    path: sbai.ts:suggestPageName
+    command:
+      name: "AI: Suggest Page Name"
   selectTextModel:
     path: sbai.ts:selectModelFromConfig
     command:

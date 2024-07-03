@@ -2,7 +2,7 @@ import {
   extractFrontmatter,
   prepareFrontmatterDispatch,
 } from "$sb/lib/frontmatter.ts";
-import { editor, markdown, space } from "$sb/syscalls.ts";
+import { editor, markdown, space, system } from "$sb/syscalls.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import {
@@ -220,6 +220,80 @@ export async function tagNoteWithAI() {
 
   await editor.dispatch(frontMatterChange);
   await editor.flashNotification("Note tagged successfully.");
+}
+
+/**
+ * Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
+ */
+export async function suggestPageName() {
+  await initIfNeeded();
+  const noteContent = await editor.getText();
+  const noteName = await editor.getCurrentPage();
+
+  const messages: ChatMessage[] = [
+    {
+      role: "system",
+      content:
+        `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
+- Provide each name on a new line.
+- Avoid most special characters or symbols. Spaces are acceptable. Forward slashes are allowed as folder seperators. Hyphens are allowed.
+- Ensure the names are concise and relevant to the content.
+- Avoid suggesting the same name as the current note.
+- Include as much detail as possible within 3 to 10 words.
+- Do not change the folder or prefix of the note name unless explicitly requested by the user.
+- Include the current folder name (with trailing /) in the suggestion.
+- Retain ALL date and time information from the original note title.
+
+Always follow the below rules, if any, given by the user:
+${aiSettings.promptInstructions.pageRenameRules}`,
+    },
+    {
+      role: "user",
+      content:
+        `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
+    },
+  ];
+
+  // TODO: Should this be optional?
+  const enrichedMessages = await enrichChatMessages(messages);
+  console.log("enrichedMessages", enrichedMessages);
+
+  const response = await currentAIProvider.chatWithAI({
+    messages: enrichedMessages,
+    stream: false,
+  });
+
+  const suggestions = response.trim().split("\n").filter((line: string) =>
+    line.trim() !== ""
+  ).map((line: string) => line.trim());
+  // ).map((line: string) => line.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").trim());
+
+  if (suggestions.length === 0) {
+    await editor.flashNotification("No suggestions available.");
+  }
+
+  const selectedSuggestion = await editor.filterBox(
+    "Select a page name",
+    suggestions.map((suggestion: string) => ({
+      name: suggestion,
+      description: suggestion,
+    })),
+  );
+
+  if (!selectedSuggestion) {
+    await editor.flashNotification("No page name selected.", "error");
+    return;
+  }
+
+  console.log("selectedSuggestion", selectedSuggestion);
+  const renamedPage = await system.invokeFunction("index.renamePageCommand", {
+    oldPage: noteName,
+    page: selectedSuggestion.name,
+  });
+  console.log("renamedPage", renamedPage);
+  if (!renamedPage) {
+    await editor.flashNotification("Error renaming page.", "error");
+  }
 }
 
 /**
