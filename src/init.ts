@@ -20,6 +20,7 @@ export type ChatSettings = {
 
 export type PromptInstructions = {
   pageRenameRules: string;
+  tagRules: string;
 };
 
 enum Provider {
@@ -242,6 +243,7 @@ async function loadAndMergeSettings() {
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameRules: "",
+    tagRules: "",
   };
   const newSettings = await readSetting("ai", {});
   if (newSettings.defaultTextModel) {

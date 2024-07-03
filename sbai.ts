@@ -3,6 +3,8 @@ import {
   prepareFrontmatterDispatch,
 } from "$sb/lib/frontmatter.ts";
 import { editor, markdown, space, system } from "$sb/syscalls.ts";
+import { query } from "$sbplugs/query/api.ts";
+import { KvQuery } from "$sb/types.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import {
@@ -188,17 +190,30 @@ export async function tagNoteWithAI() {
   await initIfNeeded();
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
+  const allTags = (await query(
+    "tag select name where parent = 'page' order by name",
+  )).map((tag: any) => tag.name);
+  console.log("All tags:", allTags);
   const response = await currentAIProvider.chatWithAI({
     messages: [
       {
         role: "system",
         content:
-          "You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Only return tags and no other content. Tags must be one word only and lowercase.  Suggest tags sparingly, do not treat them as keywords.",
+          `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
+          - Only return tags and no other content.
+          - Tags must be one word only and in lowercase.
+          - Use existing tags as a starting point.
+          - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
+
+          The following tags are currently being used by other notes:
+          ${allTags.join(", ")}
+          
+          Always follow the below rules, if any, given by the user:
+          ${aiSettings.promptInstructions.tagRules}`,
       },
       {
         role: "user",
-        content:
-          `Given the note titled "${noteName}" with the content below, please provide tags.\n\n${noteContent}`,
+        content: `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
       },
     ],
     stream: false,
