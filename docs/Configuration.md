@@ -36,5 +36,12 @@ ai:
     userInstructions: >
       Please give short and concise responses.  When providing code, do so in python unless requested otherwise.
 
+  # Prompt Instructions are optional, but can help steer the LLM to more personalized results for built-in commands.
+  promptInstructions:
+    pageRenameRules: >
+      Include a random animal name in every note title.
+    tagRules: >
+      Tag every note with the current year.
+
 ```
 

@@ -20,9 +20,11 @@ async function updateReadme(tag: string) {
   const readmePath = "./README.md";
   const plugYamlPath = "./silverbullet-ai.plug.yaml";
   const installationDocPath = "./docs/Installation.md";
+  const featuresDocPath = "./docs/Features.md";
   let readmeContent = await Deno.readTextFile(readmePath);
   const plugYamlContent = await Deno.readTextFile(plugYamlPath);
   let installationDocContent = await Deno.readTextFile(installationDocPath);
+  const featuresDocContent = await Deno.readTextFile(featuresDocPath);
 
   // Update the tag in the README
   readmeContent = readmeContent.replace(
@@ -70,21 +72,47 @@ commandSummary: "${docs.replace(/"/g, '\\"')}"
   }
 
   // This "dynamic" part of the readme will be enclosed with comments to make it replaceable
-  const startMarker = "<!-- start-commands-and-functions -->";
-  const endMarker = "<!-- end-commands-and-functions -->";
-  const insertionSection = `${startMarker}\n${commandsMarkdown}\n${endMarker}`;
+  const startCommandsMarker = "<!-- start-commands-and-functions -->";
+  const endCommandsMarker = "<!-- end-commands-and-functions -->";
+  const commandsInsertionSection =
+    `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
 
   // Replace or insert the commands and functions section in the README
   if (
-    readmeContent.includes(startMarker) && readmeContent.includes(endMarker)
+    readmeContent.includes(startCommandsMarker) &&
+    readmeContent.includes(endCommandsMarker)
   ) {
-    const start = readmeContent.indexOf(startMarker);
-    const end = readmeContent.indexOf(endMarker) + endMarker.length;
-    readmeContent = readmeContent.substring(0, start) + insertionSection +
+    const start = readmeContent.indexOf(startCommandsMarker);
+    const end = readmeContent.indexOf(endCommandsMarker) +
+      endCommandsMarker.length;
+    readmeContent = readmeContent.substring(0, start) +
+      commandsInsertionSection +
       readmeContent.substring(end);
   } else {
     console.error(
       "README does not contain the markers for commands and functions section.",
+    );
+  }
+
+  // Update the features section in the README
+  const startFeaturesMarker = "<!-- start-features -->";
+  const endFeaturesMarker = "<!-- end-features -->";
+  const featuresInsertionSection =
+    `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
+
+  if (
+    readmeContent.includes(startFeaturesMarker) &&
+    readmeContent.includes(endFeaturesMarker)
+  ) {
+    const start = readmeContent.indexOf(startFeaturesMarker);
+    const end = readmeContent.indexOf(endFeaturesMarker) +
+      endFeaturesMarker.length;
+    readmeContent = readmeContent.substring(0, start) +
+      featuresInsertionSection +
+      readmeContent.substring(end);
+  } else {
+    console.error(
+      "README does not contain the markers for features section.",
     );
   }
 
