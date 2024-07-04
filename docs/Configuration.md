@@ -31,6 +31,8 @@ ai:
   
   # Chat section is optional, but may help provide better results when using the Chat On Page command
   chat:
+    # If bakeMessages is true, SilverBullet query and template blocks are rendered before sending
+    bakeMessages: true
     userInformation: >
       I'm a software developer who likes taking notes.
     userInstructions: >

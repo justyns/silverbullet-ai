@@ -20,3 +20,5 @@ In addition to a normal chat you could have in any chatgpt-like interface, you c
 One more helpful chat feature is the ability to specify [[Configuration/Chat Instructions]] to customize the LLM’s responses towards you.
 
 ![](/Commands/2024-03-08-chat-custom-instructions.gif)
+
+If [[Configuration|bakeMessages]] is set to true (it is by default), any [Live Queries](https://silverbullet.md/Live%20Queries) or [Live Templates](https://silverbullet.md/Live%20Templates) are rendered before being sent to the llm.

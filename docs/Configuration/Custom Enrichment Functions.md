@@ -1,5 +1,5 @@
 
-When using [[Commands/AI: Chat on current page]], wiki links are automatically expanded, but it’s also possible to include your own custom message enrichment.
+When using [[Commands/AI: Chat on current page]], wiki links are automatically expanded and queries/templates are rendered, but it’s also possible to include your own custom message enrichment.
 
 **Example use cases**:
 
