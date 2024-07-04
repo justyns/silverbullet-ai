@@ -6,8 +6,13 @@ In the `SETTINGS` file, additional prompt instructions can be configured like th
 ai:
   promptInstructions:
     pageRenameRules: ""
+    pageRenameSystem: ""
     tagRules: ""
 ```
+
+`pageRenameSystem` can be used to completely override the system prompt used when requesting note title suggestions.  If not specified or left blank, the default prompt will be used.
+
+`pageRenameRules` is appended to the system prompt and can be used to extend the default system prompt without completely overriding it.
 
 For example, the following example does a few things:
 
@@ -19,8 +24,10 @@ For example, the following example does a few things:
 ai:
   promptInstructions:
     pageRenameRules: |
+      Retain ALL date and time information from the original note title.
       If there is a date or time at the beginning, ensure a hyphen seperates the timestamp from the actual note title.  For example, try to name quick notes like this: "YYYY-MM-DD HH:MM:SS - A short title about the note"
       If tags include #receipt or otherwise looks like a receipt, move it to "Receipts/YYYY/MM-MMMM/" using the date from the note metadata.
+
     tagRules: |
       Tag notes that contain confirmations or receipts with #receipt.
 ```

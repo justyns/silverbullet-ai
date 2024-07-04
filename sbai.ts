@@ -244,19 +244,46 @@ export async function suggestPageName() {
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
 
+  // Replacing this with the loading filterbox below instead
+  // await editor.flashNotification("Generating suggestions...");
+
+  // Open up a filterbox that acts as a "loading" modal until the real one is opened
+  const loadingOption = [{
+    name: "Generating suggestions...",
+    description: "",
+  }];
+  const filterBoxPromise = editor.filterBox(
+    "Loading...",
+    loadingOption,
+    "Retrieving suggestions from LLM provider.",
+  );
+
+  // Handle the initial filter box promise (if needed)
+  filterBoxPromise.then((selectedOption) => {
+    // Handle the selected option (if the user selects "loading...")
+    console.log("Selected option (initial):", selectedOption);
+  });
+
+  // Allow overriding the default system prompt entirely
+  let systemPrompt = "";
+  if (aiSettings.promptInstructions.pageRenameSystem) {
+    systemPrompt = aiSettings.promptInstructions.pageRenameSystem;
+  } else {
+    systemPrompt =
+      `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
+    - Provide each name on a new line.
+    - Use only spaces, forward slashes (as folder separators), and hyphens as special characters.
+    - Ensure the names are concise, descriptive, and relevant to the content.
+    - Avoid suggesting the same name as the current note.
+    - Include as much detail as possible within 3 to 10 words.
+    - Start names with ASCII characters only.
+    - Do not use markdown or any other formatting in your response.`;
+  }
+
   const messages: ChatMessage[] = [
     {
       role: "system",
-      content:
-        `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
-- Provide each name on a new line.
-- Avoid most special characters or symbols. Spaces are acceptable. Forward slashes are allowed as folder seperators. Hyphens are allowed.
-- Ensure the names are concise and relevant to the content.
-- Avoid suggesting the same name as the current note.
-- Include as much detail as possible within 3 to 10 words.
-- Do not change the folder or prefix of the note name unless explicitly requested by the user.
-- Include the current folder name (with trailing /) in the suggestion.
-- Retain ALL date and time information from the original note title.
+      content: `${systemPrompt}
 
 Always follow the below rules, if any, given by the user:
 ${aiSettings.promptInstructions.pageRenameRules}`,
@@ -279,7 +306,7 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
 
   const suggestions = response.trim().split("\n").filter((line: string) =>
     line.trim() !== ""
-  ).map((line: string) => line.trim());
+  ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
   // ).map((line: string) => line.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").trim());
 
   if (suggestions.length === 0) {
@@ -287,11 +314,11 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
   }
 
   const selectedSuggestion = await editor.filterBox(
-    "Select a page name",
+    "New page name",
     suggestions.map((suggestion: string) => ({
       name: suggestion,
-      description: suggestion,
     })),
+    "Select a new page name from one of the suggestions below.",
   );
 
   if (!selectedSuggestion) {

@@ -20,6 +20,7 @@ export type ChatSettings = {
 };
 
 export type PromptInstructions = {
+  pageRenameSystem: string;
   pageRenameRules: string;
   tagRules: string;
 };
@@ -244,6 +245,7 @@ async function loadAndMergeSettings() {
     customEnrichFunctions: [],
   };
   const defaultPromptInstructions: PromptInstructions = {
+    pageRenameSystem: "",
     pageRenameRules: "",
     tagRules: "",
   };
