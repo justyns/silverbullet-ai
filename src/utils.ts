@@ -1,4 +1,6 @@
-import { editor, events, space, system } from "$sb/syscalls.ts";
+import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
+import { cleanMarkdown } from "$sbplugs/share/share.ts";
+import { renderToText } from "$sb/lib/tree.ts";
 import { aiSettings, ChatMessage } from "./init.ts";
 
 export function folderName(path: string) {
@@ -81,6 +83,18 @@ export async function enrichChatMessages(
     if (aiSettings.chat.parseWikiLinks) {
       // Parse wiki links and provide them as context
       enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+    }
+
+    if (aiSettings.chat.bakeMessages) {
+      // This copies the logic from the share plugin and renders all of the queries/templates
+      // TODO: This can be disabled globally, but it might be useful to have a temporary toggle per page
+      const tree = await markdown.parseMarkdown(enrichedContent);
+      const rendered = await system.invokeFunction(
+        "markdown.expandCodeWidgets",
+        tree,
+        "",
+      );
+      enrichedContent = renderToText(cleanMarkdown(rendered)).trim();
     }
 
     // Gather list of functions to run from event listeners
