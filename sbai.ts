@@ -243,7 +243,26 @@ export async function suggestPageName() {
   await initIfNeeded();
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
-  await editor.flashNotification("Generating suggestions...");
+
+  // Replacing this with the loading filterbox below instead
+  // await editor.flashNotification("Generating suggestions...");
+
+  // Open up a filterbox that acts as a "loading" modal until the real one is opened
+  const loadingOption = [{
+    name: "Generating suggestions...",
+    description: "",
+  }];
+  const filterBoxPromise = editor.filterBox(
+    "Loading...",
+    loadingOption,
+    "Retrieving suggestions from LLM provider.",
+  );
+
+  // Handle the initial filter box promise (if needed)
+  filterBoxPromise.then((selectedOption) => {
+    // Handle the selected option (if the user selects "loading...")
+    console.log("Selected option (initial):", selectedOption);
+  });
 
   // Allow overriding the default system prompt entirely
   let systemPrompt = "";
@@ -299,7 +318,7 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
     suggestions.map((suggestion: string) => ({
       name: suggestion,
     })),
-    "Select a new page name",
+    "Select a new page name from one of the suggestions below.",
   );
 
   if (!selectedSuggestion) {
