@@ -28,7 +28,7 @@ publish:
   - pub
 ai:
   textModels:
-  - name: gpt-4-turbo
+  - name: gpt-4o
     provider: openai
-    modelName: gpt-4-0125-preview
+    modelName: gpt-4o
 ```
