@@ -19,11 +19,19 @@ function extractDocsForFunction(functionPath: string): string {
 async function updateReadme(tag: string) {
   const readmePath = "./README.md";
   const plugYamlPath = "./silverbullet-ai.plug.yaml";
+  const installationDocPath = "./docs/Installation.md";
   let readmeContent = await Deno.readTextFile(readmePath);
   const plugYamlContent = await Deno.readTextFile(plugYamlPath);
+  let installationDocContent = await Deno.readTextFile(installationDocPath);
 
   // Update the tag in the README
   readmeContent = readmeContent.replace(
+    /- ghr:justyns\/silverbullet-ai\/[0-9.]+/,
+    `- ghr:justyns/silverbullet-ai/${tag}`,
+  );
+
+  // Update the tag in the Installation.md
+  installationDocContent = installationDocContent.replace(
     /- ghr:justyns\/silverbullet-ai\/[0-9.]+/,
     `- ghr:justyns/silverbullet-ai/${tag}`,
   );
@@ -81,6 +89,7 @@ commandSummary: "${docs.replace(/"/g, '\\"')}"
   }
 
   await Deno.writeTextFile(readmePath, readmeContent);
+  await Deno.writeTextFile(installationDocPath, installationDocContent);
 }
 
 updateReadme(tag);
