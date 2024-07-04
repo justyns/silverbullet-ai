@@ -15,6 +15,7 @@ export type ChatSettings = {
   userInformation: string;
   userInstructions: string;
   parseWikiLinks: boolean;
+  bakeMessages: boolean;
   customEnrichFunctions: string[];
 };
 
@@ -239,6 +240,7 @@ async function loadAndMergeSettings() {
     userInformation: "",
     userInstructions: "",
     parseWikiLinks: true,
+    bakeMessages: true,
     customEnrichFunctions: [],
   };
   const defaultPromptInstructions: PromptInstructions = {
