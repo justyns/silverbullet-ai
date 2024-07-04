@@ -3,7 +3,7 @@ tags: sidebar
 navOrder: 20
 ---
 
-**NOTE:** All built-in prompts will be replaced with templated prompts eventually.
+**NOTE:** All built-in prompts may be replaced with templated prompts eventually.
 
 As of 0.0.6, you can use template notes to create your own custom prompts to send to the LLM.
 

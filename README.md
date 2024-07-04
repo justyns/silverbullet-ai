@@ -38,6 +38,7 @@ The resulting image is then uploaded to the space and inserted into the note wit
 New responses are always appended to the end of the page.
 - **AI: Execute AI Prompt from Custom Template**: Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
 Valid templates must have a value for aiprompt.description in the frontmatter.
+- **AI: Suggest Page Name**: Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
 - **AI: Select Text Model from Config**: undefined
 - **AI: Select Image Model from Config**: undefined
 
@@ -311,7 +312,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.0.8
+- ghr:justyns/silverbullet-ai/0.0.11
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
