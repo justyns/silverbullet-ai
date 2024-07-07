@@ -177,9 +177,7 @@ export async function configureSelectedModel(model: ModelConfig) {
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  if (model.requireAuth === undefined) {
-    model.requireAuth = aiSettings.requireAuth;
-  }
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
     if (newApiKey !== apiKey) {
@@ -264,7 +262,7 @@ export async function initializeOpenAI(configure = true) {
     errorMessage = "No textModels found in ai settings";
   }
 
-  if (errorMessage !== "") {
+  if (errorMessage) {
     console.error(errorMessage);
     // await editor.flashNotification(errorMessage, "error");
     throw new Error(errorMessage);
@@ -290,7 +288,7 @@ export async function initializeOpenAI(configure = true) {
 
   if (configure) {
     await getAndConfigureModel();
-    if (aiSettings.imageModels && aiSettings.imageModels.length > 0) {
+    if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
     }
   }
@@ -302,7 +300,7 @@ export async function initializeOpenAI(configure = true) {
   };
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
-      `\nThe user has provided the following information about their self: ${aiSettings.chat.userInformation}`;
+      `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;
   }
   if (aiSettings.chat.userInstructions) {
     chatSystemPrompt.content +=

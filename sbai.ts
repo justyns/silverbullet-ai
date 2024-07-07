@@ -92,7 +92,7 @@ export async function selectImageModelFromConfig() {
 }
 
 /**
- * Prompts the user for a custom prompt to send to the LLM.  If the user has text selected, the selected text is used as the note content.
+ * Prompts the user for a custom prompt to send to the LLM. If the user has text selected, the selected text is used as the note content.
  * If the user has no text selected, the entire note is used as the note content.
  * The response is streamed to the cursor position.
  */
@@ -114,7 +114,7 @@ export async function callOpenAIwithNote() {
       {
         role: "system",
         content:
-          "You are an AI note assistant.  Follow all user instructions and use the note context and note content to help follow those instructions.  Use Markdown for any formatting.",
+          "You are an AI note assistant. Follow all user instructions and use the note context and note content to help follow those instructions. Use Markdown for any formatting.",
       },
       {
         role: "user",
@@ -156,7 +156,7 @@ export async function summarizeNote() {
 
 /**
  * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
- * text.  Inserts the summary at the cursor's position.
+ * text. Inserts the summary at the cursor's position.
  */
 export async function insertSummary() {
   const { summary, selectedTextInfo } = await summarizeNote();
@@ -170,7 +170,7 @@ export async function insertSummary() {
 
 /**
  * Uses a built-in prompt to ask the LLM for a summary of either the entire note, or the selected
- * text.  Opens the resulting summary in a temporary right pane.
+ * text. Opens the resulting summary in a temporary right pane.
  */
 export async function openSummaryPanel() {
   const { summary } = await summarizeNote();
@@ -438,7 +438,7 @@ export async function promptAndGenerateImage() {
       await space.writeAttachment(prefix + finalFileName, decodedImage);
 
       // And then insert it with the prompt dall-e rewrote for us
-      // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long.  I'd like to let the user provide a template for how this looks.
+      // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long. I'd like to let the user provide a template for how this looks.
       const markdownImg =
         `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
@@ -465,7 +465,7 @@ export async function queryOpenAI(
     await initIfNeeded();
     const messages: ChatMessage[] = [];
     const defaultSystemPrompt =
-      "You are an AI note assistant helping to render content for a note.  Please follow user instructions and keep your response short and concise.";
+      "You are an AI note assistant helping to render content for a note. Please follow user instructions and keep your response short and concise.";
     messages.push({
       role: "system",
       content: systemPrompt || defaultSystemPrompt,
