@@ -41,18 +41,11 @@ export type AISettings = {
   promptInstructions: PromptInstructions;
 
   // These are deprecated and will be removed in a future release
-  summarizePrompt: string;
-  tagPrompt: string;
-  imagePrompt: string;
-  temperature: number;
-  maxTokens: number;
-  defaultTextModel: string;
   openAIBaseUrl: string;
   dallEBaseUrl: string;
   requireAuth: boolean;
   secretName: string;
   provider: Provider;
-  backwardsCompat: boolean;
   // Above is left for backwards compatibility
 };
 
@@ -184,9 +177,7 @@ export async function configureSelectedModel(model: ModelConfig) {
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  if (model.requireAuth === undefined) {
-    model.requireAuth = aiSettings.requireAuth;
-  }
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
     if (newApiKey !== apiKey) {
@@ -228,7 +219,6 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
 
 async function loadAndMergeSettings() {
   const defaultSettings = {
-    defaultTextModel: "gpt-3.5-turbo",
     openAIBaseUrl: "https://api.openai.com/v1",
     dallEBaseUrl: "https://api.openai.com/v1",
     requireAuth: true,
@@ -236,6 +226,7 @@ async function loadAndMergeSettings() {
     provider: "OpenAI",
     chat: {},
     promptInstructions: {},
+    imageModels: [],
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
@@ -250,11 +241,6 @@ async function loadAndMergeSettings() {
     tagRules: "",
   };
   const newSettings = await readSetting("ai", {});
-  if (newSettings.defaultTextModel) {
-    newSettings.backwardsCompat = true;
-  } else {
-    newSettings.backwardsCompat = false;
-  }
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
   newCombinedSettings.chat = {
     ...defaultChatSettings,
@@ -272,31 +258,11 @@ export async function initializeOpenAI(configure = true) {
   const newCombinedSettings = await loadAndMergeSettings();
 
   let errorMessage = "";
-  if (!newCombinedSettings.textModels && newCombinedSettings.defaultTextModel) {
-    // Backwards compatibility - if there isn't a textModels object, use the old behavior of config
-    newCombinedSettings.textModels = [
-      {
-        name: "default",
-        description: "Default model",
-        modelName: newCombinedSettings.defaultTextModel,
-        provider: newCombinedSettings.provider,
-        secretName: newCombinedSettings.secretName,
-      },
-    ];
-    await setSelectedTextModel(newCombinedSettings.textModels[0]);
-  } else if (
-    newCombinedSettings.textModels.length > 0 &&
-    newCombinedSettings.backwardsCompat
-  ) {
-    errorMessage =
-      "Both textModels and defaultTextModel found in ai settings. Please remove defaultTextModel.";
-  } else if (
-    !newCombinedSettings.textModels && !newCombinedSettings.defaultTextModel
-  ) {
+  if (!newCombinedSettings.textModels) {
     errorMessage = "No textModels found in ai settings";
   }
 
-  if (errorMessage !== "") {
+  if (errorMessage) {
     console.error(errorMessage);
     // await editor.flashNotification(errorMessage, "error");
     throw new Error(errorMessage);
@@ -310,9 +276,19 @@ export async function initializeOpenAI(configure = true) {
     console.log("aiSettings unchanged", aiSettings);
   }
 
+  if (aiSettings.textModels.length === 1) {
+    // If there's only one text model, set it as the selected model
+    await setSelectedTextModel(aiSettings.textModels[0]);
+  }
+
+  if (aiSettings.imageModels.length === 1) {
+    // If there's only one image model, set it as the selected model
+    await setSelectedImageModel(aiSettings.imageModels[0]);
+  }
+
   if (configure) {
     await getAndConfigureModel();
-    if (aiSettings.imageModels && aiSettings.imageModels.length > 0) {
+    if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
     }
   }
@@ -324,7 +300,7 @@ export async function initializeOpenAI(configure = true) {
   };
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
-      `\nThe user has provided the following information about their self: ${aiSettings.chat.userInformation}`;
+      `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;
   }
   if (aiSettings.chat.userInstructions) {
     chatSystemPrompt.content +=
