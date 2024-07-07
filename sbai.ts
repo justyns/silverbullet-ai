@@ -399,6 +399,11 @@ export async function streamChatOnPage() {
 export async function promptAndGenerateImage() {
   await initIfNeeded();
 
+  if (!aiSettings.imageModels || aiSettings.imageModels.length === 0) {
+    await editor.flashNotification("No image models available.", "error");
+    return;
+  }
+
   try {
     const prompt = await editor.prompt("Enter a prompt for DALL·E:");
     if (!prompt || !prompt.trim()) {

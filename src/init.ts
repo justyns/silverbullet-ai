@@ -228,6 +228,7 @@ async function loadAndMergeSettings() {
     provider: "OpenAI",
     chat: {},
     promptInstructions: {},
+    imageModels: [],
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
