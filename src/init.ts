@@ -2,7 +2,7 @@ import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore } from "$sb/syscalls.ts";
 import { DallEProvider } from "./dalle.ts";
-import { GeminiProvider } from "./gemini.ts";
+import { GeminiEmbeddingProvider, GeminiProvider } from "./gemini.ts";
 import {
   EmbeddingProviderInterface,
   ImageProviderInterface,
@@ -40,6 +40,7 @@ enum ImageProvider {
 
 enum EmbeddingProvider {
   OpenAI = "openai",
+  Gemini = "gemini",
 }
 
 export type AISettings = {
@@ -228,6 +229,16 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         model.baseUrl || aiSettings.openAIBaseUrl,
       );
       break;
+    case EmbeddingProvider.Gemini:
+      currentEmbeddingProvider = new GeminiEmbeddingProvider(
+        apiKey,
+        model.modelName,
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported embedding provider: ${model.provider}. Please configure a supported provider.`,
+      );
   }
 }
 

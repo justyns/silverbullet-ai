@@ -1,7 +1,12 @@
 import "$sb/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
-import { AbstractProvider, sseEvent, StreamChatOptions } from "./interfaces.ts";
+import {
+  AbstractEmbeddingProvider,
+  AbstractProvider,
+  sseEvent,
+  StreamChatOptions,
+} from "./interfaces.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -179,5 +184,57 @@ export class GeminiProvider extends AbstractProvider {
 
     const responseData = await response.json();
     return responseData.candidates[0].content.parts[0].text;
+  }
+}
+
+export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
+  constructor(
+    apiKey: string,
+    modelName: string,
+    baseUrl: string = "https://generativelanguage.googleapis.com",
+    requireAuth: boolean = true,
+  ) {
+    super(apiKey, baseUrl, "Gemini", modelName, requireAuth);
+  }
+
+  async generateEmbeddings(
+    options: { text: string },
+  ): Promise<Array<number>> {
+    const body = JSON.stringify({
+      model: this.modelName,
+      content: {
+        parts: [{ text: options.text }],
+      },
+    });
+
+    const headers: HttpHeaders = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.requireAuth) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
+    const response = await nativeFetch(
+      `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
+      {
+        method: "POST",
+        headers: headers,
+        body: body,
+      },
+    );
+
+    if (!response.ok) {
+      console.error("HTTP response: ", response);
+      console.error("HTTP response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || !data.embedding || !data.embedding.values) {
+      throw new Error("Invalid response from Gemini.");
+    }
+
+    return data.embedding.values;
   }
 }
