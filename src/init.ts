@@ -1,6 +1,6 @@
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
-import { clientStore } from "$sb/syscalls.ts";
+import { clientStore, system } from "$sb/syscalls.ts";
 import { DallEProvider } from "./dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./gemini.ts";
 import {
@@ -9,6 +9,7 @@ import {
   ProviderInterface,
 } from "./interfaces.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./openai.ts";
+import { log } from "./utils.ts";
 
 export type ChatMessage = {
   content: string;
@@ -112,6 +113,10 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return undefined;
+  }
   try {
     return await clientStore.get("ai.selectedTextModel");
   } catch (error) {
@@ -122,6 +127,10 @@ export async function getSelectedTextModel() {
 }
 
 export async function getSelectedImageModel() {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return undefined;
+  }
   try {
     return await clientStore.get("ai.selectedImageModel");
   } catch (error) {
@@ -132,6 +141,10 @@ export async function getSelectedImageModel() {
 }
 
 export async function getSelectedEmbeddingModel() {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return;
+  }
   try {
     return await clientStore.get("ai.selectedEmbeddingModel");
   } catch (error) {
@@ -142,18 +155,30 @@ export async function getSelectedEmbeddingModel() {
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return;
+  }
   await clientStore.set("ai.selectedImageModel", model);
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return;
+  }
   await clientStore.set("ai.selectedTextModel", model);
 }
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
+  if (await system.getEnv() != "client") {
+    // We can't use clientStore in the server process
+    return;
+  }
   await clientStore.set("ai.selectedEmbeddingModel", model);
 }
 
-async function getAndConfigureModel() {
+export async function getAndConfigureModel() {
   const selectedModel = await getSelectedTextModel() ||
     aiSettings.textModels[0];
   if (!selectedModel) {
@@ -182,7 +207,7 @@ async function getAndConfigureEmbeddingModel() {
 
 function setupImageProvider(model: ImageModelConfig) {
   const providerName = model.provider.toLowerCase();
-  console.log("Provider name", providerName);
+  log("client", "Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
       currentImageProvider = new DallEProvider(
@@ -243,7 +268,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
 }
 
 export async function configureSelectedModel(model: ModelConfig) {
-  console.log("configureSelectedModel called with:", model);
+  log("client", "configureSelectedModel called with:", model);
   if (!model) {
     throw new Error("No model provided to configure");
   }
@@ -252,7 +277,7 @@ export async function configureSelectedModel(model: ModelConfig) {
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      console.log("API key updated");
+      log("client", "API key updated");
     }
   }
   if (model.requireAuth && !apiKey) {
@@ -266,7 +291,7 @@ export async function configureSelectedModel(model: ModelConfig) {
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
-  console.log("configureSelectedImageModel called with:", model);
+  log("client", "configureSelectedImageModel called with:", model);
   if (!model) {
     throw new Error("No image model provided to configure");
   }
@@ -274,7 +299,7 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      console.log("API key updated for image model");
+      log("client", "API key updated for image model");
     }
   }
   if (model.requireAuth && !apiKey) {
@@ -290,7 +315,7 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
 export async function configureSelectedEmbeddingModel(
   model: EmbeddingModelConfig,
 ) {
-  console.log("configureSelectedEmbeddingModel called with:", model);
+  log("client", "configureSelectedEmbeddingModel called with:", model);
   if (!model) {
     throw new Error("No embedding model provided to configure");
   }
@@ -298,7 +323,7 @@ export async function configureSelectedEmbeddingModel(
     const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      console.log("API key updated for embedding model");
+      log("client", "API key updated for embedding model");
     }
   }
   if (model.requireAuth && !apiKey) {
@@ -364,11 +389,11 @@ export async function initializeOpenAI(configure = true) {
   }
 
   if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
-    console.log("aiSettings updating from", aiSettings);
+    log("client", "aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
-    console.log("aiSettings updated to", aiSettings);
+    log("client", "aiSettings updated to", aiSettings);
   } else {
-    console.log("aiSettings unchanged", aiSettings);
+    log("client", "aiSettings unchanged", aiSettings);
   }
 
   if (aiSettings.textModels.length === 1) {

@@ -8,6 +8,17 @@ export function folderName(path: string) {
 }
 
 /**
+ * Console logs can get noisy on the server side, this lets us still have
+ * useful debug logs on the client by default without polluting the server logs.
+ */
+export async function log(env: "client" | "server" | "any", ...args: any[]) {
+  const currentEnv = await system.getEnv();
+  if (currentEnv === env || env === "any") {
+    console.log(...args);
+  }
+}
+
+/**
  * Converts the current page into a list of messages for the LLM.
  * Each message is a line of text, with the role being the bolded word at the beginning of the line.
  * Each message can also be multiple lines.

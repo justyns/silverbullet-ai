@@ -71,9 +71,6 @@ export abstract class AbstractProvider implements ProviderInterface {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.modelName = modelName;
-    console.log(
-      `New AI Provider initialized: ${this.name}, Base URL: ${this.baseUrl}, Model Name: ${this.modelName}`,
-    );
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;
