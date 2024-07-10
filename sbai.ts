@@ -10,14 +10,18 @@ import {
   aiSettings,
   ChatMessage,
   chatSystemPrompt,
+  configureSelectedEmbeddingModel,
   configureSelectedImageModel,
   configureSelectedModel,
   currentAIProvider,
+  currentEmbeddingProvider,
   currentImageProvider,
+  EmbeddingModelConfig,
   ImageModelConfig,
   initializeOpenAI,
   initIfNeeded,
   ModelConfig,
+  setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
@@ -89,6 +93,38 @@ export async function selectImageModelFromConfig() {
     `Selected image model: ${selectedImageModelName}`,
   );
   console.log(`Selected image model:`, selectedImageModel);
+}
+
+export async function selectEmbeddingModelFromConfig() {
+  if (!aiSettings || !aiSettings.embeddingModels) {
+    await initializeOpenAI(false);
+  }
+  const embeddingModelOptions = aiSettings.embeddingModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`,
+  }));
+  const selectedEmbeddingModel = await editor.filterBox(
+    "Select an embedding model",
+    embeddingModelOptions,
+  );
+
+  if (!selectedEmbeddingModel) {
+    await editor.flashNotification("No embedding model selected.", "error");
+    return;
+  }
+  const selectedEmbeddingModelName = selectedEmbeddingModel.name;
+  await setSelectedEmbeddingModel(
+    selectedEmbeddingModel as EmbeddingModelConfig,
+  );
+  await configureSelectedEmbeddingModel(
+    selectedEmbeddingModel as EmbeddingModelConfig,
+  );
+
+  await editor.flashNotification(
+    `Selected embedding model: ${selectedEmbeddingModelName}`,
+  );
+  console.log(`Selected embedding model:`, selectedEmbeddingModel);
 }
 
 /**
@@ -481,4 +517,21 @@ export async function queryOpenAI(
     console.error("Error querying OpenAI:", error);
     throw error;
   }
+}
+
+/**
+ * Function to test generating embeddings.  Just puts the result in the current note, but
+ * isn't too helpful for most cases.
+ */
+export async function testEmbeddingGeneration() {
+  await initIfNeeded();
+  const text = await editor.prompt("Enter some text to embed:");
+  if (!text) {
+    await editor.flashNotification("No text entered.", "error");
+    return;
+  }
+  const embedding = await currentEmbeddingProvider.generateEmbeddings({
+    text: text,
+  });
+  await editor.insertAtCursor(`\n\nEmbedding: ${embedding}`);
 }

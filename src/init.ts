@@ -3,8 +3,12 @@ import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore } from "$sb/syscalls.ts";
 import { DallEProvider } from "./dalle.ts";
 import { GeminiProvider } from "./gemini.ts";
-import { ImageProviderInterface, ProviderInterface } from "./interfaces.ts";
-import { OpenAIProvider } from "./openai.ts";
+import {
+  EmbeddingProviderInterface,
+  ImageProviderInterface,
+  ProviderInterface,
+} from "./interfaces.ts";
+import { OpenAIEmbeddingProvider, OpenAIProvider } from "./openai.ts";
 
 export type ChatMessage = {
   content: string;
@@ -34,9 +38,14 @@ enum ImageProvider {
   DallE = "dalle",
 }
 
+enum EmbeddingProvider {
+  OpenAI = "openai",
+}
+
 export type AISettings = {
   textModels: ModelConfig[];
   imageModels: ImageModelConfig[];
+  embeddingModels: EmbeddingModelConfig[];
   chat: ChatSettings;
   promptInstructions: PromptInstructions;
 
@@ -69,13 +78,27 @@ export type ImageModelConfig = {
   baseUrl?: string;
 };
 
+export type EmbeddingModelConfig = {
+  name: string;
+  description: string;
+  modelName: string;
+  provider: EmbeddingProvider;
+  secretName: string;
+  requireAuth: boolean;
+  baseUrl?: string;
+};
+
 export let apiKey: string;
 export let aiSettings: AISettings;
 export let chatSystemPrompt: ChatMessage;
+
 export let currentAIProvider: ProviderInterface;
 export let currentImageProvider: ImageProviderInterface;
+export let currentEmbeddingProvider: EmbeddingProviderInterface;
+
 export let currentModel: ModelConfig;
 export let currentImageModel: ImageModelConfig;
+export let currentEmbeddingModel: EmbeddingModelConfig;
 
 export async function initIfNeeded() {
   const selectedModel = await getSelectedTextModel();
@@ -107,12 +130,26 @@ export async function getSelectedImageModel() {
   }
 }
 
+export async function getSelectedEmbeddingModel() {
+  try {
+    return await clientStore.get("ai.selectedEmbeddingModel");
+  } catch (error) {
+    // This doesn't work in cli mode
+    // console.error("Error fetching selected embedding model:", error);
+    return undefined;
+  }
+}
+
 export async function setSelectedImageModel(model: ImageModelConfig) {
   await clientStore.set("ai.selectedImageModel", model);
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
   await clientStore.set("ai.selectedTextModel", model);
+}
+
+export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
+  await clientStore.set("ai.selectedEmbeddingModel", model);
 }
 
 async function getAndConfigureModel() {
@@ -131,6 +168,15 @@ async function getAndConfigureImageModel() {
     throw new Error("No image model selected or available as default.");
   }
   await configureSelectedImageModel(selectedImageModel);
+}
+
+async function getAndConfigureEmbeddingModel() {
+  const selectedEmbeddingModel = await getSelectedEmbeddingModel() ||
+    aiSettings.embeddingModels[0];
+  if (!selectedEmbeddingModel) {
+    throw new Error("No embedding model selected or available as default.");
+  }
+  await configureSelectedEmbeddingModel(selectedEmbeddingModel);
 }
 
 function setupImageProvider(model: ImageModelConfig) {
@@ -169,6 +215,19 @@ function setupAIProvider(model: ModelConfig) {
       throw new Error(
         `Unsupported AI provider: ${model.provider}. Please configure a supported provider.`,
       );
+  }
+}
+
+function setupEmbeddingProvider(model: EmbeddingModelConfig) {
+  const providerName = model.provider.toLowerCase();
+  switch (providerName) {
+    case EmbeddingProvider.OpenAI:
+      currentEmbeddingProvider = new OpenAIEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.openAIBaseUrl,
+      );
+      break;
   }
 }
 
@@ -217,6 +276,30 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
   setupImageProvider(model);
 }
 
+export async function configureSelectedEmbeddingModel(
+  model: EmbeddingModelConfig,
+) {
+  console.log("configureSelectedEmbeddingModel called with:", model);
+  if (!model) {
+    throw new Error("No embedding model provided to configure");
+  }
+  if (model.requireAuth) {
+    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    if (newApiKey !== apiKey) {
+      apiKey = newApiKey;
+      console.log("API key updated for embedding model");
+    }
+  }
+  if (model.requireAuth && !apiKey) {
+    throw new Error(
+      "AI API key is missing for embedding model. Please set it in the secrets page.",
+    );
+  }
+
+  currentEmbeddingModel = model;
+  setupEmbeddingProvider(model);
+}
+
 async function loadAndMergeSettings() {
   const defaultSettings = {
     openAIBaseUrl: "https://api.openai.com/v1",
@@ -227,6 +310,7 @@ async function loadAndMergeSettings() {
     chat: {},
     promptInstructions: {},
     imageModels: [],
+    embeddingModels: [],
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
@@ -286,10 +370,18 @@ export async function initializeOpenAI(configure = true) {
     await setSelectedImageModel(aiSettings.imageModels[0]);
   }
 
+  if (aiSettings.embeddingModels.length === 1) {
+    // If there's only one embedding model, set it as the selected model
+    await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
+  }
+
   if (configure) {
     await getAndConfigureModel();
     if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
+    }
+    if (aiSettings.embeddingModels.length > 0) {
+      await getAndConfigureEmbeddingModel();
     }
   }
 

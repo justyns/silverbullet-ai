@@ -3,7 +3,12 @@ import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "./init.ts";
 
-import { AbstractProvider, sseEvent } from "./interfaces.ts";
+import {
+  AbstractEmbeddingProvider,
+  AbstractProvider,
+  EmbeddingGenerationOptions,
+  sseEvent,
+} from "./interfaces.ts";
 
 type StreamChatOptions = {
   messages: Array<ChatMessage>;
@@ -152,5 +157,56 @@ export class OpenAIProvider extends AbstractProvider {
       );
       throw error;
     }
+  }
+}
+
+export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
+  constructor(
+    apiKey: string,
+    modelName: string,
+    baseUrl: string,
+    requireAuth: boolean = true,
+  ) {
+    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
+  }
+
+  async generateEmbeddings(
+    options: EmbeddingGenerationOptions,
+  ): Promise<Array<number>> {
+    const body = JSON.stringify({
+      model: this.modelName,
+      input: options.text,
+      encoding_format: "float",
+    });
+
+    const headers: HttpHeaders = {
+      "Content-Type": "application/json",
+    };
+
+    if (this.requireAuth) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+
+    const response = await nativeFetch(
+      `${this.baseUrl}/embeddings`,
+      {
+        method: "POST",
+        headers: headers,
+        body: body,
+      },
+    );
+
+    if (!response.ok) {
+      console.error("HTTP response: ", response);
+      console.error("HTTP response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (!data || !data.data || data.data.length === 0) {
+      throw new Error("Invalid response from OpenAI.");
+    }
+
+    return data.data[0].embedding;
   }
 }

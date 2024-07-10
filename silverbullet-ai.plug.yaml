@@ -58,4 +58,11 @@ functions:
     path: sbai.ts:selectImageModelFromConfig
     command:
       name: "AI: Select Image Model from Config"
-
+  selectEmbeddingModel:
+    path: sbai.ts:selectEmbeddingModelFromConfig
+    command:
+      name: "AI: Select Embedding Model from Config"
+  testEmbeddingGeneration:
+    path: sbai.ts:testEmbeddingGeneration
+    command:
+      name: "AI: Test Embedding Generation"
