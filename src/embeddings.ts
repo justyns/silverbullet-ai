@@ -36,14 +36,19 @@ export type CombinedEmbeddingResult = {
 
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   // TODO: Allow user to exclude certain pages
-  const excludePatterns = ["_", "SETTINGS", "SECRETS"];
-  if (excludePatterns.some((pattern) => page.includes(pattern))) {
+  const excludePages = ["_", "SETTINGS", "SECRETS"];
+  if (excludePages.includes(page)) {
     return;
   }
 
   //   log("any", "AI: Indexing embeddings for", page);
 
   await initIfNeeded();
+
+  // Some strings might appear in a ton of notes but aren't helpful for searching.
+  // This only excludes strings that are an exact match for a paragraph.
+  // TODO: Make this configurable, and maybe use regex
+  const stringsToExclude = ["**user**:"];
 
   // Splitting embeddings up by paragraph, but there could be better ways to do it
   //     ^ Some places suggest a sliding window so that each chunk has some overlap with the previous/next chunk
@@ -53,10 +58,14 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   const objects: EmbeddingObject[] = [];
 
   for (const paragraph of paragraphs) {
-    const paragraphText = renderToText(paragraph);
+    const paragraphText = renderToText(paragraph).trim();
 
     // Skip empty paragraphs and lines with less than 10 characters (TODO: remove that limit?)
-    if (!paragraphText.trim() || paragraphText.length < 10) {
+    if (!paragraphText || paragraphText.length < 10) {
+      continue;
+    }
+
+    if (stringsToExclude.includes(paragraphText)) {
       continue;
     }
 
