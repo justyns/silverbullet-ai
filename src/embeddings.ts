@@ -12,8 +12,8 @@ import { editor } from "$sb/syscalls.ts";
 
 export type EmbeddingObject = ObjectValue<
   {
-    // TODO: Do we need to store the text?  Maybe just the page+pos is enough
-    // text: string;
+    // It might be possible to retrieve the text using the page+pos, but this does make it simpler
+    text: string;
     page: string;
     pos: number;
     embedding: number[];
@@ -25,6 +25,7 @@ export type EmbeddingResult = {
   page: string;
   ref: string;
   similarity: number;
+  text: string;
 };
 
 export type CombinedEmbeddingResult = {
@@ -40,22 +41,26 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
     return;
   }
 
-  log("any", "AI: Indexing embeddings for", page);
+  //   log("any", "AI: Indexing embeddings for", page);
 
   await initIfNeeded();
 
   // Splitting embeddings up by paragraph, but there could be better ways to do it
+  //     ^ Some places suggest a sliding window so that each chunk has some overlap with the previous/next chunk
+  //     ^ But in some limited testing, this seems to work alright only split by paragraph
   const paragraphs = tree.children.filter((node) => node.type === "Paragraph");
 
   const objects: EmbeddingObject[] = [];
 
   for (const paragraph of paragraphs) {
     const paragraphText = renderToText(paragraph);
+
     // Skip empty paragraphs and lines with less than 10 characters (TODO: remove that limit?)
     if (!paragraphText.trim() || paragraphText.length < 10) {
       continue;
     }
 
+    // TODO: Would it help to cache embeddings?  e.g. someone reloading the same search page over and over, or updating the same page causing the same paragraphs to be re-indexed
     const embedding = await currentEmbeddingProvider.generateEmbeddings({
       text: paragraphText,
     });
@@ -67,6 +72,7 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
       page: page,
       pos: pos,
       embedding: embedding,
+      text: paragraphText,
       tag: "embedding",
     };
 
@@ -112,6 +118,7 @@ export async function searchEmbeddings(
   const results: EmbeddingResult[] = embeddings.map((embedding) => ({
     page: embedding.page,
     ref: embedding.ref,
+    text: embedding.text,
     similarity: cosineSimilarity(queryEmbedding, embedding.embedding),
   }));
 
@@ -123,7 +130,10 @@ export async function searchEmbeddings(
 }
 
 /**
- * Combine similar embeddings into one object per page
+ * Combine and group similar embeddings into one object per page.
+ * Without this, we could easily use up the results limit from a single page.
+ * With this, the user will be able to see multiple pages in addition to seeing
+ * that one page may have multiple matches.
  */
 export async function searchCombinedEmbeddings(
   query: string,
@@ -149,7 +159,7 @@ export async function searchCombinedEmbeddings(
     }
   }
 
-  // Sort embedding objects per page so the most similar show first
+  // Sort child embedding objects per page so the most similar show first
   for (const page in combinedResults) {
     combinedResults[page].children = combinedResults[page].children
       .sort((a, b) => b.similarity - a.similarity)
@@ -158,13 +168,14 @@ export async function searchCombinedEmbeddings(
 
   const combinedResultsArray = Object.values(combinedResults);
 
+  // And then sort the overall page objects by score (sum of children similarities)
   return combinedResultsArray
     .sort((a, b) => b.score - a.score)
     .slice(0, numResults);
 }
 
 export async function debugSearchEmbeddings() {
-  const text = await editor.prompt("Enter some text to embed:");
+  const text = await editor.prompt("Enter some text to search for:");
   if (!text) {
     await editor.flashNotification("No text entered.", "error");
     return;
@@ -209,6 +220,7 @@ export async function readFileEmbeddings(
     text += `* [[${r.page}]] (score ${r.score})\n`;
     for (const child of r.children) {
       text += `  * [[${child.ref}]] (similarity ${child.similarity})\n`;
+      text += `    > ${child.text}\n`;
     }
   }
 
