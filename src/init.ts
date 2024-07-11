@@ -9,6 +9,7 @@ import {
   ProviderInterface,
 } from "./interfaces.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./openai.ts";
+import { OllamaEmbeddingProvider } from "./ollama.ts";
 import { log } from "./utils.ts";
 
 export type ChatMessage = {
@@ -42,6 +43,7 @@ enum ImageProvider {
 enum EmbeddingProvider {
   OpenAI = "openai",
   Gemini = "gemini",
+  Ollama = "ollama",
 }
 
 export type AISettings = {
@@ -258,6 +260,14 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
       currentEmbeddingProvider = new GeminiEmbeddingProvider(
         apiKey,
         model.modelName,
+      );
+      break;
+    case EmbeddingProvider.Ollama:
+      currentEmbeddingProvider = new OllamaEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "http://localhost:11434",
+        model.requireAuth,
       );
       break;
     default:

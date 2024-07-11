@@ -27,6 +27,12 @@ export type EmbeddingResult = {
   similarity: number;
 };
 
+export type CombinedEmbeddingResult = {
+  page: string;
+  score: number;
+  children: EmbeddingResult[];
+};
+
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   // TODO: Allow user to exclude certain pages
   const excludePatterns = ["_", "SETTINGS", "SECRETS"];
@@ -122,22 +128,38 @@ export async function searchEmbeddings(
 export async function searchCombinedEmbeddings(
   query: string,
   numResults = 10,
-): Promise<EmbeddingResult[]> {
+  minSimilarity = 0.15,
+): Promise<CombinedEmbeddingResult[]> {
   const searchResults = await searchEmbeddings(query, -1);
-  const combinedResults: { [page: string]: EmbeddingResult } = {};
+  const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
   for (const result of searchResults) {
-    if (combinedResults[result.page]) {
-      combinedResults[result.page].similarity += result.similarity;
-    } else {
-      combinedResults[result.page] = { ...result };
+    if (result.similarity < minSimilarity) {
+      continue;
     }
+    if (combinedResults[result.page]) {
+      combinedResults[result.page].score += result.similarity;
+      combinedResults[result.page].children.push(result);
+    } else {
+      combinedResults[result.page] = {
+        page: result.page,
+        score: result.similarity,
+        children: [result],
+      };
+    }
+  }
+
+  // Sort embedding objects per page so the most similar show first
+  for (const page in combinedResults) {
+    combinedResults[page].children = combinedResults[page].children
+      .sort((a, b) => b.similarity - a.similarity)
+      .slice(0, numResults);
   }
 
   const combinedResultsArray = Object.values(combinedResults);
 
   return combinedResultsArray
-    .sort((a, b) => b.similarity - a.similarity)
+    .sort((a, b) => b.score - a.score)
     .slice(0, numResults);
 }
 
@@ -164,8 +186,8 @@ export async function embeddingsQueryProvider({
   const results: any[] = await searchCombinedEmbeddings(query);
 
   for (const r of results) {
-    r.name = r.ref;
-    delete r.ref;
+    r.name = r.page;
+    delete r.page;
   }
 
   return results;
@@ -182,12 +204,13 @@ export async function readFileEmbeddings(
   );
   const results = await searchCombinedEmbeddings(phrase);
   console.log("results", results);
-  const text = `# Embedding search results for "${phrase}"\n${
-    results
-      .map((r) => `* [[${r.ref}]] (similarity ${r.similarity})`)
-      .join("\n")
+  let text = `# Embedding search results for "${phrase}"\n`;
+  for (const r of results) {
+    text += `* [[${r.page}]] (score ${r.score})\n`;
+    for (const child of r.children) {
+      text += `  * [[${child.ref}]] (similarity ${child.similarity})\n`;
+    }
   }
-    `;
 
   return {
     data: new TextEncoder().encode(text),
