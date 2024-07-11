@@ -116,6 +116,31 @@ export async function searchEmbeddings(
     .slice(0, numResults);
 }
 
+/**
+ * Combine similar embeddings into one object per page
+ */
+export async function searchCombinedEmbeddings(
+  query: string,
+  numResults = 10,
+): Promise<EmbeddingResult[]> {
+  const searchResults = await searchEmbeddings(query, -1);
+  const combinedResults: { [page: string]: EmbeddingResult } = {};
+
+  for (const result of searchResults) {
+    if (combinedResults[result.page]) {
+      combinedResults[result.page].similarity += result.similarity;
+    } else {
+      combinedResults[result.page] = { ...result };
+    }
+  }
+
+  const combinedResultsArray = Object.values(combinedResults);
+
+  return combinedResultsArray
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, numResults);
+}
+
 export async function debugSearchEmbeddings() {
   const text = await editor.prompt("Enter some text to embed:");
   if (!text) {
@@ -123,7 +148,7 @@ export async function debugSearchEmbeddings() {
     return;
   }
 
-  const searchResults = await searchEmbeddings(text);
+  const searchResults = await searchCombinedEmbeddings(text);
   await editor.flashNotification(`Found ${searchResults.length} results`);
   log("any", "AI: Search results", searchResults);
   //   await editor.insertAtCursor(
@@ -136,7 +161,7 @@ export async function embeddingsQueryProvider({
   query,
 }: QueryProviderEvent): Promise<any[]> {
   console.log("phraseFilter", query);
-  const results: any[] = await searchEmbeddings(query);
+  const results: any[] = await searchCombinedEmbeddings(query);
 
   for (const r of results) {
     r.name = r.ref;
@@ -155,7 +180,8 @@ export async function readFileEmbeddings(
     searchPrefix.length,
     name.length - ".md".length,
   );
-  const results = await searchEmbeddings(phrase);
+  const results = await searchCombinedEmbeddings(phrase);
+  console.log("results", results);
   const text = `# Embedding search results for "${phrase}"\n${
     results
       .map((r) => `* [[${r.ref}]] (similarity ${r.similarity})`)
