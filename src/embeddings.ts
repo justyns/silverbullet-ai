@@ -1,4 +1,8 @@
-import type { IndexTreeEvent } from "$sb/types.ts";
+import type {
+  FileMeta,
+  IndexTreeEvent,
+  QueryProviderEvent,
+} from "$sb/types.ts";
 import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
 import { ObjectValue } from "$sb/types.ts";
@@ -121,13 +125,64 @@ export async function debugSearchEmbeddings() {
 
   const searchResults = await searchEmbeddings(text);
   await editor.flashNotification(`Found ${searchResults.length} results`);
-  const formattedResults = searchResults.map((result) => ({
-    page: result.page,
-    ref: result.ref,
-    similarity: result.similarity,
-  }));
-  log("any", "AI: Search results", formattedResults);
-  await editor.insertAtCursor(
-    `\n\nSearch results: ${JSON.stringify(formattedResults)}`,
+  log("any", "AI: Search results", searchResults);
+  //   await editor.insertAtCursor(
+  //     `\n\nSearch results: ${JSON.stringify(formattedResults)}`,
+  //   );
+}
+
+// This doesnt seem to ever get triggered
+export async function embeddingsQueryProvider({
+  query,
+}: QueryProviderEvent): Promise<any[]> {
+  console.log("phraseFilter", query);
+  const results: any[] = await searchEmbeddings(query);
+
+  for (const r of results) {
+    r.name = r.ref;
+    delete r.ref;
+  }
+
+  return results;
+}
+
+const searchPrefix = "🤖 ";
+
+export async function readFileEmbeddings(
+  name: string,
+): Promise<{ data: Uint8Array; meta: FileMeta }> {
+  const phrase = name.substring(
+    searchPrefix.length,
+    name.length - ".md".length,
   );
+  const results = await searchEmbeddings(phrase);
+  const text = `# Embedding search results for "${phrase}"\n${
+    results
+      .map((r) => `* [[${r.ref}]] (similarity ${r.similarity})`)
+      .join("\n")
+  }
+    `;
+
+  return {
+    data: new TextEncoder().encode(text),
+    meta: {
+      name,
+      contentType: "text/markdown",
+      size: text.length,
+      created: 0,
+      lastModified: 0,
+      perm: "ro",
+    },
+  };
+}
+
+export function getFileMetaEmbeddings(name: string): FileMeta {
+  return {
+    name,
+    contentType: "text/markdown",
+    size: -1,
+    created: 0,
+    lastModified: 0,
+    perm: "ro",
+  };
 }
