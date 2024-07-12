@@ -92,7 +92,7 @@ export async function enrichChatMessages(
       continue;
     }
 
-    if (aiSettings.chat.searchEmbeddings) {
+    if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
       // Search local vector embeddings for relevant context
       const searchResults = await searchCombinedEmbeddings(enrichedContent);
       if (searchResults.length > 0) {
