@@ -58,4 +58,42 @@ functions:
     path: sbai.ts:selectImageModelFromConfig
     command:
       name: "AI: Select Image Model from Config"
-
+  selectEmbeddingModel:
+    path: sbai.ts:selectEmbeddingModelFromConfig
+    command:
+      name: "AI: Select Embedding Model from Config"
+  testEmbeddingGeneration:
+    path: sbai.ts:testEmbeddingGeneration
+    command:
+      name: "AI: Test Embedding Generation"
+  indexEmbeddings:
+    path: src/embeddings.ts:indexEmbeddings
+    events:
+      - page:index
+  debugSearchEmbeddings:
+    path: src/embeddings.ts:debugSearchEmbeddings
+    command:
+      name: "AI: Debug Search Embeddings"
+  embeddingsQueryProvider:
+    path: src/embeddings.ts:embeddingsQueryProvider
+    events:
+      - query:full-text
+  readPageSearchEmbeddings:
+    path: src/embeddings.ts:readFileEmbeddings
+    pageNamespace:
+      pattern: "🤖 .+"
+      operation: readFile
+  writePageSearchEmbeddings:
+    path: src/embeddings.ts:readFileEmbeddings
+    pageNamespace:
+      pattern: "🤖 .+"
+      operation: readFile
+  getPageMetaSearchEmbeddings:
+    path: src/embeddings.ts:getFileMetaEmbeddings
+    pageNamespace:
+      pattern: "🤖 .+"
+      operation: getFileMeta
+  searchCommand:
+    path: src/embeddings.ts:searchCommand
+    command:
+      name: "AI: Search"

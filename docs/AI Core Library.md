@@ -3,7 +3,7 @@ tags: sidebar
 navOrder: 10
 ---
 
-**WARNING**: This doesn’t quite work yet, sorry!  See 
+> **warning** This doesn’t quite work yet, sorry!
 
 # Installation
 To import this library, run the {[Library: Import]} command in your SilverBullet space and enter:

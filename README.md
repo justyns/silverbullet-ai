@@ -20,6 +20,8 @@ If you are new here, start with either the `AI: Chat on current page` command or
 - **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
 - **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
 - **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
+- **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
+- **Similarity search**: Allows doing a similarity search based on indexed embeddings.
 <!-- end-features -->
 
 ### Available commands
@@ -46,6 +48,13 @@ Valid templates must have a value for aiprompt.description in the frontmatter.
 - **AI: Suggest Page Name**: Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
 - **AI: Select Text Model from Config**: undefined
 - **AI: Select Image Model from Config**: undefined
+- **AI: Select Embedding Model from Config**: undefined
+- **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
+isn't too helpful for most cases.
+- **AI: Debug Search Embeddings**: undefined
+- **AI: Search**: Ask the user for a search query, and then navigate to the search results page.
+Search results are provided by calculating the cosine similarity between the
+query embedding and each indexed embedding.
 
 <!-- end-commands-and-functions -->
 

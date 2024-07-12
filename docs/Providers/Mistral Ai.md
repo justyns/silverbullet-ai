@@ -3,6 +3,7 @@ tags: provider
 textProvider: true
 imageProvider: false
 apiProvider: openai
+embeddingProvider: false
 ---
 
 Mistral.ai is a hosted service that offers an openai-compatible api.  You can use it with settings like this:
