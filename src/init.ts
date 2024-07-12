@@ -22,6 +22,7 @@ export type ChatSettings = {
   userInstructions: string;
   parseWikiLinks: boolean;
   bakeMessages: boolean;
+  searchEmbeddings: boolean;
   customEnrichFunctions: string[];
 };
 
@@ -370,6 +371,7 @@ async function loadAndMergeSettings() {
     parseWikiLinks: true,
     bakeMessages: true,
     customEnrichFunctions: [],
+    searchEmbeddings: true,
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameSystem: "",
