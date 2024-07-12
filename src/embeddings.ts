@@ -210,21 +210,6 @@ export async function debugSearchEmbeddings() {
   //   );
 }
 
-// This doesnt seem to ever get triggered
-export async function embeddingsQueryProvider({
-  query,
-}: QueryProviderEvent): Promise<any[]> {
-  console.log("phraseFilter", query);
-  const results: any[] = await searchCombinedEmbeddings(query);
-
-  for (const r of results) {
-    r.name = r.page;
-    delete r.page;
-  }
-
-  return results;
-}
-
 const searchPrefix = "🤖 ";
 
 export async function readFileEmbeddings(

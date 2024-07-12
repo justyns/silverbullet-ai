@@ -2,6 +2,7 @@ import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
 import { cleanMarkdown } from "$sbplugs/share/share.ts";
 import { renderToText } from "$sb/lib/tree.ts";
 import { aiSettings, ChatMessage } from "./init.ts";
+import { searchCombinedEmbeddings } from "./embeddings.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -91,6 +92,26 @@ export async function enrichChatMessages(
       continue;
     }
 
+    if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
+      // Search local vector embeddings for relevant context
+      const searchResults = await searchCombinedEmbeddings(enrichedContent);
+      if (searchResults.length > 0) {
+        enrichedContent +=
+          `\n\nThe following pages were found to be relevant to the question. You can use them as context to answer the question.\n`;
+
+        for (const r of searchResults) {
+          enrichedContent += `* [[${r.page}]] (similarity score ${r.score})\n`;
+          // We could include the child results here which have snippets of text, but
+          // I'm not sure if it is worth it or not when we can just send the whole note?
+
+          // for (const child of r.children) {
+          //   enrichedContent += `  * [[${child.ref}]] (similarity ${child.similarity})\n`;
+          //   enrichedContent += `    > ${child.text}\n`;
+          // }
+        }
+      }
+    }
+
     if (aiSettings.chat.parseWikiLinks) {
       // Parse wiki links and provide them as context
       enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
@@ -162,9 +183,9 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
     if (!hasMatch) {
       enrichedContent += `\n\n${
         "Base your answer on the content of the following referenced pages " +
-        "(referenced above using the [[page name]] format). In these listings ~~~ " +
+        "(referenced above using the >>page name<< format). In these listings ~~~ " +
         "is used to mark the page's content start and end. If context is missing, " +
-        "always ask me to link directly to a page mentioned in the context if."
+        "always ask me to link directly to a page mentioned in the context."
       }`;
       hasMatch = true;
     }
@@ -178,6 +199,10 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
       console.error(`Error fetching page '${pageName}':`, error);
     }
   }
+
+  // Replace wiki links with >>page name<< format to avoid rendering the wiki links as real urls
+  // later when the whole message is rendered to markdown.
+  enrichedContent = enrichedContent.replace(wikiLinkRegex, ">>$1<<");
 
   return enrichedContent;
 }

@@ -74,10 +74,6 @@ functions:
     path: src/embeddings.ts:debugSearchEmbeddings
     command:
       name: "AI: Debug Search Embeddings"
-  embeddingsQueryProvider:
-    path: src/embeddings.ts:embeddingsQueryProvider
-    events:
-      - query:full-text
   readPageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
     pageNamespace:
