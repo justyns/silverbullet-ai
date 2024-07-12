@@ -1,7 +1,8 @@
 import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
 import { cleanMarkdown } from "$sbplugs/share/share.ts";
 import { renderToText } from "$sb/lib/tree.ts";
-import { aiSettings, ChatMessage } from "./init.ts";
+import { aiSettings } from "./init.ts";
+import type { ChatMessage } from "./types.ts";
 import { searchCombinedEmbeddings } from "./embeddings.ts";
 
 export function folderName(path: string) {

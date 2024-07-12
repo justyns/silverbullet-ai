@@ -1,12 +1,10 @@
 import "$sb/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { ChatMessage } from "../init.ts";
-import {
-  AbstractEmbeddingProvider,
-  AbstractProvider,
-  StreamChatOptions,
-} from "../interfaces.ts";
-import { sseEvent } from "../sseEvent.ts";
+import { ChatMessage } from "../types.ts";
+import { StreamChatOptions } from "../types.ts";
+import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
+import { AbstractProvider } from "../interfaces/Provider.ts";
+import { sseEvent } from "../types.ts";
 
 type HttpHeaders = {
   "Content-Type": string;

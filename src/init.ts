@@ -3,20 +3,20 @@ import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore, system } from "$sb/syscalls.ts";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
-import {
-  EmbeddingProviderInterface,
-  ImageProviderInterface,
-  ProviderInterface,
-} from "./interfaces.ts";
+import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
+import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
+import { ProviderInterface } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import type {
   AISettings,
   ChatMessage,
+  ChatSettings,
   EmbeddingModelConfig,
   ImageModelConfig,
   ModelConfig,
+  PromptInstructions,
 } from "./types.ts";
 import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 

@@ -1,9 +1,7 @@
 import "$sb/lib/native_fetch.ts";
 import { apiKey, initializeOpenAI } from "../init.ts";
-import {
-  AbstractImageProvider,
-  ImageGenerationOptions,
-} from "../interfaces.ts";
+import { ImageGenerationOptions } from "../types.ts";
+import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
 
 export class DallEProvider extends AbstractImageProvider {
   constructor(apiKey: string, modelName: string, baseUrl: string) {
