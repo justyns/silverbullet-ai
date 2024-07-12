@@ -6,7 +6,7 @@ silverbullet-ai is very new and is still in early development.  It may not work 
 
 If you are new here, start with [[Quick Start]], and then [[AI Core Library]]!
 
-**Warning**: Please backup your notes before using this plug.  It inserts and replaces text at certain points and isn't well-tested yet, so back up your data!
+> **warning** **Warning**: Please backup your notes before using this plug.  It inserts and replaces text at certain points and isn't well-tested yet, so back up your data!
 
 ## Features
 

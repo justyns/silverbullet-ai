@@ -3,6 +3,7 @@ tags: provider
 textProvider: true
 imageProvider: false
 apiProvider: openai
+embeddingProvider: true
 ---
 
 [OpenAI](https://platform.openai.com/) itself is supported, but any openai api compatible services are also supported by the same provider in this plugin.  See [[Providers/Ollama]] as an example.

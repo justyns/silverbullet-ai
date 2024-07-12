@@ -19,7 +19,7 @@ For example, for OpenAI, use OPENAI_API_KEY:
     OPENAI_API_KEY: "openai key here"
     ```
 
-Update your `SETTINGS` page and configure one or more textModels, and optionally an image model.  Example below is for OpenAI and DallE.  You may also want to configure [[Configuration/Chat Instructions]] at this time.  See [[Providers]] for examples other than OpenAI, including self-hosted ones.
+Update your `SETTINGS` page and configure one or more textModels, and optionally an image model and embeddings model.  Example below is for OpenAI and DallE.  You may also want to configure [[Configuration/Chat Instructions]] at this time.  See [[Providers]] for examples other than OpenAI, including self-hosted ones.
 
 ```yaml
 ai:
@@ -28,12 +28,16 @@ ai:
     modelName: dall-e-3
     provider: dalle
   textModels:
-  - name: gpt-4-turbo
+  - name: gpt-4o
     provider: openai
-    modelName: gpt-4-0125-preview
+    modelName: gpt-4o
   - name: gpt-3-turbo
     provider: openai
     modelName: gpt-3.5-turbo-0125
+  embeddingModels:
+  - name: text-embedding-3-small
+    provider: openai
+    modelName: text-embedding-3-small
 
   # Chat section is optional, but may help provide better results when using the Chat On Page command
   chat:
@@ -47,7 +51,11 @@ ai:
 
 Run `AI: Select Text Model from Config`, choose one of the models you just configured.
 
+> **note** If you only have one model configured, it will be selected automatically.
+
 Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+SHIFT+ENTER to start a chat session.
+
+Or try searching with [[Commands/AI: Search]] after configuring an [[Configuration/Embedding Models|Embedding model]] and re-indexing the space.
 
 And that’s it!  Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go futher.
 

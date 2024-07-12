@@ -3,6 +3,7 @@ tags: provider
 textProvider: true
 imageProvider: false
 apiProvider: gemini
+embeddingProvider: true
 ---
 
 Google does not offer an openai-compatible api, so consider the support for Gemini to be very experimental for now.
