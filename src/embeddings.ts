@@ -9,6 +9,7 @@ import { ObjectValue } from "$sb/types.ts";
 import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
 import { editor } from "$sb/syscalls.ts";
+import { aiSettings } from "./init.ts";
 
 export type EmbeddingObject = ObjectValue<
   {
@@ -35,20 +36,25 @@ export type CombinedEmbeddingResult = {
 };
 
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
-  // TODO: Allow user to exclude certain pages
-  const excludePages = ["_", "SETTINGS", "SECRETS"];
-  if (excludePages.includes(page)) {
+  await initIfNeeded();
+
+  // Only index pages if the user enabled it, and skip anything they want to exclude
+  const excludePages = [
+    "SETTINGS",
+    "SECRETS",
+    ...aiSettings.indexEmbeddingsExcludePages,
+  ];
+  if (
+    !aiSettings.indexEmbeddings ||
+    excludePages.includes(page) ||
+    page.startsWith("_")
+  ) {
     return;
   }
 
-  //   log("any", "AI: Indexing embeddings for", page);
-
-  await initIfNeeded();
-
-  // Some strings might appear in a ton of notes but aren't helpful for searching.
-  // This only excludes strings that are an exact match for a paragraph.
-  // TODO: Make this configurable, and maybe use regex
-  const stringsToExclude = ["**user**:"];
+  if (!tree.children) {
+    return;
+  }
 
   // Splitting embeddings up by paragraph, but there could be better ways to do it
   //     ^ Some places suggest a sliding window so that each chunk has some overlap with the previous/next chunk
@@ -65,7 +71,13 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
       continue;
     }
 
-    if (stringsToExclude.includes(paragraphText)) {
+    if (
+      aiSettings.indexEmbeddingsExcludeStrings.some((s) =>
+        paragraphText.includes(s)
+      )
+    ) {
+      // Some strings might appear in a ton of notes but aren't helpful for searching.
+      // This only excludes strings that are an exact match for a paragraph.
       continue;
     }
 
@@ -131,7 +143,7 @@ export async function searchEmbeddings(
     similarity: cosineSimilarity(queryEmbedding, embedding.embedding),
   }));
 
-  log("any", "AI: searchEmbeddings", results);
+  //   log("client", "AI: searchEmbeddings", results);
 
   return results
     .sort((a, b) => b.similarity - a.similarity)
@@ -223,8 +235,12 @@ export async function readFileEmbeddings(
     name.length - ".md".length,
   );
   const results = await searchCombinedEmbeddings(phrase);
-  console.log("results", results);
-  let text = `# Embedding search results for "${phrase}"\n`;
+  log("client", "AI: Embedding search results", results);
+  let text = `# Embedding search results for "${phrase}"\n\n`;
+  if (!aiSettings.indexEmbeddings) {
+    text += "> **warning** Embeddings generation is disabled.\n";
+    text += "> You can enable it in the AI settings.\n\n\n";
+  }
   for (const r of results) {
     text += `* [[${r.page}]] (score ${r.score})\n`;
     for (const child of r.children) {

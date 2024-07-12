@@ -52,6 +52,9 @@ export type AISettings = {
   embeddingModels: EmbeddingModelConfig[];
   chat: ChatSettings;
   promptInstructions: PromptInstructions;
+  indexEmbeddings: boolean;
+  indexEmbeddingsExcludePages: string[];
+  indexEmbeddingsExcludeStrings: string[];
 
   // These are deprecated and will be removed in a future release
   openAIBaseUrl: string;
@@ -357,6 +360,9 @@ async function loadAndMergeSettings() {
     promptInstructions: {},
     imageModels: [],
     embeddingModels: [],
+    indexEmbeddings: false,
+    indexEmbeddingsExcludePages: [],
+    indexEmbeddingsExcludeStrings: ["**user**:"],
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
