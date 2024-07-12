@@ -1,39 +1,15 @@
+import type { FileMeta, IndexTreeEvent } from "$sb/types.ts";
 import type {
-  FileMeta,
-  IndexTreeEvent,
-  QueryProviderEvent,
-} from "$sb/types.ts";
+  CombinedEmbeddingResult,
+  EmbeddingObject,
+  EmbeddingResult,
+} from "./types.ts";
 import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
-import { ObjectValue } from "$sb/types.ts";
 import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
 import { editor } from "$sb/syscalls.ts";
 import { aiSettings } from "./init.ts";
-
-export type EmbeddingObject = ObjectValue<
-  {
-    // It might be possible to retrieve the text using the page+pos, but this does make it simpler
-    text: string;
-    page: string;
-    pos: number;
-    embedding: number[];
-    tag: "embedding";
-  } & Record<string, any>
->;
-
-export type EmbeddingResult = {
-  page: string;
-  ref: string;
-  similarity: number;
-  text: string;
-};
-
-export type CombinedEmbeddingResult = {
-  page: string;
-  score: number;
-  children: EmbeddingResult[];
-};
 
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   await initIfNeeded();

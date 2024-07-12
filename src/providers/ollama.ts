@@ -1,7 +1,7 @@
 import {
   AbstractEmbeddingProvider,
   EmbeddingGenerationOptions,
-} from "./interfaces.ts";
+} from "../interfaces.ts";
 
 type HttpHeaders = {
   "Content-Type": string;

@@ -1,14 +1,14 @@
 import "$sb/lib/native_fetch.ts";
 import { editor } from "$sb/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { ChatMessage } from "./init.ts";
+import { ChatMessage } from "../init.ts";
 
 import {
   AbstractEmbeddingProvider,
   AbstractProvider,
   EmbeddingGenerationOptions,
-  sseEvent,
-} from "./interfaces.ts";
+} from "../interfaces.ts";
+import { sseEvent } from "../sseEvent.ts";
 
 type StreamChatOptions = {
   messages: Array<ChatMessage>;

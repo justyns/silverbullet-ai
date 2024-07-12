@@ -1,16 +1,10 @@
 import { editor } from "$sb/syscalls.ts";
 import { getPageLength } from "./editorUtils.ts";
-import { ChatMessage } from "./init.ts";
-
-export type sseEvent = {
-  data: string;
-};
-
-export type StreamChatOptions = {
-  messages: Array<ChatMessage>;
-  stream: boolean;
-  onDataReceived?: (data: any) => void;
-};
+import {
+  EmbeddingGenerationOptions,
+  ImageGenerationOptions,
+  StreamChatOptions,
+} from "./types.ts";
 
 export interface ProviderInterface {
   name: string;
@@ -24,13 +18,6 @@ export interface ProviderInterface {
   ) => Promise<void>;
 }
 
-export type ImageGenerationOptions = {
-  numImages: number;
-  prompt: string;
-  size: "1024x1024" | "512x512";
-  quality: "hd" | "standard";
-};
-
 export interface ImageProviderInterface {
   name: string;
   apiKey: string;
@@ -40,10 +27,6 @@ export interface ImageProviderInterface {
     options: ImageGenerationOptions,
   ) => Promise<string>;
 }
-
-export type EmbeddingGenerationOptions = {
-  text: string;
-};
 
 export interface EmbeddingProviderInterface {
   name: string;
