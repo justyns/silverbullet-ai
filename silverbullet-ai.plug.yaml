@@ -93,3 +93,7 @@ functions:
     pageNamespace:
       pattern: "🤖 .+"
       operation: getFileMeta
+  searchCommand:
+    path: src/embeddings.ts:searchCommand
+    command:
+      name: "AI: Search"

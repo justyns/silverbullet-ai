@@ -272,3 +272,15 @@ export function getFileMetaEmbeddings(name: string): FileMeta {
     perm: "ro",
   };
 }
+
+/**
+ * Ask the user for a search query, and then navigate to the search results page.
+ * Search results are provided by calculating the cosine similarity between the
+ * query embedding and each indexed embedding.
+ */
+export async function searchCommand() {
+  const phrase = await editor.prompt("Search for: ");
+  if (phrase) {
+    await editor.navigate({ page: `${searchPrefix}${phrase}` });
+  }
+}
