@@ -28,6 +28,9 @@ jobs:
       
       - name: Run Deno test
         run: deno test
+      
+      - name: Coverage
+        run: deno coverage --lcov cov_profile/ > cov.lcov
 
     #   - name: Run linter
     #     run: deno lint
