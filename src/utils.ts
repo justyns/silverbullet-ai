@@ -1,7 +1,8 @@
 import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
 import { cleanMarkdown } from "$sbplugs/share/share.ts";
 import { renderToText } from "$sb/lib/tree.ts";
-import { aiSettings, ChatMessage } from "./init.ts";
+import { aiSettings } from "./init.ts";
+import type { ChatMessage } from "./types.ts";
 import { searchCombinedEmbeddings } from "./embeddings.ts";
 
 export function folderName(path: string) {
@@ -34,10 +35,17 @@ export async function convertPageToMessages(): Promise<Array<ChatMessage>> {
   let contentBuffer = "";
 
   lines.forEach((line) => {
+    if (line.trim() === "") {
+      return;
+    }
     const match = line.match(/^\*\*(\w+)\*\*:/);
     if (match) {
       const newRole = match[1].toLowerCase();
-      if (currentRole && currentRole !== newRole) {
+      if (
+        currentRole &&
+        currentRole !== newRole &&
+        contentBuffer.trim() !== ""
+      ) {
         messages.push(
           { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
         );

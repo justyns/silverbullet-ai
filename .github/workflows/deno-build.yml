@@ -27,7 +27,10 @@ jobs:
         run: deno fmt --check
       
       - name: Run Deno test
-        run: deno test
+        run: deno task test
+      
+      - name: Coverage
+        run: deno coverage --lcov cov_profile/ > cov.lcov
 
     #   - name: Run linter
     #     run: deno lint

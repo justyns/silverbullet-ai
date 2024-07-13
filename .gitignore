@@ -9,3 +9,5 @@ silverbullet-ai.plug.js
 docs/_public
 !docs/_plug
 SECRETS.md
+cov_profile
+test?space*

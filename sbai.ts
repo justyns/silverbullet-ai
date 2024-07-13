@@ -6,9 +6,15 @@ import { editor, markdown, space, system } from "$sb/syscalls.ts";
 import { query } from "$sbplugs/query/api.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
+import type {
+  ChatMessage,
+  EmbeddingModelConfig,
+  ImageGenerationOptions,
+  ImageModelConfig,
+  ModelConfig,
+} from "./src/types.ts";
 import {
   aiSettings,
-  ChatMessage,
   chatSystemPrompt,
   configureSelectedEmbeddingModel,
   configureSelectedImageModel,
@@ -16,16 +22,12 @@ import {
   currentAIProvider,
   currentEmbeddingProvider,
   currentImageProvider,
-  EmbeddingModelConfig,
-  ImageModelConfig,
   initializeOpenAI,
   initIfNeeded,
-  ModelConfig,
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
-import { ImageGenerationOptions } from "./src/interfaces.ts";
 import {
   convertPageToMessages,
   enrichChatMessages,

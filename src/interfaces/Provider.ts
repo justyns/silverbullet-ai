@@ -1,16 +1,6 @@
 import { editor } from "$sb/syscalls.ts";
-import { getPageLength } from "./editorUtils.ts";
-import { ChatMessage } from "./init.ts";
-
-export type sseEvent = {
-  data: string;
-};
-
-export type StreamChatOptions = {
-  messages: Array<ChatMessage>;
-  stream: boolean;
-  onDataReceived?: (data: any) => void;
-};
+import { getPageLength } from "../editorUtils.ts";
+import { StreamChatOptions } from "../types.ts";
 
 export interface ProviderInterface {
   name: string;
@@ -22,37 +12,6 @@ export interface ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ) => Promise<void>;
-}
-
-export type ImageGenerationOptions = {
-  numImages: number;
-  prompt: string;
-  size: "1024x1024" | "512x512";
-  quality: "hd" | "standard";
-};
-
-export interface ImageProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
-  generateImage: (
-    options: ImageGenerationOptions,
-  ) => Promise<string>;
-}
-
-export type EmbeddingGenerationOptions = {
-  text: string;
-};
-
-export interface EmbeddingProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
-  generateEmbeddings: (
-    options: EmbeddingGenerationOptions,
-  ) => Promise<Array<number>>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -120,57 +79,4 @@ export abstract class AbstractProvider implements ProviderInterface {
 
     await this.chatWithAI({ ...options, onDataReceived: onData });
   }
-}
-
-export abstract class AbstractImageProvider implements ImageProviderInterface {
-  apiKey: string;
-  baseUrl: string;
-  name: string;
-  modelName: string;
-  requireAuth: boolean;
-
-  constructor(
-    apiKey: string,
-    baseUrl: string,
-    name: string,
-    modelName: string,
-    requireAuth: boolean = true,
-  ) {
-    this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
-    this.name = name;
-    this.modelName = modelName;
-    this.requireAuth = requireAuth;
-  }
-
-  abstract generateImage(
-    options: ImageGenerationOptions,
-  ): Promise<string>;
-}
-
-export abstract class AbstractEmbeddingProvider
-  implements EmbeddingProviderInterface {
-  apiKey: string;
-  baseUrl: string;
-  name: string;
-  modelName: string;
-  requireAuth: boolean;
-
-  constructor(
-    apiKey: string,
-    baseUrl: string,
-    name: string,
-    modelName: string,
-    requireAuth: boolean = true,
-  ) {
-    this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
-    this.name = name;
-    this.modelName = modelName;
-    this.requireAuth = requireAuth;
-  }
-
-  abstract generateEmbeddings(
-    options: EmbeddingGenerationOptions,
-  ): Promise<Array<number>>;
 }

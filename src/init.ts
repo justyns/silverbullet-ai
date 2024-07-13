@@ -1,100 +1,24 @@
 import { readSecret } from "$sb/lib/secrets_page.ts";
 import { readSetting } from "$sb/lib/settings_page.ts";
 import { clientStore, system } from "$sb/syscalls.ts";
-import { DallEProvider } from "./dalle.ts";
-import { GeminiEmbeddingProvider, GeminiProvider } from "./gemini.ts";
-import {
-  EmbeddingProviderInterface,
-  ImageProviderInterface,
-  ProviderInterface,
-} from "./interfaces.ts";
-import { OpenAIEmbeddingProvider, OpenAIProvider } from "./openai.ts";
-import { OllamaEmbeddingProvider } from "./ollama.ts";
+import { DallEProvider } from "./providers/dalle.ts";
+import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
+import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
+import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
+import { ProviderInterface } from "./interfaces/Provider.ts";
+import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
+import { OllamaEmbeddingProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
-
-export type ChatMessage = {
-  content: string;
-  role: "user" | "assistant" | "system";
-};
-
-export type ChatSettings = {
-  userInformation: string;
-  userInstructions: string;
-  parseWikiLinks: boolean;
-  bakeMessages: boolean;
-  searchEmbeddings: boolean;
-  customEnrichFunctions: string[];
-};
-
-export type PromptInstructions = {
-  pageRenameSystem: string;
-  pageRenameRules: string;
-  tagRules: string;
-};
-
-enum Provider {
-  OpenAI = "openai",
-  Gemini = "gemini",
-}
-
-enum ImageProvider {
-  DallE = "dalle",
-}
-
-enum EmbeddingProvider {
-  OpenAI = "openai",
-  Gemini = "gemini",
-  Ollama = "ollama",
-}
-
-export type AISettings = {
-  textModels: ModelConfig[];
-  imageModels: ImageModelConfig[];
-  embeddingModels: EmbeddingModelConfig[];
-  chat: ChatSettings;
-  promptInstructions: PromptInstructions;
-  indexEmbeddings: boolean;
-  indexEmbeddingsExcludePages: string[];
-  indexEmbeddingsExcludeStrings: string[];
-
-  // These are deprecated and will be removed in a future release
-  openAIBaseUrl: string;
-  dallEBaseUrl: string;
-  requireAuth: boolean;
-  secretName: string;
-  provider: Provider;
-  // Above is left for backwards compatibility
-};
-
-export type ModelConfig = {
-  name: string;
-  description: string;
-  modelName: string;
-  provider: Provider;
-  secretName: string;
-  requireAuth: boolean;
-  baseUrl?: string;
-};
-
-export type ImageModelConfig = {
-  name: string;
-  description: string;
-  modelName: string;
-  provider: ImageProvider;
-  secretName: string;
-  requireAuth: boolean;
-  baseUrl?: string;
-};
-
-export type EmbeddingModelConfig = {
-  name: string;
-  description: string;
-  modelName: string;
-  provider: EmbeddingProvider;
-  secretName: string;
-  requireAuth: boolean;
-  baseUrl?: string;
-};
+import type {
+  AISettings,
+  ChatMessage,
+  ChatSettings,
+  EmbeddingModelConfig,
+  ImageModelConfig,
+  ModelConfig,
+  PromptInstructions,
+} from "./types.ts";
+import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 
 export let apiKey: string;
 export let aiSettings: AISettings;

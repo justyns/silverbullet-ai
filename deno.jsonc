@@ -4,7 +4,8 @@
     "build": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml",
     "build-release": "silverbullet plug:compile --info --importmap import_map.json silverbullet-ai.plug.yaml",
     "watch": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml -w",
-    "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts"
+    "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts",
+    "test": "deno test --coverage=cov_profile --allow-env"
   },
   "lint": {
     "rules": {
