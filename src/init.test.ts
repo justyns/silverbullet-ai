@@ -45,29 +45,45 @@ OPENAI_API_KEY: bar
   `;
 
 Deno.test("initializeOpenAI should set aiSettings correctly", async () => {
-  await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-  await syscall("mock.setPage", "SECRETS", secretsPageSample);
-  await initializeOpenAI();
-  assertEquals(
-    aiSettings.textModels.length,
-    2,
-    "initializeOpenAI did not set the correct number of text models",
-  );
-  assertEquals(
-    aiSettings.textModels[0].name,
-    "gpt-4o",
-    "initializeOpenAI did not set the correct text model name",
-  );
+  try {
+    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
+    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await initializeOpenAI();
+    assertEquals(
+      aiSettings.textModels.length,
+      2,
+      "initializeOpenAI did not set the correct number of text models",
+    );
+    assertEquals(
+      aiSettings.textModels[0].name,
+      "gpt-4o",
+      "initializeOpenAI did not set the correct text model name",
+    );
+  } catch (error) {
+    console.error(
+      "Error in test 'initializeOpenAI should set aiSettings correctly':",
+      error,
+    );
+    throw error;
+  }
 });
 
 Deno.test("initializeOpenAI should configure the selected model", async () => {
-  await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-  await syscall("mock.setPage", "SECRETS", secretsPageSample);
-  await initializeOpenAI();
-  await getAndConfigureModel();
-  assertEquals(
-    aiSettings.textModels[0].name,
-    "gpt-4o",
-    "getAndConfigureModel did not configure the correct text model",
-  );
+  try {
+    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
+    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await initializeOpenAI();
+    await getAndConfigureModel();
+    assertEquals(
+      aiSettings.textModels[0].name,
+      "gpt-4o",
+      "getAndConfigureModel did not configure the correct text model",
+    );
+  } catch (error) {
+    console.error(
+      "Error in test 'initializeOpenAI should configure the selected model':",
+      error,
+    );
+    throw error;
+  }
 });
