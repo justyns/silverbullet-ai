@@ -35,10 +35,17 @@ export async function convertPageToMessages(): Promise<Array<ChatMessage>> {
   let contentBuffer = "";
 
   lines.forEach((line) => {
+    if (line.trim() === "") {
+      return;
+    }
     const match = line.match(/^\*\*(\w+)\*\*:/);
     if (match) {
       const newRole = match[1].toLowerCase();
-      if (currentRole && currentRole !== newRole) {
+      if (
+        currentRole &&
+        currentRole !== newRole &&
+        contentBuffer.trim() !== ""
+      ) {
         messages.push(
           { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
         );
