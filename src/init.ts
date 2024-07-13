@@ -285,6 +285,7 @@ async function loadAndMergeSettings() {
     promptInstructions: {},
     imageModels: [],
     embeddingModels: [],
+    textModels: [],
     indexEmbeddings: false,
     indexEmbeddingsExcludePages: [],
     indexEmbeddingsExcludeStrings: ["**user**:"],
@@ -319,18 +320,10 @@ async function loadAndMergeSettings() {
 export async function initializeOpenAI(configure = true) {
   const newCombinedSettings = await loadAndMergeSettings();
 
-  let errorMessage = "";
-  if (!newCombinedSettings.textModels) {
-    errorMessage = "No textModels found in ai settings";
-  }
-
-  if (errorMessage) {
-    console.error(errorMessage);
-    // await editor.flashNotification(errorMessage, "error");
-    throw new Error(errorMessage);
-  }
-
-  if (JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
+  if (
+    !aiSettings ||
+    JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)
+  ) {
     log("client", "aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
     log("client", "aiSettings updated to", aiSettings);
@@ -354,7 +347,9 @@ export async function initializeOpenAI(configure = true) {
   }
 
   if (configure) {
-    await getAndConfigureModel();
+    if (aiSettings.textModels.length > 0) {
+      await getAndConfigureModel();
+    }
     if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
     }
