@@ -1,5 +1,6 @@
 import type { FileMeta, IndexTreeEvent } from "$sb/types.ts";
 import type {
+  AISummaryObject,
   CombinedEmbeddingResult,
   EmbeddingObject,
   EmbeddingResult,
@@ -9,7 +10,7 @@ import { renderToText } from "$sb/lib/tree.ts";
 import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
 import { editor } from "$sb/syscalls.ts";
-import { aiSettings } from "./init.ts";
+import { aiSettings, configureSelectedModel } from "./init.ts";
 
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   await initIfNeeded();
@@ -85,8 +86,79 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   );
 }
 
+export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
+  await initIfNeeded();
+
+  // Only index pages if the user enabled it, and skip anything they want to exclude
+  const excludePages = [
+    "SETTINGS",
+    "SECRETS",
+    ...aiSettings.indexEmbeddingsExcludePages,
+  ];
+  if (
+    !aiSettings.indexEmbeddings ||
+    !aiSettings.indexSummary ||
+    excludePages.includes(page) ||
+    page.startsWith("_")
+  ) {
+    return;
+  }
+
+  if (!tree.children) {
+    return;
+  }
+
+  const pageText = renderToText(tree);
+  const summaryModel = aiSettings.textModels.find((model) =>
+    model.name === aiSettings.indexSummaryModelName
+  );
+  if (!summaryModel) {
+    throw new Error(
+      `Could not find summary model ${aiSettings.indexSummaryModelName}`,
+    );
+  }
+  const summaryProvider = await configureSelectedModel(summaryModel);
+  let summaryPrompt;
+
+  if (aiSettings.promptInstructions.indexSummaryPrompt !== "") {
+    summaryPrompt = aiSettings.promptInstructions.indexSummaryPrompt;
+  } else {
+    summaryPrompt =
+      "Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:\n";
+  }
+
+  const summary = await summaryProvider.singleMessageChat(
+    "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
+  );
+
+  console.log("summary", summary);
+
+  const summaryEmbeddings = await currentEmbeddingProvider.generateEmbeddings({
+    text: summary,
+  });
+
+  const summaryObject: AISummaryObject = {
+    ref: `${page}@0`,
+    page: page,
+    embedding: summaryEmbeddings,
+    text: summary,
+    tag: "aiSummary",
+  };
+
+  await indexObjects<AISummaryObject>(page, [summaryObject]);
+
+  log(
+    "any",
+    `AI: Indexed summary for page ${page}`,
+  );
+}
+
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
   return (await queryObjects<EmbeddingObject>("embedding", {}));
+}
+
+export async function getAllAISummaries(): Promise<AISummaryObject[]> {
+  return (await queryObjects<AISummaryObject>("aiSummary", {}));
 }
 
 // Full disclosure, I don't really understand how this part works - thanks chatgpt!
@@ -118,6 +190,17 @@ export async function searchEmbeddings(
     text: embedding.text,
     similarity: cosineSimilarity(queryEmbedding, embedding.embedding),
   }));
+
+  if (aiSettings.indexSummary) {
+    const summaries = await getAllAISummaries();
+    const summaryResults: EmbeddingResult[] = summaries.map((summary) => ({
+      page: summary.page,
+      ref: summary.ref,
+      text: summary.text,
+      similarity: cosineSimilarity(queryEmbedding, summary.embedding),
+    }));
+    results.push(...summaryResults);
+  }
 
   //   log("client", "AI: searchEmbeddings", results);
 

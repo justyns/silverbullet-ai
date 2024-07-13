@@ -172,6 +172,8 @@ function setupAIProvider(model: ModelConfig) {
         `Unsupported AI provider: ${model.provider}. Please configure a supported provider.`,
       );
   }
+
+  return currentAIProvider;
 }
 
 function setupEmbeddingProvider(model: EmbeddingModelConfig) {
@@ -225,7 +227,7 @@ export async function configureSelectedModel(model: ModelConfig) {
   }
 
   currentModel = model;
-  setupAIProvider(model);
+  return setupAIProvider(model);
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
@@ -287,6 +289,8 @@ async function loadAndMergeSettings() {
     embeddingModels: [],
     textModels: [],
     indexEmbeddings: false,
+    indexSummary: false,
+    indexSummaryModelName: "",
     indexEmbeddingsExcludePages: [],
     indexEmbeddingsExcludeStrings: ["**user**:"],
   };
@@ -302,6 +306,7 @@ async function loadAndMergeSettings() {
     pageRenameSystem: "",
     pageRenameRules: "",
     tagRules: "",
+    indexSummaryPrompt: "",
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };

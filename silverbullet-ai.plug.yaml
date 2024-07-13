@@ -70,6 +70,10 @@ functions:
     path: src/embeddings.ts:indexEmbeddings
     events:
       - page:index
+  indexSummaryEmbeddings:
+    path: src/embeddings.ts:indexSummary
+    events:
+      - page:index
   debugSearchEmbeddings:
     path: src/embeddings.ts:debugSearchEmbeddings
     command:
