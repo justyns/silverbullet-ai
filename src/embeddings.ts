@@ -11,6 +11,7 @@ import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
 import { editor } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
+import * as cache from "./cache.ts";
 
 /**
  * Generate embeddings for each paragraph in a page, and then indexes
@@ -62,10 +63,17 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
       continue;
     }
 
-    // TODO: Would it help to cache embeddings?  e.g. someone reloading the same search page over and over, or updating the same page causing the same paragraphs to be re-indexed
-    const embedding = await currentEmbeddingProvider.generateEmbeddings({
-      text: paragraphText,
-    });
+    const cacheKey = await cache.hashStrings(
+      currentEmbeddingProvider.modelName,
+      paragraphText,
+    );
+    let embedding = cache.getCache(cacheKey);
+    if (!embedding) {
+      embedding = await currentEmbeddingProvider.generateEmbeddings({
+        text: paragraphText,
+      });
+      cache.setCache(cacheKey, embedding);
+    }
 
     const pos = paragraph.from ?? 0;
 
@@ -134,9 +142,18 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
       "Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:\n";
   }
 
-  const summary = await summaryProvider.singleMessageChat(
-    "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
+  const cacheKey = await cache.hashStrings(
+    summaryModel.name,
+    pageText,
+    summaryPrompt,
   );
+  let summary = cache.getCache(cacheKey);
+  if (!summary) {
+    summary = await summaryProvider.singleMessageChat(
+      "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
+    );
+    cache.setCache(cacheKey, summary);
+  }
 
   //   console.log("summary", summary);
 
