@@ -195,7 +195,7 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     super(apiKey, baseUrl, "Gemini", modelName, requireAuth);
   }
 
-  async generateEmbeddings(
+  async _generateEmbeddings(
     options: { text: string },
   ): Promise<Array<number>> {
     const body = JSON.stringify({
