@@ -10,3 +10,4 @@
 - **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
 - **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
 - **Similarity search**: Allows doing a similarity search based on indexed embeddings.
+- **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.

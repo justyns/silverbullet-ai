@@ -2,6 +2,15 @@ To change the text generation model used by all commands, or other configurable 
 
 ```yaml
 ai:
+  # Disabled by default, indexEmbeddings and indexSummary can be set
+  # to true to provide the AI: Search command.
+  # Be sure to read the relevant documentation and warnings first.
+  indexEmbeddings: false
+  indexEmbeddingsExcludePages: []
+  indexEmbeddingsExcludeStrings: []
+  indexSummaryModelName: ollama-gemma2
+  indexSummary: false
+  
   # configure one or more image models.  Only OpenAI's api is currently supported
   imageModels:
   - name: dall-e-3
