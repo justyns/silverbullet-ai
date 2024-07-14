@@ -63,17 +63,9 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
       continue;
     }
 
-    const cacheKey = await cache.hashStrings(
-      currentEmbeddingProvider.modelName,
-      paragraphText,
-    );
-    let embedding = cache.getCache(cacheKey);
-    if (!embedding) {
-      embedding = await currentEmbeddingProvider.generateEmbeddings({
-        text: paragraphText,
-      });
-      cache.setCache(cacheKey, embedding);
-    }
+    const embedding = await currentEmbeddingProvider.generateEmbeddings({
+      text: paragraphText,
+    });
 
     const pos = paragraph.from ?? 0;
 
@@ -162,7 +154,7 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
   });
 
   const summaryObject: AISummaryObject = {
-    ref: `${page}@summary`,
+    ref: `${page}@0`,
     page: page,
     embedding: summaryEmbeddings,
     text: summary,
@@ -220,7 +212,7 @@ export async function searchEmbeddings(
     const summaryResults: EmbeddingResult[] = summaries.map((summary) => ({
       page: summary.page,
       ref: summary.ref,
-      text: summary.text,
+      text: `Page Summary: ${summary.text}`,
       similarity: cosineSimilarity(queryEmbedding, summary.embedding),
     }));
     results.push(...summaryResults);
@@ -271,10 +263,9 @@ export async function searchCombinedEmbeddings(
   minSimilarity = 0.15,
 ): Promise<CombinedEmbeddingResult[]> {
   const searchResults = await searchEmbeddings(query, -1);
-  const summaryResults = await searchSummaryEmbeddings(query, -1);
   const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
-  for (const result of [...searchResults, ...summaryResults]) {
+  for (const result of searchResults) {
     if (result.similarity < minSimilarity) {
       continue;
     }

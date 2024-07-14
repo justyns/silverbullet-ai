@@ -17,7 +17,7 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
   }
 
   // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
-  async generateEmbeddings(
+  async _generateEmbeddings(
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
     const body = JSON.stringify({

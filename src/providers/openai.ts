@@ -168,7 +168,7 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
   }
 
-  async generateEmbeddings(
+  async _generateEmbeddings(
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
     const body = JSON.stringify({
