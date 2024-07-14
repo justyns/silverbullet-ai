@@ -1,6 +1,6 @@
 import { editor } from "$sb/syscalls.ts";
 import { getPageLength } from "../editorUtils.ts";
-import { StreamChatOptions } from "../types.ts";
+import { ChatMessage, StreamChatOptions } from "../types.ts";
 
 export interface ProviderInterface {
   name: string;
@@ -12,6 +12,10 @@ export interface ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ) => Promise<void>;
+  singleMessageChat: (
+    userMessage: string,
+    systemPrompt?: string,
+  ) => Promise<string>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -78,5 +82,29 @@ export abstract class AbstractProvider implements ProviderInterface {
     };
 
     await this.chatWithAI({ ...options, onDataReceived: onData });
+  }
+
+  async singleMessageChat(
+    userMessage: string,
+    systemPrompt?: string,
+  ): Promise<string> {
+    const messages: ChatMessage[] = [
+      {
+        role: "user",
+        content: userMessage,
+      },
+    ];
+
+    if (systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: systemPrompt,
+      });
+    }
+
+    return await this.chatWithAI({
+      messages,
+      stream: false,
+    });
   }
 }

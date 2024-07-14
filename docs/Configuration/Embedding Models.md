@@ -57,3 +57,40 @@ Options:
 - **embeddingModels**: Explained above.  Only the first model in the list is used for indexing.
 
 After setting **indexEmbeddings** to **true** OR changing the **first embeddingModels model**, you must run the `Space: Reindex` command.
+
+## Generating and indexing note summaries
+
+> **warning** This is an experimental feature, mostly due to the amount of extra time and resources it takes during the indexing process.  If you try it out, please report your experience!
+
+In addition to generating embeddings for each paragraph of a note, we can also use the llm model to generate a summary of the entire note and then index that.
+
+This can be helpful for larger notes or notes where each paragraph may not contain enough context by itself.
+
+To enable this feature, ensure you have these options in your SETTINGS:
+
+```yaml
+aiSettings:
+  indexSummaryModelName: ollama-gemma2
+  indexSummary: true
+  textModels:
+  - name: ollama-gemma2
+    modelName: gemma2
+    provider: openai
+    baseUrl: http://localhost:11434/v1
+    requireAuth: false
+```
+
+Options:
+- **indexSummary**: Off by default.  Set to true to start generating page summaries and indexing their embeddings.
+- **indexSummaryModelName**: Which [[Configuration/Text Models|text model]] to use for generating summaries.  It’s recommended to use a locally hosted model since every note in your space will be sent to it.
+
+> **warning** If you are not comfortable sending all of your notes to a 3rd party, do not use a 3rd party api for embeddings or summary generation.
+
+### Suggested models for summary generation
+
+> **info** Please report your experiences with using different models!
+
+These models have been tested with Ollama for generating note summaries, along with their quality.  Please report any other models you test with and your success (or not) with them.
+
+- **phi3**: Can generate summaries relatively quickly, but often includes hallucinations and weird changes that don’t match the source material.
+- **gemma2**: This model is a bit bigger, but generates much better summaries than phi3.

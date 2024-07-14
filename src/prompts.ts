@@ -2,20 +2,21 @@ import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
 import { editor, markdown, space } from "$sb/syscalls.ts";
 import { queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderTemplate } from "$sbplugs/template/api.ts";
-import {
+import type {
   CompleteEvent,
-  SlashCompletion,
   SlashCompletionOption,
-  TemplateObject,
-} from "$type/types.ts";
+  SlashCompletions,
+} from "$sb/types.ts";
+import type { TemplateObject } from "$sbplugs/template/types.ts";
+import type { ChatMessage } from "./types.ts";
 import { getPageLength } from "./editorUtils.ts";
-import { ChatMessage, currentAIProvider, initIfNeeded } from "./init.ts";
+import { currentAIProvider, initIfNeeded } from "./init.ts";
 import { supportsPlugSlashComplete } from "./utils.ts";
 
 // TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
-): Promise<{ options: SlashCompletion[] } | void> {
+): Promise<{ options: SlashCompletions[] } | void> {
   if (!supportsPlugSlashComplete()) {
     return;
   }
@@ -44,11 +45,11 @@ export async function aiPromptSlashComplete(
  * Valid templates must have a value for aiprompt.description in the frontmatter.
  */
 export async function insertAiPromptFromTemplate(
-  slashCompletion: SlashCompletionOption | undefined,
+  SlashCompletions: SlashCompletionOption | undefined,
 ) {
   let selectedTemplate;
 
-  if (!slashCompletion || !slashCompletion.templatePage) {
+  if (!SlashCompletions || !SlashCompletions.templatePage) {
     // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
     const aiPromptTemplates = await queryObjects<TemplateObject>("template", {
       filter: ["attr", ["attr", "aiprompt"], "description"],
@@ -71,13 +72,13 @@ export async function insertAiPromptFromTemplate(
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
     );
   } else {
-    console.log("selectedTemplate from slash completion: ", slashCompletion);
-    const templatePage = await space.readPage(slashCompletion.templatePage);
+    console.log("selectedTemplate from slash completion: ", SlashCompletions);
+    const templatePage = await space.readPage(SlashCompletions.templatePage);
     const tree = await markdown.parseMarkdown(templatePage);
     const { aiprompt } = await extractFrontmatter(tree);
     console.log("templatePage from slash completion: ", templatePage);
     selectedTemplate = {
-      ref: slashCompletion.templatePage,
+      ref: SlashCompletions.templatePage,
       systemPrompt: aiprompt.systemPrompt || aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",

@@ -32,6 +32,15 @@ export type EmbeddingObject = ObjectValue<
   } & Record<string, any>
 >;
 
+export type AISummaryObject = ObjectValue<
+  {
+    text: string;
+    page: string;
+    embedding: number[];
+    tag: "aiSummary";
+  } & Record<string, any>
+>;
+
 export type EmbeddingResult = {
   page: string;
   ref: string;
@@ -78,6 +87,7 @@ export type PromptInstructions = {
   pageRenameSystem: string;
   pageRenameRules: string;
   tagRules: string;
+  indexSummaryPrompt: string;
 };
 
 export type AISettings = {
@@ -89,6 +99,8 @@ export type AISettings = {
   indexEmbeddings: boolean;
   indexEmbeddingsExcludePages: string[];
   indexEmbeddingsExcludeStrings: string[];
+  indexSummary: boolean;
+  indexSummaryModelName: string;
 
   // These are deprecated and will be removed in a future release
   openAIBaseUrl: string;
