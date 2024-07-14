@@ -12,6 +12,10 @@ import { log } from "./utils.ts";
 import { editor } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 
+/**
+ * Generate embeddings for each paragraph in a page, and then indexes
+ * them.
+ */
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   await initIfNeeded();
 
@@ -86,6 +90,9 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   );
 }
 
+/**
+ * Generate a summary for a page, and then indexes it.
+ */
 export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
   await initIfNeeded();
 
@@ -131,14 +138,14 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
     "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
   );
 
-  console.log("summary", summary);
+  //   console.log("summary", summary);
 
   const summaryEmbeddings = await currentEmbeddingProvider.generateEmbeddings({
     text: summary,
   });
 
   const summaryObject: AISummaryObject = {
-    ref: `${page}@0`,
+    ref: `${page}@summary`,
     page: page,
     embedding: summaryEmbeddings,
     text: summary,
@@ -210,6 +217,32 @@ export async function searchEmbeddings(
 }
 
 /**
+ * Loop over every single summary object and calculate the cosine similarity between the query embedding and each summary object.
+ * Return the most similar summary objects.
+ */
+export async function searchSummaryEmbeddings(
+  query: string,
+  numResults = 10,
+): Promise<EmbeddingResult[]> {
+  await initIfNeeded();
+  const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
+    text: query,
+  });
+  const summaries = await getAllAISummaries();
+
+  const results: EmbeddingResult[] = summaries.map((summary) => ({
+    page: summary.page,
+    ref: summary.ref,
+    text: summary.text,
+    similarity: cosineSimilarity(queryEmbedding, summary.embedding),
+  }));
+
+  return results
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, numResults);
+}
+
+/**
  * Combine and group similar embeddings into one object per page.
  * Without this, we could easily use up the results limit from a single page.
  * With this, the user will be able to see multiple pages in addition to seeing
@@ -221,9 +254,10 @@ export async function searchCombinedEmbeddings(
   minSimilarity = 0.15,
 ): Promise<CombinedEmbeddingResult[]> {
   const searchResults = await searchEmbeddings(query, -1);
+  const summaryResults = await searchSummaryEmbeddings(query, -1);
   const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
-  for (const result of searchResults) {
+  for (const result of [...searchResults, ...summaryResults]) {
     if (result.similarity < minSimilarity) {
       continue;
     }
@@ -271,6 +305,9 @@ export async function debugSearchEmbeddings() {
 
 const searchPrefix = "🤖 ";
 
+/**
+ * Display "AI: Search" results.
+ */
 export async function readFileEmbeddings(
   name: string,
 ): Promise<{ data: Uint8Array; meta: FileMeta }> {
