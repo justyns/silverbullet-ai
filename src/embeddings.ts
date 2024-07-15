@@ -9,7 +9,7 @@ import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
 import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
-import { editor } from "$sb/syscalls.ts";
+import { editor, system } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
@@ -18,6 +18,11 @@ import * as cache from "./cache.ts";
  * them.
  */
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
+  // TODO: Can we sync indexes from server to client?  Without this, each client generates its own embeddings and summaries
+  if (await system.getEnv() !== "server") {
+    return;
+  }
+
   await initIfNeeded();
 
   // Only index pages if the user enabled it, and skip anything they want to exclude
@@ -29,7 +34,8 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   if (
     !aiSettings.indexEmbeddings ||
     excludePages.includes(page) ||
-    page.startsWith("_")
+    page.startsWith("_") ||
+    /\.conflicted\.\d+$/.test(page)
   ) {
     return;
   }
@@ -94,6 +100,10 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
  * Generate a summary for a page, and then indexes it.
  */
 export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
+  // TODO: Can we sync indexes from server to client?  Without this, each client generates its own embeddings and summaries
+  if (await system.getEnv() !== "server") {
+    return;
+  }
   await initIfNeeded();
 
   // Only index pages if the user enabled it, and skip anything they want to exclude
@@ -194,6 +204,7 @@ export async function searchEmbeddings(
   query: string,
   numResults = 10,
 ): Promise<EmbeddingResult[]> {
+  // TODO: Is there a way to always search on the server instead of using the client's index?
   await initIfNeeded();
   const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
     text: query,
