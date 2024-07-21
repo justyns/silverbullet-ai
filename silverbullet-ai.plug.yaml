@@ -68,10 +68,12 @@ functions:
       name: "AI: Test Embedding Generation"
   indexEmbeddings:
     path: src/embeddings.ts:indexEmbeddings
+    env: server
     events:
       - page:index
   indexSummaryEmbeddings:
     path: src/embeddings.ts:indexSummary
+    env: server
     events:
       - page:index
   debugSearchEmbeddings:
@@ -80,20 +82,24 @@ functions:
       name: "AI: Debug Search Embeddings"
   readPageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
+    env: server
     pageNamespace:
       pattern: "🤖 .+"
       operation: readFile
   writePageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
+    env: server
     pageNamespace:
       pattern: "🤖 .+"
       operation: readFile
   getPageMetaSearchEmbeddings:
     path: src/embeddings.ts:getFileMetaEmbeddings
+    env: server
     pageNamespace:
       pattern: "🤖 .+"
       operation: getFileMeta
   searchCommand:
     path: src/embeddings.ts:searchCommand
+    env: server
     command:
       name: "AI: Search"
