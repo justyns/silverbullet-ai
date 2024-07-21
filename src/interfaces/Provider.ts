@@ -1,6 +1,7 @@
 import { editor } from "$sb/syscalls.ts";
 import { getPageLength } from "../editorUtils.ts";
 import { ChatMessage, StreamChatOptions } from "../types.ts";
+import { enrichChatMessages } from "../utils.ts";
 
 export interface ProviderInterface {
   name: string;
@@ -15,6 +16,7 @@ export interface ProviderInterface {
   singleMessageChat: (
     userMessage: string,
     systemPrompt?: string,
+    enrichMessages?: boolean,
   ) => Promise<string>;
 }
 
@@ -87,8 +89,9 @@ export abstract class AbstractProvider implements ProviderInterface {
   async singleMessageChat(
     userMessage: string,
     systemPrompt?: string,
+    enrichMessages: boolean = false,
   ): Promise<string> {
-    const messages: ChatMessage[] = [
+    let messages: ChatMessage[] = [
       {
         role: "user",
         content: userMessage,
@@ -100,6 +103,10 @@ export abstract class AbstractProvider implements ProviderInterface {
         role: "system",
         content: systemPrompt,
       });
+    }
+
+    if (enrichMessages) {
+      messages = await enrichChatMessages(messages);
     }
 
     return await this.chatWithAI({

@@ -50,6 +50,14 @@ functions:
     path: sbai.ts:suggestPageName
     command:
       name: "AI: Suggest Page Name"
+  enhanceNoteFrontMatter:
+    path: sbai.ts:enhanceNoteFrontMatter
+    command:
+      name: "AI: Generate Note FrontMatter"
+  enhanceNoteWithAI:
+    path: sbai.ts:enhanceNoteWithAI
+    command:
+      name: "AI: Enhance Note"
   selectTextModel:
     path: sbai.ts:selectModelFromConfig
     command:

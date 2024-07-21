@@ -35,6 +35,7 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
     !aiSettings.indexEmbeddings ||
     excludePages.includes(page) ||
     page.startsWith("_") ||
+    page.startsWith("Library/") ||
     /\.conflicted\.\d+$/.test(page)
   ) {
     return;

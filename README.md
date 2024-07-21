@@ -24,6 +24,7 @@ If you are new here, start with either the `AI: Chat on current page` command or
 - **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
 - **Similarity search**: Allows doing a similarity search based on indexed embeddings.
 - **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
+- **FrontMatter generation**: **Experimental** extracts useful information from a note’s context and generates frontmatter attributes for it.
 <!-- end-features -->
 
 ### Available commands
@@ -48,6 +49,10 @@ New responses are always appended to the end of the page.
 - **AI: Execute AI Prompt from Custom Template**: Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
 Valid templates must have a value for aiprompt.description in the frontmatter.
 - **AI: Suggest Page Name**: Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
+- **AI: Generate Note FrontMatter**: Extracts important information from the current note and converts it
+to frontmatter attributes.
+- **AI: Enhance Note**: Enhances the current note by running the commands to generate tags for a note,
+generate new frontmatter attributes, and a new note name.
 - **AI: Select Text Model from Config**: undefined
 - **AI: Select Image Model from Config**: undefined
 - **AI: Select Embedding Model from Config**: undefined

@@ -5,9 +5,9 @@ import {
 import { editor, markdown, space, system } from "$sb/syscalls.ts";
 import { query } from "$sbplugs/query/api.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
+import * as YAML from "js-yaml";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import type {
-  ChatMessage,
   EmbeddingModelConfig,
   ImageGenerationOptions,
   ImageModelConfig,
@@ -33,6 +33,7 @@ import {
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
+import { yaml } from "https://esm.sh/v135/@codemirror/legacy-modes@6.4.0/X-ZS9AY29kZW1pcnJvci9sYW5ndWFnZQ/mode/yaml.js";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.
@@ -231,30 +232,23 @@ export async function tagNoteWithAI() {
     "tag select name where parent = 'page' order by name",
   )).map((tag: any) => tag.name);
   console.log("All tags:", allTags);
-  const response = await currentAIProvider.chatWithAI({
-    messages: [
-      {
-        role: "system",
-        content:
-          `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
-          - Only return tags and no other content.
-          - Tags must be one word only and in lowercase.
-          - Use existing tags as a starting point.
-          - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
+  const systemPrompt =
+    `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
+    - Only return tags and no other content.
+    - Tags must be one word only and in lowercase.
+    - Use existing tags as a starting point.
+    - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
 
-          The following tags are currently being used by other notes:
-          ${allTags.join(", ")}
-          
-          Always follow the below rules, if any, given by the user:
-          ${aiSettings.promptInstructions.tagRules}`,
-      },
-      {
-        role: "user",
-        content: `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-      },
-    ],
-    stream: false,
-  });
+    The following tags are currently being used by other notes:
+    ${allTags.join(", ")}
+    
+    Always follow the below rules, if any, given by the user:
+    ${aiSettings.promptInstructions.tagRules}`;
+  const userPrompt = `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`;
+  const response = await currentAIProvider.singleMessageChat(
+    userPrompt,
+    systemPrompt,
+  );
   const tags = response.trim().replace(/,/g, "").split(/\s+/);
 
   // Extract current frontmatter from the note
@@ -318,34 +312,24 @@ export async function suggestPageName() {
     - Do not use markdown or any other formatting in your response.`;
   }
 
-  const messages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `${systemPrompt}
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
+    `${systemPrompt}
 
 Always follow the below rules, if any, given by the user:
 ${aiSettings.promptInstructions.pageRenameRules}`,
-    },
-    {
-      role: "user",
-      content:
-        `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    },
-  ];
+    true,
+  );
 
-  // TODO: Should this be optional?
-  const enrichedMessages = await enrichChatMessages(messages);
-  console.log("enrichedMessages", enrichedMessages);
-
-  const response = await currentAIProvider.chatWithAI({
-    messages: enrichedMessages,
-    stream: false,
-  });
-
-  const suggestions = response.trim().split("\n").filter((line: string) =>
+  let suggestions = response.trim().split("\n").filter((line: string) =>
     line.trim() !== ""
   ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
-  // ).map((line: string) => line.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").trim());
+
+  // Always include the note's current name in the suggestions
+  suggestions.push(noteName);
+
+  // Remove duplicates
+  suggestions = [...new Set(suggestions)];
 
   if (suggestions.length === 0) {
     await editor.flashNotification("No suggestions available.");
@@ -373,6 +357,95 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
   if (!renamedPage) {
     await editor.flashNotification("Error renaming page.", "error");
   }
+}
+
+/**
+ * Extracts important information from the current note and converts it
+ * to frontmatter attributes.
+ */
+export async function enhanceNoteFrontMatter() {
+  await initIfNeeded();
+  const noteContent = await editor.getText();
+  const noteName = await editor.getCurrentPage();
+  const blacklistedAttrs = ["title", "tags"];
+
+  const systemPrompt =
+    `You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
+      - Only return valid YAML frontmatter.
+      - Do not use any markdown or any other formatting in your response.
+      - Do not include --- in your response.
+      - Do not include any content from the note in your response.
+      - Extract useful facts from the note and add them to the frontmatter, such as a person's name, age, a location, etc.
+      - Do not return any tags.
+      - Do not return a new note title.
+      - Do not use special characters in key names.  Only ASCII.
+      - Only return important information that would be useful when searching or filtering notes.
+      `;
+
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
+    `${systemPrompt}
+
+Always follow the below rules, if any, given by the user:
+${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
+    true,
+  );
+
+  console.log("frontmatter returned by enhanceNoteFrontMatter", response);
+  try {
+    const newFrontMatter = YAML.load(response);
+    if (
+      typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) ||
+      !newFrontMatter
+    ) {
+      throw new Error("Invalid YAML: Not an object");
+    }
+
+    // Delete any blacklisted attributes from the response
+    blacklistedAttrs.forEach((attr) => {
+      delete (newFrontMatter as Record<string, any>)[attr];
+    });
+
+    // Extract current frontmatter from the note
+    const tree = await markdown.parseMarkdown(noteContent);
+    const frontMatter = await extractFrontmatter(tree);
+
+    // Merge old and new frontmatter
+    const updatedFrontmatter = {
+      ...frontMatter,
+      ...newFrontMatter,
+    };
+
+    // Prepare the updated frontmatter and apply it to the note
+    const frontMatterChange = await prepareFrontmatterDispatch(
+      tree,
+      updatedFrontmatter,
+    );
+    console.log("updatedNoteContent", frontMatterChange);
+    await editor.dispatch(frontMatterChange);
+  } catch (e) {
+    console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
+    await editor.flashNotification(
+      "Error: Invalid Frontmatter YAML returned.",
+      "error",
+    );
+    return;
+  }
+
+  await editor.flashNotification(
+    "Frontmatter enhanced successfully.",
+    "info",
+  );
+}
+
+/**
+ * Enhances the current note by running the commands to generate tags for a note,
+ * generate new frontmatter attributes, and a new note name.
+ */
+export async function enhanceNoteWithAI() {
+  await tagNoteWithAI();
+  await enhanceNoteFrontMatter();
+  await suggestPageName();
 }
 
 /**
