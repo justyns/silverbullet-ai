@@ -495,25 +495,19 @@ export async function promptAndGenerateImage() {
 /**
  * Function for use in templates, doesn't stream responses or insert anything into the editor - just returns the response
  */
-export async function queryOpenAI(
+export async function queryAI(
   userPrompt: string,
   systemPrompt?: string,
 ): Promise<string> {
   try {
     await initIfNeeded();
-    const messages: ChatMessage[] = [];
     const defaultSystemPrompt =
       "You are an AI note assistant helping to render content for a note. Please follow user instructions and keep your response short and concise.";
-    messages.push({
-      role: "system",
-      content: systemPrompt || defaultSystemPrompt,
-    });
-    messages.push({ role: "user", content: userPrompt });
 
-    const response = await currentAIProvider.chatWithAI({
-      messages: messages,
-      stream: false,
-    });
+    const response = await currentAIProvider.singleMessageChat(
+      userPrompt,
+      systemPrompt || defaultSystemPrompt,
+    );
     return response;
   } catch (error) {
     console.error("Error querying OpenAI:", error);

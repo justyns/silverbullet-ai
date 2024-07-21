@@ -6,8 +6,8 @@ functions:
     path: src/prompts.ts:aiPromptSlashComplete
     events:
     - slash:complete
-  queryOpenAI:
-    path: sbai.ts:queryOpenAI
+  queryAI:
+    path: sbai.ts:queryAI
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:
