@@ -5,6 +5,7 @@ This page is a brief overview of each version.
 ---
 ## Unreleased
 - Don't index and generate embeddings for pages in Library/
+- Add new `AI: Enhance Note` command to call existing `AI: Tag Note` and `AI: Suggest Page Name` commands on a note
 
 ---
 ## 0.2.0

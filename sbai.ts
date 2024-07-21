@@ -353,6 +353,15 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
 }
 
 /**
+ * Enhances the current note by running the commands to generate tags for a note,
+ * and a new name.
+ */
+export async function enhanceNoteWithAI() {
+  await tagNoteWithAI();
+  await suggestPageName();
+}
+
+/**
  * Streams a conversation with the LLM, inserting the responses at the cursor position as it is received.
  */
 export async function streamOpenAIWithSelectionAsPrompt() {

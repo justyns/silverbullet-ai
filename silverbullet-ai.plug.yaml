@@ -50,6 +50,10 @@ functions:
     path: sbai.ts:suggestPageName
     command:
       name: "AI: Suggest Page Name"
+  enhanceNoteWithAI:
+    path: sbai.ts:enhanceNoteWithAI
+    command:
+      name: "AI: Enhance Note"
   selectTextModel:
     path: sbai.ts:selectModelFromConfig
     command:
