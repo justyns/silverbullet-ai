@@ -231,30 +231,23 @@ export async function tagNoteWithAI() {
     "tag select name where parent = 'page' order by name",
   )).map((tag: any) => tag.name);
   console.log("All tags:", allTags);
-  const response = await currentAIProvider.chatWithAI({
-    messages: [
-      {
-        role: "system",
-        content:
-          `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
-          - Only return tags and no other content.
-          - Tags must be one word only and in lowercase.
-          - Use existing tags as a starting point.
-          - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
+  const systemPrompt =
+    `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
+    - Only return tags and no other content.
+    - Tags must be one word only and in lowercase.
+    - Use existing tags as a starting point.
+    - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
 
-          The following tags are currently being used by other notes:
-          ${allTags.join(", ")}
-          
-          Always follow the below rules, if any, given by the user:
-          ${aiSettings.promptInstructions.tagRules}`,
-      },
-      {
-        role: "user",
-        content: `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-      },
-    ],
-    stream: false,
-  });
+    The following tags are currently being used by other notes:
+    ${allTags.join(", ")}
+    
+    Always follow the below rules, if any, given by the user:
+    ${aiSettings.promptInstructions.tagRules}`;
+  const userPrompt = `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`;
+  const response = await currentAIProvider.singleMessageChat(
+    userPrompt,
+    systemPrompt,
+  );
   const tags = response.trim().replace(/,/g, "").split(/\s+/);
 
   // Extract current frontmatter from the note
