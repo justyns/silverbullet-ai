@@ -8,11 +8,18 @@ ai:
     pageRenameRules: ""
     pageRenameSystem: ""
     tagRules: ""
+    indexSummaryPrompt: ""
+    enhanceFrontMatterPrompt: ""
 ```
 
 `pageRenameSystem` can be used to completely override the system prompt used when requesting note title suggestions.  If not specified or left blank, the default prompt will be used.
 
 `pageRenameRules` is appended to the system prompt and can be used to extend the default system prompt without completely overriding it.
+
+`indexSummaryPrompt` is appended to the system prompt when generating a summary of a page that will be indexed.
+
+`enhanceFrontMatterPrompt` is appended to the system prompt when generating new frontmatter for a note.
+
 
 For example, the following example does a few things:
 

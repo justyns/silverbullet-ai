@@ -434,7 +434,7 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
 
 /**
  * Enhances the current note by running the commands to generate tags for a note,
- * and a new name.
+ * generate new frontmatter attributes, and a new note name.
  */
 export async function enhanceNoteWithAI() {
   await tagNoteWithAI();

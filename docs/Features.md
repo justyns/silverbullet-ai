@@ -11,3 +11,4 @@
 - **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
 - **Similarity search**: Allows doing a similarity search based on indexed embeddings.
 - **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
+- **FrontMatter generation**: **Experimental** extracts useful information from a note’s context and generates frontmatter attributes for it.
