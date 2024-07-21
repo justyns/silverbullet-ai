@@ -3,6 +3,9 @@ A list of built-in settings [[!silverbullet.md/SETTINGS|can be found here]].
 
 ```yaml
 indexPage: index
+libraries:
+- import: "[[!silverbullet.md/Library/Core/*]]"
+- import: "[[!ai.silverbullet.md/Library/AICore/*]]"
 publish:
   # indexPage specific to the published site
   indexPage: index

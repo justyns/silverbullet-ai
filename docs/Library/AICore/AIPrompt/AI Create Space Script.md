@@ -12,10 +12,9 @@ aiprompt:
 
 SilverBullet space script documentation:
 
-{{readPage([[!silverbullet.md/Space%20Script]])}}
+[[!silverbullet.md/Space%20Script]]
 
-
-Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain silverbullet.registerFunction or silverbullet.registerCommand.
+Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain **silverbullet.registerFunction** or **silverbullet.registerCommand**. Use syscalls where available, but only if you know for sure they exist.
 
 title: {{@page.name}}
 Everything below is the content of the note: 
