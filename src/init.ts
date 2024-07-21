@@ -307,6 +307,7 @@ async function loadAndMergeSettings() {
     pageRenameRules: "",
     tagRules: "",
     indexSummaryPrompt: "",
+    enhanceFrontMatterPrompt: "",
   };
   const newSettings = await readSetting("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };

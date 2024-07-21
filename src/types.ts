@@ -88,6 +88,7 @@ export type PromptInstructions = {
   pageRenameRules: string;
   tagRules: string;
   indexSummaryPrompt: string;
+  enhanceFrontMatterPrompt: string;
 };
 
 export type AISettings = {

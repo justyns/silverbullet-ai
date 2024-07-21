@@ -5,9 +5,9 @@ import {
 import { editor, markdown, space, system } from "$sb/syscalls.ts";
 import { query } from "$sbplugs/query/api.ts";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
+import * as YAML from "js-yaml";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import type {
-  ChatMessage,
   EmbeddingModelConfig,
   ImageGenerationOptions,
   ImageModelConfig,
@@ -33,6 +33,7 @@ import {
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
+import { yaml } from "https://esm.sh/v135/@codemirror/legacy-modes@6.4.0/X-ZS9AY29kZW1pcnJvci9sYW5ndWFnZQ/mode/yaml.js";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.
@@ -353,11 +354,91 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
 }
 
 /**
+ * Extracts important information from the current note and converts it
+ * to frontmatter attributes.
+ */
+export async function enhanceNoteFrontMatter() {
+  await initIfNeeded();
+  const noteContent = await editor.getText();
+  const noteName = await editor.getCurrentPage();
+  const blacklistedAttrs = ["title", "tags"];
+
+  const systemPrompt =
+    `You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
+      - Only return valid YAML frontmatter.
+      - Do not use any markdown or any other formatting in your response.
+      - Do not include --- in your response.
+      - Do not include any content from the note in your response.
+      - Extract useful facts from the note and add them to the frontmatter, such as a person's name, age, a location, etc.
+      - Do not return any tags.
+      - Do not return a new note title.
+      - Do not use special characters in key names.  Only ASCII.
+      - Only return important information that would be useful when searching or filtering notes.
+      `;
+
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
+    `${systemPrompt}
+
+Always follow the below rules, if any, given by the user:
+${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
+    true,
+  );
+
+  console.log("frontmatter returned by enhanceNoteFrontMatter", response);
+  try {
+    const newFrontMatter = YAML.load(response);
+    if (
+      typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) ||
+      !newFrontMatter
+    ) {
+      throw new Error("Invalid YAML: Not an object");
+    }
+
+    // Delete any blacklisted attributes from the response
+    blacklistedAttrs.forEach((attr) => {
+      delete (newFrontMatter as Record<string, any>)[attr];
+    });
+
+    // Extract current frontmatter from the note
+    const tree = await markdown.parseMarkdown(noteContent);
+    const frontMatter = await extractFrontmatter(tree);
+
+    // Merge old and new frontmatter
+    const updatedFrontmatter = {
+      ...frontMatter,
+      ...newFrontMatter,
+    };
+
+    // Prepare the updated frontmatter and apply it to the note
+    const frontMatterChange = await prepareFrontmatterDispatch(
+      tree,
+      updatedFrontmatter,
+    );
+    console.log("updatedNoteContent", frontMatterChange);
+    await editor.dispatch(frontMatterChange);
+  } catch (e) {
+    console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
+    await editor.flashNotification(
+      "Error: Invalid Frontmatter YAML returned.",
+      "error",
+    );
+    return;
+  }
+
+  await editor.flashNotification(
+    "Frontmatter enhanced successfully.",
+    "info",
+  );
+}
+
+/**
  * Enhances the current note by running the commands to generate tags for a note,
  * and a new name.
  */
 export async function enhanceNoteWithAI() {
   await tagNoteWithAI();
+  await enhanceNoteFrontMatter();
   await suggestPageName();
 }
 
