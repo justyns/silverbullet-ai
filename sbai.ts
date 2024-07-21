@@ -311,34 +311,18 @@ export async function suggestPageName() {
     - Do not use markdown or any other formatting in your response.`;
   }
 
-  const messages: ChatMessage[] = [
-    {
-      role: "system",
-      content: `${systemPrompt}
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
+    `${systemPrompt}
 
 Always follow the below rules, if any, given by the user:
 ${aiSettings.promptInstructions.pageRenameRules}`,
-    },
-    {
-      role: "user",
-      content:
-        `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    },
-  ];
-
-  // TODO: Should this be optional?
-  const enrichedMessages = await enrichChatMessages(messages);
-  console.log("enrichedMessages", enrichedMessages);
-
-  const response = await currentAIProvider.chatWithAI({
-    messages: enrichedMessages,
-    stream: false,
-  });
+    true,
+  );
 
   const suggestions = response.trim().split("\n").filter((line: string) =>
     line.trim() !== ""
   ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
-  // ).map((line: string) => line.replace(/[<>:"\/\\|?*\x00-\x1F]/g, "").trim());
 
   if (suggestions.length === 0) {
     await editor.flashNotification("No suggestions available.");
