@@ -4,7 +4,7 @@ This page is a brief overview of each version.
 
 ---
 ## Unreleased
-- Nothing yet
+- Don't index and generate embeddings for pages in Library/
 
 ---
 ## 0.2.0
