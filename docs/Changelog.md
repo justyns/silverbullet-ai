@@ -4,7 +4,19 @@ This page is a brief overview of each version.
 
 ---
 ## Unreleased
-- TBD
+- Nothing yet
+
+---
+## 0.2.0
+
+* Vector search and embeddings generation [[embe]] by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
+* Enrich chat messages with RAG by searching our local embeddings by [@justyns](https://github.com/justyns) in [#38](https://github.com/justyns/silverbullet-ai/pull/38)
+* Refactor: Re-organize providers, interfaces, and types by [@justyns](https://github.com/justyns) in [#39](https://github.com/justyns/silverbullet-ai/pull/39)
+* Add try/catch to tests by [@justyns](https://github.com/justyns) in [#40](https://github.com/justyns/silverbullet-ai/pull/40)
+* Fix bug causing silverbullet to break when aiSettings isn't configured at all by [@justyns](https://github.com/justyns) in [#42](https://github.com/justyns/silverbullet-ai/pull/42)
+* Add option to generate summaries of each note and index them. by [@justyns](https://github.com/justyns) in [#43](https://github.com/justyns/silverbullet-ai/pull/43)
+* Disable indexing on clients, index only on server by [@justyns](https://github.com/justyns) in [#44](https://github.com/justyns/silverbullet-ai/pull/44)
+* Set index and search events to server only by [@justyns](https://github.com/justyns) in [#45](https://github.com/justyns/silverbullet-ai/pull/45)
 ---
 ## 0.1.0
 - **BREAKING**: Removed deprecated parameters: summarizePrompt, tagPrompt, imagePrompt, temperature, maxTokens, defaultTextModel, backwardsCompat. Except for defaultTextModel, these were no longer used.
