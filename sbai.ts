@@ -321,9 +321,15 @@ ${aiSettings.promptInstructions.pageRenameRules}`,
     true,
   );
 
-  const suggestions = response.trim().split("\n").filter((line: string) =>
+  let suggestions = response.trim().split("\n").filter((line: string) =>
     line.trim() !== ""
   ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
+
+  // Always include the note's current name in the suggestions
+  suggestions.push(noteName);
+
+  // Remove duplicates
+  suggestions = [...new Set(suggestions)];
 
   if (suggestions.length === 0) {
     await editor.flashNotification("No suggestions available.");
