@@ -108,6 +108,5 @@ functions:
       operation: getFileMeta
   searchCommand:
     path: src/embeddings.ts:searchCommand
-    env: server
     command:
       name: "AI: Search"
