@@ -403,6 +403,10 @@ export async function updateSearchPage() {
     const pageLength = loadingText.length;
     text = pageHeader + "\n\n";
 
+    if (results.length === 0) {
+      text += "No results found.\n\n";
+    }
+
     for (const r of results) {
       text += `## [[${r.page}]]\n`;
       for (const child of r.children) {
