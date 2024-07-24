@@ -8,7 +8,7 @@ import type {
 import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
 import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
-import { log } from "./utils.ts";
+import { log, supportsServerProxyCall } from "./utils.ts";
 import { editor, system } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
@@ -202,15 +202,19 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
  * Return the most similar embedding objects.
  */
 export async function searchEmbeddings(
-  query: string,
+  query: string | number[],
   numResults = 10,
 ): Promise<EmbeddingResult[]> {
-  // TODO: Is there a way to always search on the server instead of using the client's index?
   await initIfNeeded();
-  const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
-    text: query,
-  });
+
+  // Allow passing in pre-generated embeddings, but generate them if its a string
+  const queryEmbedding = typeof query === "string"
+    ? await currentEmbeddingProvider.generateEmbeddings({ text: query })
+    : query;
   const embeddings = await getAllEmbeddings();
+
+  console.log("Received embeddings:", embeddings.length);
+  console.log("In env:", await system.getEnv());
 
   const results: EmbeddingResult[] = embeddings.map((embedding) => ({
     page: embedding.page,
@@ -270,11 +274,24 @@ export async function searchSummaryEmbeddings(
  * that one page may have multiple matches.
  */
 export async function searchCombinedEmbeddings(
-  query: string,
+  query: string | number[],
   numResults = 10,
   minSimilarity = 0.15,
 ): Promise<CombinedEmbeddingResult[]> {
-  const searchResults = await searchEmbeddings(query, -1);
+  let searchResults;
+
+  if (await supportsServerProxyCall()) {
+    // Make sure the search function runs on the server, even if we're in sync mode
+    searchResults = await syscall(
+      "system.invokeFunctionOnServer",
+      "silverbullet-ai.searchEmbeddings",
+      query,
+      -1,
+    );
+  } else {
+    searchResults = await searchEmbeddings(query, -1);
+  }
+
   const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
   for (const result of searchResults) {
@@ -318,44 +335,22 @@ export async function debugSearchEmbeddings() {
   const searchResults = await searchCombinedEmbeddings(text);
   await editor.flashNotification(`Found ${searchResults.length} results`);
   log("any", "AI: Search results", searchResults);
-  //   await editor.insertAtCursor(
-  //     `\n\nSearch results: ${JSON.stringify(formattedResults)}`,
-  //   );
 }
 
 const searchPrefix = "🤖 ";
 
 /**
- * Display "AI: Search" results.
+ * Display an empty "AI: Search" page
  */
-export async function readFileEmbeddings(
+export function readFileEmbeddings(
   name: string,
-): Promise<{ data: Uint8Array; meta: FileMeta }> {
-  const phrase = name.substring(
-    searchPrefix.length,
-    name.length - ".md".length,
-  );
-  const results = await searchCombinedEmbeddings(phrase);
-  log("client", "AI: Embedding search results", results);
-  let text = `# Embedding search results for "${phrase}"\n\n`;
-  if (!aiSettings.indexEmbeddings) {
-    text += "> **warning** Embeddings generation is disabled.\n";
-    text += "> You can enable it in the AI settings.\n\n\n";
-  }
-  for (const r of results) {
-    text += `* [[${r.page}]] (score ${r.score})\n`;
-    for (const child of r.children) {
-      text += `  * [[${child.ref}]] (similarity ${child.similarity})\n`;
-      text += `    > ${child.text}\n`;
-    }
-  }
-
+): { data: Uint8Array; meta: FileMeta } {
   return {
-    data: new TextEncoder().encode(text),
+    data: new TextEncoder().encode(""),
     meta: {
       name,
       contentType: "text/markdown",
-      size: text.length,
+      size: 0,
       created: 0,
       lastModified: 0,
       perm: "ro",
@@ -372,6 +367,55 @@ export function getFileMetaEmbeddings(name: string): FileMeta {
     lastModified: 0,
     perm: "ro",
   };
+}
+
+// Just return nothing to prevent saving a file
+export function writeFileEmbeddings(
+  name: string,
+): FileMeta {
+  return getFileMetaEmbeddings(name);
+}
+
+/**
+ * Actual search logic for "AI: Search" page. This gets triggered
+ * by the pageLoaded event. Once triggered, the search starts.
+ *
+ * We are doing it this way instead of in eadFileEmbeddings to have
+ * more control over the UI.
+ */
+export async function updateSearchPage() {
+  const page = await editor.getCurrentPage();
+  if (page.startsWith(searchPrefix)) {
+    await initIfNeeded();
+    const phrase = page.substring(searchPrefix.length);
+    const pageHeader = `# Search results for "${phrase}"`;
+    let text = pageHeader + "\n\n";
+    if (!aiSettings.indexEmbeddings) {
+      text += "> **warning** Embeddings generation is disabled.\n";
+      text += "> You can enable it in the AI settings.\n\n\n";
+      await editor.setText(text);
+      return;
+    }
+    let loadingText = `${pageHeader}\n\nSearching for "${phrase}"...`;
+    loadingText += "\nGenerating query vector embeddings..";
+    await editor.setText(loadingText);
+    const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
+      text: phrase,
+    });
+    const results = await searchCombinedEmbeddings(queryEmbedding);
+    const pageLength = loadingText.length;
+    text = pageHeader + "\n\n";
+
+    for (const r of results) {
+      text += `## [[${r.page}]]\n`;
+      for (const child of r.children) {
+        const childLineNo = child.ref.split("@")[1];
+        text += `> [[${child.ref}|${childLineNo}]] | ${child.text}\n`;
+      }
+    }
+    // Some reason editor.setText doesn't work again, maybe a race condition
+    await editor.replaceRange(0, pageLength, text);
+  }
 }
 
 /**
