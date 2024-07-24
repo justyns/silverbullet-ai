@@ -13,6 +13,8 @@ import { editor, system } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
+const searchPrefix = "🤖 ";
+
 /**
  * Generate embeddings for each paragraph in a page, and then indexes
  * them.
@@ -158,8 +160,6 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
     cache.setCache(cacheKey, summary);
   }
 
-  //   console.log("summary", summary);
-
   const summaryEmbeddings = await currentEmbeddingProvider.generateEmbeddings({
     text: summary,
   });
@@ -234,8 +234,6 @@ export async function searchEmbeddings(
     results.push(...summaryResults);
   }
 
-  //   log("client", "AI: searchEmbeddings", results);
-
   return results
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, numResults);
@@ -289,6 +287,7 @@ export async function searchCombinedEmbeddings(
       -1,
     );
   } else {
+    console.log("system.invokeFunctionOnServer not supported.");
     searchResults = await searchEmbeddings(query, -1);
   }
 
@@ -336,8 +335,6 @@ export async function debugSearchEmbeddings() {
   await editor.flashNotification(`Found ${searchResults.length} results`);
   log("any", "AI: Search results", searchResults);
 }
-
-const searchPrefix = "🤖 ";
 
 /**
  * Display an empty "AI: Search" page
