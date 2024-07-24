@@ -1,4 +1,5 @@
 import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
+import { SyscallMeta } from "$sb/types.ts";
 import { cleanMarkdown } from "$sbplugs/share/share.ts";
 import { renderToText } from "$sb/lib/tree.ts";
 import { aiSettings } from "./init.ts";
@@ -81,6 +82,21 @@ export async function supportsPlugSlashComplete(): Promise<boolean> {
     return false;
   } catch (_err) {
     // system.getVersion was added in edge before 0.7.2, so assume this wont' work if the call doesn't succeed
+    return false;
+  }
+}
+
+/**
+ * Check whether the invokeFunctionOnServer syscall is availble.
+ * It's needed so that we can force certain things to run on the server.
+ */
+export async function supportsServerProxyCall(): Promise<boolean> {
+  try {
+    const syscalls = await system.listSyscalls();
+    return syscalls.some((syscall: SyscallMeta) =>
+      syscall.name === "system.invokeFunctionOnServer"
+    );
+  } catch (_err) {
     return false;
   }
 }

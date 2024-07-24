@@ -74,6 +74,12 @@ functions:
     path: sbai.ts:testEmbeddingGeneration
     command:
       name: "AI: Test Embedding Generation"
+  getAllEmbeddings:
+    path: src/embeddings.ts:getAllEmbeddings
+    env: server
+  searchEmbeddings:
+    path: src/embeddings.ts:searchEmbeddings
+    env: server
   indexEmbeddings:
     path: src/embeddings.ts:indexEmbeddings
     env: server
@@ -90,24 +96,25 @@ functions:
       name: "AI: Debug Search Embeddings"
   readPageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
-    env: server
     pageNamespace:
       pattern: "🤖 .+"
       operation: readFile
   writePageSearchEmbeddings:
-    path: src/embeddings.ts:readFileEmbeddings
-    env: server
+    path: src/embeddings.ts:writeFileEmbeddings
     pageNamespace:
       pattern: "🤖 .+"
-      operation: readFile
+      operation: writeFile
   getPageMetaSearchEmbeddings:
     path: src/embeddings.ts:getFileMetaEmbeddings
-    env: server
     pageNamespace:
       pattern: "🤖 .+"
       operation: getFileMeta
   searchCommand:
     path: src/embeddings.ts:searchCommand
-    env: server
     command:
       name: "AI: Search"
+  updateSearchPage:
+    path: src/embeddings.ts:updateSearchPage
+    events:
+      - editor:pageLoaded
+      - editor:pageReloaded
