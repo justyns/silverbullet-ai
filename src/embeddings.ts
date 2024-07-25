@@ -54,6 +54,8 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   const objects: EmbeddingObject[] = [];
 
+  const startTime = Date.now();
+
   for (const paragraph of paragraphs) {
     const paragraphText = renderToText(paragraph).trim();
 
@@ -93,9 +95,12 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   await indexObjects<EmbeddingObject>(page, objects);
 
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1000;
+
   log(
     "any",
-    `AI: Indexed ${objects.length} embedding objects for page ${page}`,
+    `AI: Indexed ${objects.length} embedding objects for page ${page} in ${duration} seconds`,
   );
 }
 
