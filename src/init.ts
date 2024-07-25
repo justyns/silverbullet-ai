@@ -43,7 +43,7 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return undefined;
   }
@@ -57,7 +57,7 @@ export async function getSelectedTextModel() {
 }
 
 export async function getSelectedImageModel() {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return undefined;
   }
@@ -71,7 +71,7 @@ export async function getSelectedImageModel() {
 }
 
 export async function getSelectedEmbeddingModel() {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return;
   }
@@ -85,7 +85,7 @@ export async function getSelectedEmbeddingModel() {
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return;
   }
@@ -93,7 +93,7 @@ export async function setSelectedImageModel(model: ImageModelConfig) {
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return;
   }
@@ -101,7 +101,7 @@ export async function setSelectedTextModel(model: ModelConfig) {
 }
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
-  if (await system.getEnv() != "client") {
+  if (await system.getEnv() == "server") {
     // We can't use clientStore in the server process
     return;
   }
