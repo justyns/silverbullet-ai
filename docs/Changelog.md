@@ -7,7 +7,11 @@ This page is a brief overview of each version.
 - Don't index and generate embeddings for pages in Library/
 - Add new `AI: Enhance Note` command to call existing `AI: Tag Note` and `AI: Suggest Page Name` commands on a note, and the new frontmatter command
 - Add new `AI: Generate Note FrontMatter` command to extract useful facts from a note and add them to the frontmatter
-- Always include the note’s current name in [[Commands/AI: Suggest Page Name]] as an option.
+- Always include the note’s current name in [[Commands/AI: Suggest Page Name]] as an option
+- Log how long it takes to index each page when generating embeddings
+- Improve the layout and UX of the `AI: Search` page
+- Fix the `AI: Search` page so it works in sync/online mode
+- Fix bug preventing changing models in sync mode
 
 ---
 ## 0.2.0
