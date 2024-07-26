@@ -16,17 +16,9 @@ import * as cache from "./cache.ts";
 const searchPrefix = "🤖 ";
 
 /**
- * Generate embeddings for each paragraph in a page, and then indexes
- * them.
+ * Check whether a page is allowed to be indexed or not.
  */
-export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
-  // TODO: Can we sync indexes from server to client?  Without this, each client generates its own embeddings and summaries
-  if (await system.getEnv() !== "server") {
-    return;
-  }
-
-  await initIfNeeded();
-
+function canIndexPage(pageName: string): boolean {
   // Only index pages if the user enabled it, and skip anything they want to exclude
   const excludePages = [
     "SETTINGS",
@@ -34,12 +26,28 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
     ...aiSettings.indexEmbeddingsExcludePages,
   ];
   if (
-    !aiSettings.indexEmbeddings ||
-    excludePages.includes(page) ||
-    page.startsWith("_") ||
-    page.startsWith("Library/") ||
-    /\.conflicted\.\d+$/.test(page)
+    excludePages.includes(pageName) ||
+    pageName.startsWith("_") ||
+    pageName.startsWith("Library/") ||
+    /\.conflicted\.\d+$/.test(pageName)
   ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Generate embeddings for each paragraph in a page, and then indexes
+ * them.
+ */
+export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
+  if (await system.getEnv() !== "server") {
+    return;
+  }
+
+  await initIfNeeded();
+
+  if (!canIndexPage(page)) {
     return;
   }
 
@@ -56,6 +64,7 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   const startTime = Date.now();
 
+  // TODO: Filter out images, or send images to a vision model to get a summary and index that instead
   for (const paragraph of paragraphs) {
     const paragraphText = renderToText(paragraph).trim();
 
@@ -114,18 +123,7 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
   }
   await initIfNeeded();
 
-  // Only index pages if the user enabled it, and skip anything they want to exclude
-  const excludePages = [
-    "SETTINGS",
-    "SECRETS",
-    ...aiSettings.indexEmbeddingsExcludePages,
-  ];
-  if (
-    !aiSettings.indexEmbeddings ||
-    !aiSettings.indexSummary ||
-    excludePages.includes(page) ||
-    page.startsWith("_")
-  ) {
+  if (!canIndexPage(page)) {
     return;
   }
 
@@ -265,8 +263,14 @@ export async function searchEmbeddings(
   }
 
   const results: EmbeddingResult[] = [];
+  let lastUpdateTime = Date.now();
   for (let i = 0; i < embeddings.length; i++) {
     const embedding = embeddings[i];
+    if (!canIndexPage(embedding.page)) {
+      // Even if we have previously indexed a page, skip it if it should be excluded
+      continue;
+    }
+
     results.push({
       page: embedding.page,
       ref: embedding.ref,
@@ -277,7 +281,6 @@ export async function searchEmbeddings(
     // Update progress on page based on time or every 100 embeddings
     // This actually slows the overall search down a bit, but I think it will
     // prevent more timeout issues and at least show what its doing.
-    let lastUpdateTime = Date.now();
     if (
       updateEditorProgress &&
       (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
@@ -325,8 +328,12 @@ export async function searchEmbeddings(
     }
 
     const summaryResults: EmbeddingResult[] = [];
+    let lastUpdateTime = Date.now();
     for (let i = 0; i < summaries.length; i++) {
       const summary = summaries[i];
+      if (!canIndexPage(summary.page)) {
+        continue;
+      }
       summaryResults.push({
         page: summary.page,
         ref: summary.ref,
@@ -335,7 +342,6 @@ export async function searchEmbeddings(
       });
 
       // Update progress on page based on time or every 100 summaries
-      let lastUpdateTime = Date.now();
       if (
         updateEditorProgress &&
         (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
