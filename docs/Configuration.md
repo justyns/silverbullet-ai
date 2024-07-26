@@ -42,6 +42,9 @@ ai:
   chat:
     # If bakeMessages is true, SilverBullet query and template blocks are rendered before sending
     bakeMessages: true
+    # If searchEmbeddings is true, the Chat command will search indexed embeddings and provide relevant pages as context.
+    searchEmbeddings: true
+    # When using chat, the userInformation and userInstructions included in the system prompt.
     userInformation: >
       I'm a software developer who likes taking notes.
     userInstructions: >

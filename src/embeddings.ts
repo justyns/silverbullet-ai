@@ -16,17 +16,9 @@ import * as cache from "./cache.ts";
 const searchPrefix = "🤖 ";
 
 /**
- * Generate embeddings for each paragraph in a page, and then indexes
- * them.
+ * Check whether a page is allowed to be indexed or not.
  */
-export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
-  // TODO: Can we sync indexes from server to client?  Without this, each client generates its own embeddings and summaries
-  if (await system.getEnv() !== "server") {
-    return;
-  }
-
-  await initIfNeeded();
-
+function canIndexPage(pageName: string): boolean {
   // Only index pages if the user enabled it, and skip anything they want to exclude
   const excludePages = [
     "SETTINGS",
@@ -34,12 +26,28 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
     ...aiSettings.indexEmbeddingsExcludePages,
   ];
   if (
-    !aiSettings.indexEmbeddings ||
-    excludePages.includes(page) ||
-    page.startsWith("_") ||
-    page.startsWith("Library/") ||
-    /\.conflicted\.\d+$/.test(page)
+    excludePages.includes(pageName) ||
+    pageName.startsWith("_") ||
+    pageName.startsWith("Library/") ||
+    /\.conflicted\.\d+$/.test(pageName)
   ) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Generate embeddings for each paragraph in a page, and then indexes
+ * them.
+ */
+export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
+  if (await system.getEnv() !== "server") {
+    return;
+  }
+
+  await initIfNeeded();
+
+  if (!canIndexPage(page)) {
     return;
   }
 
@@ -54,6 +62,9 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   const objects: EmbeddingObject[] = [];
 
+  const startTime = Date.now();
+
+  // TODO: Filter out images, or send images to a vision model to get a summary and index that instead
   for (const paragraph of paragraphs) {
     const paragraphText = renderToText(paragraph).trim();
 
@@ -93,9 +104,12 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   await indexObjects<EmbeddingObject>(page, objects);
 
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1000;
+
   log(
     "any",
-    `AI: Indexed ${objects.length} embedding objects for page ${page}`,
+    `AI: Indexed ${objects.length} embedding objects for page ${page} in ${duration} seconds`,
   );
 }
 
@@ -109,18 +123,7 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
   }
   await initIfNeeded();
 
-  // Only index pages if the user enabled it, and skip anything they want to exclude
-  const excludePages = [
-    "SETTINGS",
-    "SECRETS",
-    ...aiSettings.indexEmbeddingsExcludePages,
-  ];
-  if (
-    !aiSettings.indexEmbeddings ||
-    !aiSettings.indexSummary ||
-    excludePages.includes(page) ||
-    page.startsWith("_")
-  ) {
+  if (!canIndexPage(page)) {
     return;
   }
 
@@ -181,11 +184,29 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
-  return (await queryObjects<EmbeddingObject>("embedding", {}));
+  if (await supportsServerProxyCall()) {
+    return (await syscall(
+      "system.invokeFunctionOnServer",
+      "index.queryObjects",
+      "embedding",
+      {},
+    ));
+  } else {
+    return (await queryObjects<EmbeddingObject>("embedding", {}));
+  }
 }
 
 export async function getAllAISummaries(): Promise<AISummaryObject[]> {
-  return (await queryObjects<AISummaryObject>("aiSummary", {}));
+  if (await supportsServerProxyCall()) {
+    return (await syscall(
+      "system.invokeFunctionOnServer",
+      "index.queryObjects",
+      "aiSummary",
+      {},
+    ));
+  } else {
+    return (await queryObjects<AISummaryObject>("aiSummary", {}));
+  }
 }
 
 // Full disclosure, I don't really understand how this part works - thanks chatgpt!
@@ -204,33 +225,143 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
 export async function searchEmbeddings(
   query: string | number[],
   numResults = 10,
+  updateEditorProgress = false,
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
 
   // Allow passing in pre-generated embeddings, but generate them if its a string
+  const startEmbeddingGeneration = Date.now();
   const queryEmbedding = typeof query === "string"
     ? await currentEmbeddingProvider.generateEmbeddings({ text: query })
     : query;
+  const endEmbeddingGeneration = Date.now();
+  console.log(
+    `searchEmbeddings: Query embedding generation took ${
+      endEmbeddingGeneration - startEmbeddingGeneration
+    } ms`,
+  );
+
+  const startRetrievingEmbeddings = Date.now();
   const embeddings = await getAllEmbeddings();
+  const endRetrievingEmbeddings = Date.now();
 
-  console.log("Received embeddings:", embeddings.length);
-  console.log("In env:", await system.getEnv());
+  console.log(
+    `Retrieved ${embeddings.length} embeddings in ${
+      endRetrievingEmbeddings - startRetrievingEmbeddings
+    } ms`,
+  );
 
-  const results: EmbeddingResult[] = embeddings.map((embedding) => ({
-    page: embedding.page,
-    ref: embedding.ref,
-    text: embedding.text,
-    similarity: cosineSimilarity(queryEmbedding, embedding.embedding),
-  }));
+  let progressText = "";
+  let progressStartPos = 0;
+
+  if (updateEditorProgress && (await system.getEnv()) !== "server") {
+    progressText = `Retrieved ${embeddings.length} embeddings in ${
+      endRetrievingEmbeddings - startRetrievingEmbeddings
+    } ms\n\n`;
+    progressStartPos = (await editor.getText()).length;
+    await editor.replaceRange(progressStartPos, progressStartPos, progressText);
+  }
+
+  const results: EmbeddingResult[] = [];
+  let lastUpdateTime = Date.now();
+  for (let i = 0; i < embeddings.length; i++) {
+    const embedding = embeddings[i];
+    if (!canIndexPage(embedding.page)) {
+      // Even if we have previously indexed a page, skip it if it should be excluded
+      continue;
+    }
+
+    results.push({
+      page: embedding.page,
+      ref: embedding.ref,
+      text: embedding.text,
+      similarity: cosineSimilarity(queryEmbedding, embedding.embedding),
+    });
+
+    // Update progress on page based on time or every 100 embeddings
+    // This actually slows the overall search down a bit, but I think it will
+    // prevent more timeout issues and at least show what its doing.
+    if (
+      updateEditorProgress &&
+      (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
+      (await system.getEnv()) !== "server"
+    ) {
+      const pageLength = progressStartPos + progressText.length;
+      progressText = `\n\nProcessed ${
+        i + 1
+      } of ${embeddings.length} embeddings...\n\n`;
+      await editor.replaceRange(progressStartPos, pageLength, progressText);
+      lastUpdateTime = Date.now();
+    }
+  }
+
+  console.log(
+    `Finished searching embeddings in ${
+      Date.now() - startRetrievingEmbeddings
+    } ms`,
+  );
 
   if (aiSettings.indexSummary) {
+    const startRetrievingSummaries = Date.now();
     const summaries = await getAllAISummaries();
-    const summaryResults: EmbeddingResult[] = summaries.map((summary) => ({
-      page: summary.page,
-      ref: summary.ref,
-      text: `Page Summary: ${summary.text}`,
-      similarity: cosineSimilarity(queryEmbedding, summary.embedding),
-    }));
+    const endRetrievingSummaries = Date.now();
+
+    console.log(
+      `Retrieved ${summaries.length} summaries in ${
+        endRetrievingSummaries - startRetrievingSummaries
+      } ms`,
+    );
+
+    let progressText = "";
+    let progressStartPos = 0;
+
+    if (updateEditorProgress && (await system.getEnv()) !== "server") {
+      progressText = `Retrieved ${summaries.length} summaries in ${
+        endRetrievingSummaries - startRetrievingSummaries
+      } ms\n\n`;
+      progressStartPos = (await editor.getText()).length;
+      await editor.replaceRange(
+        progressStartPos,
+        progressStartPos,
+        progressText,
+      );
+    }
+
+    const summaryResults: EmbeddingResult[] = [];
+    let lastUpdateTime = Date.now();
+    for (let i = 0; i < summaries.length; i++) {
+      const summary = summaries[i];
+      if (!canIndexPage(summary.page)) {
+        continue;
+      }
+      summaryResults.push({
+        page: summary.page,
+        ref: summary.ref,
+        text: `Page Summary: ${summary.text}`,
+        similarity: cosineSimilarity(queryEmbedding, summary.embedding),
+      });
+
+      // Update progress on page based on time or every 100 summaries
+      if (
+        updateEditorProgress &&
+        (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
+        (await system.getEnv()) !== "server"
+      ) {
+        const pageLength = progressStartPos + progressText.length;
+        progressText = `\n\nProcessed ${
+          i + 1
+        } of ${summaries.length} summaries...\n\n`;
+        await editor.replaceRange(progressStartPos, pageLength, progressText);
+        lastUpdateTime = Date.now();
+      }
+    }
+
+    console.log(
+      `Finished searching summaries in ${
+        Date.now() - startRetrievingSummaries
+      } ms`,
+    );
+
     results.push(...summaryResults);
   }
 
@@ -275,21 +406,11 @@ export async function searchCombinedEmbeddings(
   query: string | number[],
   numResults = 10,
   minSimilarity = 0.15,
+  updateEditorProgress = false,
 ): Promise<CombinedEmbeddingResult[]> {
   let searchResults;
 
-  if (await supportsServerProxyCall()) {
-    // Make sure the search function runs on the server, even if we're in sync mode
-    searchResults = await syscall(
-      "system.invokeFunctionOnServer",
-      "silverbullet-ai.searchEmbeddings",
-      query,
-      -1,
-    );
-  } else {
-    console.log("system.invokeFunctionOnServer not supported.");
-    searchResults = await searchEmbeddings(query, -1);
-  }
+  searchResults = await searchEmbeddings(query, -1, updateEditorProgress);
 
   const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
@@ -399,7 +520,15 @@ export async function updateSearchPage() {
     const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
       text: phrase,
     });
-    const results = await searchCombinedEmbeddings(queryEmbedding);
+    loadingText += "\nSearching for similar embeddings...";
+    await editor.setText(loadingText);
+
+    const results = await searchCombinedEmbeddings(
+      queryEmbedding,
+      undefined,
+      undefined,
+      true,
+    );
     const pageLength = loadingText.length;
     text = pageHeader + "\n\n";
 
@@ -411,7 +540,8 @@ export async function updateSearchPage() {
       text += `## [[${r.page}]]\n`;
       for (const child of r.children) {
         const childLineNo = child.ref.split("@")[1];
-        text += `> [[${child.ref}|${childLineNo}]] | ${child.text}\n`;
+        const childLineNoPadded = childLineNo.padStart(4, " ");
+        text += `> [[${child.ref}|${childLineNoPadded}]] | ${child.text}\n`;
       }
     }
     // Some reason editor.setText doesn't work again, maybe a race condition
