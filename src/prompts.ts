@@ -8,12 +8,15 @@ import type {
   SlashCompletions,
 } from "$sb/types.ts";
 import type { TemplateObject } from "$sbplugs/template/types.ts";
-import type { ChatMessage } from "./types.ts";
 import { getPageLength } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import { supportsPlugSlashComplete } from "./utils.ts";
+import {
+  convertPageToMessages,
+  enrichChatMessages,
+  supportsPlugSlashComplete,
+} from "./utils.ts";
 
-// TODO: This only works in edge (0.7.2+), see https://github.com/silverbulletmd/silverbullet/issues/742
+// This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
 ): Promise<{ options: SlashCompletions[] } | void> {
@@ -66,6 +69,8 @@ export async function insertAiPromptFromTemplate(
           systemPrompt: templateObj.aiprompt.systemPrompt ||
             "You are an AI note assistant. Please follow the prompt instructions.",
           insertAt: templateObj.aiprompt.insertAt || "cursor",
+          chat: templateObj.aiprompt.chat || false,
+          enrichMessages: templateObj.aiprompt.enrichMessages || true,
           // parseAs: templateObj.aiprompt.parseAs || "markdown",
         };
       }),
@@ -82,6 +87,8 @@ export async function insertAiPromptFromTemplate(
       systemPrompt: aiprompt.systemPrompt || aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",
+      chat: aiprompt.chat || false,
+      enrichMessages: aiprompt.enrichMessages || true,
     };
   }
 
@@ -156,21 +163,24 @@ export async function insertAiPromptFromTemplate(
 
   console.log("templatetext: ", templateText);
 
-  const renderedTemplate = await renderTemplate(templateText, pageMeta, {
-    page: pageMeta,
-  });
-  console.log("Rendered template:", renderedTemplate);
+  // const renderedTemplate = await renderTemplate(templateText, pageMeta, {
+  //   page: pageMeta,
+  // });
+  // console.log("Rendered template:", renderedTemplate);
 
-  const messages: ChatMessage[] = [{
-    role: "user",
-    content: renderedTemplate.text,
-  }];
+  let messages = await convertPageToMessages(templateText);
   if (selectedTemplate.systemPrompt) {
     messages.unshift({
       role: "system",
       content: selectedTemplate.systemPrompt,
     });
   }
+  if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
+    messages = await enrichChatMessages(messages);
+  }
+
+  console.log("Messages: ", messages);
+
   await currentAIProvider.streamChatIntoEditor({
     messages: messages,
     stream: true,

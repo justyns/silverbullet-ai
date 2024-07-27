@@ -2,7 +2,12 @@ import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
 import { SyscallMeta } from "$sb/types.ts";
 import { cleanMarkdown } from "$sbplugs/share/share.ts";
 import { renderToText } from "$sb/lib/tree.ts";
+import { extractAttributes } from "$sb/lib/attribute.ts";
+import { parse } from "$common/markdown_parser/parse_tree.ts";
+import { extendedMarkdownLanguage } from "$common/markdown_parser/parser.ts";
+import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
 import { aiSettings } from "./init.ts";
+import { renderTemplate } from "$sbplugs/template/api.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchCombinedEmbeddings } from "./embeddings.ts";
 
@@ -28,8 +33,21 @@ export async function log(env: "client" | "server" | "any", ...args: any[]) {
  *
  * Valid roles are system, assistant, and user.
  */
-export async function convertPageToMessages(): Promise<Array<ChatMessage>> {
-  const pageText = await editor.getText();
+export async function convertPageToMessages(
+  pageText?: string,
+): Promise<Array<ChatMessage>> {
+  if (!pageText) {
+    pageText = await editor.getText();
+  }
+
+  // Remove frontmatter from page
+  const tree = await markdown.parseMarkdown(pageText);
+  await extractFrontmatter(tree, {
+    removeFrontmatterSection: true,
+  });
+  pageText = renderToText(tree);
+
+  // Split the rest of the page by line to process
   const lines = pageText.split("\n");
   const messages: ChatMessage[] = [];
   let currentRole = "user";
@@ -108,30 +126,91 @@ export async function enrichChatMessages(
   messages: ChatMessage[],
 ): Promise<ChatMessage[]> {
   const enrichedMessages: ChatMessage[] = [];
+  let currentPage, pageMeta;
+
+  // TODO: I'm thinking of changing how the enrich process works and splitting it up so that each function can
+  // return a string that will replace the original message, or a new message that will be prepended to the
+  // message.
+
+  try {
+    currentPage = await editor.getCurrentPage();
+    pageMeta = await space.getPageMeta(currentPage);
+  } catch (error) {
+    console.error("Error fetching page metadata", error);
+    await editor.flashNotification(
+      "Error fetching page metadata",
+      "error",
+    );
+    return;
+  }
 
   for (const message of messages) {
-    let enrichedContent = message.content;
-    if (message.role === "assistant") {
+    if (message.role === "assistant" || message.role === "system") {
+      // Don't enrich assistant or system messages
       enrichedMessages.push(message);
       continue;
     }
 
+    // Extract attributes from the message
+    const messageTree = parse(extendedMarkdownLanguage, message.content);
+    const messageAttributes = await extractAttributes(
+      [],
+      messageTree,
+      true,
+    );
+
+    // TODO: This or the extractAttributes causes templates to no longer work
+    // message.content = renderToText(messageTree);
+    // Filter out attributes with our friend regex instead
+    message.content = message.content.replace(
+      /\[enrich:\s*(false|true)\s*\]\s*/g,
+      "",
+    );
+
+    // If [enrich:false] is set, don't enrich this message
+    // If it's unset or true, it'll still have the enrichment functions run
+    // TODO: Allow setting this attribute at a page level by default
+    // TODO: Allow disabling specific enrichment functions
+    if (
+      messageAttributes.enrich !== undefined &&
+      messageAttributes.enrich === false
+    ) {
+      console.log(
+        "Skipping message enrichment due to enrich=false attribute",
+        messageAttributes,
+      );
+      enrichedMessages.push(message);
+      continue;
+    }
+
+    let enrichedContent = message.content;
+
+    // Render message as a template if it's a user message
+    if (message.role === "user") {
+      if (pageMeta) {
+        console.log("Rendering template", message.content, pageMeta);
+        const templateResult = await renderTemplate(message.content, pageMeta, {
+          page: pageMeta,
+        });
+        enrichedContent = templateResult.text;
+      } else {
+        console.log("No page metadata found, skipping template rendering");
+      }
+    }
+
     if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
       // Search local vector embeddings for relevant context
+      // TODO: It could be better to turn this into its own message?
       const searchResults = await searchCombinedEmbeddings(enrichedContent);
       if (searchResults.length > 0) {
         enrichedContent +=
-          `\n\nThe following pages were found to be relevant to the question. You can use them as context to answer the question.\n`;
+          `\n\nThe following pages were found to be relevant to the question. You can use them as context to answer the question. Only partial content is shown. Ask for the whole page if needed. Page name is between >> and <<.\n`;
 
         for (const r of searchResults) {
-          enrichedContent += `* [[${r.page}]] (similarity score ${r.score})\n`;
-          // We could include the child results here which have snippets of text, but
-          // I'm not sure if it is worth it or not when we can just send the whole note?
-
-          // for (const child of r.children) {
-          //   enrichedContent += `  * [[${child.ref}]] (similarity ${child.similarity})\n`;
-          //   enrichedContent += `    > ${child.text}\n`;
-          // }
+          enrichedContent += `>>${r.page}<<\n`;
+          for (const child of r.children) {
+            enrichedContent += `> ${child.text}\n\n`;
+          }
         }
       }
     }

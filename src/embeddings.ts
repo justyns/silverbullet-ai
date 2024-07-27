@@ -117,11 +117,14 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
  * Generate a summary for a page, and then indexes it.
  */
 export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
-  // TODO: Can we sync indexes from server to client?  Without this, each client generates its own embeddings and summaries
   if (await system.getEnv() !== "server") {
     return;
   }
   await initIfNeeded();
+
+  if (!aiSettings.indexSummary) {
+    return;
+  }
 
   if (!canIndexPage(page)) {
     return;
