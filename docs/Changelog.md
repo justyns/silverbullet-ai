@@ -5,13 +5,14 @@ This page is a brief overview of each version.
 ---
 ## Unreleased
 - Don't index and generate embeddings for pages in Library/
-- Add new `AI: Enhance Note` command to call existing `AI: Tag Note` and `AI: Suggest Page Name` commands on a note, and the new frontmatter command
-- Add new `AI: Generate Note FrontMatter` command to extract useful facts from a note and add them to the frontmatter
+- Add new [[Commands/AI: Enhance Note]] command to call existing `AI: Tag Note` and `AI: Suggest Page Name` commands on a note, and the new frontmatter command
+- Add new [[Commands/AI: Generate Note FrontMatter]] command to extract useful facts from a note and add them to the frontmatter
 - Always include the note’s current name in [[Commands/AI: Suggest Page Name]] as an option
 - Log how long it takes to index each page when generating embeddings
-- Improve the layout and UX of the `AI: Search` page
-- Fix the `AI: Search` page so it works in sync/online mode
+- Improve the layout and UX of the [[Commands/AI: Search]] page
+- Fix the `AI: Search` page so it works in sync/online mode, requires Silverbullet >= 0.8.3
 - Fix bug preventing changing models in sync mode
+- Add [[Templated Prompts#Chat-style prompts|Chat-style prompts]] support in Templated Prompts
 
 ---
 ## 0.2.0
