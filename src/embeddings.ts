@@ -364,11 +364,11 @@ export async function searchEmbeddings(
         await editor.replaceRange(progressStartPos, pageLength, progressText);
         lastUpdateTime = Date.now();
       }
-    }
 
-    if (updateEditorProgress && i >= summaries.length - 1) {
-      const pageLength = progressStartPos + progressText.length;
-      await editor.replaceRange(progressStartPos, pageLength, "");
+      if (updateEditorProgress && i >= summaries.length - 1) {
+        const pageLength = progressStartPos + progressText.length;
+        await editor.replaceRange(progressStartPos, pageLength, "");
+      }
     }
 
     console.log(

@@ -141,7 +141,7 @@ export async function enrichChatMessages(
       "Error fetching page metadata",
       "error",
     );
-    return;
+    return [];
   }
 
   for (const message of messages) {
