@@ -70,7 +70,7 @@ export async function insertAiPromptFromTemplate(
             "You are an AI note assistant. Please follow the prompt instructions.",
           insertAt: templateObj.aiprompt.insertAt || "cursor",
           chat: templateObj.aiprompt.chat || false,
-          enrichMessages: templateObj.aiprompt.enrichMessages || true,
+          enrichMessages: templateObj.aiprompt.enrichMessages || false,
           // parseAs: templateObj.aiprompt.parseAs || "markdown",
         };
       }),
@@ -88,7 +88,7 @@ export async function insertAiPromptFromTemplate(
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",
       chat: aiprompt.chat || false,
-      enrichMessages: aiprompt.enrichMessages || true,
+      enrichMessages: aiprompt.enrichMessages || false,
     };
   }
 

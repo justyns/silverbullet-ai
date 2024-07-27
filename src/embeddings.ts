@@ -232,6 +232,10 @@ export async function searchEmbeddings(
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
 
+  if ((await system.getEnv()) === "server") {
+    updateEditorProgress = false;
+  }
+
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
   const queryEmbedding = typeof query === "string"
@@ -257,7 +261,7 @@ export async function searchEmbeddings(
   let progressText = "";
   let progressStartPos = 0;
 
-  if (updateEditorProgress && (await system.getEnv()) !== "server") {
+  if (updateEditorProgress) {
     progressText = `Retrieved ${embeddings.length} embeddings in ${
       endRetrievingEmbeddings - startRetrievingEmbeddings
     } ms\n\n`;
@@ -286,8 +290,7 @@ export async function searchEmbeddings(
     // prevent more timeout issues and at least show what its doing.
     if (
       updateEditorProgress &&
-      (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
-      (await system.getEnv()) !== "server"
+      (i % 100 === 0 || Date.now() - lastUpdateTime >= 100)
     ) {
       const pageLength = progressStartPos + progressText.length;
       progressText = `\n\nProcessed ${
@@ -295,6 +298,11 @@ export async function searchEmbeddings(
       } of ${embeddings.length} embeddings...\n\n`;
       await editor.replaceRange(progressStartPos, pageLength, progressText);
       lastUpdateTime = Date.now();
+    }
+
+    if (updateEditorProgress && i >= embeddings.length - 1) {
+      const pageLength = progressStartPos + progressText.length;
+      await editor.replaceRange(progressStartPos, pageLength, "");
     }
   }
 
@@ -318,7 +326,7 @@ export async function searchEmbeddings(
     let progressText = "";
     let progressStartPos = 0;
 
-    if (updateEditorProgress && (await system.getEnv()) !== "server") {
+    if (updateEditorProgress) {
       progressText = `Retrieved ${summaries.length} summaries in ${
         endRetrievingSummaries - startRetrievingSummaries
       } ms\n\n`;
@@ -347,8 +355,7 @@ export async function searchEmbeddings(
       // Update progress on page based on time or every 100 summaries
       if (
         updateEditorProgress &&
-        (i % 100 === 0 || Date.now() - lastUpdateTime >= 100) &&
-        (await system.getEnv()) !== "server"
+        (i % 100 === 0 || Date.now() - lastUpdateTime >= 100)
       ) {
         const pageLength = progressStartPos + progressText.length;
         progressText = `\n\nProcessed ${
@@ -357,6 +364,11 @@ export async function searchEmbeddings(
         await editor.replaceRange(progressStartPos, pageLength, progressText);
         lastUpdateTime = Date.now();
       }
+    }
+
+    if (updateEditorProgress && i >= summaries.length - 1) {
+      const pageLength = progressStartPos + progressText.length;
+      await editor.replaceRange(progressStartPos, pageLength, "");
     }
 
     console.log(
