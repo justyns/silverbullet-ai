@@ -214,10 +214,17 @@ export async function configureSelectedModel(model: ModelConfig) {
   }
   model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
-    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
-    if (newApiKey !== apiKey) {
-      apiKey = newApiKey;
-      log("client", "API key updated");
+    try {
+      const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+      if (newApiKey !== apiKey) {
+        apiKey = newApiKey;
+        log("client", "API key updated");
+      }
+    } catch (error) {
+      console.error("Error reading secret:", error);
+      throw new Error(
+        "Failed to read the AI API key. Please check the SECRETS page.",
+      );
     }
   }
   if (model.requireAuth && !apiKey) {
