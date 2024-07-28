@@ -532,9 +532,19 @@ export async function updateSearchPage() {
     let loadingText = `${pageHeader}\n\nSearching for "${phrase}"...`;
     loadingText += "\nGenerating query vector embeddings..";
     await editor.setText(loadingText);
-    const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
-      text: phrase,
-    });
+    let queryEmbedding: number[] = [];
+    try {
+      queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
+        text: phrase,
+      });
+    } catch (error) {
+      console.error("Error generating query vector embeddings", error);
+      loadingText +=
+        "\n\n> **error** ⚠️ Failed to generate query vector embeddings.\n";
+      loadingText += `> ${error}\n\n`;
+      await editor.setText(loadingText);
+      return;
+    }
     loadingText += "\nSearching for similar embeddings...";
     await editor.setText(loadingText);
 
