@@ -90,6 +90,10 @@ functions:
     env: server
     events:
       - page:index
+  generateEmbeddings:
+    path: src/embeddings.ts:generateEmbeddings
+  generateEmbeddingsOnServer:
+    path: src/embeddings.ts:generateEmbeddingsOnServer
   debugSearchEmbeddings:
     path: src/embeddings.ts:debugSearchEmbeddings
     command:

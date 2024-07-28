@@ -212,6 +212,21 @@ export async function getAllAISummaries(): Promise<AISummaryObject[]> {
   }
 }
 
+export async function generateEmbeddings(text: string): Promise<number[]> {
+  await initIfNeeded();
+  return await currentEmbeddingProvider.generateEmbeddings({ text });
+}
+
+export async function generateEmbeddingsOnServer(
+  text: string,
+): Promise<number[]> {
+  return await syscall(
+    "system.invokeFunctionOnServer",
+    "silverbullet-ai.generateEmbeddings",
+    text,
+  );
+}
+
 // Full disclosure, I don't really understand how this part works - thanks chatgpt!
 //   ^ If anyone can make it better, please do.
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -239,7 +254,7 @@ export async function searchEmbeddings(
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
   const queryEmbedding = typeof query === "string"
-    ? await currentEmbeddingProvider.generateEmbeddings({ text: query })
+    ? await generateEmbeddingsOnServer(query)
     : query;
   const endEmbeddingGeneration = Date.now();
   console.log(
@@ -394,9 +409,7 @@ export async function searchSummaryEmbeddings(
   numResults = 10,
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
-  const queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
-    text: query,
-  });
+  const queryEmbedding = await generateEmbeddingsOnServer(query);
   const summaries = await getAllAISummaries();
 
   const results: EmbeddingResult[] = summaries.map((summary) => ({
@@ -534,9 +547,7 @@ export async function updateSearchPage() {
     await editor.setText(loadingText);
     let queryEmbedding: number[] = [];
     try {
-      queryEmbedding = await currentEmbeddingProvider.generateEmbeddings({
-        text: phrase,
-      });
+      queryEmbedding = await generateEmbeddingsOnServer(phrase);
     } catch (error) {
       console.error("Error generating query vector embeddings", error);
       loadingText +=
@@ -548,12 +559,22 @@ export async function updateSearchPage() {
     loadingText += "\nSearching for similar embeddings...";
     await editor.setText(loadingText);
 
-    const results = await searchCombinedEmbeddings(
-      queryEmbedding,
-      undefined,
-      undefined,
-      true,
-    );
+    let results: CombinedEmbeddingResult[] = [];
+    try {
+      results = await searchCombinedEmbeddings(
+        queryEmbedding,
+        undefined,
+        undefined,
+        true,
+      );
+    } catch (error) {
+      console.error("Error searching embeddings", error);
+      loadingText += "\n\n> **error** ⚠️ Failed to search through embeddings.\n";
+      loadingText += `> ${error}\n\n`;
+      await editor.setText(loadingText);
+      return;
+    }
+
     const pageLength = loadingText.length;
     text = pageHeader + "\n\n";
 
