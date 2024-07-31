@@ -51,7 +51,10 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 
   await initIfNeeded();
 
-  if (!currentEmbeddingProvider || !currentEmbeddingModel) {
+  if (
+    !currentEmbeddingProvider || !currentEmbeddingModel ||
+    !aiSettings.indexEmbeddings
+  ) {
     return;
   }
 
@@ -130,7 +133,10 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
   }
   await initIfNeeded();
 
-  if (!aiSettings.indexSummary) {
+  if (
+    !currentEmbeddingProvider || !currentEmbeddingModel ||
+    !aiSettings.indexSummary
+  ) {
     return;
   }
 
