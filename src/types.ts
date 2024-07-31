@@ -62,16 +62,22 @@ export type ChatMessage = {
 export enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
+
+  Mock = "mock",
 }
 
 export enum ImageProvider {
   DallE = "dalle",
+
+  Mock = "mock",
 }
 
 export enum EmbeddingProvider {
   OpenAI = "openai",
   Gemini = "gemini",
   Ollama = "ollama",
+
+  Mock = "mock",
 }
 
 export type ChatSettings = {
