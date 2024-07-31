@@ -47,14 +47,20 @@ export function canIndexPage(pageName: string): boolean {
 
 export async function shouldIndexEmbeddings() {
   await initIfNeeded();
-  return aiSettings.indexEmbeddings && currentEmbeddingProvider &&
-    currentEmbeddingModel && (await system.getEnv()) === "server";
+  return aiSettings.indexEmbeddings &&
+    currentEmbeddingProvider !== undefined &&
+    currentEmbeddingModel !== undefined &&
+    aiSettings.embeddingModels.length > 0 &&
+    (await system.getEnv()) === "server";
 }
 
 export async function shouldIndexSummaries() {
   await initIfNeeded();
-  return aiSettings.indexEmbeddings && aiSettings.indexSummary &&
-    currentEmbeddingProvider && currentEmbeddingModel &&
+  return aiSettings.indexEmbeddings &&
+    aiSettings.indexSummary &&
+    currentEmbeddingProvider !== undefined &&
+    currentEmbeddingModel !== undefined &&
+    aiSettings.embeddingModels.length > 0 &&
     (await system.getEnv()) === "server";
 }
 
