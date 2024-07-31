@@ -111,3 +111,31 @@ Deno.test("shouldIndexSummaries returns false when indexSummary is disabled", as
     const result = await shouldIndexSummaries();
     assertEquals(result, false);
 });
+
+Deno.test("shouldIndexEmbeddings returns false when no embedding models are configured", async () => {
+    const modifiedSettings = settingsPageSample.replace(
+        /embeddingModels:[\s\S]*?(?=\n\w)/,
+        "embeddingModels: []",
+    );
+    await syscall("mock.setPage", "SETTINGS", modifiedSettings);
+    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await initializeOpenAI();
+    await syscall("mock.setEnv", "server");
+
+    const result = await shouldIndexEmbeddings();
+    assertEquals(result, false);
+});
+
+Deno.test("shouldIndexSummaries returns false when no embedding models are configured", async () => {
+    const modifiedSettings = settingsPageSample.replace(
+        /embeddingModels:[\s\S]*?(?=\n\w)/,
+        "embeddingModels: []",
+    );
+    await syscall("mock.setPage", "SETTINGS", modifiedSettings);
+    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await initializeOpenAI();
+    await syscall("mock.setEnv", "server");
+
+    const result = await shouldIndexSummaries();
+    assertEquals(result, false);
+});
