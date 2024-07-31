@@ -7,7 +7,11 @@ import type {
 } from "./types.ts";
 import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
-import { currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
+import {
+  currentEmbeddingModel,
+  currentEmbeddingProvider,
+  initIfNeeded,
+} from "../src/init.ts";
 import { log, supportsServerProxyCall } from "./utils.ts";
 import { editor, system } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
@@ -46,6 +50,10 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   }
 
   await initIfNeeded();
+
+  if (!currentEmbeddingProvider || !currentEmbeddingModel) {
+    return;
+  }
 
   if (!canIndexPage(page)) {
     return;
@@ -214,6 +222,9 @@ export async function getAllAISummaries(): Promise<AISummaryObject[]> {
 
 export async function generateEmbeddings(text: string): Promise<number[]> {
   await initIfNeeded();
+  if (!currentEmbeddingProvider || !currentEmbeddingModel) {
+    throw new Error("No embedding provider found");
+  }
   return await currentEmbeddingProvider.generateEmbeddings({ text });
 }
 
