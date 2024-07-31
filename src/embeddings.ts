@@ -22,7 +22,7 @@ const searchPrefix = "🤖 ";
 /**
  * Check whether a page is allowed to be indexed or not.
  */
-function canIndexPage(pageName: string): boolean {
+export function canIndexPage(pageName: string): boolean {
   // Only index pages if the user enabled it, and skip anything they want to exclude
   const excludePages = [
     "SETTINGS",
@@ -40,21 +40,30 @@ function canIndexPage(pageName: string): boolean {
   return true;
 }
 
+// Logic for whether or not to index something:
+//  - On server
+//  - With embeddings enabled
+//  - With a valid embedding model and provider
+
+export async function shouldIndexEmbeddings() {
+  await initIfNeeded();
+  return aiSettings.indexEmbeddings && currentEmbeddingProvider &&
+    currentEmbeddingModel && (await system.getEnv()) === "server";
+}
+
+export async function shouldIndexSummaries() {
+  await initIfNeeded();
+  return aiSettings.indexEmbeddings && aiSettings.indexSummary &&
+    currentEmbeddingProvider && currentEmbeddingModel &&
+    (await system.getEnv()) === "server";
+}
+
 /**
  * Generate embeddings for each paragraph in a page, and then indexes
  * them.
  */
 export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
-  if (await system.getEnv() !== "server") {
-    return;
-  }
-
-  await initIfNeeded();
-
-  if (
-    !currentEmbeddingProvider || !currentEmbeddingModel ||
-    !aiSettings.indexEmbeddings
-  ) {
+  if (!await shouldIndexEmbeddings()) {
     return;
   }
 
@@ -128,15 +137,7 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
  * Generate a summary for a page, and then indexes it.
  */
 export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
-  if (await system.getEnv() !== "server") {
-    return;
-  }
-  await initIfNeeded();
-
-  if (
-    !currentEmbeddingProvider || !currentEmbeddingModel ||
-    !aiSettings.indexSummary
-  ) {
+  if (!await shouldIndexSummaries()) {
     return;
   }
 

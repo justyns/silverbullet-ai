@@ -19,6 +19,9 @@ import type {
   PromptInstructions,
 } from "./types.ts";
 import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
+import { MockImageProvider } from "./mocks/mockproviders.ts";
+import { MockProvider } from "./mocks/mockproviders.ts";
+import { MockEmbeddingProvider } from "./mocks/mockproviders.ts";
 
 export let apiKey: string;
 export let aiSettings: AISettings;
@@ -146,6 +149,12 @@ function setupImageProvider(model: ImageModelConfig) {
         model.baseUrl || aiSettings.dallEBaseUrl,
       );
       break;
+    case ImageProvider.Mock:
+      currentImageProvider = new MockImageProvider(
+        apiKey,
+        model.modelName,
+      );
+      break;
     default:
       throw new Error(
         `Unsupported image provider: ${model.provider}. Please configure a supported provider.`,
@@ -166,6 +175,13 @@ function setupAIProvider(model: ModelConfig) {
       break;
     case Provider.Gemini:
       currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      break;
+    case Provider.Mock:
+      currentAIProvider = new MockProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl,
+      );
       break;
     default:
       throw new Error(
@@ -198,6 +214,13 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         model.modelName,
         model.baseUrl || "http://localhost:11434",
         model.requireAuth,
+      );
+      break;
+    case EmbeddingProvider.Mock:
+      currentEmbeddingProvider = new MockEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl,
       );
       break;
     default:

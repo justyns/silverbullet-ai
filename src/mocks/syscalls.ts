@@ -11,6 +11,12 @@ let pages: { [key: string]: string } = {};
 let currentEnv: string = "server";
 (globalThis as any).currentEnv;
 
+let clientStore: { [key: string]: string } = {};
+(globalThis as any).clientStore;
+
+// let indexedObjects: { [key: string]: string } = {};
+// (globalThis as any).indexedObjects;
+
 globalThis.syscall = async (name: string, ...args: readonly any[]) => {
   switch (name) {
     // I tried a lot of things to get this working differently, but
@@ -40,7 +46,29 @@ globalThis.syscall = async (name: string, ...args: readonly any[]) => {
       return await Promise.resolve(parse(extendedMarkdownLanguage, args[0]));
     case "yaml.parse":
       return await Promise.resolve(YAML.parse(args[0]));
+
+    case "system.invokeFunctionOnServer":
+      return invokeFunctionMock(args);
+    case "system.invokeFunction":
+      return invokeFunctionMock(args);
+
+    case "clientStore.set":
+      clientStore[args[0]] = args[1];
+      break;
+    case "clientStore.get":
+      return clientStore[args[0]];
+
     default:
       throw Error(`Missing mock for: ${name}`);
   }
 };
+
+function invokeFunctionMock(args: readonly any[]) {
+  switch (args[0]) {
+    case "index.indexObjects":
+      return true;
+    default:
+      console.log("system.invokeFunctionOnServer", args);
+      throw Error(`Missing invokeFunction mock for ${args[0]}`);
+  }
+}
