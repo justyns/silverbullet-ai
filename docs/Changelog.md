@@ -4,6 +4,10 @@ This page is a brief overview of each version.
 
 ---
 ## Unreleased
+- ???
+
+---
+## 0.3.0
 - Don't index and generate embeddings for pages in Library/
 - Add new [[Commands/AI: Enhance Note]] command to call existing `AI: Tag Note` and `AI: Suggest Page Name` commands on a note, and the new frontmatter command
 - Add new [[Commands/AI: Generate Note FrontMatter]] command to extract useful facts from a note and add them to the frontmatter
@@ -13,10 +17,9 @@ This page is a brief overview of each version.
 - Fix the `AI: Search` page so it works in sync/online mode, requires Silverbullet >= 0.8.3
 - Fix bug preventing changing models in sync mode
 - Add [[Templated Prompts#Chat-style prompts|Chat-style prompts]] support in Templated Prompts
-
+- Fix bug when embeddingModels is undefined
 ---
 ## 0.2.0
-
 * Vector search and embeddings generation [[embe]] by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
 * Enrich chat messages with RAG by searching our local embeddings by [@justyns](https://github.com/justyns) in [#38](https://github.com/justyns/silverbullet-ai/pull/38)
 * Refactor: Re-organize providers, interfaces, and types by [@justyns](https://github.com/justyns) in [#39](https://github.com/justyns/silverbullet-ai/pull/39)

@@ -18,6 +18,7 @@ If you are new here, start with either the `AI: Chat on current page` command or
 - **Call OpenAI with Note Context**: Sends the note or selected text to OpenAI based on a user-defined prompt.
 - **Interactive Chat**:  Have an interactive chat, utilizing the current note as the chat interface.
   - **RAG (**R**etrieval **A**ugmented Generation)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
+- **Templated Prompts**: Define custom notes as a templated prompt that can be rendered, sent to llm, and then inserted into the page.
 - **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
 - **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
 - **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
@@ -333,7 +334,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.2.0
+- ghr:justyns/silverbullet-ai/0.3.0
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
