@@ -15,6 +15,7 @@ import {
   enrichChatMessages,
   supportsPlugSlashComplete,
 } from "./utils.ts";
+import { ChatMessage } from "./types.ts";
 
 // This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
@@ -161,26 +162,45 @@ export async function insertAiPromptFromTemplate(
       cursorPos = await editor.getCursor();
   }
 
+  if (cursorPos === undefined) {
+    cursorPos = await getPageLength();
+  }
+
   console.log("templatetext: ", templateText);
 
-  // const renderedTemplate = await renderTemplate(templateText, pageMeta, {
-  //   page: pageMeta,
-  // });
-  // console.log("Rendered template:", renderedTemplate);
+  let messages: ChatMessage[] = [];
 
-  let messages = await convertPageToMessages(templateText);
-  if (selectedTemplate.systemPrompt) {
-    messages.unshift({
-      role: "system",
-      content: selectedTemplate.systemPrompt,
+  if (!selectedTemplate.chat) {
+    // non-multi-chat template
+    const renderedTemplate = await renderTemplate(templateText, pageMeta, {
+      page: pageMeta,
     });
-  }
-  if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
-    messages = await enrichChatMessages(messages);
+    console.log("Rendered template:", renderedTemplate);
+    if (selectedTemplate.systemPrompt) {
+      messages.push({
+        role: "system",
+        content: selectedTemplate.systemPrompt,
+      });
+    }
+    messages.push({
+      role: "user",
+      content: renderedTemplate.text,
+    });
+  } else {
+    // multi-turn-chat template
+    messages = await convertPageToMessages(templateText);
+    if (selectedTemplate.systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: selectedTemplate.systemPrompt,
+      });
+    }
+    if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
+      messages = await enrichChatMessages(messages);
+    }
   }
 
   console.log("Messages: ", messages);
-
   await currentAIProvider.streamChatIntoEditor({
     messages: messages,
     stream: true,
