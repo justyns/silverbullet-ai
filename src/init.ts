@@ -330,7 +330,7 @@ async function loadAndMergeSettings() {
     parseWikiLinks: true,
     bakeMessages: true,
     customEnrichFunctions: [],
-    searchEmbeddings: true,
+    searchEmbeddings: false,
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameSystem: "",
