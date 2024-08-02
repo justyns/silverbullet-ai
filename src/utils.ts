@@ -9,7 +9,10 @@ import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
 import { aiSettings } from "./init.ts";
 import { renderTemplate } from "$sbplugs/template/api.ts";
 import type { ChatMessage } from "./types.ts";
-import { searchCombinedEmbeddings } from "./embeddings.ts";
+import {
+  searchCombinedEmbeddings,
+  searchEmbeddingsForChat,
+} from "./embeddings.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -201,17 +204,11 @@ export async function enrichChatMessages(
     if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
       // Search local vector embeddings for relevant context
       // TODO: It could be better to turn this into its own message?
-      const searchResults = await searchCombinedEmbeddings(enrichedContent);
-      if (searchResults.length > 0) {
+      const searchResultsText = await searchEmbeddingsForChat(enrichedContent);
+      if (searchResultsText !== "No relevant pages found.") {
         enrichedContent +=
           `\n\nThe following pages were found to be relevant to the question. You can use them as context to answer the question. Only partial content is shown. Ask for the whole page if needed. Page name is between >> and <<.\n`;
-
-        for (const r of searchResults) {
-          enrichedContent += `>>${r.page}<<\n`;
-          for (const child of r.children) {
-            enrichedContent += `> ${child.text}\n\n`;
-          }
-        }
+        enrichedContent += searchResultsText;
       }
     }
 

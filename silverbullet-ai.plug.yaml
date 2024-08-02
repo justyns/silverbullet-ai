@@ -8,6 +8,8 @@ functions:
     - slash:complete
   queryAI:
     path: sbai.ts:queryAI
+  searchEmbeddingsForChat:
+    path: src/embeddings.ts:searchEmbeddingsForChat
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:

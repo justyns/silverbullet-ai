@@ -509,6 +509,30 @@ export async function debugSearchEmbeddings() {
   log("any", "AI: Search results", searchResults);
 }
 
+export async function searchEmbeddingsForChat(
+  query: string | number[],
+  numResults = 10,
+): Promise<string> {
+  try {
+    const searchResults = await searchCombinedEmbeddings(query, numResults);
+    let results = "";
+    if (searchResults.length > 0) {
+      for (const r of searchResults) {
+        results += `>>${r.page}<<\n`;
+        for (const child of r.children) {
+          results += `> ${child.text}\n\n`;
+        }
+      }
+    } else {
+      return "No relevant pages found.";
+    }
+    return results;
+  } catch (error) {
+    console.error("Error in searchEmbeddingsForChat:", error);
+    return "An error occurred during the search.";
+  }
+}
+
 /**
  * Display an empty "AI: Search" page
  */
