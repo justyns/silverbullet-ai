@@ -11,6 +11,11 @@ description: >
 
 ```space-script
 silverbullet.registerFunction({name: "searchEmbeddings"}, async (query) => {
-  return await syscall("system.invokeFunction", "silverbullet-ai.searchEmbeddingsForChat", query);
+  try {
+    return await syscall("system.invokeFunction", "silverbullet-ai.searchEmbeddingsForChat", query);
+  } catch (error) {
+    console.error("Error invoking searchEmbeddingsForChat:", error);
+    throw error;
+  }
 })
 ```
