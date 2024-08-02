@@ -5,7 +5,11 @@ This page is a brief overview of each version.
 ---
 ## Unreleased
 - ???
-
+---
+## 0.3.1
+- Set searchEmbeddings to false by default
+- Fix templated prompts not rendering as a template when not using chat-style prompts
+- Add new searchEmbeddings function to AICore library for templates to use
 ---
 ## 0.3.0
 - Don't index and generate embeddings for pages in Library/
