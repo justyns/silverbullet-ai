@@ -4,7 +4,7 @@ This page is a brief overview of each version.
 
 ---
 ## Unreleased
-- ???
+- Expose searchCombinedEmbeddings function to AICore library for templates to use
 ---
 ## 0.3.1
 - Set searchEmbeddings to false by default
