@@ -31,9 +31,9 @@ ai:
   - name: gpt-4o
     provider: openai
     modelName: gpt-4o
-  - name: gpt-3-turbo
+  - name: gpt-4o-mini
     provider: openai
-    modelName: gpt-3.5-turbo-0125
+    modelName: gpt-4o-mini
   embeddingModels:
   - name: text-embedding-3-small
     provider: openai

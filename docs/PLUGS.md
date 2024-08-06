@@ -2,4 +2,5 @@ This file lists all plugs that SilverBullet will load. Run the {[Plugs: Update]}
 
 ```yaml
 - github:silverbulletmd/silverbullet-pub/pub.plug.js
+- github:joekrill/silverbullet-treeview/treeview.plug.js
 ```
