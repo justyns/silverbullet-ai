@@ -8,8 +8,7 @@ functions:
     - slash:complete
   queryAI:
     path: sbai.ts:queryAI
-  searchEmbeddingsForChat:
-    path: src/embeddings.ts:searchEmbeddingsForChat
+
   reloadConfig:
     path: sbai.ts:reloadConfig
     events:
@@ -96,10 +95,12 @@ functions:
     path: src/embeddings.ts:generateEmbeddings
   generateEmbeddingsOnServer:
     path: src/embeddings.ts:generateEmbeddingsOnServer
-  debugSearchEmbeddings:
-    path: src/embeddings.ts:debugSearchEmbeddings
-    command:
-      name: "AI: Debug Search Embeddings"
+  searchEmbeddingsForChat:
+    path: src/embeddings.ts:searchEmbeddingsForChat
+  searchCombinedEmbeddings:
+    path: src/embeddings.ts:searchCombinedEmbeddings
+  searchSummaryEmbeddings:
+    path: src/embeddings.ts:searchSummaryEmbeddings
   readPageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
     pageNamespace:

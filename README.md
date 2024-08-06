@@ -54,12 +54,11 @@ Valid templates must have a value for aiprompt.description in the frontmatter.
 to frontmatter attributes.
 - **AI: Enhance Note**: Enhances the current note by running the commands to generate tags for a note,
 generate new frontmatter attributes, and a new note name.
-- **AI: Select Text Model from Config**: undefined
-- **AI: Select Image Model from Config**: undefined
-- **AI: Select Embedding Model from Config**: undefined
+- **AI: Select Text Model from Config**: Prompts the user to select a text/llm model from the configured models.
+- **AI: Select Image Model from Config**: Prompts the user to select an image model from the configured models.
+- **AI: Select Embedding Model from Config**: Prompts the user to select an embedding model from the configured models.
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
 isn't too helpful for most cases.
-- **AI: Debug Search Embeddings**: undefined
 - **AI: Search**: Ask the user for a search query, and then navigate to the search results page.
 Search results are provided by calculating the cosine similarity between the
 query embedding and each indexed embedding.
@@ -334,7 +333,7 @@ For in-development code from the main branch:
 For the latest "release" code, mostly also still in development for now:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.3.1
+- ghr:justyns/silverbullet-ai/0.3.2
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.

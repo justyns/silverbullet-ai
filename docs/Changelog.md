@@ -5,6 +5,11 @@ This page is a brief overview of each version.
 ---
 ## Unreleased
 - ???
+
+---
+## 0.3.2
+- Expose searchCombinedEmbeddings function to AICore library for templates to use
+- Add [[Providers/Ollama]] text/llm provider as a wrapper around openai provider
 ---
 ## 0.3.1
 - Set searchEmbeddings to false by default
