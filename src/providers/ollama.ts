@@ -1,10 +1,45 @@
-import { EmbeddingGenerationOptions } from "../types.ts";
+import { EmbeddingGenerationOptions, StreamChatOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
+import { AbstractProvider } from "../interfaces/Provider.ts";
+import { OpenAIProvider } from "./openai.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
   "Authorization"?: string;
 };
+
+// For now, the Ollama provider is just a wrapper around the openai provider
+export class OllamaProvider extends AbstractProvider {
+  name = "Ollama";
+  requireAuth: boolean;
+  openaiProvider: OpenAIProvider;
+
+  constructor(
+    apiKey: string,
+    modelName: string,
+    baseUrl: string,
+    requireAuth: boolean,
+  ) {
+    super("Ollama", apiKey, baseUrl, modelName);
+    this.requireAuth = requireAuth;
+    this.openaiProvider = new OpenAIProvider(
+      apiKey,
+      modelName,
+      baseUrl,
+      requireAuth,
+    );
+  }
+
+  async chatWithAI(
+    { messages, stream, onDataReceived }: StreamChatOptions,
+  ): Promise<any> {
+    return await this.openaiProvider.chatWithAI({
+      messages,
+      stream,
+      onDataReceived,
+    });
+  }
+}
 
 export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
   constructor(
