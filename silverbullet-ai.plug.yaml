@@ -81,16 +81,25 @@ functions:
   searchEmbeddings:
     path: src/embeddings.ts:searchEmbeddings
     env: server
-  indexEmbeddings:
-    path: src/embeddings.ts:indexEmbeddings
+  queueEmbeddingGeneration:
+    path: src/embeddings.ts:queueEmbeddingGeneration
     env: server
     events:
       - page:index
-  indexSummaryEmbeddings:
-    path: src/embeddings.ts:indexSummary
-    env: server
-    events:
-      - page:index
+  processEmbeddingsQueue:
+    path: src/embeddings.ts:processEmbeddingsQueue
+    mqSubscriptions:
+    - queue: aiEmbeddingsQueue
+      batchSize: 1
+      autoAck: true
+      pollInterval: 600000
+  processSummaryQueue:
+    path: src/embeddings.ts:processSummaryQueue
+    mqSubscriptions:
+    - queue: aiSummaryQueue
+      batchSize: 1
+      autoAck: true
+      pollInterval: 600000
   generateEmbeddings:
     path: src/embeddings.ts:generateEmbeddings
   generateEmbeddingsOnServer:

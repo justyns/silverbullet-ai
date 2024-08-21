@@ -7,13 +7,15 @@ import type {
 } from "./types.ts";
 import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
 import { renderToText } from "$sb/lib/tree.ts";
+import { mq } from "$sb/syscalls.ts";
+import { MQMessage } from "$sb/types.ts";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
 import { log, supportsServerProxyCall } from "./utils.ts";
-import { editor, system } from "$sb/syscalls.ts";
+import { editor, markdown, space, system } from "$sb/syscalls.ts";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
@@ -68,7 +70,7 @@ export async function shouldIndexSummaries() {
  * Generate embeddings for each paragraph in a page, and then indexes
  * them.
  */
-export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
+export async function indexEmbeddings(page: string) {
   if (!await shouldIndexEmbeddings()) {
     return;
   }
@@ -76,6 +78,9 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
   if (!canIndexPage(page)) {
     return;
   }
+
+  const pageText = await space.readPage(page);
+  const tree = await markdown.parseMarkdown(pageText);
 
   if (!tree.children) {
     return;
@@ -142,7 +147,7 @@ export async function indexEmbeddings({ name: page, tree }: IndexTreeEvent) {
 /**
  * Generate a summary for a page, and then indexes it.
  */
-export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
+export async function indexSummary(page: string) {
   if (!await shouldIndexSummaries()) {
     return;
   }
@@ -151,10 +156,14 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
     return;
   }
 
+  const text = await space.readPage(page);
+  const tree = await markdown.parseMarkdown(text);
+
   if (!tree.children) {
     return;
   }
 
+  const startTime = Date.now();
   const pageText = renderToText(tree);
   const summaryModel = aiSettings.textModels.find((model) =>
     model.name === aiSettings.indexSummaryModelName
@@ -201,10 +210,58 @@ export async function indexSummary({ name: page, tree }: IndexTreeEvent) {
 
   await indexObjects<AISummaryObject>(page, [summaryObject]);
 
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1000;
   log(
     "any",
-    `AI: Indexed summary for page ${page}`,
+    `AI: Indexed summary for page ${page} in ${duration} seconds`,
   );
+}
+
+// Listen for page:index events and queue up embedding and summary indexing to
+// prevent the main SB indexing process from being blocked.
+export async function queueEmbeddingGeneration(
+  { name: page, tree }: IndexTreeEvent,
+) {
+  await initIfNeeded();
+
+  if (!canIndexPage(page)) {
+    return;
+  }
+
+  if (!tree.children) {
+    return;
+  }
+
+  if (await shouldIndexEmbeddings()) {
+    await mq.send("aiEmbeddingsQueue", page);
+  }
+
+  if (await shouldIndexSummaries()) {
+    await mq.send("aiSummaryQueue", page);
+  }
+}
+
+export async function processEmbeddingsQueue(messages: MQMessage[]) {
+  await initIfNeeded();
+  for (const message of messages) {
+    const pageName: string = message.body;
+    console.log(`AI: Generating and indexing embeddings for file ${pageName}`);
+    await indexEmbeddings(pageName);
+  }
+  const queueStats = await mq.getQueueStats("aiEmbeddingsQueue");
+  console.log(`AI: Embeddings queue stats: ${JSON.stringify(queueStats)}`);
+}
+
+export async function processSummaryQueue(messages: MQMessage[]) {
+  await initIfNeeded();
+  for (const message of messages) {
+    const pageName: string = message.body;
+    console.log(`AI: Generating and indexing summary for ${pageName}`);
+    await indexSummary(pageName);
+  }
+  const queueStats = await mq.getQueueStats("aiSummaryQueue");
+  console.log(`AI: Summary queue stats: ${JSON.stringify(queueStats)}`);
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
