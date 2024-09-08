@@ -12,6 +12,10 @@ cd "$spacedir"/_plug
 ln -sv ../../silverbullet-ai.plug.js* .
 cd -
 
+cd "$spacedir"
+ln -sv ../docs/Library .
+cd -
+
 # This is a local file outside of the sbai directory
 cp -v ../test-spaces/SECRETS.md "$spacedir"/
 cp -v ../test-spaces/SETTINGS.md "$spacedir"/
