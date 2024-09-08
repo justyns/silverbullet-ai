@@ -110,10 +110,6 @@ functions:
     path: src/embeddings.ts:searchCombinedEmbeddings
   searchSummaryEmbeddings:
     path: src/embeddings.ts:searchSummaryEmbeddings
-  debugSearchEmbeddings:
-    path: src/embeddings.ts:debugSearchEmbeddings
-    command:
-      name: "AI: Debug Search Embeddings"
   readPageSearchEmbeddings:
     path: src/embeddings.ts:readFileEmbeddings
     pageNamespace:

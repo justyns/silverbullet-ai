@@ -566,18 +566,6 @@ export async function searchCombinedEmbeddings(
     .slice(0, numResults);
 }
 
-export async function debugSearchEmbeddings() {
-  const text = await editor.prompt("Enter some text to search for:");
-  if (!text) {
-    await editor.flashNotification("No text entered.", "error");
-    return;
-  }
-
-  const searchResults = await searchCombinedEmbeddings(text);
-  await editor.flashNotification(`Found ${searchResults.length} results`);
-  log("any", "AI: Search results", searchResults);
-}
-
 export async function searchEmbeddingsForChat(
   query: string | number[],
   numResults = 10,

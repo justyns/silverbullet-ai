@@ -7,7 +7,7 @@ import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
 import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
 import { ProviderInterface } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
-import { OllamaEmbeddingProvider } from "./providers/ollama.ts";
+import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import type {
   AISettings,
@@ -175,6 +175,14 @@ function setupAIProvider(model: ModelConfig) {
       break;
     case Provider.Gemini:
       currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      break;
+    case Provider.Ollama:
+      currentAIProvider = new OllamaProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "http://localhost:11434/v1",
+        model.requireAuth,
+      );
       break;
     case Provider.Mock:
       currentAIProvider = new MockProvider(

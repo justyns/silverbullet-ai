@@ -62,6 +62,7 @@ export type ChatMessage = {
 export enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
+  Ollama = "ollama",
 
   Mock = "mock",
 }

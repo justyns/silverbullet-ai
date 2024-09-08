@@ -51,6 +51,9 @@ export async function reloadConfig(pageName: string) {
   }
 }
 
+/**
+ * Prompts the user to select a text/llm model from the configured models.
+ */
 export async function selectModelFromConfig() {
   if (!aiSettings || !aiSettings.textModels) {
     await initializeOpenAI(false);
@@ -74,6 +77,9 @@ export async function selectModelFromConfig() {
   console.log(`Selected model:`, selectedModel);
 }
 
+/**
+ * Prompts the user to select an image model from the configured models.
+ */
 export async function selectImageModelFromConfig() {
   if (!aiSettings || !aiSettings.imageModels) {
     await initializeOpenAI(false);
@@ -102,6 +108,9 @@ export async function selectImageModelFromConfig() {
   console.log(`Selected image model:`, selectedImageModel);
 }
 
+/**
+ * Prompts the user to select an embedding model from the configured models.
+ */
 export async function selectEmbeddingModelFromConfig() {
   if (!aiSettings || !aiSettings.embeddingModels) {
     await initializeOpenAI(false);
