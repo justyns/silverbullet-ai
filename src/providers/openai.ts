@@ -12,6 +12,7 @@ type StreamChatOptions = {
   messages: Array<ChatMessage>;
   stream?: boolean;
   onDataReceived?: (data: any) => void;
+  onResponseComplete?: (data: any) => void;
   cursorStart?: number;
   cursorFollow?: boolean;
   scrollIntoView?: boolean;
@@ -38,17 +39,21 @@ export class OpenAIProvider extends AbstractProvider {
   }
 
   async chatWithAI(
-    { messages, stream, onDataReceived }: StreamChatOptions,
+    { messages, stream, onDataReceived, onResponseComplete }: StreamChatOptions,
   ): Promise<any> {
     if (stream) {
-      return await this.streamChat({ messages, onDataReceived });
+      return await this.streamChat({
+        messages,
+        onDataReceived,
+        onResponseComplete,
+      });
     } else {
       return await this.nonStreamingChat(messages);
     }
   }
 
   async streamChat(options: StreamChatOptions): Promise<string> {
-    const { messages, onDataReceived } = options;
+    const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
       const sseUrl = `${this.baseUrl}/chat/completions`;
@@ -79,6 +84,7 @@ export class OpenAIProvider extends AbstractProvider {
         try {
           if (e.data == "[DONE]") {
             source.close();
+            if (onResponseComplete) onResponseComplete(fullMsg);
             return fullMsg;
           } else {
             const data = JSON.parse(e.data);
@@ -95,6 +101,7 @@ export class OpenAIProvider extends AbstractProvider {
 
       source.addEventListener("end", function () {
         source.close();
+        if (onResponseComplete) onResponseComplete(fullMsg);
         return fullMsg;
       });
 

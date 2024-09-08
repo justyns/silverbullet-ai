@@ -8,6 +8,7 @@ export type StreamChatOptions = {
   messages: Array<ChatMessage>;
   stream: boolean;
   onDataReceived?: (data: any) => void;
+  onResponseComplete?: (data: any) => void;
 };
 
 export type ImageGenerationOptions = {

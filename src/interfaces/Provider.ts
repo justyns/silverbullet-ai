@@ -44,11 +44,13 @@ export abstract class AbstractProvider implements ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ): Promise<void> {
-    const { onDataReceived } = options;
+    const { onDataReceived, onResponseComplete } = options;
     const loadingMessage = "🤔 Thinking … ";
     let cursorPos = cursorStart ?? await getPageLength();
     await editor.insertAtPos(loadingMessage, cursorPos);
     let stillLoading = true;
+
+    const startOfResponse = cursorPos;
 
     const onData = (data: string) => {
       try {
@@ -60,7 +62,7 @@ export abstract class AbstractProvider implements ProviderInterface {
           if (["`", "-", "*"].includes(data.charAt(0))) {
             // Sometimes we get a response that is _only_ a code block, or a markdown list/etc
             // To let SB parse them better, we just add a new line before rendering it
-            console.log("First character of response is:", data.charAt(0));
+            // console.log("First character of response is:", data.charAt(0));
             data = "\n" + data;
           }
           editor.replaceRange(
@@ -83,7 +85,21 @@ export abstract class AbstractProvider implements ProviderInterface {
       }
     };
 
-    await this.chatWithAI({ ...options, onDataReceived: onData });
+    const onDataComplete = (data: string) => {
+      console.log("Response complete:", data);
+      const endOfResponse = startOfResponse + data.length;
+      console.log("Start of response:", startOfResponse);
+      console.log("End of response:", endOfResponse);
+      console.log("Full response:", data);
+
+      if (onResponseComplete) onResponseComplete(data);
+    };
+
+    await this.chatWithAI({
+      ...options,
+      onDataReceived: onData,
+      onResponseComplete: onDataComplete,
+    });
   }
 
   async singleMessageChat(
