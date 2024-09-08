@@ -6,6 +6,7 @@
     "@silverbulletmd/silverbullet/lib/tree": "jsr:@silverbulletmd/silverbullet@0.9.4/lib/tree",
     "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@0.9.4/lib/parse_query",
     "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@0.9.4/lib/attribute",
+    "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@0.9.4/types",
 
     "$common/": "https://deno.land/x/silverbullet@0.9.4/common/",
 

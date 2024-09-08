@@ -1,6 +1,7 @@
 import type {
   FileMeta,
   IndexTreeEvent,
+  MQMessage,
 } from "@silverbulletmd/silverbullet/types";
 import type {
   AISummaryObject,
@@ -8,15 +9,18 @@ import type {
   EmbeddingObject,
   EmbeddingResult,
 } from "./types.ts";
-import { indexObjects, queryObjects } from "./utils.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import { MQMessage } from "@silverbulletmd/silverbullet/types";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
-import { log, supportsServerProxyCall } from "./utils.ts";
+import {
+  indexObjects,
+  log,
+  queryObjects,
+  supportsServerProxyCall,
+} from "./utils.ts";
 import {
   editor,
   markdown,
