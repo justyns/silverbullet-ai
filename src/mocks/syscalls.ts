@@ -1,6 +1,7 @@
 import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
 import { parseMarkdown } from "$common/markdown_parser/parser.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
+import { readSetting } from "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/settings_page.ts";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
@@ -14,10 +15,13 @@ let currentEnv: string = "server";
 let clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
 
+let spaceConfig = {};
+(globalThis as any).spaceConfig;
+
 // let indexedObjects: { [key: string]: string } = {};
 // (globalThis as any).indexedObjects;
 
-globalThis.syscall = async (name: string, ...args: readonly any[]) => {
+(globalThis as any).syscall = async (name: string, ...args: readonly any[]) => {
   switch (name) {
     // I tried a lot of things to get this working differently, but
     // ended up with just keeping this in a variable that can be changed
@@ -57,6 +61,14 @@ globalThis.syscall = async (name: string, ...args: readonly any[]) => {
       break;
     case "clientStore.get":
       return clientStore[args[0]];
+
+    // hack to ignore space config in tests for now
+    case "system.setSpaceConfig":
+      spaceConfig = args[0];
+      break;
+    case "system.getSpaceConfig":
+      return readSetting(args[0], args[1]);
+      // return spaceConfig;
 
     default:
       throw Error(`Missing mock for: ${name}`);

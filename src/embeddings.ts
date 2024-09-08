@@ -10,6 +10,7 @@ import type {
   EmbeddingResult,
 } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,

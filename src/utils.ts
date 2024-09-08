@@ -15,6 +15,7 @@ import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter
 import { aiSettings } from "./init.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
+import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
