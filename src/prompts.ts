@@ -1,5 +1,10 @@
 import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
-import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  editor,
+  markdown,
+  space,
+  system,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { queryObjects } from "./utils.ts";
 import { renderTemplate } from "https://deno.land/x/silverbullet@0.9.4/plugs/template/api.ts";
 import type {
@@ -103,6 +108,14 @@ export async function insertAiPromptFromTemplate(
     "cursor",
     "page-start",
     "page-end",
+    "start-of-line",
+    "end-of-line",
+    // Item can mean either a list item or a task
+    "start-of-item",
+    "end-of-item",
+    "new-line-above",
+    "new-line-below",
+    "replace-line",
     // "frontmatter",
     // "modal",
     // "replace",
@@ -136,6 +149,46 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
+  let currentPageText,
+    currentLineNumber,
+    lineStartPos,
+    lineEndPos,
+    currentItemBounds,
+    currentItemText;
+  try {
+    // This is all to get the current line number and position
+    // It probably could be a new editor.syscall or something that uses the tree instead
+    currentPageText = await editor.getText();
+    const curCursorPos = await editor.getCursor();
+    const lines = currentPageText.split("\n");
+    currentLineNumber =
+      currentPageText.substring(0, curCursorPos).split("\n").length;
+    lineStartPos = curCursorPos -
+      (currentPageText.substring(0, curCursorPos).split("\n").pop()?.length ||
+        0);
+    lineEndPos = lineStartPos + lines[currentLineNumber - 1].length;
+
+    // Also get the current item if we need it
+    currentItemBounds = await system.invokeFunction(
+      "editor.determineItemBounds",
+      currentPageText,
+      curCursorPos,
+      undefined,
+      true,
+    );
+    currentItemText = currentPageText.slice(
+      currentItemBounds.from,
+      currentItemBounds.to,
+    );
+  } catch (error) {
+    console.error("Error fetching current page text or cursor position", error);
+    await editor.flashNotification(
+      "Error fetching current page text or cursor position",
+      "error",
+    );
+    return;
+  }
+
   let cursorPos;
   switch (selectedTemplate.insertAt) {
     case "page-start":
@@ -156,6 +209,32 @@ export async function insertAiPromptFromTemplate(
     case "replace":
       // TODO: Replace selection
       break;
+    case "replace-line":
+      cursorPos = lineStartPos;
+      await editor.replaceRange(lineStartPos, lineEndPos, "");
+      break;
+    case "start-of-line":
+      cursorPos = lineStartPos;
+      break;
+    case "end-of-line":
+      cursorPos = lineEndPos;
+      break;
+    case "new-line-above":
+      cursorPos = lineStartPos;
+      await editor.insertAtPos("\n", cursorPos);
+      cursorPos += 1;
+      break;
+    case "new-line-below":
+      cursorPos = lineEndPos;
+      await editor.insertAtPos("\n", cursorPos);
+      cursorPos += 1;
+      break;
+    case "start-of-item":
+      cursorPos = currentItemBounds.from;
+      break;
+    case "end-of-item":
+      cursorPos = currentItemBounds.to;
+      break;
     case "cursor":
     default:
       cursorPos = await editor.getCursor();
@@ -168,12 +247,23 @@ export async function insertAiPromptFromTemplate(
   console.log("templatetext: ", templateText);
 
   let messages: ChatMessage[] = [];
+  const globalMetadata = {
+    page: pageMeta,
+    currentItemBounds: currentItemBounds,
+    currentItemText: currentItemText,
+    currentLineNumber: currentLineNumber,
+    lineStartPos: lineStartPos,
+    lineEndPos: lineEndPos,
+    currentPageText: currentPageText,
+  };
 
   if (!selectedTemplate.chat) {
     // non-multi-chat template
-    const renderedTemplate = await renderTemplate(templateText, pageMeta, {
-      page: pageMeta,
-    });
+    const renderedTemplate = await renderTemplate(
+      templateText,
+      pageMeta,
+      globalMetadata,
+    );
     console.log("Rendered template:", renderedTemplate);
     if (selectedTemplate.systemPrompt) {
       messages.push({
@@ -195,7 +285,7 @@ export async function insertAiPromptFromTemplate(
       });
     }
     if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
-      messages = await enrichChatMessages(messages);
+      messages = await enrichChatMessages(messages, globalMetadata);
     }
   }
 
