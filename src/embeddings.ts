@@ -674,6 +674,7 @@ export async function updateSearchPage() {
       );
     } catch (error) {
       console.error("Error searching embeddings", error);
+      // deno-fmt-ignore
       loadingText += "\n\n> **error** ⚠️ Failed to search through embeddings.\n";
       loadingText += `> ${error}\n\n`;
       await editor.setText(loadingText);
