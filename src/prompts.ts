@@ -76,7 +76,6 @@ export async function insertAiPromptFromTemplate(
           insertAt: templateObj.aiprompt.insertAt || "cursor",
           chat: templateObj.aiprompt.chat || false,
           enrichMessages: templateObj.aiprompt.enrichMessages || false,
-          // parseAs: templateObj.aiprompt.parseAs || "markdown",
         };
       }),
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
@@ -154,7 +153,9 @@ export async function insertAiPromptFromTemplate(
     lineStartPos,
     lineEndPos,
     currentItemBounds,
-    currentItemText;
+    currentItemText,
+    parentItemBounds,
+    parentItemText;
   try {
     // This is all to get the current line number and position
     // It probably could be a new editor.syscall or something that uses the tree instead
@@ -179,6 +180,18 @@ export async function insertAiPromptFromTemplate(
     currentItemText = currentPageText.slice(
       currentItemBounds.from,
       currentItemBounds.to,
+    );
+
+    parentItemBounds = await system.invokeFunction(
+      "editor.determineItemBounds",
+      currentPageText,
+      curCursorPos,
+      0,
+      true,
+    );
+    parentItemText = currentPageText.slice(
+      parentItemBounds.from,
+      parentItemBounds.to,
     );
   } catch (error) {
     console.error("Error fetching current page text or cursor position", error);
@@ -255,6 +268,8 @@ export async function insertAiPromptFromTemplate(
     lineStartPos: lineStartPos,
     lineEndPos: lineEndPos,
     currentPageText: currentPageText,
+    parentItemBounds: parentItemBounds,
+    parentItemText: parentItemText,
   };
 
   if (!selectedTemplate.chat) {
