@@ -9,10 +9,16 @@ functions:
   queryAI:
     path: sbai.ts:queryAI
 
-  reloadConfig:
-    path: sbai.ts:reloadConfig
+  reloadSettingsPageEvent:
+    path: sbai.ts:reloadSettingsPage
     events:
       - page:saved
+
+  reloadConfigEvent:
+    path: sbai.ts:reloadConfig
+    events:
+      - config:loaded
+
   summarizeNote:
     path: sbai.ts:openSummaryPanel
     command:

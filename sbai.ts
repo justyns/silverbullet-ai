@@ -44,11 +44,19 @@ import {
  * This should prevent us from having to reload or refresh when changing the settings.
  * TODO: This gets triggered when other settings are changed too, but shouldn't make a difference
  *       when there are no changes to the objects we care about.
+ * TODO: Remove after space-config has been around for a while
  */
-export async function reloadConfig(pageName: string) {
+export async function reloadSettingsPage(pageName: string) {
   if (pageName === "SETTINGS" || pageName === "SECRETS") {
     await initializeOpenAI(true);
   }
+}
+
+/**
+ * Similar to the above function, but meant for the config:loaded event.
+ */
+export async function reloadConfig() {
+  await initializeOpenAI(true);
 }
 
 /**
