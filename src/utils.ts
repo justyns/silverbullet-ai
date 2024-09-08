@@ -175,6 +175,7 @@ export async function supportsServerProxyCall(): Promise<boolean> {
  */
 export async function enrichChatMessages(
   messages: ChatMessage[],
+  globalMetadata?: Record<string, any>,
 ): Promise<ChatMessage[]> {
   const enrichedMessages: ChatMessage[] = [];
   let currentPage, pageMeta;
@@ -244,6 +245,7 @@ export async function enrichChatMessages(
           pageMeta,
           {
             page: pageMeta,
+            ...globalMetadata,
           },
         );
         enrichedContent = templateResult;
