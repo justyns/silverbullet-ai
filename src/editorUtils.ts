@@ -1,4 +1,4 @@
-import { editor } from "$sb/syscalls.ts";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 
 async function getSelectedText() {
   const selectedRange = await editor.getSelection();

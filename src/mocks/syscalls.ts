@@ -1,6 +1,5 @@
-import { parse } from "$common/markdown_parser/parse_tree.ts";
-import { extendedMarkdownLanguage } from "$common/markdown_parser/parser.ts";
-import { YAML } from "$lib/deps_server.ts";
+import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
+import { parseMarkdown } from "$common/markdown_parser/parser.ts";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
@@ -43,9 +42,9 @@ globalThis.syscall = async (name: string, ...args: readonly any[]) => {
 
     // Pass through to the real functions
     case "markdown.parseMarkdown":
-      return await Promise.resolve(parse(extendedMarkdownLanguage, args[0]));
+      return await parseMarkdown(args[0]);
     case "yaml.parse":
-      return await Promise.resolve(YAML.parse(args[0]));
+      return await parseYAML(args[0]);
 
     case "system.invokeFunctionOnServer":
       return invokeFunctionMock(args);

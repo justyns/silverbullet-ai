@@ -1,21 +1,29 @@
-import type { FileMeta, IndexTreeEvent } from "$sb/types.ts";
+import type {
+  FileMeta,
+  IndexTreeEvent,
+} from "@silverbulletmd/silverbullet/types";
 import type {
   AISummaryObject,
   CombinedEmbeddingResult,
   EmbeddingObject,
   EmbeddingResult,
 } from "./types.ts";
-import { indexObjects, queryObjects } from "$sbplugs/index/plug_api.ts";
-import { renderToText } from "$sb/lib/tree.ts";
-import { mq } from "$sb/syscalls.ts";
-import { MQMessage } from "$sb/types.ts";
+import { indexObjects, queryObjects } from "./utils.ts";
+import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import { MQMessage } from "@silverbulletmd/silverbullet/types";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
 import { log, supportsServerProxyCall } from "./utils.ts";
-import { editor, markdown, space, system } from "$sb/syscalls.ts";
+import {
+  editor,
+  markdown,
+  mq,
+  space,
+  system,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
@@ -133,7 +141,7 @@ export async function indexEmbeddings(page: string) {
     objects.push(embeddingObject);
   }
 
-  await indexObjects<EmbeddingObject>(page, objects);
+  await indexObjects(page, objects);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
@@ -208,7 +216,7 @@ export async function indexSummary(page: string) {
     tag: "aiSummary",
   };
 
-  await indexObjects<AISummaryObject>(page, [summaryObject]);
+  await indexObjects(page, [summaryObject]);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
@@ -273,7 +281,7 @@ export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
       {},
     ));
   } else {
-    return (await queryObjects<EmbeddingObject>("embedding", {}));
+    return (await queryObjects("embedding", {}));
   }
 }
 
@@ -286,7 +294,7 @@ export async function getAllAISummaries(): Promise<AISummaryObject[]> {
       {},
     ));
   } else {
-    return (await queryObjects<AISummaryObject>("aiSummary", {}));
+    return (await queryObjects("aiSummary", {}));
   }
 }
 

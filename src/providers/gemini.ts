@@ -1,4 +1,4 @@
-import "$sb/lib/native_fetch.ts";
+import "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 import { StreamChatOptions } from "../types.ts";

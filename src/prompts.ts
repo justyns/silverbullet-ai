@@ -1,13 +1,12 @@
-import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
-import { editor, markdown, space } from "$sb/syscalls.ts";
-import { queryObjects } from "$sbplugs/index/plug_api.ts";
-import { renderTemplate } from "$sbplugs/template/api.ts";
+import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
+import { queryObjects } from "./utils.ts";
+import { renderTemplate } from "https://deno.land/x/silverbullet@0.9.4/plugs/template/api.ts";
 import type {
   CompleteEvent,
   SlashCompletionOption,
   SlashCompletions,
-} from "$sb/types.ts";
-import type { TemplateObject } from "$sbplugs/template/types.ts";
+} from "@silverbulletmd/silverbullet/types";
 import { getPageLength } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import {
@@ -24,7 +23,7 @@ export async function aiPromptSlashComplete(
   if (!supportsPlugSlashComplete()) {
     return;
   }
-  const allTemplates = await queryObjects<TemplateObject>("template", {
+  const allTemplates = await queryObjects("template", {
     filter: ["attr", ["attr", "aiprompt"], "slashCommand"],
   }, 5);
   return {
@@ -55,7 +54,7 @@ export async function insertAiPromptFromTemplate(
 
   if (!SlashCompletions || !SlashCompletions.templatePage) {
     // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
-    const aiPromptTemplates = await queryObjects<TemplateObject>("template", {
+    const aiPromptTemplates = await queryObjects("template", {
       filter: ["attr", ["attr", "aiprompt"], "description"],
     });
 
