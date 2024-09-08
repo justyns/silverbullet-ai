@@ -1,4 +1,4 @@
-import "$sb/lib/native_fetch.ts";
+import "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/native_fetch.ts";
 import { apiKey, initializeOpenAI } from "../init.ts";
 import { ImageGenerationOptions } from "../types.ts";
 import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";

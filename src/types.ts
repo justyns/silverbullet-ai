@@ -1,4 +1,4 @@
-import { ObjectValue } from "$sb/types.ts";
+import { ObjectValue } from "@silverbulletmd/silverbullet/types";
 
 export type sseEvent = {
   data: string;

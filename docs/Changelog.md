@@ -4,7 +4,9 @@ This page is a brief overview of each version.
 
 ---
 ## Unreleased
-- ???
+- Use a separate queue for indexing embeddings and summaries, to prevent blocking the main SB indexing thread
+- Refactor to use JSR for most Silverbullet imports, and lots of related changes
+- Reduced bundle size
 
 ---
 ## 0.3.2

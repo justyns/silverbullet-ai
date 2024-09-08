@@ -1,11 +1,15 @@
 import {
   extractFrontmatter,
   prepareFrontmatterDispatch,
-} from "$sb/lib/frontmatter.ts";
-import { editor, markdown, space, system } from "$sb/syscalls.ts";
-import { query } from "$sbplugs/query/api.ts";
+} from "@silverbulletmd/silverbullet/lib/frontmatter";
+import {
+  editor,
+  markdown,
+  space,
+  system,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
-import * as YAML from "js-yaml";
+import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
@@ -32,8 +36,8 @@ import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
+  query,
 } from "./src/utils.ts";
-import { yaml } from "https://esm.sh/v135/@codemirror/legacy-modes@6.4.0/X-ZS9AY29kZW1pcnJvci9sYW5ndWFnZQ/mode/yaml.js";
 
 /**
  * Reloads the api key and aiSettings object if one of the pages change.
@@ -402,7 +406,7 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
 
   console.log("frontmatter returned by enhanceNoteFrontMatter", response);
   try {
-    const newFrontMatter = YAML.load(response);
+    const newFrontMatter = parseYAML(response);
     if (
       typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) ||
       !newFrontMatter

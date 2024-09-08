@@ -1,4 +1,4 @@
-import { editor } from "$sb/syscalls.ts";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { getPageLength } from "../editorUtils.ts";
 import { ChatMessage, StreamChatOptions } from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";

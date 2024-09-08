@@ -1,18 +1,20 @@
-import { editor, events, markdown, space, system } from "$sb/syscalls.ts";
-import { SyscallMeta } from "$sb/types.ts";
-import { cleanMarkdown } from "$sbplugs/share/share.ts";
-import { renderToText } from "$sb/lib/tree.ts";
-import { extractAttributes } from "$sb/lib/attribute.ts";
-import { parse } from "$common/markdown_parser/parse_tree.ts";
-import { extendedMarkdownLanguage } from "$common/markdown_parser/parser.ts";
-import { extractFrontmatter } from "$sb/lib/frontmatter.ts";
-import { aiSettings } from "./init.ts";
-import { renderTemplate } from "$sbplugs/template/api.ts";
-import type { ChatMessage } from "./types.ts";
 import {
-  searchCombinedEmbeddings,
-  searchEmbeddingsForChat,
-} from "./embeddings.ts";
+  editor,
+  events,
+  markdown,
+  space,
+  system,
+  template,
+} from "@silverbulletmd/silverbullet/syscalls";
+import { Query, QueryProviderEvent } from "@silverbulletmd/silverbullet/types";
+import { parseQuery } from "@silverbulletmd/silverbullet/lib/parse_query";
+import { SyscallMeta } from "@silverbulletmd/silverbullet/types";
+import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
+import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { aiSettings } from "./init.ts";
+import type { ChatMessage } from "./types.ts";
+import { searchEmbeddingsForChat } from "./embeddings.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -27,6 +29,51 @@ export async function log(env: "client" | "server" | "any", ...args: any[]) {
   if (currentEnv === env || env === "any") {
     console.log(...args);
   }
+}
+
+// TODO: Copied this from the query plug, but it should be exposed, or I should use something else
+export async function query(
+  query: string,
+  variables?: Record<string, any>,
+): Promise<any> {
+  const parsedQuery = await parseQuery(query);
+
+  return queryParsed(parsedQuery, variables);
+}
+
+export async function queryParsed(
+  parsedQuery: Query,
+  variables?: Record<string, any>,
+) {
+  if (!parsedQuery.limit) {
+    parsedQuery.limit = ["number", 1000];
+  }
+
+  const eventName = `query:${parsedQuery.querySource}`;
+  // console.log("Parsed query", parsedQuery);
+  // Let's dispatch an event and see what happens
+  const event: QueryProviderEvent = { query: parsedQuery };
+  if (variables) {
+    event.variables = variables;
+  }
+  const results = await events.dispatchEvent(eventName, event, 30 * 1000);
+  if (results.length === 0) {
+    throw new Error(`Unsupported query source '${parsedQuery.querySource}'`);
+  }
+  return results.flat();
+}
+
+// Proxies to index plug
+// TODO: move to another file
+export async function queryObjects(
+  query: string,
+  variables?: Record<string, any>,
+): Promise<any> {
+  return await system.invokeFunction("index.queryObjects", query, variables);
+}
+
+export async function indexObjects(page: string, objects: any[]): Promise<any> {
+  return await system.invokeFunction("index.indexObjects", page, objects);
 }
 
 /**
@@ -155,11 +202,10 @@ export async function enrichChatMessages(
     }
 
     // Extract attributes from the message
-    const messageTree = parse(extendedMarkdownLanguage, message.content);
+    const messageTree = await markdown.parseMarkdown(message.content);
     const messageAttributes = await extractAttributes(
       [],
       messageTree,
-      true,
     );
 
     // TODO: This or the extractAttributes causes templates to no longer work
@@ -192,10 +238,14 @@ export async function enrichChatMessages(
     if (message.role === "user") {
       if (pageMeta) {
         console.log("Rendering template", message.content, pageMeta);
-        const templateResult = await renderTemplate(message.content, pageMeta, {
-          page: pageMeta,
-        });
-        enrichedContent = templateResult.text;
+        const templateResult = await template.renderTemplate(
+          message.content,
+          pageMeta,
+          {
+            page: pageMeta,
+          },
+        );
+        enrichedContent = templateResult;
       } else {
         console.log("No page metadata found, skipping template rendering");
       }
@@ -226,7 +276,9 @@ export async function enrichChatMessages(
         tree,
         "",
       );
-      enrichedContent = renderToText(cleanMarkdown(rendered)).trim();
+      // TODO: Re-add cleanMarkdown
+      // enrichedContent = renderToText(cleanMarkdown(rendered)).trim();
+      enrichedContent = renderToText(rendered).trim();
     }
 
     // Gather list of functions to run from event listeners
