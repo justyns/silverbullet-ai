@@ -655,8 +655,8 @@ export async function updateSearchPage() {
       queryEmbedding = await generateEmbeddingsOnServer(phrase);
     } catch (error) {
       console.error("Error generating query vector embeddings", error);
-      loadingText +=
-        "\n\n> **error** ⚠️ Failed to generate query vector embeddings.\n";
+      // deno-fmt-ignore
+      loadingText += "\n\n> **error** ⚠️ Failed to generate query vector embeddings.\n";
       loadingText += `> ${error}\n\n`;
       await editor.setText(loadingText);
       return;
