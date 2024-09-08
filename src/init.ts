@@ -1,5 +1,4 @@
 import { readSecret } from "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/secrets_page.ts";
-import { readSetting } from "https://deno.land/x/silverbullet@0.7.7/plug-api/lib/settings_page.ts";
 import { clientStore, system } from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
@@ -347,7 +346,7 @@ async function loadAndMergeSettings() {
     indexSummaryPrompt: "",
     enhanceFrontMatterPrompt: "",
   };
-  const newSettings = await readSetting("ai", {});
+  const newSettings = await system.getSpaceConfig("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
   newCombinedSettings.chat = {
     ...defaultChatSettings,

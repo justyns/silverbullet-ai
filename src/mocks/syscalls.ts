@@ -1,5 +1,6 @@
 import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
 import { parseMarkdown } from "$common/markdown_parser/parser.ts";
+import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
@@ -71,3 +72,5 @@ function invokeFunctionMock(args: readonly any[]) {
       throw Error(`Missing invokeFunction mock for ${args[0]}`);
   }
 }
+
+export { syscall };
