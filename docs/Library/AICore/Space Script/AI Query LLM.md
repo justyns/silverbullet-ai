@@ -1,6 +1,7 @@
 ---
 tags:
 - spacescript
+- meta
 
 description: >
   This space script allows you to use `{{queryAI(userPrompt, systemPrompt)}}` inside of a template.

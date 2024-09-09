@@ -1,6 +1,7 @@
 ---
 tags:
 - spacescript
+- meta
 
 description: >
   This space script allows you to use `{{searchEmbeddings(query)}}` inside of a template. A string
