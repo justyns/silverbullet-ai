@@ -8,6 +8,8 @@ export type StreamChatOptions = {
   messages: Array<ChatMessage>;
   stream: boolean;
   onDataReceived?: (data: any) => void;
+  onResponseComplete?: (data: any) => void;
+  postProcessors?: string[];
 };
 
 export type ImageGenerationOptions = {
@@ -147,4 +149,15 @@ export type EmbeddingModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+};
+
+export type PostProcessorData = {
+  // The full response text
+  response: string;
+  // The line before where the response was inserted
+  lineBefore: string;
+  // The line after where the response was inserted
+  lineAfter: string;
+  // The line where the cursor was before the response was inserted
+  lineCurrent: string;
 };

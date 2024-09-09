@@ -31,12 +31,13 @@ export class OllamaProvider extends AbstractProvider {
   }
 
   async chatWithAI(
-    { messages, stream, onDataReceived }: StreamChatOptions,
+    { messages, stream, onDataReceived, onResponseComplete }: StreamChatOptions,
   ): Promise<any> {
     return await this.openaiProvider.chatWithAI({
       messages,
       stream,
       onDataReceived,
+      onResponseComplete,
     });
   }
 }
