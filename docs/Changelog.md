@@ -3,11 +3,19 @@ For the full changelog, please refer to the individual release notes on https://
 This page is a brief overview of each version.
 
 ---
-## Unreleased
+## 0.4.0 (Unreleased)
 - Use a separate queue for indexing embeddings and summaries, to prevent blocking the main SB indexing thread
 - Refactor to use JSR for most Silverbullet imports, and lots of related changes
 - Reduced bundle size
 - Add support for [space-config](https://silverbullet.md/Space%20Config)
+- Add support for [[Templated Prompts|Post Processor]] functions in [[Templated Prompts]].
+- AICore Library: Updated all library files to have the meta tag.
+- AICore Library: Add space-script functions to be used as post processors:
+  - **indentOneLevel** - Indent entire response one level deeper than the previous line.
+  - **removeDuplicateStart** - Remove the first line from the response if it matches the line before the response started.
+  - **convertToBulletList** - Convert response to a markdown list.
+  - **convertToTaskList** - Convert response to a markdown list of tasks.
+- AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
 
 ---
 ## 0.3.2

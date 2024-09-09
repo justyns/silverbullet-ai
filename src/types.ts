@@ -152,8 +152,12 @@ export type EmbeddingModelConfig = {
 };
 
 export type PostProcessorData = {
+  // The full response text
   response: string;
+  // The line before where the response was inserted
   lineBefore: string;
+  // The line after where the response was inserted
   lineAfter: string;
+  // The line where the cursor was before the response was inserted
   lineCurrent: string;
 };
