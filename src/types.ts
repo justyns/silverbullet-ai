@@ -9,6 +9,7 @@ export type StreamChatOptions = {
   stream: boolean;
   onDataReceived?: (data: any) => void;
   onResponseComplete?: (data: any) => void;
+  postProcessors?: string[];
 };
 
 export type ImageGenerationOptions = {
@@ -148,4 +149,11 @@ export type EmbeddingModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+};
+
+export type PostProcessorData = {
+  response: string;
+  lineBefore: string;
+  lineAfter: string;
+  lineCurrent: string;
 };

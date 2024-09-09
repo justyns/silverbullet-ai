@@ -19,7 +19,7 @@ import {
   enrichChatMessages,
   supportsPlugSlashComplete,
 } from "./utils.ts";
-import { ChatMessage } from "./types.ts";
+import { ChatMessage, PostProcessorData } from "./types.ts";
 
 // This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
@@ -34,7 +34,7 @@ export async function aiPromptSlashComplete(
   return {
     options: allTemplates.map((template) => {
       const aiPromptTemplate = template.aiprompt!;
-      console.log("ai prompt template: ", aiPromptTemplate);
+      // console.log("ai prompt template: ", aiPromptTemplate);
 
       return {
         label: aiPromptTemplate.slashCommand,
@@ -76,6 +76,7 @@ export async function insertAiPromptFromTemplate(
           insertAt: templateObj.aiprompt.insertAt || "cursor",
           chat: templateObj.aiprompt.chat || false,
           enrichMessages: templateObj.aiprompt.enrichMessages || false,
+          postProcessors: templateObj.aiprompt.postProcessors || [],
         };
       }),
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
@@ -93,6 +94,7 @@ export async function insertAiPromptFromTemplate(
       insertAt: aiprompt.insertAt || "cursor",
       chat: aiprompt.chat || false,
       enrichMessages: aiprompt.enrichMessages || false,
+      postProcessors: aiprompt.postProcessors || [],
     };
   }
 
@@ -308,5 +310,6 @@ export async function insertAiPromptFromTemplate(
   await currentAIProvider.streamChatIntoEditor({
     messages: messages,
     stream: true,
+    postProcessors: selectedTemplate.postProcessors,
   }, cursorPos);
 }

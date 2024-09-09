@@ -1,6 +1,11 @@
-import { editor } from "@silverbulletmd/silverbullet/syscalls";
-import { getPageLength } from "../editorUtils.ts";
-import { ChatMessage, StreamChatOptions } from "../types.ts";
+import { editor, system } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  getLineAfter,
+  getLineBefore,
+  getLineOfPos,
+  getPageLength,
+} from "../editorUtils.ts";
+import { ChatMessage, PostProcessorData, StreamChatOptions } from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";
 
 export interface ProviderInterface {
@@ -44,7 +49,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ): Promise<void> {
-    const { onDataReceived, onResponseComplete } = options;
+    const { onDataReceived, onResponseComplete, postProcessors } = options;
     const loadingMessage = "🤔 Thinking … ";
     let cursorPos = cursorStart ?? await getPageLength();
     await editor.insertAtPos(loadingMessage, cursorPos);
@@ -85,12 +90,36 @@ export abstract class AbstractProvider implements ProviderInterface {
       }
     };
 
-    const onDataComplete = (data: string) => {
+    const onDataComplete = async (data: string) => {
       console.log("Response complete:", data);
       const endOfResponse = startOfResponse + data.length;
       console.log("Start of response:", startOfResponse);
       console.log("End of response:", endOfResponse);
       console.log("Full response:", data);
+      console.log("Post-processors:", postProcessors);
+      let newData = data;
+
+      if (postProcessors) {
+        const pageText = await editor.getText();
+        const postProcessorData: PostProcessorData = {
+          response: data,
+          lineBefore: getLineBefore(pageText, startOfResponse),
+          lineCurrent: getLineOfPos(pageText, startOfResponse),
+          lineAfter: getLineAfter(pageText, endOfResponse),
+        };
+        for (const processor of postProcessors) {
+          console.log("Applying post-processor:", processor);
+          newData = await system.invokeSpaceFunction(
+            processor,
+            postProcessorData,
+          );
+        }
+        // if (newData !== data) {
+        // console.log("New data:", newData);
+        console.log("Data changed by post-processors, updating editor");
+        editor.replaceRange(startOfResponse, endOfResponse, newData);
+        // }
+      }
 
       if (onResponseComplete) onResponseComplete(data);
     };

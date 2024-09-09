@@ -1,6 +1,6 @@
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 
-async function getSelectedText() {
+export async function getSelectedText() {
   const selectedRange = await editor.getSelection();
   let selectedText = "";
   if (selectedRange.from === selectedRange.to) {
@@ -17,7 +17,7 @@ async function getSelectedText() {
   };
 }
 
-async function getSelectedTextOrNote() {
+export async function getSelectedTextOrNote() {
   const selectedTextInfo = await getSelectedText();
   const pageText = await editor.getText();
   if (selectedTextInfo.text === "") {
@@ -36,9 +36,42 @@ async function getSelectedTextOrNote() {
   };
 }
 
-async function getPageLength() {
+export async function getPageLength() {
   const pageText = await editor.getText();
   return pageText.length;
 }
 
-export { getPageLength, getSelectedText, getSelectedTextOrNote };
+export function getLineNumberAtPos(text: string, pos: number): number {
+  const lines = text.split("\n");
+  let currentPos = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (currentPos <= pos && pos < currentPos + lines[i].length + 1) {
+      return i;
+    }
+    currentPos += lines[i].length + 1; // +1 for the newline character
+  }
+  return -1;
+}
+
+export function getLine(text: string, lineNumber: number): string {
+  const lines = text.split("\n");
+  if (lineNumber < 0 || lineNumber >= lines.length) {
+    return "";
+  }
+  return lines[lineNumber];
+}
+
+export function getLineOfPos(text: string, pos: number): string {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber);
+}
+
+export function getLineBefore(text: string, pos: number): string {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber - 1);
+}
+
+export function getLineAfter(text: string, pos: number): string {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber + 1);
+}
