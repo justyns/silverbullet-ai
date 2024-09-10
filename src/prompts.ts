@@ -12,7 +12,7 @@ import type {
   SlashCompletionOption,
   SlashCompletions,
 } from "@silverbulletmd/silverbullet/types";
-import { getPageLength } from "./editorUtils.ts";
+import { getPageLength, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import {
   convertPageToMessages,
@@ -118,6 +118,7 @@ export async function insertAiPromptFromTemplate(
     "new-line-below",
     "replace-line",
     "replace-paragraph",
+    "replace-selection",
     // "frontmatter",
     // "modal",
     // "replace",
@@ -158,7 +159,8 @@ export async function insertAiPromptFromTemplate(
     currentItemBounds,
     currentItemText,
     parentItemBounds,
-    parentItemText;
+    parentItemText,
+    selectedText;
   try {
     // This is all to get the current line number and position
     // It probably could be a new editor.syscall or something that uses the tree instead
@@ -229,6 +231,16 @@ export async function insertAiPromptFromTemplate(
       cursorPos = lineStartPos;
       await editor.replaceRange(lineStartPos, lineEndPos, "");
       break;
+    case "replace-selection":
+      selectedText = await getSelectedText();
+      if (selectedText) {
+        cursorPos = selectedText.from;
+        await editor.replaceRange(selectedText.from, selectedText.to, "");
+      } else {
+        // If no text is selected, act like the 'cursor' option
+        cursorPos = await editor.getCursor();
+      }
+      break;
     case "replace-paragraph":
       cursorPos = currentItemBounds.from;
       await editor.replaceRange(
@@ -281,6 +293,7 @@ export async function insertAiPromptFromTemplate(
     currentPageText: currentPageText,
     parentItemBounds: parentItemBounds,
     parentItemText: parentItemText,
+    selectedText: selectedText?.text,
   };
 
   if (!selectedTemplate.chat) {

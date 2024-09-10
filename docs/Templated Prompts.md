@@ -79,6 +79,7 @@ As of version 0.4.0, the following global metadata is available for use inside o
 *   **`currentPageText`**: Entire text of the current page.
 *   **`parentItemBounds`**: Start and end positions of the parent item.
 *   **`parentItemText`**: Full text of the parent item. A parent item may contain child items.
+*   **`selectedText`**: Text the user has currently selected.
 
 All of these can be accessed by prefixing the variable name with `@`, like `@lineEndPos` or `@currentLineNumber`.
 
@@ -97,6 +98,7 @@ The `insertAt` option in the `aiprompt` frontmatter determines where the generat
 * **`new-line-below`**: Inserts on a new line below the current line
 * **`replace-line`**: Replaces the current line with the generated content
 * **`replace-paragraph`**: Replaces the entire paragraph (or item) where the cursor is located with the generated content
+* **`replace-selection`**: Replaces the currently selected text with the generated content. If no text is selected, it behaves like the 'cursor' option
 
 ## Chat-style prompts
 
