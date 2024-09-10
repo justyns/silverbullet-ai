@@ -82,6 +82,22 @@ As of version 0.4.0, the following global metadata is available for use inside o
 
 All of these can be accessed by prefixing the variable name with `@`, like `@lineEndPos` or `@currentLineNumber`.
 
+## Insert At Options
+
+The `insertAt` option in the `aiprompt` frontmatter determines where the generated content will be inserted. The valid options are:
+
+* **`cursor`**: Inserts at the current cursor position
+* **`page-start`**: Inserts at the beginning of the page
+* **`page-end`**: Inserts at the end of the page
+* **`start-of-line`**: Inserts at the start of the current line
+* **`end-of-line`**: Inserts at the end of the current line
+* **`start-of-item`**: Inserts at the start of the current item (list item or task)
+* **`end-of-item`**: Inserts at the end of the current item
+* **`new-line-above`**: Inserts on a new line above the current line
+* **`new-line-below`**: Inserts on a new line below the current line
+* **`replace-line`**: Replaces the current line with the generated content
+* **`replace-paragraph`**: Replaces the entire paragraph (or item) where the cursor is located with the generated content
+
 ## Chat-style prompts
 
 As of version 0.3.0, `aiprompt.chat` can be set to true in the template frontmatter to treat the template similar to a page using [[Commands/AI: Chat on current page]].

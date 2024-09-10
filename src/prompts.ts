@@ -117,6 +117,7 @@ export async function insertAiPromptFromTemplate(
     "new-line-above",
     "new-line-below",
     "replace-line",
+    "replace-paragraph",
     // "frontmatter",
     // "modal",
     // "replace",
@@ -227,6 +228,14 @@ export async function insertAiPromptFromTemplate(
     case "replace-line":
       cursorPos = lineStartPos;
       await editor.replaceRange(lineStartPos, lineEndPos, "");
+      break;
+    case "replace-paragraph":
+      cursorPos = currentItemBounds.from;
+      await editor.replaceRange(
+        currentItemBounds.from,
+        currentItemBounds.to,
+        "",
+      );
       break;
     case "start-of-line":
       cursorPos = lineStartPos;
