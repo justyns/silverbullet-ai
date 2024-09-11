@@ -80,6 +80,10 @@ As of version 0.4.0, the following global metadata is available for use inside o
 *   **`parentItemBounds`**: Start and end positions of the parent item.
 *   **`parentItemText`**: Full text of the parent item. A parent item may contain child items.
 *   **`selectedText`**: Text the user has currently selected.
+*   **`currentParagraph`**: Text of the current paragraph where the cursor is located.
+*   **`smartReplaceType`**: Indicates the type of content being replaced when using the 'replace-smart' option. Can be 'selected-text', 'current-item', or 'current-paragraph'.
+*   **`smartReplaceText`**: The text that will be replaced when using the 'replace-smart' option.
+
 
 All of these can be accessed by prefixing the variable name with `@`, like `@lineEndPos` or `@currentLineNumber`.
 
@@ -99,6 +103,16 @@ The `insertAt` option in the `aiprompt` frontmatter determines where the generat
 * **`replace-line`**: Replaces the current line with the generated content
 * **`replace-paragraph`**: Replaces the entire paragraph (or item) where the cursor is located with the generated content
 * **`replace-selection`**: Replaces the currently selected text with the generated content. If no text is selected, it behaves like the 'cursor' option
+* **`replace-smart`**: Intelligently replaces content based on context:
+  - If text is selected, it replaces the selection.
+  - If no text is selected but the cursor is within a list item or task, it replaces the entire item.
+  - If neither of the above applies, it replaces the current paragraph.
+
+### Replacing content
+
+If the objective is to replace all or a portion of the note's content, the `replace-smart` option is the best choice. It intelligently selects the most appropriate text to replace based on the cursor's context. If more control is needed, any of the other options can be used.
+
+**Note** that the replace options will remove existing content before inserting the new content. Make sure there is a backup of any important content before using these options.
 
 ## Chat-style prompts
 
