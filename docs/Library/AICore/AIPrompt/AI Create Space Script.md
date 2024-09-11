@@ -3,7 +3,6 @@ tags:
 - template
 - aiPrompt
 
-description: "Describe the space script functionality you want and generate it"
 aiprompt:
   description: "Describe the space script functionality you want and generate it"
   system: "You are an expert javascript developer.  Help the user develop new functionality for their personal note taking tool."

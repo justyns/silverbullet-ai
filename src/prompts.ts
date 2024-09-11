@@ -5,7 +5,7 @@ import {
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { queryObjects } from "./utils.ts";
+import { query } from "./utils.ts";
 import { renderTemplate } from "https://deno.land/x/silverbullet@0.9.4/plugs/template/api.ts";
 import type {
   CompleteEvent,
@@ -28,9 +28,9 @@ export async function aiPromptSlashComplete(
   if (!supportsPlugSlashComplete()) {
     return;
   }
-  const allTemplates = await queryObjects("template", {
-    filter: ["attr", ["attr", "aiprompt"], "slashCommand"],
-  }, 5);
+  const allTemplates = await query(
+    "template where aiprompt and aiprompt.slashCommand",
+  );
   return {
     options: allTemplates.map((template) => {
       const aiPromptTemplate = template.aiprompt!;
@@ -58,10 +58,7 @@ export async function insertAiPromptFromTemplate(
   let selectedTemplate;
 
   if (!SlashCompletions || !SlashCompletions.templatePage) {
-    // TODO: I don't really understand how this filter works.  I'd rather have it check for a #aiPrompt tag instead of an aiprompt.description property
-    const aiPromptTemplates = await queryObjects("template", {
-      filter: ["attr", ["attr", "aiprompt"], "description"],
-    });
+    const aiPromptTemplates = await query("template where aiprompt");
 
     selectedTemplate = await editor.filterBox(
       "Prompt Template",

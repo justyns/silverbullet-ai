@@ -126,7 +126,6 @@ tags:
 - template
 - aiPrompt
 
-description: "Generate a summary of the current page."
 aiprompt:
   description: "Generate a summary of the current page."
   system: You are an AI Note Summary bot.  Help the user create useful and accurate summaries.
@@ -189,7 +188,6 @@ tags:
 - aiPrompt
 - meta
 
-description: "Generate a random pet name"
 aiprompt:
   description: "Generate a random pet name."
   slashCommand: aiGeneratePetName
