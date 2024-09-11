@@ -278,7 +278,7 @@ export async function insertAiPromptFromTemplate(
       await editor.replaceRange(lineStartPos, lineEndPos, "");
       break;
     case "replace-selection":
-      if (selectedText && selectedText.text) {
+      if (selectedText?.text) {
         cursorPos = selectedText.from;
         await editor.replaceRange(selectedText.from, selectedText.to, "");
       } else {
@@ -287,7 +287,7 @@ export async function insertAiPromptFromTemplate(
       }
       break;
     case "replace-paragraph":
-      if (currentParagraph && currentParagraph.text) {
+      if (currentParagraph?.text) {
         cursorPos = currentParagraph.from;
         await editor.replaceRange(
           currentParagraph.from,
@@ -303,7 +303,7 @@ export async function insertAiPromptFromTemplate(
       break;
     case "replace-smart":
       // replace-smart: text selection -> current item -> current paragraph
-      if (selectedText && selectedText.text) {
+      if (selectedText?.text) {
         smartReplaceType = "selected-text";
         smartReplaceText = selectedText.text;
         cursorPos = selectedText.from;
@@ -317,7 +317,7 @@ export async function insertAiPromptFromTemplate(
           currentItemBounds.to,
           "\n",
         );
-      } else if (currentParagraph && currentParagraph.text) {
+      } else if (currentParagraph?.text) {
         smartReplaceType = "current-paragraph";
         smartReplaceText = currentParagraph.text;
         cursorPos = currentParagraph.from;

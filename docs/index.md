@@ -31,7 +31,7 @@ If you're new here, we recommend starting with:
 1. [[Quick Start]]
 2. [[AI Core Library]]
 
-> **Warning**: Please backup your notes before using this plug. It inserts and replaces text at certain points. We recommend using the git plug to keep your notes versioned automatically in a git repository.
+> **Warning**: Please back up your notes before using this plug. It inserts and replaces text at certain points. We recommend using the git plug to keep your notes versioned automatically in a git repository.
 
 ## Features
 
