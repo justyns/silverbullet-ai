@@ -3,7 +3,6 @@ tags:
 - template
 - aiPrompt
 
-description: "Generate a summary of the current page using chat."
 aiprompt:
   description: "Generate a summary of the current page using chat."
   system: You are an AI Note Summary bot.  Help the user create useful and accurate summaries.

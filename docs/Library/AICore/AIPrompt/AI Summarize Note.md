@@ -3,7 +3,6 @@ tags:
 - template
 - aiPrompt
 
-description: "Generate a summary of the current page."
 aiprompt:
   description: "Generate a summary of the current page."
 ---

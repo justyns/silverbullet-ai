@@ -4,7 +4,6 @@ tags:
 - aiPrompt
 - meta
 
-description: "Rewrite current paragraph or selected text to fix and improve grammar."
 aiprompt:
   description: "Rewrite current paragraph or selected text to fix and improve grammar."
   chat: true

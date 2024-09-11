@@ -4,7 +4,6 @@ tags:
 - aiPrompt
 - meta
 
-description: "Split current todo into smaller manageable chunks."
 aiprompt:
   description: "Split current todo into smaller manageable chunks."
   slashCommand: aiSplitTodo

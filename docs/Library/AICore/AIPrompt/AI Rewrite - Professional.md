@@ -4,7 +4,6 @@ tags:
 - aiPrompt
 - meta
 
-description: "Rewrite current paragraph or selected text to be more professional"
 aiprompt:
   description: "Rewrite current paragraph or selected text to be more professional"
   chat: true
