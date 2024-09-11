@@ -12,7 +12,7 @@ import type {
   SlashCompletionOption,
   SlashCompletions,
 } from "@silverbulletmd/silverbullet/types";
-import { getPageLength } from "./editorUtils.ts";
+import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import {
   convertPageToMessages,
@@ -117,6 +117,9 @@ export async function insertAiPromptFromTemplate(
     "new-line-above",
     "new-line-below",
     "replace-line",
+    "replace-paragraph",
+    "replace-selection",
+    "replace-smart",
     // "frontmatter",
     // "modal",
     // "replace",
@@ -150,19 +153,28 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
-  let currentPageText,
-    currentLineNumber,
-    lineStartPos,
-    lineEndPos,
-    currentItemBounds,
-    currentItemText,
-    parentItemBounds,
-    parentItemText;
+  let currentPageText: string,
+    currentLineNumber: number,
+    curCursorPos: number,
+    lineStartPos: number,
+    lineEndPos: number,
+    currentItemBounds: { from: number; to: number },
+    currentItemText: string,
+    parentItemBounds: { from: number; to: number },
+    parentItemText: string,
+    currentParagraph: { from: number; to: number; text: string },
+    selectedText: { from: number; to: number; text: string };
+
+  let smartReplaceType:
+    | "selected-text"
+    | "current-paragraph"
+    | "current-item";
+  let smartReplaceText: string;
+
   try {
     // This is all to get the current line number and position
-    // It probably could be a new editor.syscall or something that uses the tree instead
     currentPageText = await editor.getText();
-    const curCursorPos = await editor.getCursor();
+    curCursorPos = await editor.getCursor();
     const lines = currentPageText.split("\n");
     currentLineNumber =
       currentPageText.substring(0, curCursorPos).split("\n").length;
@@ -170,31 +182,6 @@ export async function insertAiPromptFromTemplate(
       (currentPageText.substring(0, curCursorPos).split("\n").pop()?.length ||
         0);
     lineEndPos = lineStartPos + lines[currentLineNumber - 1].length;
-
-    // Also get the current item if we need it
-    currentItemBounds = await system.invokeFunction(
-      "editor.determineItemBounds",
-      currentPageText,
-      curCursorPos,
-      undefined,
-      true,
-    );
-    currentItemText = currentPageText.slice(
-      currentItemBounds.from,
-      currentItemBounds.to,
-    );
-
-    parentItemBounds = await system.invokeFunction(
-      "editor.determineItemBounds",
-      currentPageText,
-      curCursorPos,
-      0,
-      true,
-    );
-    parentItemText = currentPageText.slice(
-      parentItemBounds.from,
-      parentItemBounds.to,
-    );
   } catch (error) {
     console.error("Error fetching current page text or cursor position", error);
     await editor.flashNotification(
@@ -202,6 +189,68 @@ export async function insertAiPromptFromTemplate(
       "error",
     );
     return;
+  }
+
+  try {
+    // Also get the current item if we need it
+    if (
+      selectedTemplate.insertAt === "start-of-item" ||
+      selectedTemplate.insertAt === "end-of-item" ||
+      selectedTemplate.insertAt === "replace-smart"
+    ) {
+      currentItemBounds = await system.invokeFunction(
+        "editor.determineItemBounds",
+        currentPageText,
+        curCursorPos,
+        undefined,
+        true,
+      );
+      currentItemText = currentPageText.slice(
+        currentItemBounds.from,
+        currentItemBounds.to,
+      );
+
+      parentItemBounds = await system.invokeFunction(
+        "editor.determineItemBounds",
+        currentPageText,
+        curCursorPos,
+        0,
+        true,
+      );
+      parentItemText = currentPageText.slice(
+        parentItemBounds.from,
+        parentItemBounds.to,
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching current item", error);
+  }
+
+  try {
+    if (
+      selectedTemplate.insertAt === "replace-paragraph" ||
+      selectedTemplate.insertAt === "replace-smart"
+    ) {
+      currentParagraph = getParagraph(currentPageText, curCursorPos);
+    }
+  } catch (error) {
+    console.error("Error fetching current paragraph", error);
+    await editor.flashNotification(
+      "Error fetching current paragraph",
+      "error",
+    );
+    return;
+  }
+
+  try {
+    if (
+      selectedTemplate.insertAt == "replace-selection" ||
+      selectedTemplate.insertAt == "replace-smart"
+    ) {
+      selectedText = await getSelectedText();
+    }
+  } catch (error) {
+    console.error("Error fetching selected text", error);
   }
 
   let cursorPos;
@@ -227,6 +276,65 @@ export async function insertAiPromptFromTemplate(
     case "replace-line":
       cursorPos = lineStartPos;
       await editor.replaceRange(lineStartPos, lineEndPos, "");
+      break;
+    case "replace-selection":
+      if (selectedText?.text) {
+        cursorPos = selectedText.from;
+        await editor.replaceRange(selectedText.from, selectedText.to, "");
+      } else {
+        // If no text is selected, act like the 'cursor' option
+        cursorPos = await editor.getCursor();
+      }
+      break;
+    case "replace-paragraph":
+      if (currentParagraph?.text) {
+        cursorPos = currentParagraph.from;
+        await editor.replaceRange(
+          currentParagraph.from,
+          currentParagraph.to,
+          "",
+        );
+      } else {
+        await editor.flashNotification(
+          "Error: current paragraph is undefined",
+          "error",
+        );
+      }
+      break;
+    case "replace-smart":
+      // replace-smart: text selection -> current item -> current paragraph
+      if (selectedText?.text) {
+        smartReplaceType = "selected-text";
+        smartReplaceText = selectedText.text;
+        cursorPos = selectedText.from;
+        await editor.replaceRange(selectedText.from, selectedText.to, "");
+      } else if (currentItemText && currentItemBounds) {
+        smartReplaceType = "current-item";
+        smartReplaceText = currentItemText;
+        cursorPos = currentItemBounds.from;
+        await editor.replaceRange(
+          currentItemBounds.from,
+          currentItemBounds.to,
+          "\n",
+        );
+      } else if (currentParagraph?.text) {
+        smartReplaceType = "current-paragraph";
+        smartReplaceText = currentParagraph.text;
+        cursorPos = currentParagraph.from;
+        await editor.replaceRange(
+          currentParagraph.from,
+          currentParagraph.to,
+          "",
+        );
+      } else {
+        await editor.flashNotification(
+          "Error: replace-smart: no text selected, current paragraph, or current item",
+          "error",
+        );
+        return;
+      }
+      console.log("smartReplaceType: ", smartReplaceType);
+      console.log("smartReplaceText: ", smartReplaceText);
       break;
     case "start-of-line":
       cursorPos = lineStartPos;
@@ -264,14 +372,16 @@ export async function insertAiPromptFromTemplate(
   let messages: ChatMessage[] = [];
   const globalMetadata = {
     page: pageMeta,
-    currentItemBounds: currentItemBounds,
     currentItemText: currentItemText,
     currentLineNumber: currentLineNumber,
     lineStartPos: lineStartPos,
     lineEndPos: lineEndPos,
     currentPageText: currentPageText,
-    parentItemBounds: parentItemBounds,
     parentItemText: parentItemText,
+    selectedText: selectedText?.text,
+    currentParagraph: currentParagraph?.text,
+    smartReplaceType: smartReplaceType,
+    smartReplaceText: smartReplaceText,
   };
 
   if (!selectedTemplate.chat) {

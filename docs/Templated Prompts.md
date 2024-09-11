@@ -79,8 +79,40 @@ As of version 0.4.0, the following global metadata is available for use inside o
 *   **`currentPageText`**: Entire text of the current page.
 *   **`parentItemBounds`**: Start and end positions of the parent item.
 *   **`parentItemText`**: Full text of the parent item. A parent item may contain child items.
+*   **`selectedText`**: Text the user has currently selected.
+*   **`currentParagraph`**: Text of the current paragraph where the cursor is located.
+*   **`smartReplaceType`**: Indicates the type of content being replaced when using the 'replace-smart' option. Can be 'selected-text', 'current-item', or 'current-paragraph'.
+*   **`smartReplaceText`**: The text that will be replaced when using the 'replace-smart' option.
+
 
 All of these can be accessed by prefixing the variable name with `@`, like `@lineEndPos` or `@currentLineNumber`.
+
+## Insert At Options
+
+The `insertAt` option in the `aiprompt` frontmatter determines where the generated content will be inserted. The valid options are:
+
+* **`cursor`**: Inserts at the current cursor position
+* **`page-start`**: Inserts at the beginning of the page
+* **`page-end`**: Inserts at the end of the page
+* **`start-of-line`**: Inserts at the start of the current line
+* **`end-of-line`**: Inserts at the end of the current line
+* **`start-of-item`**: Inserts at the start of the current item (list item or task)
+* **`end-of-item`**: Inserts at the end of the current item
+* **`new-line-above`**: Inserts on a new line above the current line
+* **`new-line-below`**: Inserts on a new line below the current line
+* **`replace-line`**: Replaces the current line with the generated content
+* **`replace-paragraph`**: Replaces the entire paragraph (or item) where the cursor is located with the generated content
+* **`replace-selection`**: Replaces the currently selected text with the generated content. If no text is selected, it behaves like the 'cursor' option
+* **`replace-smart`**: Intelligently replaces content based on context:
+  - If text is selected, it replaces the selection.
+  - If no text is selected but the cursor is within a list item or task, it replaces the entire item.
+  - If neither of the above applies, it replaces the current paragraph.
+
+### Replacing content
+
+If the objective is to replace all or a portion of the note's content, the `replace-smart` option is the best choice. It intelligently selects the most appropriate text to replace based on the cursor's context. If more control is needed, any of the other options can be used.
+
+**Note** that the replace options will remove existing content before inserting the new content. Make sure there is a backup of any important content before using these options.
 
 ## Chat-style prompts
 

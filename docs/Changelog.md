@@ -15,7 +15,19 @@ This page is a brief overview of each version.
   - **removeDuplicateStart** - Remove the first line from the response if it matches the line before the response started.
   - **convertToBulletList** - Convert response to a markdown list.
   - **convertToTaskList** - Convert response to a markdown list of tasks.
+- Add new insertAt options for [[Templated Prompts]]:
+  - **replace-selection**: Replaces the currently selected text with the generated content. If no text is selected, it behaves like the 'cursor' option.
+  - **replace-paragraph**: Replaces the entire paragraph (or item) where the cursor is located with the generated content.
+  - **start-of-line**: Inserts at the start of the current line.
+  - **end-of-line**: Inserts at the end of the current line.
+  - **start-of-item**: Inserts at the start of the current item (list item or task).
+  - **end-of-item**: Inserts at the end of the current item.
+  - **new-line-above**: Inserts on a new line above the current line.
+  - **new-line-below**: Inserts on a new line below the current line.
+  - **replace-line**: Replaces the current line with the generated content.
+  - **replace-smart**: Intelligently replaces content based on context (selected text, current item, or current paragraph).
 - AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
+- AICore Library: Add template prompts for rewriting text, mostly as a demo for the `replace-smart` insertAt option.
 
 ---
 ## 0.3.2
