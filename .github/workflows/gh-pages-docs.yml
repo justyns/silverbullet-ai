@@ -48,7 +48,7 @@ jobs:
 
       - name: Build Docs site
         run: |
-          ./render-docs.sh
+          bash ./render-docs.sh
 
       - name: Run mkdocs
         run: |
