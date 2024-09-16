@@ -5,7 +5,7 @@ commandSummary: "Extracts important information from the current note and conver
 to frontmatter attributes."
 ---
 
-**Experimental**: This is new and not well-tested.  Please submit feedback if you have ideas for making it better.
+> **note**: **Experimental**: This is new and not well-tested.  Please submit feedback if you have ideas for making it better.
 
 This command will attempt to extract useful information from a note and then generate frontmatter attributes for that note.
 

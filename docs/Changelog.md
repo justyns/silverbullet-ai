@@ -29,6 +29,7 @@ This page is a brief overview of each version.
 - AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
 - AICore Library: Add template prompts for rewriting text, mostly as a demo for the `replace-smart` insertAt option.
 - Remove need for duplicate `description` frontmatter field for templated prompts.
+- Revamp docs website to use mkdocs (and mkdocs-material) in addition to silverbullet-pub to handle the silverbullet-specific things like templates/queries.
 
 ---
 ## 0.3.2

@@ -21,9 +21,14 @@ theme:
         name: Switch to light mode
   features:
     - navigation.footer
+    - navigation.path
+    - navigation.indexes
     - content.action.edit
     - content.code.copy
     - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - search.share
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -46,7 +51,9 @@ extra:
     - icon: fontawesome/brands/github
       link: https://github.com/justyns/silverbullet-ai
 
-# plugins:
+plugins:
+  - include_dir_to_nav
+  - search
   # TODO: Doesn't really work with pub since it creates new files
   # - git-revision-date-localized:
   #     enable_creation_date: true
@@ -73,4 +80,14 @@ nav:
   - Home: index.md
   - Quick Start.md
   - Installation.md
+  - Configuration:
+    - Configuration.md
+    - Configuration
+  - AI Core Library.md
+  - Templated Prompts.md
+  - Commands:
+    - Commands
+  - Providers:
+    - Providers
   - Changelog.md
+  - Development.md

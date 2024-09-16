@@ -36,6 +36,6 @@ render [[Library/AIDocs/Query/AI Template]]
 ```query
 page
 where name =~ /^Library\/AICore\/Space Script/
-render [[Library/Core/Query/Template]]
+render [[Library/AIDocs/Query/AI Template]]
 ```
 
