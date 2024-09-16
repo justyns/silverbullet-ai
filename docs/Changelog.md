@@ -2,8 +2,11 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## Unreleased
+- Nothing yet.
+
 ---
-## 0.4.0 (Unreleased)
+## 0.4.0 (2024-09-16)
 - Use a separate queue for indexing embeddings and summaries, to prevent blocking the main SB indexing thread
 - Refactor to use JSR for most Silverbullet imports, and lots of related changes
 - Reduced bundle size
@@ -29,7 +32,7 @@ This page is a brief overview of each version.
 - AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
 - AICore Library: Add template prompts for rewriting text, mostly as a demo for the `replace-smart` insertAt option.
 - Remove need for duplicate `description` frontmatter field for templated prompts.
-- Revamp docs website to use mkdocs (and mkdocs-material) in addition to silverbullet-pub to handle the silverbullet-specific things like templates/queries.
+- Revamp [docs website](https://ai.silverbullet.md) to use mkdocs (and mkdocs-material) in addition to silverbullet-pub to handle the silverbullet-specific things like templates/queries.
 
 ---
 ## 0.3.2
