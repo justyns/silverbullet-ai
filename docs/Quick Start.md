@@ -51,7 +51,7 @@ ai:
 
 Run `AI: Select Text Model from Config`, choose one of the models you just configured.
 
-> **note** If you only have one model configured, it will be selected automatically.
+> **note**: If you only have one model configured, it will be selected automatically.
 
 Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+SHIFT+ENTER to start a chat session.
 

@@ -10,7 +10,7 @@ For in-development code from the main branch:
 - github:justyns/silverbullet-ai/silverbullet-ai.plug.js
 ```
 
-For the latest "release" code, mostly also still in development for now:
+For the latest [release](https://github.com/justyns/silverbullet-ai/releases) version:
 
 ```yaml
 - ghr:justyns/silverbullet-ai/0.3.2
