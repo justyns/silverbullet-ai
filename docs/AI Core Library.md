@@ -18,7 +18,7 @@ libraries:
 - import: "[[!ai.silverbullet.md/Library/AICore/*]]"
 ```
 
-Once added, run the {[Libraries: Update]} command to download the libraries. **Note**: This needs to run from a client that is not in sync-mode due to CORs issues.
+Once added, run the {[Libraries: Update]} command to download the libraries.
 
 
 The included templates, prompts, and space scripts are briefly described below. Please consider [contributing](https://github.com/justyns/silverbullet-ai) any templates or prompts you find useful.
@@ -28,7 +28,7 @@ The included templates, prompts, and space scripts are briefly described below. 
 ```query
 template
 where name =~ /^Library\/AICore/
-render [[Library/Core/Query/Template]]
+render [[Library/AIDocs/Query/AI Template]]
 ```
 
 # Included Space Script

@@ -72,6 +72,7 @@ This page is a brief overview of each version.
 ---
 ## 0.0.11
 - Support for custom chat message enrichment functions, see [[Configuration/Custom Enrichment Functions]]
+
 ---
 ## 0.0.10
 - Add WIP docs and docs workflow by [@justyns](https://github.com/justyns) in [#20](https://github.com/justyns/silverbullet-ai/pull/20)
