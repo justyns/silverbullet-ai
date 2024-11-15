@@ -8,8 +8,8 @@ import {
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { decodeBase64 } from "https://deno.land/std@0.216.0/encoding/base64.ts";
-import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
+import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
 import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
