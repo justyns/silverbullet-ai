@@ -6,7 +6,7 @@ import {
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { query } from "./utils.ts";
-import { renderTemplate } from "https://deno.land/x/silverbullet@0.9.4/plugs/template/api.ts";
+import { renderTemplate } from "https://deno.land/x/silverbullet@0.10.1/plugs/template/api.ts";
 import type {
   CompleteEvent,
   SlashCompletionOption,

@@ -1,7 +1,7 @@
-import { parse as parseYAML } from "https://deno.land/std@0.216.0/yaml/mod.ts";
+import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
 import { parseMarkdown } from "$common/markdown_parser/parser.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
-import { readSetting } from "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/settings_page.ts";
+import { readSetting } from "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/settings_page.ts";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;

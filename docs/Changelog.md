@@ -6,6 +6,12 @@ This page is a brief overview of each version.
 - Nothing yet.
 
 ---
+## 0.4.1 (2024-11-15)
+- Upgrade to deno 2
+- Upgrade to Silverbullet 0.10.1
+- Upgrade to deno std@0.224.0
+
+---
 ## 0.4.0 (2024-09-16)
 - Use a separate queue for indexing embeddings and summaries, to prevent blocking the main SB indexing thread
 - Refactor to use JSR for most Silverbullet imports, and lots of related changes

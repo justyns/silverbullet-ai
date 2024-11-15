@@ -1,4 +1,4 @@
-import { readSecret } from "https://deno.land/x/silverbullet@0.9.4/plug-api/lib/secrets_page.ts";
+import { readSecret } from "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/secrets_page.ts";
 import { clientStore, system } from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
