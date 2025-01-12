@@ -106,7 +106,7 @@ export class OpenAIProvider extends AbstractProvider {
       });
 
       source.addEventListener("error", (e: sseEvent) => {
-        console.error("SSE error:", e);
+        console.error("SSE error sseEvent.data:", e.data, " ssEventObj:", e);
         source.close();
       });
 

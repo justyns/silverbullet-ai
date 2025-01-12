@@ -3,7 +3,7 @@ For the full changelog, please refer to the individual release notes on https://
 This page is a brief overview of each version.
 
 ## Unreleased
-- Nothing yet.
+- Better logging when SSE events have errors
 
 ---
 ## 0.4.1 (2024-11-15)
