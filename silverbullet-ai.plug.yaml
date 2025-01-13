@@ -140,3 +140,27 @@ functions:
     events:
       - editor:pageLoaded
       - editor:pageReloaded
+  readPageConnectivityTest:
+    path: src/connectivity.ts:readFileConnectivityTest
+    pageNamespace:
+      pattern: "🛰️ AI Connectivity Test"
+      operation: readFile
+  writePageConnectivityTest:
+    path: src/connectivity.ts:writeFileConnectivityTest
+    pageNamespace:
+      pattern: "🛰️ AI Connectivity Test"
+      operation: writeFile
+  getPageMetaConnectivityTest:
+    path: src/connectivity.ts:getFileMetaConnectivityTest
+    pageNamespace:
+      pattern: "🛰️ AI Connectivity Test"
+      operation: getFileMeta
+  connectivityTestCommand:
+    path: src/connectivity.ts:connectivityTestCommand
+    command:
+      name: "AI: Connectivity Test"
+  updateConnectivityTestPage:
+    path: src/connectivity.ts:updateConnectivityTestPage
+    events:
+      - editor:pageLoaded
+      - editor:pageReloaded
