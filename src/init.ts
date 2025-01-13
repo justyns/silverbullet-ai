@@ -51,9 +51,9 @@ export async function getSelectedTextModel() {
   }
   try {
     return await clientStore.get("ai.selectedTextModel");
-  } catch (error) {
+  } catch (_error) {
     // This doesn't work in cli mode
-    // console.error("Error fetching selected text model:", error);
+    // console.error("Error fetching selected text model:", _error);
     return undefined;
   }
 }
@@ -65,9 +65,9 @@ export async function getSelectedImageModel() {
   }
   try {
     return await clientStore.get("ai.selectedImageModel");
-  } catch (error) {
+  } catch (_error) {
     // This doesn't work in cli mode
-    // console.error("Error fetching selected image model:", error);
+    // console.error("Error fetching selected image model:", _error);
     return undefined;
   }
 }
@@ -79,9 +79,9 @@ export async function getSelectedEmbeddingModel() {
   }
   try {
     return await clientStore.get("ai.selectedEmbeddingModel");
-  } catch (error) {
+  } catch (_error) {
     // This doesn't work in cli mode
-    // console.error("Error fetching selected embedding model:", error);
+    // console.error("Error fetching selected embedding model:", _error);
     return undefined;
   }
 }
@@ -250,8 +250,8 @@ export async function configureSelectedModel(model: ModelConfig) {
         apiKey = newApiKey;
         log("client", "API key updated");
       }
-    } catch (error) {
-      console.error("Error reading secret:", error);
+    } catch (_error) {
+      console.error("Error reading secret:", _error);
       throw new Error(
         "Failed to read the AI API key. Please check the SECRETS page.",
       );

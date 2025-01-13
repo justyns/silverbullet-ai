@@ -2,7 +2,7 @@
 
 declare module "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts" {
   global {
-    var nativeFetch: typeof fetch;
+    let nativeFetch: typeof fetch;
   }
 }
 

@@ -19,7 +19,7 @@ import {
   enrichChatMessages,
   supportsPlugSlashComplete,
 } from "./utils.ts";
-import { ChatMessage, PostProcessorData } from "./types.ts";
+import { ChatMessage } from "./types.ts";
 
 // This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(

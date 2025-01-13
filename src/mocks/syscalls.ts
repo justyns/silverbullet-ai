@@ -6,16 +6,16 @@ import { readSetting } from "https://deno.land/x/silverbullet@0.10.1/plug-api/li
 let editorText = "Mock data";
 (globalThis as any).editorText;
 
-let pages: { [key: string]: string } = {};
+const pages: { [key: string]: string } = {};
 (globalThis as any).pages;
 
 let currentEnv: string = "server";
 (globalThis as any).currentEnv;
 
-let clientStore: { [key: string]: string } = {};
+const clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
 
-let spaceConfig = {};
+let _spaceConfig = {};
 (globalThis as any).spaceConfig;
 
 // let indexedObjects: { [key: string]: string } = {};
@@ -64,7 +64,7 @@ let spaceConfig = {};
 
     // hack to ignore space config in tests for now
     case "system.setSpaceConfig":
-      spaceConfig = args[0];
+      _spaceConfig = args[0];
       break;
     case "system.getSpaceConfig":
       return readSetting(args[0], args[1]);

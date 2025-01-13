@@ -530,9 +530,7 @@ export async function searchCombinedEmbeddings(
   minSimilarity = 0.15,
   updateEditorProgress = false,
 ): Promise<CombinedEmbeddingResult[]> {
-  let searchResults;
-
-  searchResults = await searchEmbeddings(query, -1, updateEditorProgress);
+  const searchResults = await searchEmbeddings(query, -1, updateEditorProgress);
 
   const combinedResults: { [page: string]: CombinedEmbeddingResult } = {};
 
