@@ -258,6 +258,9 @@ Use these commands to select your models:
   }
 }
 
+/**
+ * Command to navigate to the AI Connectivity Test page, which runs various tests against the currently selected models.
+ */
 export async function connectivityTestCommand() {
   await initIfNeeded();
   await editor.navigate({ page: connectivityTestPage });
