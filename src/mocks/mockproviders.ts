@@ -26,6 +26,15 @@ export class MockProvider extends AbstractProvider {
     }
     return mockResponse;
   }
+
+  async listModels(): Promise<string[]> {
+    return [
+      "mock-gpt-3.5",
+      "mock-gpt-4",
+      "mock-claude-2",
+      this.modelName // Include the currently configured model
+    ];
+  }
 }
 
 export class MockImageProvider extends AbstractImageProvider {

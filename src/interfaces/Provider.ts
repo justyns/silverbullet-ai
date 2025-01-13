@@ -23,6 +23,7 @@ export interface ProviderInterface {
     systemPrompt?: string,
     enrichMessages?: boolean,
   ) => Promise<string>;
+  listModels: () => Promise<string[]>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -44,6 +45,7 @@ export abstract class AbstractProvider implements ProviderInterface {
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;
+  abstract listModels(): Promise<string[]>;
 
   async streamChatIntoEditor(
     options: StreamChatOptions,

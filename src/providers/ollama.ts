@@ -40,6 +40,44 @@ export class OllamaProvider extends AbstractProvider {
       onResponseComplete,
     });
   }
+
+  async listModels(): Promise<string[]> {
+    try {
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
+      const response = await nativeFetch(
+        `${this.baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
+
+        {
+          method: "GET",
+          headers: headers,
+        },
+      );
+
+      if (!response.ok) {
+        console.error("HTTP response: ", response);
+        console.error("HTTP response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data || !data.models) {
+        throw new Error("Invalid response from Ollama models endpoint.");
+      }
+
+      return data.models.map((model: any) => model.name);
+    } catch (error) {
+      console.error("Error fetching Ollama models:", error);
+      throw error;
+    }
+  }
 }
 
 export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {

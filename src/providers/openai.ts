@@ -122,6 +122,42 @@ export class OpenAIProvider extends AbstractProvider {
     return "";
   }
 
+  async listModels(): Promise<string[]> {
+    try {
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await nativeFetch(
+        `${this.baseUrl}/models`,
+        {
+          method: "GET",
+          headers: headers,
+        },
+      );
+
+      if (!response.ok) {
+        console.error("HTTP response: ", response);
+        console.error("HTTP response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data || !data.data) {
+        throw new Error("Invalid response from OpenAI models endpoint.");
+      }
+
+      return data.data.map((model: any) => model.id);
+    } catch (error) {
+      console.error("Error fetching OpenAI models:", error);
+      throw error;
+    }
+  }
+
   async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {
     try {
       const body = JSON.stringify({
