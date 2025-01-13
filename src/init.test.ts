@@ -167,11 +167,15 @@ Deno.test("initializeOpenAI should throw an error if the API key is empty", asyn
     await syscall("mock.setPage", "SECRETS", secretsPage);
     await initializeOpenAI();
   } catch (error) {
-    assertEquals(
-      error.message,
-      "AI API key is missing. Please set it in the secrets page.",
-      "initializeOpenAI did not handle empty secrets correctly",
-    );
+    if (error instanceof Error) {
+      assertEquals(
+        error.message,
+        "AI API key is missing. Please set it in the secrets page.",
+        "initializeOpenAI did not handle empty secrets correctly",
+      );
+    } else {
+      throw error;
+    }
   }
 });
 
@@ -182,11 +186,15 @@ Deno.test("initializeOpenAI should throw an error if the API secret is missing",
     await syscall("mock.setPage", "SECRETS", secretsPage);
     await initializeOpenAI();
   } catch (error) {
-    assertEquals(
-      error.message,
-      "Failed to read the AI API key. Please check the SECRETS page.",
-      "initializeOpenAI did not handle missing secrets correctly",
-    );
+    if (error instanceof Error) {
+      assertEquals(
+        error.message,
+        "Failed to read the AI API key. Please check the SECRETS page.",
+        "initializeOpenAI did not handle missing secrets correctly",
+      );
+    } else {
+      throw error;
+    }
   }
 });
 
@@ -198,11 +206,15 @@ Deno.test(
       await syscall("mock.setPage", "SETTINGS", settingsPageSample);
       await initializeOpenAI();
     } catch (error) {
-      assertEquals(
-        error.message,
-        "Failed to read the AI API key. Please check the SECRETS page.",
-        "initializeOpenAI did not handle missing secrets correctly",
-      );
+      if (error instanceof Error) {
+        assertEquals(
+          error.message,
+          "Failed to read the AI API key. Please check the SECRETS page.",
+          "initializeOpenAI did not handle missing secrets correctly",
+        );
+      } else {
+        throw error;
+      }
     }
   },
 );

@@ -21,7 +21,7 @@ type GeminiChatContent = {
 };
 
 export class GeminiProvider extends AbstractProvider {
-  name = "Gemini";
+  override name = "Gemini";
 
   constructor(
     apiKey: string,

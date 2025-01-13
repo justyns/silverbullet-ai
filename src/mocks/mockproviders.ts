@@ -32,7 +32,7 @@ export class MockProvider extends AbstractProvider {
       "mock-gpt-3.5",
       "mock-gpt-4",
       "mock-claude-2",
-      this.modelName // Include the currently configured model
+      this.modelName, // Include the currently configured model
     ];
   }
 }

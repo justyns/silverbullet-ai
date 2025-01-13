@@ -6,7 +6,7 @@ theme:
   name: material
   color_mode: auto
   user_color_mode_toggle: true
-  palette: 
+  palette:
     # Palette toggle for light mode
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -81,13 +81,13 @@ nav:
   - Quick Start.md
   - Installation.md
   - Configuration:
-    - Configuration.md
-    - Configuration
+      - Configuration.md
+      - Configuration
   - AI Core Library.md
   - Templated Prompts.md
   - Commands:
-    - Commands
+      - Commands
   - Providers:
-    - Providers
+      - Providers
   - Changelog.md
   - Development.md
