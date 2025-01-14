@@ -62,6 +62,7 @@ isn't too helpful for most cases.
 - **AI: Search**: Ask the user for a search query, and then navigate to the search results page.
 Search results are provided by calculating the cosine similarity between the
 query embedding and each indexed embedding.
+- **AI: Connectivity Test**: Command to navigate to the AI Connectivity Test page, which runs various tests against the currently selected models.
 
 <!-- end-commands-and-functions -->
 

@@ -1,6 +1,6 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import "./mocks/syscalls.ts";
-import { convertPageToMessages, log } from "./utils.ts";
+import { convertPageToMessages } from "./utils.ts";
 import { folderName } from "./utils.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";

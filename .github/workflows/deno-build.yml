@@ -7,7 +7,7 @@ on:
     branches: ["main"]
 
 permissions:
-    contents: write
+  contents: write
 
 jobs:
   test:
@@ -25,19 +25,19 @@ jobs:
 
       - name: Verify formatting
         run: deno fmt --check
-      
+
       - name: Run Deno test
         run: deno task test
-      
+
       - name: Coverage
         run: deno coverage --lcov cov_profile/ > cov.lcov
 
-    #   - name: Run linter
-    #     run: deno lint
+      #   - name: Run linter
+      #     run: deno lint
 
       - name: Setup silverbullet
         run: deno install -f --name silverbullet  --unstable-kv --unstable-worker-options -A https://get.silverbullet.md
-    
+
       - name: Add Deno bin to PATH
         run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
 

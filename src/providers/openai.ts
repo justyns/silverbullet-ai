@@ -1,5 +1,5 @@
 import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
-import { editor } from "@silverbulletmd/silverbullet/syscalls";
+import { editor } from "https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 
@@ -25,7 +25,7 @@ type HttpHeaders = {
 };
 
 export class OpenAIProvider extends AbstractProvider {
-  name = "OpenAI";
+  override name = "OpenAI";
   requireAuth: boolean;
 
   constructor(
@@ -120,6 +120,42 @@ export class OpenAIProvider extends AbstractProvider {
       throw error;
     }
     return "";
+  }
+
+  async listModels(): Promise<string[]> {
+    try {
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await nativeFetch(
+        `${this.baseUrl}/models`,
+        {
+          method: "GET",
+          headers: headers,
+        },
+      );
+
+      if (!response.ok) {
+        console.error("HTTP response: ", response);
+        console.error("HTTP response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (!data || !data.data) {
+        throw new Error("Invalid response from OpenAI models endpoint.");
+      }
+
+      return data.data.map((model: any) => model.id);
+    } catch (error) {
+      console.error("Error fetching OpenAI models:", error);
+      throw error;
+    }
   }
 
   async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {

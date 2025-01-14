@@ -26,6 +26,15 @@ export class MockProvider extends AbstractProvider {
     }
     return mockResponse;
   }
+
+  listModels(): Promise<string[]> {
+    return Promise.resolve([
+      "mock-gpt-3.5",
+      "mock-gpt-4",
+      "mock-claude-2",
+      this.modelName, // Include the currently configured model
+    ]);
+  }
 }
 
 export class MockImageProvider extends AbstractImageProvider {
@@ -37,7 +46,7 @@ export class MockImageProvider extends AbstractImageProvider {
     super(apiKey, baseUrl, "mock", modelName);
   }
 
-  generateImage(options: ImageGenerationOptions): Promise<string> {
+  generateImage(_options: ImageGenerationOptions): Promise<string> {
     return new Promise<string>((resolve) => {
       setTimeout(() => {
         resolve("https://example.com/mock-image.jpg");
@@ -56,7 +65,7 @@ export class MockEmbeddingProvider extends AbstractEmbeddingProvider {
   }
 
   _generateEmbeddings(
-    options: EmbeddingGenerationOptions,
+    _options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
     return new Promise<Array<number>>((resolve) => {
       setTimeout(() => {

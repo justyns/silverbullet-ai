@@ -7,6 +7,8 @@
     "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/parse_query",
     "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/attribute",
     "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@0.10.1/types",
+    "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/yaml_page",
+    "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@0.10.1/type/client",
 
     "$common/": "https://deno.land/x/silverbullet@0.10.1/common/",
 
@@ -30,6 +32,7 @@
     "@codemirror/lang-markdown": "https://esm.sh/@codemirror/lang-markdown@6.2.5?external=@codemirror/state,@lezer/common,@codemirror/language,@lezer/markdown,@codemirror/view,@lezer/highlight,@codemirror/lang-html,@codemirror/autocomplete&target=es2022",
     "@codemirror/legacy-modes/": "https://esm.sh/@codemirror/legacy-modes@6.4.0/",
     "@codemirror/lang-javascript": "https://esm.sh/@codemirror/lang-javascript@6.2.2?external=@codemirror/language,@codemirror/autocomplete,@codemirror/view,@codemirror/state,@codemirror/lint,@lezer/common,@lezer/lr,@lezer/javascript,@codemirror/commands&target=es2022",
-    "style-mod": "https://esm.sh/style-mod@4.1.2"
+    "style-mod": "https://esm.sh/style-mod@4.1.2",
+    "crelt": "https://esm.sh/crelt@1.x"
   }
 }
