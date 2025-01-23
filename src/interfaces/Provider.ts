@@ -9,7 +9,7 @@ import { ChatMessage, PostProcessorData, StreamChatOptions } from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";
 
 export interface ProviderInterface {
-  name: string;
+  fullName: string;
   apiKey: string;
   baseUrl: string;
   modelName: string;
@@ -27,21 +27,36 @@ export interface ProviderInterface {
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
-  name: string;
+  fullName: string;
   apiKey: string;
   baseUrl: string;
   modelName: string;
+  proxyOnServer: boolean;
 
   constructor(
     name: string,
     apiKey: string,
     baseUrl: string,
     modelName: string,
+    proxyOnServer: boolean = false,
   ) {
-    this.name = name;
+    this.fullName = name;
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.modelName = modelName;
+    this.proxyOnServer = proxyOnServer;
+  }
+
+  protected getUrl(path: string): string {
+    // Remove leading slashes from the path
+    path = path.replace(/^\/+/, '');
+
+    if (this.proxyOnServer) {
+      console.log("Proxy on server, using proxy URL:", `/_/ai-proxy/${this.fullName}/${path}`);
+      return `/_/ai-proxy/${this.fullName}/${path}`;
+    } else {
+      return `${this.baseUrl}/${path}`;
+    }
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;

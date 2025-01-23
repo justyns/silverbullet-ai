@@ -2,6 +2,11 @@ name: silverbullet-ai
 requiredPermissions:
   - fetch
 functions:
+  proxyHandler:
+    path: src/proxyHandler.ts:proxyHandler
+    events:
+      - http:request:/ai-proxy/*
+      
   aiPromptSlashCommplete:
     path: src/prompts.ts:aiPromptSlashComplete
     events:

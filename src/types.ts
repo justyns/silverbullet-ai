@@ -129,6 +129,7 @@ export type ModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  proxyOnServer?: boolean;
 };
 
 export type ImageModelConfig = {
@@ -139,6 +140,7 @@ export type ImageModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  proxyOnServer?: boolean;
 };
 
 export type EmbeddingModelConfig = {
@@ -149,6 +151,7 @@ export type EmbeddingModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  proxyOnServer?: boolean;
 };
 
 export type PostProcessorData = {

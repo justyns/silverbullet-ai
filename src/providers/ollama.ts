@@ -11,23 +11,27 @@ type HttpHeaders = {
 
 // For now, the Ollama provider is just a wrapper around the openai provider
 export class OllamaProvider extends AbstractProvider {
-  override name = "Ollama";
   requireAuth: boolean;
   openaiProvider: OpenAIProvider;
 
   constructor(
+    modelConfigName: string,
     apiKey: string,
     modelName: string,
     baseUrl: string,
     requireAuth: boolean,
+    proxyOnServer: boolean,
   ) {
-    super("Ollama", apiKey, baseUrl, modelName);
+    super(modelConfigName, apiKey, baseUrl, modelName, proxyOnServer);
     this.requireAuth = requireAuth;
+    this.proxyOnServer = proxyOnServer;
     this.openaiProvider = new OpenAIProvider(
+      modelConfigName,
       apiKey,
       modelName,
       baseUrl,
       requireAuth,
+      proxyOnServer,
     );
   }
 
@@ -54,7 +58,7 @@ export class OllamaProvider extends AbstractProvider {
 
       // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
       const response = await nativeFetch(
-        `${this.baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
+        this.getUrl('api/tags').replace(/\/v1\/?/, ''),
         {
           method: "GET",
           headers: headers,
@@ -82,12 +86,13 @@ export class OllamaProvider extends AbstractProvider {
 
 export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
   constructor(
+    modelConfigName: string,
     apiKey: string,
     modelName: string,
     baseUrl: string,
     requireAuth: boolean = false,
   ) {
-    super(apiKey, baseUrl, "Ollama", modelName, requireAuth);
+    super(modelConfigName, apiKey, baseUrl, modelName, requireAuth);
   }
 
   // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
@@ -108,7 +113,7 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/api/embeddings`,
+      this.getUrl('api/embeddings'),
       {
         method: "POST",
         headers: headers,

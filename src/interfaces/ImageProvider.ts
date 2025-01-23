@@ -13,7 +13,7 @@ export interface ImageProviderInterface {
 export abstract class AbstractImageProvider implements ImageProviderInterface {
   apiKey: string;
   baseUrl: string;
-  name: string;
+  fullName: string;
   modelName: string;
   requireAuth: boolean;
 
@@ -26,7 +26,7 @@ export abstract class AbstractImageProvider implements ImageProviderInterface {
   ) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
-    this.name = name;
+    this.fullName = name;
     this.modelName = modelName;
     this.requireAuth = requireAuth;
   }

@@ -25,17 +25,19 @@ type HttpHeaders = {
 };
 
 export class OpenAIProvider extends AbstractProvider {
-  override name = "OpenAI";
   requireAuth: boolean;
 
   constructor(
+    modelConfigName: string,
     apiKey: string,
     modelName: string,
     baseUrl: string,
     requireAuth: boolean,
+    proxyOnServer: boolean,
   ) {
-    super("OpenAI", apiKey, baseUrl, modelName);
+    super(modelConfigName, apiKey, baseUrl, modelName, proxyOnServer);
     this.requireAuth = requireAuth;
+    this.proxyOnServer = proxyOnServer;
   }
 
   async chatWithAI(
@@ -56,7 +58,7 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = `${this.baseUrl}/chat/completions`;
+      const sseUrl = this.getUrl('chat/completions');
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -133,7 +135,7 @@ export class OpenAIProvider extends AbstractProvider {
       }
 
       const response = await nativeFetch(
-        `${this.baseUrl}/models`,
+        this.getUrl('models'),
         {
           method: "GET",
           headers: headers,
@@ -171,7 +173,7 @@ export class OpenAIProvider extends AbstractProvider {
       };
 
       const response = await nativeFetch(
-        this.baseUrl + "/chat/completions",
+        this.getUrl('chat/completions'),
         {
           method: "POST",
           headers: headers,
@@ -203,12 +205,13 @@ export class OpenAIProvider extends AbstractProvider {
 
 export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
   constructor(
+    modelConfigName: string,
     apiKey: string,
     modelName: string,
     baseUrl: string,
     requireAuth: boolean = true,
   ) {
-    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
+    super(modelConfigName, apiKey, baseUrl, modelName, requireAuth);
   }
 
   async _generateEmbeddings(
@@ -229,7 +232,7 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/embeddings`,
+      this.getUrl('embeddings'),
       {
         method: "POST",
         headers: headers,

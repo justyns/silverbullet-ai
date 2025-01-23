@@ -21,18 +21,18 @@ type GeminiChatContent = {
 };
 
 export class GeminiProvider extends AbstractProvider {
-  override name = "Gemini";
-
   constructor(
+    modelConfigName: string,
     apiKey: string,
     modelName: string,
+    proxyOnServer: boolean,
   ) {
     const baseUrl = "https://generativelanguage.googleapis.com";
-    super("Gemini", apiKey, baseUrl, modelName);
+    super(modelConfigName, apiKey, baseUrl, modelName, proxyOnServer);
   }
 
   async listModels(): Promise<any> {
-    const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
+    const apiUrl = this.getUrl(`v1beta/models?key=${this.apiKey}`);
     try {
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -93,8 +93,7 @@ export class GeminiProvider extends AbstractProvider {
     const { messages, onDataReceived } = options;
 
     try {
-      const sseUrl =
-        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+      const sseUrl = this.getUrl(`v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`);
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -166,7 +165,7 @@ export class GeminiProvider extends AbstractProvider {
     );
 
     const response = await nativeFetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
+      this.getUrl(`v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`),
       {
         method: "POST",
         headers: {
@@ -214,7 +213,7 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
+      this.getUrl(`v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`),
       {
         method: "POST",
         headers: headers,
