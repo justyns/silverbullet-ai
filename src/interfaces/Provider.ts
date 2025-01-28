@@ -49,10 +49,13 @@ export abstract class AbstractProvider implements ProviderInterface {
 
   protected getUrl(path: string): string {
     // Remove leading slashes from the path
-    path = path.replace(/^\/+/, '');
+    path = path.replace(/^\/+/, "");
 
     if (this.proxyOnServer) {
-      console.log("Proxy on server, using proxy URL:", `/_/ai-proxy/${this.fullName}/${path}`);
+      console.log(
+        "Proxy on server, using proxy URL:",
+        `/_/ai-proxy/${this.fullName}/${path}`,
+      );
       return `/_/ai-proxy/${this.fullName}/${path}`;
     } else {
       return `${this.baseUrl}/${path}`;

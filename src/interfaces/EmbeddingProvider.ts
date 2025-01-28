@@ -30,7 +30,7 @@ export abstract class AbstractEmbeddingProvider
     baseUrl: string,
     modelName: string,
     requireAuth: boolean = true,
-    proxyOnServer?: boolean
+    proxyOnServer?: boolean,
   ) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
@@ -42,11 +42,11 @@ export abstract class AbstractEmbeddingProvider
 
   protected getUrl(path: string): string {
     // Remove any leading slashes from the path
-    path = path.replace(/^\/+/, '');
+    path = path.replace(/^\/+/, "");
 
     if (this.proxyOnServer) {
       // Remove any v1 prefix from the path if it exists
-      path = path.replace(/^v1\//, '');
+      path = path.replace(/^v1\//, "");
       return `/_/ai-proxy/${this.fullName}/${path}`;
     } else {
       return `${this.baseUrl}/${path}`;

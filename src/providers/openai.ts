@@ -58,7 +58,7 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = this.getUrl('chat/completions');
+      const sseUrl = this.getUrl("chat/completions");
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -135,7 +135,7 @@ export class OpenAIProvider extends AbstractProvider {
       }
 
       const response = await nativeFetch(
-        this.getUrl('models'),
+        this.getUrl("models"),
         {
           method: "GET",
           headers: headers,
@@ -173,7 +173,7 @@ export class OpenAIProvider extends AbstractProvider {
       };
 
       const response = await nativeFetch(
-        this.getUrl('chat/completions'),
+        this.getUrl("chat/completions"),
         {
           method: "POST",
           headers: headers,
@@ -232,7 +232,7 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const response = await nativeFetch(
-      this.getUrl('embeddings'),
+      this.getUrl("embeddings"),
       {
         method: "POST",
         headers: headers,

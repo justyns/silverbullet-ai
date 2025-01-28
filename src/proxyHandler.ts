@@ -8,7 +8,10 @@ import type {
 } from "@silverbulletmd/silverbullet/types";
 import { Provider } from "./types.ts";
 
-export async function proxyHandler(request: EndpointRequest): Promise<Response | EndpointResponse> {
+export async function proxyHandler(
+  request: EndpointRequest,
+): Promise<Response | EndpointResponse> {
+  // TODO: Add a token or something to restrict access to this endpoint
   console.log("ai:proxyHandler called to handle path:", request.path);
   // Find the model name from the path (e.g., /ai-proxy/ollama-localhost-proxy/chat/completions)
   const pathParts = request.path.split("/");
@@ -29,47 +32,63 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
 
     // Find the model configuration that matches the requested model name
     const modelConfig = aiSettings.textModels.find(
-      (model: ModelConfig) => model.name === modelName
+      (model: ModelConfig) => model.name === modelName,
     );
 
     if (!modelConfig) {
-      return new Response(`Model '${modelName}' not found in configuration`, { status: 404 });
+      return new Response(`Model '${modelName}' not found in configuration`, {
+        status: 404,
+      });
     }
 
     // Check if proxy is enabled for this model
     if (modelConfig.proxyOnServer === false) {
-      return new Response(`Proxy is disabled for model '${modelName}'`, { status: 403 });
+      return new Response(`Proxy is disabled for model '${modelName}'`, {
+        status: 403,
+      });
     }
 
     // TODO: Confirm this doesn't overwrite the user's selected model
     await configureSelectedModel(modelConfig);
     let baseUrl = modelConfig.baseUrl;
 
-    console.log("proxyHandler baseUrl:", baseUrl, "provider:", modelConfig.provider, "remainingPath:", remainingPath);
+    console.log(
+      "proxyHandler baseUrl:",
+      baseUrl,
+      "provider:",
+      modelConfig.provider,
+      "remainingPath:",
+      remainingPath,
+    );
     // TODO: switch completions for ollama to use ollama api instead of openai api?
     if (modelConfig.provider === Provider.Ollama) {
       // For the list models endpoint, use /api/ without v1 prefix
       if (remainingPath.includes("models") || remainingPath == "api/tags") {
-        baseUrl = baseUrl.replace(/v1\/?/, '');
+        baseUrl = baseUrl.replace(/v1\/?/, "");
       } else {
         // Everything else should use openai-compatible endpoints under /v1/
-        baseUrl = baseUrl.replace(/\/v1\/?$/, '') + '/v1/';
+        baseUrl = baseUrl.replace(/\/v1\/?$/, "") + "/v1/";
       }
       console.log("New baseUrl for ollama:", baseUrl);
     }
 
     // Use the baseUrl from the model config and append the remaining path
-    const apiUrl = baseUrl.endsWith('/') ? `${baseUrl}${remainingPath}` : `${baseUrl}/${remainingPath}`;
+    const apiUrl = baseUrl.endsWith("/")
+      ? `${baseUrl}${remainingPath}`
+      : `${baseUrl}/${remainingPath}`;
 
     // Forward the request to the appropriate LLM API with original headers
     const requestHeaders: Record<string, string> = {
       "Content-Type": "application/json",
       "Accept": "*/*",
     };
-    
+
     // Copy other relevant headers, but skip problematic ones
     for (const [key, value] of Object.entries(request.headers)) {
-      if (!["host", "connection", "origin", "content-type", "content-length"].includes(key.toLowerCase())) {
+      if (
+        !["host", "connection", "origin", "content-type", "content-length"]
+          .includes(key.toLowerCase())
+      ) {
         requestHeaders[key] = value as string;
       }
     }
@@ -78,7 +97,9 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
     let requestBody: any = undefined;
     if (request.body) {
       try {
-        requestBody = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
+        requestBody = typeof request.body === "string"
+          ? JSON.parse(request.body)
+          : request.body;
       } catch (error) {
         console.error("Error processing request body:", error);
         // Only return error for endpoints that require a body
@@ -93,8 +114,11 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
 
     if (isStreamingRequest) {
       console.log("proxyHandler handling streaming request");
-      console.log("Request body before sending:", JSON.stringify(requestBody, null, 2));
-      
+      console.log(
+        "Request body before sending:",
+        JSON.stringify(requestBody, null, 2),
+      );
+
       // For streaming requests, set appropriate headers
       requestHeaders["Accept"] = "text/event-stream";
       requestHeaders["Cache-Control"] = "no-cache";
@@ -111,11 +135,12 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
       const { readable, writable } = new TransformStream();
       response.body.pipeTo(writable);
 
-
       if (!response.ok) {
         const errorText = await response.text();
         console.log("Error from LLM API:", errorText);
-        return new Response(`Failed to fetch from LLM API: ${errorText}`, { status: response.status });
+        return new Response(`Failed to fetch from LLM API: ${errorText}`, {
+          status: response.status,
+        });
       }
 
       // Instead of returning the stream directly, return a special response
@@ -123,16 +148,16 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
         status: response.status,
         headers: {
           ...Object.fromEntries(response.headers.entries()),
-          'content-type': 'text/event-stream',
+          "content-type": "text/event-stream",
         },
         // Send the response as an object that can be serialized
         body: {
-          __type: 'STREAM_PROXY',
+          __type: "STREAM_PROXY",
           url: apiUrl,
           method: request.method,
           headers: requestHeaders,
-          requestBody: requestBody
-        }
+          requestBody: requestBody,
+        },
       };
     }
 
@@ -140,7 +165,9 @@ export async function proxyHandler(request: EndpointRequest): Promise<Response |
     const response = await nativeFetch(apiUrl, {
       method: request.method,
       headers: requestHeaders,
-      body: request.method !== "GET" && request.method !== "HEAD" && requestBody ? JSON.stringify(requestBody) : undefined,
+      body: request.method !== "GET" && request.method !== "HEAD" && requestBody
+        ? JSON.stringify(requestBody)
+        : undefined,
     });
 
     if (!response.ok) {

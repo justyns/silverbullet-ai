@@ -58,7 +58,7 @@ export class OllamaProvider extends AbstractProvider {
 
       // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
       const response = await nativeFetch(
-        this.getUrl('api/tags').replace(/\/v1\/?/, ''),
+        this.getUrl("api/tags").replace(/\/v1\/?/, ""),
         {
           method: "GET",
           headers: headers,
@@ -113,7 +113,7 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const response = await nativeFetch(
-      this.getUrl('api/embeddings'),
+      this.getUrl("api/embeddings"),
       {
         method: "POST",
         headers: headers,
