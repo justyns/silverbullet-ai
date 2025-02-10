@@ -33,7 +33,7 @@ jobs:
       SB_DB_BACKEND: memory
     steps:
       - name: Setup Deno
-        uses: denoland/setup-deno@fa660b328d065f7683e7303976bd81e2d58e98ae # v1.4.1
+        uses: denoland/setup-deno@11b63cf76cfcafb4e43f97b6cad24d8e8438f62d # v1.5.2
         with:
           deno-version: v1.x
 
