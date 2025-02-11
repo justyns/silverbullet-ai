@@ -1,5 +1,4 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
-import { editor } from "https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls.ts";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { SSE } from "npm:sse.js@2.2.0";
 import { apiKey } from "../init.ts";
 import {
@@ -7,21 +6,12 @@ import {
   EmbeddingGenerationOptions,
   EmbeddingModelConfig,
   ModelConfig,
+  RequestDetails,
+  StreamChatOptions,
 } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
-
-type StreamChatOptions = {
-  messages: Array<ChatMessage>;
-  stream?: boolean;
-  onDataReceived?: (data: any) => void;
-  onResponseComplete?: (data: any) => void;
-  cursorStart?: number;
-  cursorFollow?: boolean;
-  scrollIntoView?: boolean;
-  includeChatSystemPrompt?: boolean;
-};
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -33,12 +23,36 @@ export class OpenAIProvider extends AbstractProvider {
     super(config);
   }
 
+  buildRequestDetails(options: StreamChatOptions): RequestDetails {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...(this.config.requireAuth && {
+        "Authorization": `Bearer ${apiKey}`,
+      }),
+      ...(options.stream && {
+        "Accept": "text/event-stream",
+      }),
+    };
+
+    return {
+      url: `${this.config.baseUrl}/chat/completions`,
+      method: "POST",
+      headers,
+      body: {
+        model: this.config.modelName,
+        messages: options.messages,
+        stream: options.stream,
+      },
+    };
+  }
+
   async chatWithAI(
     { messages, stream, onDataReceived, onResponseComplete }: StreamChatOptions,
   ): Promise<any> {
     if (stream) {
       return await this.streamChat({
         messages,
+        stream: true,
         onDataReceived,
         onResponseComplete,
       });
@@ -51,28 +65,19 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = `${this.config.baseUrl}/chat/completions`;
-
-      const headers: HttpHeaders = {
-        "Content-Type": "application/json",
-      };
-
-      if (this.config.requireAuth) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
+      const { url, headers, body } = this.buildRequestDetails({
+        messages,
+        stream: true
+      });
 
       const sseOptions = {
         method: "POST",
         headers: headers,
-        payload: JSON.stringify({
-          model: this.config.modelName,
-          stream: true,
-          messages: messages,
-        }),
+        payload: JSON.stringify(body),
         withCredentials: false,
       };
 
-      const source = new SSE(sseUrl, sseOptions);
+      const source = new SSE(url, sseOptions);
       let fullMsg = "";
 
       source.addEventListener("message", function (e: sseEvent) {
@@ -119,21 +124,16 @@ export class OpenAIProvider extends AbstractProvider {
 
   async listModels(): Promise<string[]> {
     try {
-      const headers: HttpHeaders = {
-        "Content-Type": "application/json",
-      };
+      const { url, headers } = this.buildRequestDetails({
+        messages: [],
+        stream: false
+      });
 
-      if (this.config.requireAuth) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const response = await nativeFetch(
-        `${this.config.baseUrl}/models`,
-        {
-          method: "GET",
-          headers: headers,
-        },
-      );
+      const modelsUrl = `${this.config.baseUrl}/models`;
+      const response = await fetch(modelsUrl, {
+        method: "GET",
+        headers: headers,
+      });
 
       if (!response.ok) {
         console.error("HTTP response: ", response);
@@ -153,28 +153,18 @@ export class OpenAIProvider extends AbstractProvider {
     }
   }
 
-  async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {
+  async nonStreamingChat(messages: Array<ChatMessage>): Promise<string> {
     try {
-      const body = JSON.stringify({
-        model: this.config.modelName,
-        messages: messages,
+      const { url, headers, body } = this.buildRequestDetails({
+        messages,
+        stream: false
       });
 
-      const headers: HttpHeaders = {
-        "Content-Type": "application/json",
-      };
-      if (this.config.requireAuth) {
-        headers["Authorization"] = `Bearer ${apiKey}`;
-      }
-
-      const response = await nativeFetch(
-        `${this.config.baseUrl}/chat/completions`,
-        {
-          method: "POST",
-          headers: headers,
-          body: body,
-        },
-      );
+      const response = await fetch(url, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(body),
+      });
 
       if (!response.ok) {
         console.error("http response: ", response);
@@ -223,7 +213,7 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await fetch(
       `${this.config.baseUrl}/embeddings`,
       {
         method: "POST",

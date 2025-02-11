@@ -12,6 +12,24 @@ export type StreamChatOptions = {
   postProcessors?: string[];
 };
 
+export type RequestDetails = {
+  url: string;
+  method: string;
+  headers: Record<string, string>;
+  body: any;
+};
+
+export type ProxyRequest = RequestDetails & {
+  requestId: string;
+  stream: boolean;
+};
+
+export type ProxyResponseChunk = {
+  requestId: string;
+  chunk: string;
+  done?: boolean;
+};
+
 export type ImageGenerationOptions = {
   numImages: number;
   prompt: string;

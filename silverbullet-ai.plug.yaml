@@ -18,6 +18,18 @@ functions:
     path: sbai.ts:reloadConfig
     events:
       - config:loaded
+  
+  serverProxyRequest:
+    path: src/proxyHandler.ts:proxyRequestStart
+    # env: server
+    events:
+      - ai:proxyRequestStart
+  
+  clientHandleProxyResponse:
+    path: src/proxyHandler.ts:handleProxyResponse
+    # env: client
+    events:
+      - ai:proxyResponseChunk
 
   summarizeNote:
     path: sbai.ts:openSummaryPanel
