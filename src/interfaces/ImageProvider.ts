@@ -1,34 +1,17 @@
-import { ImageGenerationOptions } from "../types.ts";
+import { ImageGenerationOptions, ImageModelConfig } from "../types.ts";
 
 export interface ImageProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
+  config: ImageModelConfig;
   generateImage: (
     options: ImageGenerationOptions,
   ) => Promise<string>;
 }
 
 export abstract class AbstractImageProvider implements ImageProviderInterface {
-  apiKey: string;
-  baseUrl: string;
-  name: string;
-  modelName: string;
-  requireAuth: boolean;
+  config: ImageModelConfig;
 
-  constructor(
-    apiKey: string,
-    baseUrl: string,
-    name: string,
-    modelName: string,
-    requireAuth: boolean = true,
-  ) {
-    this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
-    this.name = name;
-    this.modelName = modelName;
-    this.requireAuth = requireAuth;
+  constructor(config: ImageModelConfig) {
+    this.config = config;
   }
 
   abstract generateImage(

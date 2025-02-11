@@ -5,14 +5,16 @@ import {
   getLineOfPos,
   getPageLength,
 } from "../editorUtils.ts";
-import { ChatMessage, PostProcessorData, StreamChatOptions } from "../types.ts";
+import {
+  ChatMessage,
+  ModelConfig,
+  PostProcessorData,
+  StreamChatOptions,
+} from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";
 
 export interface ProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
+  config: ModelConfig;
   chatWithAI: (options: StreamChatOptions) => Promise<any>;
   streamChatIntoEditor: (
     options: StreamChatOptions,
@@ -27,21 +29,10 @@ export interface ProviderInterface {
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
+  config: ModelConfig;
 
-  constructor(
-    name: string,
-    apiKey: string,
-    baseUrl: string,
-    modelName: string,
-  ) {
-    this.name = name;
-    this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
-    this.modelName = modelName;
+  constructor(config: ModelConfig) {
+    this.config = config;
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;

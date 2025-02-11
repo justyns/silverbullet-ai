@@ -3,17 +3,18 @@ import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import {
   EmbeddingGenerationOptions,
+  EmbeddingModelConfig,
   ImageGenerationOptions,
+  ImageModelConfig,
+  ModelConfig,
   StreamChatOptions,
 } from "../types.ts";
-
 export class MockProvider extends AbstractProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string = "http://localhost",
-  ) {
-    super(apiKey, baseUrl, "mock", modelName);
+  constructor(config: ModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "http://localhost";
+    }
+    super(config);
   }
 
   async chatWithAI(options: StreamChatOptions): Promise<any> {
@@ -32,18 +33,17 @@ export class MockProvider extends AbstractProvider {
       "mock-gpt-3.5",
       "mock-gpt-4",
       "mock-claude-2",
-      this.modelName, // Include the currently configured model
+      this.config.modelName, // Include the currently configured model
     ]);
   }
 }
 
 export class MockImageProvider extends AbstractImageProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string = "http://localhost",
-  ) {
-    super(apiKey, baseUrl, "mock", modelName);
+  constructor(config: ImageModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "http://localhost";
+    }
+    super(config);
   }
 
   generateImage(_options: ImageGenerationOptions): Promise<string> {
@@ -56,12 +56,11 @@ export class MockImageProvider extends AbstractImageProvider {
 }
 
 export class MockEmbeddingProvider extends AbstractEmbeddingProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string = "http://localhost",
-  ) {
-    super(apiKey, baseUrl, "mock", modelName);
+  constructor(config: EmbeddingModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "http://localhost";
+    }
+    super(config);
   }
 
   _generateEmbeddings(

@@ -1,5 +1,11 @@
 import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
-import { EmbeddingGenerationOptions, StreamChatOptions } from "../types.ts";
+import { apiKey } from "../init.ts";
+import {
+  EmbeddingGenerationOptions,
+  EmbeddingModelConfig,
+  ModelConfig,
+  StreamChatOptions,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
@@ -11,24 +17,15 @@ type HttpHeaders = {
 
 // For now, the Ollama provider is just a wrapper around the openai provider
 export class OllamaProvider extends AbstractProvider {
-  override name = "Ollama";
-  requireAuth: boolean;
   openaiProvider: OpenAIProvider;
 
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string,
-    requireAuth: boolean,
-  ) {
-    super("Ollama", apiKey, baseUrl, modelName);
-    this.requireAuth = requireAuth;
-    this.openaiProvider = new OpenAIProvider(
-      apiKey,
-      modelName,
-      baseUrl,
-      requireAuth,
-    );
+  constructor(config: ModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "http://localhost:11434/v1";
+    }
+    super(config);
+    // Create a new config object for the OpenAI provider since it's using the same interface
+    this.openaiProvider = new OpenAIProvider(config);
   }
 
   async chatWithAI(
@@ -47,14 +44,16 @@ export class OllamaProvider extends AbstractProvider {
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
-
-      if (this.requireAuth) {
-        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      if (this.config.requireAuth) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+        headers["Authorization"] = `Bearer ${this.config.secretName}`;
       }
+
+      const baseUrl = this.config.baseUrl || "http://localhost:11434/v1";
 
       // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
       const response = await nativeFetch(
-        `${this.baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
+        `${baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
         {
           method: "GET",
           headers: headers,
@@ -81,13 +80,11 @@ export class OllamaProvider extends AbstractProvider {
 }
 
 export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string,
-    requireAuth: boolean = false,
-  ) {
-    super(apiKey, baseUrl, "Ollama", modelName, requireAuth);
+  constructor(config: EmbeddingModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "http://localhost:11434";
+    }
+    super(config);
   }
 
   // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
@@ -95,20 +92,20 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
     const body = JSON.stringify({
-      model: this.modelName,
+      model: this.config.modelName,
       prompt: options.text,
     });
 
     const headers: HttpHeaders = {
       "Content-Type": "application/json",
     };
-
-    if (this.requireAuth) {
-      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    if (this.config.requireAuth) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
+      headers["Authorization"] = `Bearer ${this.config.secretName}`;
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/api/embeddings`,
+      `${this.config.baseUrl}/api/embeddings`,
       {
         method: "POST",
         headers: headers,

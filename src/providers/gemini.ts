@@ -1,7 +1,12 @@
 import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { ChatMessage } from "../types.ts";
-import { StreamChatOptions } from "../types.ts";
+import { apiKey } from "../init.ts";
+import {
+  ChatMessage,
+  EmbeddingModelConfig,
+  ModelConfig,
+  StreamChatOptions,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
@@ -21,18 +26,15 @@ type GeminiChatContent = {
 };
 
 export class GeminiProvider extends AbstractProvider {
-  override name = "Gemini";
-
-  constructor(
-    apiKey: string,
-    modelName: string,
-  ) {
-    const baseUrl = "https://generativelanguage.googleapis.com";
-    super("Gemini", apiKey, baseUrl, modelName);
+  constructor(config: ModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "https://generativelanguage.googleapis.com";
+    }
+    super(config);
   }
 
   async listModels(): Promise<any> {
-    const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
+    const apiUrl = `${this.config.baseUrl}/v1beta/models?key=${apiKey}`;
     try {
       const response = await fetch(apiUrl);
       if (!response.ok) {
@@ -94,7 +96,7 @@ export class GeminiProvider extends AbstractProvider {
 
     try {
       const sseUrl =
-        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+        `${this.config.baseUrl}/v1beta/models/${this.config.modelName}:streamGenerateContent?key=${apiKey}&alt=sse`;
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -166,7 +168,7 @@ export class GeminiProvider extends AbstractProvider {
     );
 
     const response = await nativeFetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
+      `${this.config.baseUrl}/v1beta/models/${this.config.modelName}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: {
@@ -186,20 +188,18 @@ export class GeminiProvider extends AbstractProvider {
 }
 
 export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string = "https://generativelanguage.googleapis.com",
-    requireAuth: boolean = true,
-  ) {
-    super(apiKey, baseUrl, "Gemini", modelName, requireAuth);
+  constructor(config: EmbeddingModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "https://generativelanguage.googleapis.com";
+    }
+    super(config);
   }
 
   async _generateEmbeddings(
     options: { text: string },
   ): Promise<Array<number>> {
     const body = JSON.stringify({
-      model: this.modelName,
+      model: this.config.modelName,
       content: {
         parts: [{ text: options.text }],
       },
@@ -209,12 +209,12 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
       "Content-Type": "application/json",
     };
 
-    if (this.requireAuth) {
-      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    if (this.config.requireAuth) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
+      `${this.config.baseUrl}/v1beta/models/${this.config.modelName}:embedContent?key=${apiKey}`,
       {
         method: "POST",
         headers: headers,

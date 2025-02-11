@@ -1,9 +1,13 @@
 import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { editor } from "https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls.ts";
 import { SSE } from "npm:sse.js@2.2.0";
-import { ChatMessage } from "../types.ts";
-
-import { EmbeddingGenerationOptions } from "../types.ts";
+import { apiKey } from "../init.ts";
+import {
+  ChatMessage,
+  EmbeddingGenerationOptions,
+  EmbeddingModelConfig,
+  ModelConfig,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
@@ -25,17 +29,8 @@ type HttpHeaders = {
 };
 
 export class OpenAIProvider extends AbstractProvider {
-  override name = "OpenAI";
-  requireAuth: boolean;
-
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string,
-    requireAuth: boolean,
-  ) {
-    super("OpenAI", apiKey, baseUrl, modelName);
-    this.requireAuth = requireAuth;
+  constructor(config: ModelConfig) {
+    super(config);
   }
 
   async chatWithAI(
@@ -56,21 +51,21 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = `${this.baseUrl}/chat/completions`;
+      const sseUrl = `${this.config.baseUrl}/chat/completions`;
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
 
-      if (this.requireAuth) {
-        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      if (this.config.requireAuth) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
       }
 
       const sseOptions = {
         method: "POST",
         headers: headers,
         payload: JSON.stringify({
-          model: this.modelName,
+          model: this.config.modelName,
           stream: true,
           messages: messages,
         }),
@@ -128,12 +123,12 @@ export class OpenAIProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      if (this.requireAuth) {
-        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      if (this.config.requireAuth) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
       }
 
       const response = await nativeFetch(
-        `${this.baseUrl}/models`,
+        `${this.config.baseUrl}/models`,
         {
           method: "GET",
           headers: headers,
@@ -161,17 +156,19 @@ export class OpenAIProvider extends AbstractProvider {
   async nonStreamingChat(messages: Array<ChatMessage>): Promise<void> {
     try {
       const body = JSON.stringify({
-        model: this.modelName,
+        model: this.config.modelName,
         messages: messages,
       });
 
-      const headers = {
-        "Authorization": `Bearer ${this.apiKey}`,
+      const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
+      if (this.config.requireAuth) {
+        headers["Authorization"] = `Bearer ${apiKey}`;
+      }
 
       const response = await nativeFetch(
-        this.baseUrl + "/chat/completions",
+        `${this.config.baseUrl}/chat/completions`,
         {
           method: "POST",
           headers: headers,
@@ -202,20 +199,18 @@ export class OpenAIProvider extends AbstractProvider {
 }
 
 export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
-  constructor(
-    apiKey: string,
-    modelName: string,
-    baseUrl: string,
-    requireAuth: boolean = true,
-  ) {
-    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
+  constructor(config: EmbeddingModelConfig) {
+    if (!config.baseUrl) {
+      config.baseUrl = "";
+    }
+    super(config);
   }
 
   async _generateEmbeddings(
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
     const body = JSON.stringify({
-      model: this.modelName,
+      model: this.config.modelName,
       input: options.text,
       encoding_format: "float",
     });
@@ -224,12 +219,12 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       "Content-Type": "application/json",
     };
 
-    if (this.requireAuth) {
-      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    if (this.config.requireAuth) {
+      headers["Authorization"] = `Bearer ${apiKey}`;
     }
 
     const response = await nativeFetch(
-      `${this.baseUrl}/embeddings`,
+      `${this.config.baseUrl}/embeddings`,
       {
         method: "POST",
         headers: headers,

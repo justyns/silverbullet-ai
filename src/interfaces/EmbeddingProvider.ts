@@ -1,11 +1,8 @@
-import { EmbeddingGenerationOptions } from "../types.ts";
+import { EmbeddingGenerationOptions, EmbeddingModelConfig } from "../types.ts";
 import * as cache from "../cache.ts";
 
 export interface EmbeddingProviderInterface {
-  name: string;
-  apiKey: string;
-  baseUrl: string;
-  modelName: string;
+  config: EmbeddingModelConfig;
   _generateEmbeddings: (
     options: EmbeddingGenerationOptions,
   ) => Promise<Array<number>>;
@@ -17,24 +14,10 @@ export interface EmbeddingProviderInterface {
 
 export abstract class AbstractEmbeddingProvider
   implements EmbeddingProviderInterface {
-  apiKey: string;
-  baseUrl: string;
-  name: string;
-  modelName: string;
-  requireAuth: boolean;
+  config: EmbeddingModelConfig;
 
-  constructor(
-    apiKey: string,
-    baseUrl: string,
-    name: string,
-    modelName: string,
-    requireAuth: boolean = true,
-  ) {
-    this.apiKey = apiKey;
-    this.baseUrl = baseUrl;
-    this.name = name;
-    this.modelName = modelName;
-    this.requireAuth = requireAuth;
+  constructor(config: EmbeddingModelConfig) {
+    this.config = config;
   }
 
   abstract _generateEmbeddings(
@@ -43,7 +26,7 @@ export abstract class AbstractEmbeddingProvider
 
   async generateEmbeddings(options: EmbeddingGenerationOptions) {
     const cacheKey = await cache.hashStrings(
-      this.modelName,
+      this.config.modelName,
       options.text,
     );
 

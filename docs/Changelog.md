@@ -6,6 +6,7 @@ This page is a brief overview of each version.
 - Better logging when SSE events have errors
 - Add support for retrieving list of models from openai and ollama providers
 - Add a Connectivity Test command and page to test whether an api is working
+- Refactor all Providers to accept a single config param of ModelConfig, to simplify adding new options in the future
 
 ---
 ## 0.4.1 (2024-11-15)

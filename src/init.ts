@@ -138,21 +138,22 @@ async function getAndConfigureEmbeddingModel() {
 }
 
 function setupImageProvider(model: ImageModelConfig) {
+  // Ensure model has all required fields with defaults
+  model.baseUrl = model.baseUrl ||
+    (model.provider === ImageProvider.DallE
+      ? aiSettings.dallEBaseUrl
+      : undefined);
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
+  model.secretName = model.secretName || "OPENAI_API_KEY";
+
   const providerName = model.provider.toLowerCase();
   log("client", "Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
-      currentImageProvider = new DallEProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl || aiSettings.dallEBaseUrl,
-      );
+      currentImageProvider = new DallEProvider(model);
       break;
     case ImageProvider.Mock:
-      currentImageProvider = new MockImageProvider(
-        apiKey,
-        model.modelName,
-      );
+      currentImageProvider = new MockImageProvider(model);
       break;
     default:
       throw new Error(
@@ -162,33 +163,24 @@ function setupImageProvider(model: ImageModelConfig) {
 }
 
 function setupAIProvider(model: ModelConfig) {
+  model.baseUrl = model.baseUrl ||
+    (model.provider === Provider.OpenAI ? aiSettings.openAIBaseUrl : undefined);
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
+  model.secretName = model.secretName || "OPENAI_API_KEY";
+
   const providerName = model.provider.toLowerCase();
   switch (providerName) {
     case Provider.OpenAI:
-      currentAIProvider = new OpenAIProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
-        model.requireAuth || aiSettings.requireAuth,
-      );
+      currentAIProvider = new OpenAIProvider(model);
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      currentAIProvider = new GeminiProvider(model);
       break;
     case Provider.Ollama:
-      currentAIProvider = new OllamaProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl || "http://localhost:11434/v1",
-        model.requireAuth,
-      );
+      currentAIProvider = new OllamaProvider(model);
       break;
     case Provider.Mock:
-      currentAIProvider = new MockProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl,
-      );
+      currentAIProvider = new MockProvider(model);
       break;
     default:
       throw new Error(
@@ -200,35 +192,26 @@ function setupAIProvider(model: ModelConfig) {
 }
 
 function setupEmbeddingProvider(model: EmbeddingModelConfig) {
+  model.baseUrl = model.baseUrl ||
+    (model.provider === EmbeddingProvider.OpenAI
+      ? aiSettings.openAIBaseUrl
+      : undefined);
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
+  model.secretName = model.secretName || "OPENAI_API_KEY";
+
   const providerName = model.provider.toLowerCase();
   switch (providerName) {
     case EmbeddingProvider.OpenAI:
-      currentEmbeddingProvider = new OpenAIEmbeddingProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
-      );
+      currentEmbeddingProvider = new OpenAIEmbeddingProvider(model);
       break;
     case EmbeddingProvider.Gemini:
-      currentEmbeddingProvider = new GeminiEmbeddingProvider(
-        apiKey,
-        model.modelName,
-      );
+      currentEmbeddingProvider = new GeminiEmbeddingProvider(model);
       break;
     case EmbeddingProvider.Ollama:
-      currentEmbeddingProvider = new OllamaEmbeddingProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl || "http://localhost:11434",
-        model.requireAuth,
-      );
+      currentEmbeddingProvider = new OllamaEmbeddingProvider(model);
       break;
     case EmbeddingProvider.Mock:
-      currentEmbeddingProvider = new MockEmbeddingProvider(
-        apiKey,
-        model.modelName,
-        model.baseUrl,
-      );
+      currentEmbeddingProvider = new MockEmbeddingProvider(model);
       break;
     default:
       throw new Error(

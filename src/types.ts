@@ -129,6 +129,7 @@ export type ModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  proxyOnServer?: boolean;
 };
 
 export type ImageModelConfig = {
