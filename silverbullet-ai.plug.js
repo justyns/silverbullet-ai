@@ -1,135 +1,6572 @@
-var Nn=Object.defineProperty;var _=(e,t)=>{for(var r in t)Nn(e,r,{get:t[r],enumerable:!0})};var he=e=>{throw new Error("Not initialized yet")},at=typeof window>"u"&&typeof globalThis.WebSocketPair>"u";typeof Deno>"u"&&(self.Deno={args:[],build:{arch:"x86_64"},env:{get(){}}});var st=new Map,it=0;at&&(globalThis.syscall=async(e,...t)=>await new Promise((r,o)=>{it++,st.set(it,{resolve:r,reject:o}),he({type:"sys",id:it,name:e,args:t})}));function cr(e,t,r){at&&(he=r,self.addEventListener("message",o=>{(async()=>{let n=o.data;switch(n.type){case"inv":{let i=e[n.name];if(!i)throw new Error(`Function not loaded: ${n.name}`);try{let s=await Promise.resolve(i(...n.args||[]));he({type:"invr",id:n.id,result:s})}catch(s){console.error("An exception was thrown as a result of invoking function",n.name,"error:",s.message),he({type:"invr",id:n.id,error:s.message})}}break;case"sysr":{let i=n.id,s=st.get(i);if(!s)throw Error("Invalid request id");st.delete(i),n.error?s.reject(new Error(n.error)):s.resolve(n.result)}break}})().catch(console.error)}),he({type:"manifest",manifest:t}))}function kn(e){let t=atob(e),r=t.length,o=new Uint8Array(r);for(let n=0;n<r;n++)o[n]=t.charCodeAt(n);return o}function lr(e){typeof e=="string"&&(e=new TextEncoder().encode(e));let t="",r=e.byteLength;for(let o=0;o<r;o++)t+=String.fromCharCode(e[o]);return btoa(t)}async function Fn(e,t){if(typeof e!="string"){let r=new Uint8Array(await e.arrayBuffer()),o=r.length>0?lr(r):void 0;t={method:e.method,headers:Object.fromEntries(e.headers.entries()),base64Body:o},e=e.url}return syscall("sandboxFetch.fetch",e,t)}globalThis.nativeFetch=globalThis.fetch;function Rn(){globalThis.fetch=async function(e,t){let r=t&&t.body?lr(new Uint8Array(await new Response(t.body).arrayBuffer())):void 0,o=await Fn(e,t&&{method:t.method,headers:t.headers,base64Body:r});return new Response(o.base64Body?kn(o.base64Body):null,{status:o.status,headers:o.headers})}}at&&Rn();function ct(e){if(e.children)for(let t of e.children){if(t.parent)return;t.parent=e,ct(t)}}function $n(e,t){return lt(e,r=>r.type===t)}function lt(e,t){if(t(e))return[e];let r=[];if(e.children)for(let o of e.children)r=[...r,...lt(o,t)];return r}async function ur(e,t){if(await t(e))return[e];let r=[];if(e.children)for(let o of e.children)r=[...r,...await ur(o,t)];return r}async function ut(e,t){if(e.children){let r=e.children.slice();for(let o of r){let n=await t(o);if(n!==void 0){let i=e.children.indexOf(o);n?e.children.splice(i,1,n):e.children.splice(i,1)}else await ut(o,t)}}}function pt(e,t){return lt(e,r=>r.type===t)[0]}async function Ie(e,t){await ur(e,t)}function R(e){if(!e)return"";let t=[];if(e.text!==void 0)return e.text;for(let r of e.children)t.push(R(r));return t.join("")}function mt(e,t=!0){if($n(e,"\u26A0").length>0)throw new Error(`Parse error in: ${R(e)}`);if(e.text!==void 0)return e.text;let o=[e.type];for(let n of e.children)n.type&&!n.type.endsWith("Mark")&&n.type!=="Comment"&&o.push(mt(n,t)),n.text&&(t&&n.text.trim()||!t)&&o.push(n.text);return o}function Ln(e){return e.getUTCHours()===0&&e.getUTCMinutes()===0&&e.getUTCSeconds()===0?e.getFullYear()+"-"+String(e.getMonth()+1).padStart(2,"0")+"-"+String(e.getDate()).padStart(2,"0"):e.toISOString()}function le(e){if(!e||typeof e!="object")return e;if(Array.isArray(e))return e.map(le);if(e instanceof Date)return Ln(e);let t={};for(let r of Object.keys(e)){let o=r.split("."),n=t;for(let i=0;i<o.length-1;i++){let s=o[i];n[s]||(n[s]={}),n=n[s]}n[o[o.length-1]]=le(e[r])}return t}var u={};_(u,{confirm:()=>mo,copyToClipboard:()=>vo,deleteLine:()=>To,dispatch:()=>uo,downloadFile:()=>Zn,filterBox:()=>ro,flashNotification:()=>to,fold:()=>ho,foldAll:()=>bo,getCurrentPage:()=>_n,getCursor:()=>jn,getSelection:()=>qn,getText:()=>Dn,getUiOption:()=>fo,goHistory:()=>Xn,hidePanel:()=>oo,insertAtCursor:()=>lo,insertAtPos:()=>io,moveCursor:()=>ao,moveCursorToLine:()=>co,navigate:()=>Kn,newWindow:()=>Jn,openCommandPalette:()=>Yn,openPageNavigator:()=>Gn,openSearchPanel:()=>So,openUrl:()=>zn,prompt:()=>po,redo:()=>Ao,reloadConfigAndCommands:()=>Vn,reloadPage:()=>Wn,reloadUI:()=>Qn,replaceRange:()=>so,save:()=>Bn,setSelection:()=>Hn,setText:()=>Un,setUiOption:()=>go,showPanel:()=>no,toggleFold:()=>xo,undo:()=>Po,unfold:()=>yo,unfoldAll:()=>wo,uploadFile:()=>eo,vimEx:()=>Eo});typeof self>"u"&&(self={syscall:()=>{throw new Error("Not implemented here")}});function l(e,...t){return globalThis.syscall(e,...t)}function _n(){return l("editor.getCurrentPage")}function Dn(){return l("editor.getText")}function Un(e,t=!1){return l("editor.setText",e,t)}function jn(){return l("editor.getCursor")}function qn(){return l("editor.getSelection")}function Hn(e,t){return l("editor.setSelection",e,t)}function Bn(){return l("editor.save")}function Kn(e,t=!1,r=!1){return l("editor.navigate",e,t,r)}function Gn(e="page"){return l("editor.openPageNavigator",e)}function Yn(){return l("editor.openCommandPalette")}function Wn(){return l("editor.reloadPage")}function Qn(){return l("editor.reloadUI")}function Vn(){return l("editor.reloadConfigAndCommands")}function zn(e,t=!1){return l("editor.openUrl",e,t)}function Jn(){return l("editor.newWindow")}function Xn(e){return l("editor.goHistory",e)}function Zn(e,t){return l("editor.downloadFile",e,t)}function eo(e,t){return l("editor.uploadFile",e,t)}function to(e,t="info"){return l("editor.flashNotification",e,t)}function ro(e,t,r="",o=""){return l("editor.filterBox",e,t,r,o)}function no(e,t,r,o=""){return l("editor.showPanel",e,t,r,o)}function oo(e){return l("editor.hidePanel",e)}function io(e,t){return l("editor.insertAtPos",e,t)}function so(e,t,r){return l("editor.replaceRange",e,t,r)}function ao(e,t=!1){return l("editor.moveCursor",e,t)}function co(e,t=1,r=!1){return l("editor.moveCursorToLine",e,t,r)}function lo(e){return l("editor.insertAtCursor",e)}function uo(e){return l("editor.dispatch",e)}function po(e,t=""){return l("editor.prompt",e,t)}function mo(e){return l("editor.confirm",e)}function fo(e){return l("editor.getUiOption",e)}function go(e,t){return l("editor.setUiOption",e,t)}function ho(){return l("editor.fold")}function yo(){return l("editor.unfold")}function xo(){return l("editor.toggleFold")}function bo(){return l("editor.foldAll")}function wo(){return l("editor.unfoldAll")}function Po(){return l("editor.undo")}function Ao(){return l("editor.redo")}function So(){return l("editor.openSearchPanel")}function vo(e){return l("editor.copyToClipboard",e)}function To(){return l("editor.deleteLine")}function Eo(e){return l("editor.vimEx",e)}var k={};_(k,{parseMarkdown:()=>Co,renderParseTree:()=>Mo});function Co(e){return l("markdown.parseMarkdown",e)}function Mo(e){return l("markdown.renderParseTree",e)}var D={};_(D,{deleteAttachment:()=>Uo,deleteFile:()=>Ko,deletePage:()=>Fo,fileExists:()=>Go,getAttachmentMeta:()=>Lo,getFileMeta:()=>Ho,getPageMeta:()=>Oo,listAttachments:()=>$o,listFiles:()=>jo,listPages:()=>Io,listPlugs:()=>Ro,readAttachment:()=>_o,readFile:()=>qo,readPage:()=>No,writeAttachment:()=>Do,writeFile:()=>Bo,writePage:()=>ko});function Io(){return l("space.listPages")}function Oo(e){return l("space.getPageMeta",e)}function No(e){return l("space.readPage",e)}function ko(e,t){return l("space.writePage",e,t)}function Fo(e){return l("space.deletePage",e)}function Ro(){return l("space.listPlugs")}function $o(){return l("space.listAttachments")}function Lo(e){return l("space.getAttachmentMeta",e)}function _o(e){return l("space.readAttachment",e)}function Do(e,t){return l("space.writeAttachment",e,t)}function Uo(e){return l("space.deleteAttachment",e)}function jo(){return l("space.listFiles")}function qo(e){return l("space.readFile",e)}function Ho(e){return l("space.getFileMeta",e)}function Bo(e,t){return l("space.writeFile",e,t)}function Ko(e){return l("space.deleteFile",e)}function Go(e){return l("space.fileExists",e)}var S={};_(S,{applyAttributeExtractors:()=>Jo,getEnv:()=>ti,getMode:()=>ri,getSpaceConfig:()=>Xo,getVersion:()=>ni,invokeCommand:()=>Wo,invokeFunction:()=>Yo,invokeSpaceFunction:()=>zo,listCommands:()=>Qo,listSyscalls:()=>Vo,reloadConfig:()=>ei,reloadPlugs:()=>Zo});function Yo(e,...t){return l("system.invokeFunction",e,...t)}function Wo(e,t){return l("system.invokeCommand",e,t)}function Qo(){return l("system.listCommands")}function Vo(){return l("system.listSyscalls")}function zo(e,...t){return l("system.invokeSpaceFunction",e,...t)}function Jo(e,t,r){return l("system.applyAttributeExtractors",e,t,r)}async function Xo(e,t){return await l("system.getSpaceConfig",e)??t}function Zo(){return l("system.reloadPlugs")}function ei(){return l("system.reloadConfig")}function ti(){return l("system.getEnv")}function ri(){return l("system.getMode")}function ni(){return l("system.getVersion")}var Q={};_(Q,{del:()=>si,get:()=>ii,set:()=>oi});function oi(e,t){return l("clientStore.set",e,t)}function ii(e){return l("clientStore.get",e)}function si(e){return l("clientStore.delete",e)}var Oe={};_(Oe,{listLanguages:()=>ui,parseLanguage:()=>li});function li(e,t){return l("language.parseLanguage",e,t)}function ui(){return l("language.listLanguages")}var ne={};_(ne,{parseTemplate:()=>mi,renderTemplate:()=>pi});function pi(e,t,r={}){return l("template.renderTemplate",e,t,r)}function mi(e){return l("template.parseTemplate",e)}var ye={};_(ye,{dispatchEvent:()=>gi,listEvents:()=>hi});function gi(e,t,r){return new Promise((o,n)=>{let i=-1;r&&(i=setTimeout(()=>{console.log("Timeout!"),n("timeout")},r)),l("event.dispatch",e,t).then(s=>{i!==-1&&clearTimeout(i),o(s)}).catch(n)})}function hi(){return l("event.list")}var H={};_(H,{parse:()=>xi,stringify:()=>bi});function xi(e){return l("yaml.parse",e)}function bi(e){return l("yaml.stringify",e)}var oe={};_(oe,{ack:()=>Ai,batchAck:()=>Si,batchSend:()=>Pi,getQueueStats:()=>vi,send:()=>wi});function wi(e,t){return l("mq.send",e,t)}function Pi(e,t){return l("mq.batchSend",e,t)}function Ai(e,t){return l("mq.ack",e,t)}function Si(e,t){return l("mq.batchAck",e,t)}function vi(e){return l("mq.getQueueStats",e)}var Mi=/(!?\[\[)([^\]\|]+)(?:\|([^\]]+))?(\]\])/g;var Bc=new RegExp("^"+Mi.source);function pr(e){return e[0]!=="#"?(console.error("extractHashtag called on already clean string",e),e):e[1]==="<"?e.slice(-1)!==">"?e.slice(2):e.slice(2,-1):e.slice(1)}async function V(e,t={}){let r={tags:[]},o=[];ct(e),await ut(e,async n=>{if(n.type==="Paragraph"&&n.parent?.type==="Document"){let i=!0,s=new Set;for(let c of n.children)if(c.text){if(c.text.startsWith(`
-`)&&c.text!==`
-`)break;if(c.text.trim()){i=!1;break}}else if(c.type==="Hashtag"){let a=pr(c.children[0].text);s.add(a),(t.removeTags===!0||t.removeTags?.includes(a))&&(c.children[0].text="")}else if(c.type){i=!1;break}i&&o.push(...s)}if(n.type==="FrontMatter"){let i=n.children[1].children[0],s=R(i);try{let c=await H.parse(s),a={...c};if(r={...r,...c},r.tags||(r.tags=[]),typeof r.tags=="string"&&o.push(...r.tags.split(/,\s*|\s+/)),Array.isArray(r.tags)&&o.push(...r.tags),t.removeKeys&&t.removeKeys.length>0){let p=!1;for(let d of t.removeKeys)d in a&&(delete a[d],p=!0);p&&(i.text=await H.stringify(a))}if(Object.keys(a).length===0||t.removeFrontmatterSection)return null}catch{}}});try{r.tags=[...new Set([...o.map(n=>String(n).replace(/^#/,""))])]}catch(n){console.error("Error while processing tags",n)}return r=le(r),r}async function dt(e,t){let r=null;if(await Ie(e,async o=>{if(o.type==="FrontMatter"){let n=o.children[1].children[0],i=R(n);try{let s="";if(typeof t=="string")s=i+t+`
-`;else{let a={...await H.parse(i),...t};s=await H.stringify(a)}r={changes:{from:n.from,to:n.to,insert:s}}}catch(s){console.error("Error parsing YAML",s)}return!0}return!1}),!r){let o="";typeof t=="string"?o=t+`
-`:o=await H.stringify(t),r={changes:{from:0,to:0,insert:`---
-`+o+`---
-`}}}return r}function mr(e){let t={querySource:""},[r,o,...n]=e;if(r!=="Query")throw new Error(`Expected query type, got ${r}`);t.querySource=o[1];for(let i of n){let[s]=i;switch(s){case"WhereClause":{t.filter?t.filter=["and",t.filter,M(i[2])]:t.filter=M(i[2]);break}case"OrderClause":{t.orderBy||(t.orderBy=[]);for(let c of i.slice(2))if(c[0]==="OrderBy"){let a=c[1][1];c[2]?t.orderBy.push({expr:M(a),desc:c[2][1][1]==="desc"}):t.orderBy.push({expr:M(a),desc:!1})}break}case"LimitClause":{t.limit=M(i[2][1]);break}case"SelectClause":{for(let c of i.slice(2))c[0]==="Select"&&(t.select||(t.select=[]),c.length===2?t.select.push({name:xe(c[1][1])}):t.select.push({name:xe(c[3][1]),expr:M(c[1])}));break}case"RenderClause":{let c=i.find(a=>a[0]==="PageRef");t.render=c[1].slice(2,-2),t.renderAll=!!i.find(a=>a[0]==="all");break}default:throw new Error(`Unknown clause type: ${s}`)}}return t}function xe(e){return e.startsWith("`")&&e.endsWith("`")?e.slice(1,-1):e}function M(e){if(["LVal","Expression","Value"].includes(e[0]))return M(e[1]);switch(e[0]){case"Attribute":return["attr",M(e[1]),xe(e[3][1])];case"Identifier":return["attr",xe(e[1])];case"String":return["string",e[1].slice(1,-1)];case"Number":return["number",+e[1]];case"Bool":return["boolean",e[1][1]==="true"];case"null":return["null"];case"Regex":return["regexp",e[1].slice(1,-1),"i"];case"List":{let t=[];for(let r of e.slice(2))r[0]==="Expression"&&t.push(r);return["array",t.map(M)]}case"Object":{let t=[];for(let r of e.slice(2)){if(typeof r=="string")continue;let[o,n,i,s]=r;t.push([n[1].slice(1,-1),M(s)])}return["object",t]}case"BinExpression":{let t=M(e[1]),r=e[2][0]==="in"?"in":e[2].trim(),o=M(e[3]);return[r,t,o]}case"LogicalExpression":{let t=M(e[1]),r=e[2],o=M(e[3]);return[r[1],t,o]}case"ParenthesizedExpression":return M(e[2]);case"Call":{let t=xe(e[1][1]),r=[];for(let o of e.slice(2))o[0]==="Expression"&&r.push(o);return["call",t,r.map(M)]}case"UnaryExpression":{if(e[1][0]==="not"||e[1][0]==="!")return["not",M(e[2])];if(e[1][0]==="-")return["-",M(e[2])];throw new Error(`Unknown unary expression: ${e[1][0]}`)}case"TopLevelVal":return["attr"];case"GlobalIdentifier":return["global",e[1].substring(1)];case"TernaryExpression":{let[t,r,o,n,i,s]=e;return["?",M(r),M(n),M(s)]}case"QueryExpression":return["query",mr(e[2])];case"PageRef":return["pageref",e[1].slice(2,-2)];default:throw new Error(`Not supported: ${e[0]}`)}}async function dr(e){let t=mt(await Oe.parseLanguage("query",e));return mr(t[1])}async function fr(e,t){let r={};await Ie(t,async i=>{if(t!==i&&i.type==="ListItem")return!0;if(i.type==="Attribute"){let s=pt(i,"AttributeName"),c=pt(i,"AttributeValue");if(s&&c){let a=s.children[0].text,p=c.children[0].text;try{r[a]=le(await H.parse(p))}catch(d){console.error("Error parsing attribute value as YAML",p,d)}}return!0}return!1});let o=R(t),n=await S.applyAttributeExtractors(e,o,t);return r={...r,...n},r}function ft(e,t){if(t(e))return[e];let r=[];if(e.children)for(let o of e.children)r=[...r,...ft(o,t)];return r}function gt(e,t){return ft(e,r=>r.type===t)[0]}function gr(e,t){ft(e,t)}var be={};_(be,{confirm:()=>os,copyToClipboard:()=>gs,deleteLine:()=>hs,dispatch:()=>rs,downloadFile:()=>Gi,filterBox:()=>Qi,flashNotification:()=>Wi,fold:()=>as,foldAll:()=>us,getCurrentPage:()=>Ii,getCursor:()=>ki,getSelection:()=>Fi,getText:()=>Oi,getUiOption:()=>is,goHistory:()=>Ki,hidePanel:()=>zi,insertAtCursor:()=>ts,insertAtPos:()=>Ji,moveCursor:()=>Zi,moveCursorToLine:()=>es,navigate:()=>Li,newWindow:()=>Bi,openCommandPalette:()=>Di,openPageNavigator:()=>_i,openSearchPanel:()=>fs,openUrl:()=>Hi,prompt:()=>ns,redo:()=>ds,reloadConfigAndCommands:()=>qi,reloadPage:()=>Ui,reloadUI:()=>ji,replaceRange:()=>Xi,save:()=>$i,setSelection:()=>Ri,setText:()=>Ni,setUiOption:()=>ss,showPanel:()=>Vi,toggleFold:()=>ls,undo:()=>ms,unfold:()=>cs,unfoldAll:()=>ps,uploadFile:()=>Yi,vimEx:()=>ys});typeof self>"u"&&(self={syscall:()=>{throw new Error("Not implemented here")}});function m(e,...t){return globalThis.syscall(e,...t)}function Ii(){return m("editor.getCurrentPage")}function Oi(){return m("editor.getText")}function Ni(e,t=!1){return m("editor.setText",e,t)}function ki(){return m("editor.getCursor")}function Fi(){return m("editor.getSelection")}function Ri(e,t){return m("editor.setSelection",e,t)}function $i(){return m("editor.save")}function Li(e,t=!1,r=!1){return m("editor.navigate",e,t,r)}function _i(e="page"){return m("editor.openPageNavigator",e)}function Di(){return m("editor.openCommandPalette")}function Ui(){return m("editor.reloadPage")}function ji(){return m("editor.reloadUI")}function qi(){return m("editor.reloadConfigAndCommands")}function Hi(e,t=!1){return m("editor.openUrl",e,t)}function Bi(){return m("editor.newWindow")}function Ki(e){return m("editor.goHistory",e)}function Gi(e,t){return m("editor.downloadFile",e,t)}function Yi(e,t){return m("editor.uploadFile",e,t)}function Wi(e,t="info"){return m("editor.flashNotification",e,t)}function Qi(e,t,r="",o=""){return m("editor.filterBox",e,t,r,o)}function Vi(e,t,r,o=""){return m("editor.showPanel",e,t,r,o)}function zi(e){return m("editor.hidePanel",e)}function Ji(e,t){return m("editor.insertAtPos",e,t)}function Xi(e,t,r){return m("editor.replaceRange",e,t,r)}function Zi(e,t=!1){return m("editor.moveCursor",e,t)}function es(e,t=1,r=!1){return m("editor.moveCursorToLine",e,t,r)}function ts(e){return m("editor.insertAtCursor",e)}function rs(e){return m("editor.dispatch",e)}function ns(e,t=""){return m("editor.prompt",e,t)}function os(e){return m("editor.confirm",e)}function is(e){return m("editor.getUiOption",e)}function ss(e,t){return m("editor.setUiOption",e,t)}function as(){return m("editor.fold")}function cs(){return m("editor.unfold")}function ls(){return m("editor.toggleFold")}function us(){return m("editor.foldAll")}function ps(){return m("editor.unfoldAll")}function ms(){return m("editor.undo")}function ds(){return m("editor.redo")}function fs(){return m("editor.openSearchPanel")}function gs(e){return m("editor.copyToClipboard",e)}function hs(){return m("editor.deleteLine")}function ys(e){return m("editor.vimEx",e)}var Ne={};_(Ne,{parseMarkdown:()=>xs,renderParseTree:()=>bs});function xs(e){return m("markdown.parseMarkdown",e)}function bs(e){return m("markdown.renderParseTree",e)}var ke={};_(ke,{deleteAttachment:()=>Os,deleteFile:()=>$s,deletePage:()=>vs,fileExists:()=>Ls,getAttachmentMeta:()=>Cs,getFileMeta:()=>Fs,getPageMeta:()=>Ps,listAttachments:()=>Es,listFiles:()=>Ns,listPages:()=>ws,listPlugs:()=>Ts,readAttachment:()=>Ms,readFile:()=>ks,readPage:()=>As,writeAttachment:()=>Is,writeFile:()=>Rs,writePage:()=>Ss});function ws(){return m("space.listPages")}function Ps(e){return m("space.getPageMeta",e)}function As(e){return m("space.readPage",e)}function Ss(e,t){return m("space.writePage",e,t)}function vs(e){return m("space.deletePage",e)}function Ts(){return m("space.listPlugs")}function Es(){return m("space.listAttachments")}function Cs(e){return m("space.getAttachmentMeta",e)}function Ms(e){return m("space.readAttachment",e)}function Is(e,t){return m("space.writeAttachment",e,t)}function Os(e){return m("space.deleteAttachment",e)}function Ns(){return m("space.listFiles")}function ks(e){return m("space.readFile",e)}function Fs(e){return m("space.getFileMeta",e)}function Rs(e,t){return m("space.writeFile",e,t)}function $s(e){return m("space.deleteFile",e)}function Ls(e){return m("space.fileExists",e)}var Fe={};_(Fe,{parse:()=>Ws,stringify:()=>Qs});function Ws(e){return m("yaml.parse",e)}function Qs(e){return m("yaml.stringify",e)}async function Zs(e,t){let r=await ke.readPage(e),o=await Ne.parseMarkdown(r),n;return gr(o,i=>{if(i.type!=="FencedCode")return!1;let s=gt(i,"CodeInfo");if(t&&!s||t&&!t.includes(s.children[0].text))return!1;let c=gt(i,"CodeText");return c?(n=c.children[0].text,!0):!1}),n}async function hr(e,t=["yaml"]){let r=await Zs(e,t);if(r!==void 0)try{return Fe.parse(r)}catch(o){throw console.error("YAML Page parser error",o),new Error(`YAML Error: ${o.message}`)}}async function Re(e){try{let r=(await hr("SECRETS",["yaml","secrets"]))[e];if(r===void 0)throw new Error(`No such secret: ${e}`);return r}catch(t){throw t.message==="Not found"?new Error(`No such secret: ${e}`):t}}var ue=class{apiKey;baseUrl;name;modelName;requireAuth;constructor(t,r,o,n,i=!0){this.apiKey=t,this.baseUrl=r,this.name=o,this.modelName=n,this.requireAuth=i}};var $e=class extends ue{constructor(t,r,o){super(t,o,"DALL-E",r)}async generateImage(t){try{C||await z();let r=await nativeFetch(`${this.baseUrl}/images/generations`,{method:"POST",headers:{Authorization:`Bearer ${this.apiKey}`,"Content-Type":"application/json"},body:JSON.stringify({model:this.modelName,prompt:t.prompt,n:t.numImages,size:t.size,quality:t.quality,response_format:"b64_json"})});if(!r.ok)throw new Error(`HTTP error, status: ${r.status}`);let o=await r.json();if(!o||o.length===0)throw new Error("Invalid response from DALL-E.");return o}catch(r){throw console.error("Error calling DALL\xB7E image generation endpoint:",r),r}}};var ie=function(e,t){if(!(this instanceof ie))return new ie(e,t);this.INITIALIZING=-1,this.CONNECTING=0,this.OPEN=1,this.CLOSED=2,this.url=e,t=t||{},this.headers=t.headers||{},this.payload=t.payload!==void 0?t.payload:"",this.method=t.method||this.payload&&"POST"||"GET",this.withCredentials=!!t.withCredentials,this.debug=!!t.debug,this.FIELD_SEPARATOR=":",this.listeners={},this.xhr=null,this.readyState=this.INITIALIZING,this.progress=0,this.chunk="",this.addEventListener=function(r,o){this.listeners[r]===void 0&&(this.listeners[r]=[]),this.listeners[r].indexOf(o)===-1&&this.listeners[r].push(o)},this.removeEventListener=function(r,o){if(this.listeners[r]!==void 0){var n=[];this.listeners[r].forEach(function(i){i!==o&&n.push(i)}),n.length===0?delete this.listeners[r]:this.listeners[r]=n}},this.dispatchEvent=function(r){if(!r)return!0;this.debug&&console.debug(r),r.source=this;var o="on"+r.type;return this.hasOwnProperty(o)&&(this[o].call(this,r),r.defaultPrevented)?!1:this.listeners[r.type]?this.listeners[r.type].every(function(n){return n(r),!r.defaultPrevented}):!0},this._setReadyState=function(r){var o=new CustomEvent("readystatechange");o.readyState=r,this.readyState=r,this.dispatchEvent(o)},this._onStreamFailure=function(r){var o=new CustomEvent("error");o.data=r.currentTarget.response,this.dispatchEvent(o),this.close()},this._onStreamAbort=function(r){this.dispatchEvent(new CustomEvent("abort")),this.close()},this._onStreamProgress=function(r){if(this.xhr){if(this.xhr.status!==200){this._onStreamFailure(r);return}this.readyState==this.CONNECTING&&(this.dispatchEvent(new CustomEvent("open")),this._setReadyState(this.OPEN));var o=this.xhr.responseText.substring(this.progress);this.progress+=o.length;var n=(this.chunk+o).split(/(\r\n\r\n|\r\r|\n\n)/g),i=n.pop();n.forEach(function(s){s.trim().length>0&&this.dispatchEvent(this._parseEventChunk(s))}.bind(this)),this.chunk=i}},this._onStreamLoaded=function(r){this._onStreamProgress(r),this.dispatchEvent(this._parseEventChunk(this.chunk)),this.chunk=""},this._parseEventChunk=function(r){if(!r||r.length===0)return null;this.debug&&console.debug(r);var o={id:null,retry:null,data:null,event:null};r.split(/\n|\r\n|\r/).forEach(function(i){var s=i.indexOf(this.FIELD_SEPARATOR),c,a;if(s>0){var p=i[s+1]===" "?2:1;c=i.substring(0,s),a=i.substring(s+p)}else if(s<0)c=i,a="";else return;c in o&&(c==="data"&&o[c]!==null?o.data+=`
-`+a:o[c]=a)}.bind(this));var n=new CustomEvent(o.event||"message");return n.data=o.data||"",n.id=o.id,n},this._checkStreamClosed=function(){this.xhr&&this.xhr.readyState===XMLHttpRequest.DONE&&this._setReadyState(this.CLOSED)},this.stream=function(){if(!this.xhr){this._setReadyState(this.CONNECTING),this.xhr=new XMLHttpRequest,this.xhr.addEventListener("progress",this._onStreamProgress.bind(this)),this.xhr.addEventListener("load",this._onStreamLoaded.bind(this)),this.xhr.addEventListener("readystatechange",this._checkStreamClosed.bind(this)),this.xhr.addEventListener("error",this._onStreamFailure.bind(this)),this.xhr.addEventListener("abort",this._onStreamAbort.bind(this)),this.xhr.open(this.method,this.url);for(var r in this.headers)this.xhr.setRequestHeader(r,this.headers[r]);this.xhr.withCredentials=this.withCredentials,this.xhr.send(this.payload)}},this.close=function(){this.readyState!==this.CLOSED&&(this.xhr.abort(),this.xhr=null,this._setReadyState(this.CLOSED))},(t.start===void 0||t.start)&&this.stream()};typeof exports<"u"&&(exports.SSE=ie);var yr={};function Le(e,t){yr[e]=t}function _e(e){return yr[e]}async function De(...e){let t=e.join(""),r=new TextEncoder().encode(t),o=await crypto.subtle.digest("SHA-256",r);return Array.from(new Uint8Array(o)).map(s=>s.toString(16).padStart(2,"0")).join("")}var G=class{apiKey;baseUrl;name;modelName;requireAuth;constructor(t,r,o,n,i=!0){this.apiKey=t,this.baseUrl=r,this.name=o,this.modelName=n,this.requireAuth=i}async generateEmbeddings(t){let r=await De(this.modelName,t.text),o=_e(r);if(o)return o;let n=await this._generateEmbeddings(t);return Le(r,n),n}};async function ht(){let e=await u.getSelection(),t="";return e.from===e.to?t="":t=(await u.getText()).slice(e.from,e.to),{from:e.from,to:e.to,text:t}}async function Ue(){let e=await ht(),t=await u.getText();if(e.text==="")return{from:0,to:t.length,text:t,isWholeNote:!0};let r=e.from===0&&e.to===t.length;return{...e,isWholeNote:r}}async function se(){return(await u.getText()).length}function yt(e,t){let r=e.split(`
-`),o=0;for(let n=0;n<r.length;n++){if(o<=t&&t<o+r[n].length+1)return n;o+=r[n].length+1}return-1}function xt(e,t){let r=e.split(`
-`);return t<0||t>=r.length?"":r[t]}function br(e,t){let r=yt(e,t);return xt(e,r)}function wr(e,t){let r=yt(e,t);return xt(e,r-1)}function Pr(e,t){let r=yt(e,t);return xt(e,r+1)}function Ar(e,t){let r=e.split(`
-`),o=0,n=0,i=e.length;for(let s=0;s<r.length;s++){let c=r[s].length+1;if(o<=t&&t<o+c){console.log("Looking backwards for the start of the paragraph");for(let a=s;a>=0;a--)if(a===0||r[a-1].trim()===""){n=a===0?0:r.slice(0,a).join(`
-`).length+1;break}console.log("Looking forwards for the end of the paragraph");for(let a=s;a<r.length;a++)if(a===r.length-1||r[a+1].trim()===""){i=r.slice(0,a+1).join(`
-`).length;break}break}o+=c}return console.log("Found paragraph",e.slice(n,i)),{from:n,to:i,text:e.slice(n,i)}}var Y=class{name;apiKey;baseUrl;modelName;constructor(t,r,o,n){this.name=t,this.apiKey=r,this.baseUrl=o,this.modelName=n}async streamChatIntoEditor(t,r){let{onDataReceived:o,onResponseComplete:n,postProcessors:i}=t,s="\u{1F914} Thinking \u2026 ",c=r??await se();await u.insertAtPos(s,c);let a=!0,p=c,d=h=>{try{if(!h){console.log("No data received from LLM");return}a?(["`","-","*"].includes(h.charAt(0))&&(h=`
-`+h),u.replaceRange(c,c+s.length,h),a=!1):u.insertAtPos(h,c),c+=h.length,o&&o(h)}catch(x){console.error("Error handling chat stream data:",x),u.flashNotification("An error occurred while processing chat data.","error")}},f=async h=>{console.log("Response complete:",h);let x=p+h.length;console.log("Start of response:",p),console.log("End of response:",x),console.log("Full response:",h),console.log("Post-processors:",i);let b=h;if(i){let A=await u.getText(),w={response:h,lineBefore:wr(A,p),lineCurrent:br(A,p),lineAfter:Pr(A,x)};for(let N of i)console.log("Applying post-processor:",N),b=await S.invokeSpaceFunction(N,w);console.log("Data changed by post-processors, updating editor"),u.replaceRange(p,x,b)}n&&n(h)};await this.chatWithAI({...t,onDataReceived:d,onResponseComplete:f})}async singleMessageChat(t,r,o=!1){let n=[{role:"user",content:t}];return r&&n.unshift({role:"system",content:r}),o&&(n=await pe(n)),await this.chatWithAI({messages:n,stream:!1})}};var je=class extends Y{name="Gemini";constructor(t,r){super("Gemini",t,"https://generativelanguage.googleapis.com",r)}async listModels(){let t=`${this.baseUrl}/v1beta/models?key=${this.apiKey}`;try{let r=await fetch(t);if(!r.ok)throw new Error(`HTTP error! status: ${r.status}`);return(await r.json()).models||[]}catch(r){throw console.error("Failed to fetch models:",r),r}}async chatWithAI({messages:t,stream:r,onDataReceived:o}){return r?await this.streamChat({messages:t,stream:r,onDataReceived:o}):await this.nonStreamingChat(t)}mapRolesForGemini(t){let r=[],o="";return t.forEach(n=>{let i="user";n.role==="system"||n.role==="user"?i="user":n.role==="assistant"&&(i="model"),i==="model"&&(r.length===0||o==="model")||(i==="user"&&o==="user"?r[r.length-1].parts[0].text+=" "+n.content:r.push({role:i,parts:[{text:n.content}]})),o=i}),r}streamChat(t){let{messages:r,onDataReceived:o}=t;try{let n=`${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`,i={"Content-Type":"application/json"},s=this.mapRolesForGemini(r),c={method:"POST",headers:i,payload:JSON.stringify({contents:s}),withCredentials:!1},a=new ie(n,c),p="";a.addEventListener("message",d=>{try{if(d.data=="[DONE]")return a.close(),p;if(!d.data)console.error("Received empty message from Gemini"),console.log("source: ",a);else{let f=JSON.parse(d.data),h=f.candidates[0].content.parts[0].text||f.text||"";p+=h,o&&o(h)}}catch(f){console.error("Error processing message event:",f,d.data)}}),a.addEventListener("end",()=>(a.close(),p)),a.addEventListener("error",d=>{console.error("SSE error:",d),a.close()}),a.stream()}catch(n){throw console.error("Error streaming from Gemini chat endpoint:",n),n}}async nonStreamingChat(t){let r=this.mapRolesForGemini(t),o=await nativeFetch(`${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({contents:r})});if(!o.ok)throw new Error(`HTTP error! status: ${o.status}`);return(await o.json()).candidates[0].content.parts[0].text}},qe=class extends G{constructor(t,r,o="https://generativelanguage.googleapis.com",n=!0){super(t,o,"Gemini",r,n)}async _generateEmbeddings(t){let r=JSON.stringify({model:this.modelName,content:{parts:[{text:t.text}]}}),o={"Content-Type":"application/json"};this.requireAuth&&(o.Authorization=`Bearer ${this.apiKey}`);let n=await nativeFetch(`${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,{method:"POST",headers:o,body:r});if(!n.ok)throw console.error("HTTP response: ",n),console.error("HTTP response body: ",await n.json()),new Error(`HTTP error, status: ${n.status}`);let i=await n.json();if(!i||!i.embedding||!i.embedding.values)throw new Error("Invalid response from Gemini.");return i.embedding.values}};var me=class extends Y{name="OpenAI";requireAuth;constructor(t,r,o,n){super("OpenAI",t,o,r),this.requireAuth=n}async chatWithAI({messages:t,stream:r,onDataReceived:o,onResponseComplete:n}){return r?await this.streamChat({messages:t,onDataReceived:o,onResponseComplete:n}):await this.nonStreamingChat(t)}async streamChat(t){let{messages:r,onDataReceived:o,onResponseComplete:n}=t;try{let i=`${this.baseUrl}/chat/completions`,s={"Content-Type":"application/json"};this.requireAuth&&(s.Authorization=`Bearer ${this.apiKey}`);let c={method:"POST",headers:s,payload:JSON.stringify({model:this.modelName,stream:!0,messages:r}),withCredentials:!1},a=new ie(i,c),p="";a.addEventListener("message",function(d){try{if(d.data=="[DONE]")return a.close(),n&&n(p),p;{let h=JSON.parse(d.data).choices[0]?.delta?.content||"";p+=h,o&&o(h)}}catch(f){console.error("Error processing message event:",f,d.data)}}),a.addEventListener("end",function(){return a.close(),n&&n(p),p}),a.addEventListener("error",d=>{console.error("SSE error sseEvent.data:",d.data," ssEventObj:",d),a.close()}),a.stream()}catch(i){throw console.error("Error streaming from OpenAI chat endpoint:",i),await be.flashNotification("Error streaming from OpenAI chat endpoint.","error"),i}return""}async listModels(){try{let t={"Content-Type":"application/json"};this.requireAuth&&(t.Authorization=`Bearer ${this.apiKey}`);let r=await nativeFetch(`${this.baseUrl}/models`,{method:"GET",headers:t});if(!r.ok)throw console.error("HTTP response: ",r),console.error("HTTP response body: ",await r.json()),new Error(`HTTP error, status: ${r.status}`);let o=await r.json();if(!o||!o.data)throw new Error("Invalid response from OpenAI models endpoint.");return o.data.map(n=>n.id)}catch(t){throw console.error("Error fetching OpenAI models:",t),t}}async nonStreamingChat(t){try{let r=JSON.stringify({model:this.modelName,messages:t}),o={Authorization:`Bearer ${this.apiKey}`,"Content-Type":"application/json"},n=await nativeFetch(this.baseUrl+"/chat/completions",{method:"POST",headers:o,body:r});if(!n.ok)throw console.error("http response: ",n),console.error("http response body: ",await n.json()),new Error(`HTTP error, status: ${n.status}`);let i=await n.json();if(!i||!i.choices||i.choices.length===0)throw new Error("Invalid response from OpenAI.");return i.choices[0].message.content}catch(r){throw console.error("Error calling OpenAI chat endpoint:",r),await be.flashNotification("Error calling OpenAI chat endpoint.","error"),r}}},He=class extends G{constructor(t,r,o,n=!0){super(t,o,"OpenAI",r,n)}async _generateEmbeddings(t){let r=JSON.stringify({model:this.modelName,input:t.text,encoding_format:"float"}),o={"Content-Type":"application/json"};this.requireAuth&&(o.Authorization=`Bearer ${this.apiKey}`);let n=await nativeFetch(`${this.baseUrl}/embeddings`,{method:"POST",headers:o,body:r});if(!n.ok)throw console.error("HTTP response: ",n),console.error("HTTP response body: ",await n.json()),new Error(`HTTP error, status: ${n.status}`);let i=await n.json();if(!i||!i.data||i.data.length===0)throw new Error("Invalid response from OpenAI.");return i.data[0].embedding}};var Be=class extends Y{name="Ollama";requireAuth;openaiProvider;constructor(t,r,o,n){super("Ollama",t,o,r),this.requireAuth=n,this.openaiProvider=new me(t,r,o,n)}async chatWithAI({messages:t,stream:r,onDataReceived:o,onResponseComplete:n}){return await this.openaiProvider.chatWithAI({messages:t,stream:r,onDataReceived:o,onResponseComplete:n})}async listModels(){try{let t={"Content-Type":"application/json"};this.requireAuth&&(t.Authorization=`Bearer ${this.apiKey}`);let r=await nativeFetch(`${this.baseUrl.replace(/\/v1\/?/,"")}/api/tags`,{method:"GET",headers:t});if(!r.ok)throw console.error("HTTP response: ",r),console.error("HTTP response body: ",await r.json()),new Error(`HTTP error, status: ${r.status}`);let o=await r.json();if(!o||!o.models)throw new Error("Invalid response from Ollama models endpoint.");return o.models.map(n=>n.name)}catch(t){throw console.error("Error fetching Ollama models:",t),t}}},Ke=class extends G{constructor(t,r,o,n=!1){super(t,o,"Ollama",r,n)}async _generateEmbeddings(t){let r=JSON.stringify({model:this.modelName,prompt:t.text}),o={"Content-Type":"application/json"};this.requireAuth&&(o.Authorization=`Bearer ${this.apiKey}`);let n=await nativeFetch(`${this.baseUrl}/api/embeddings`,{method:"POST",headers:o,body:r});if(!n.ok)throw console.error("HTTP response: ",n),console.error("HTTP response body: ",await n.json()),new Error(`HTTP error, status: ${n.status}`);let i=await n.json();if(!i||!i.embedding||i.embedding.length===0)throw new Error("Invalid response from Ollama.");return i.embedding}};var Ge=class extends Y{constructor(t,r,o="http://localhost"){super(t,o,"mock",r)}async chatWithAI(t){let r="This is a mock response from the AI.";if(t.onDataReceived)for(let o of r)await new Promise(n=>setTimeout(n,50)),t.onDataReceived(o);return r}listModels(){return Promise.resolve(["mock-gpt-3.5","mock-gpt-4","mock-claude-2",this.modelName])}},Ye=class extends ue{constructor(t,r,o="http://localhost"){super(t,o,"mock",r)}generateImage(t){return new Promise(r=>{setTimeout(()=>{r("https://example.com/mock-image.jpg")},5)})}},We=class extends G{constructor(t,r,o="http://localhost"){super(t,o,"mock",r)}_generateEmbeddings(t){return new Promise(r=>{setTimeout(()=>{let o=Array(1536).fill(0).map(()=>Math.random());r(o)},5)})}};var C,g,we,O,Qe,$,bt,ea,Pe;async function T(){let e=await Ve();(!C||!O||!g||!bt||JSON.stringify(e)!==JSON.stringify(bt))&&await z(!0)}async function Ve(){if(await S.getEnv()!="server")try{return await Q.get("ai.selectedTextModel")}catch{return}}async function wt(){if(await S.getEnv()!="server")try{return await Q.get("ai.selectedImageModel")}catch{return}}async function Pt(){if(await S.getEnv()!="server")try{return await Q.get("ai.selectedEmbeddingModel")}catch{return}}async function At(e){await S.getEnv()!="server"&&await Q.set("ai.selectedImageModel",e)}async function St(e){await S.getEnv()!="server"&&await Q.set("ai.selectedTextModel",e)}async function vt(e){await S.getEnv()!="server"&&await Q.set("ai.selectedEmbeddingModel",e)}async function ta(){let e=await Ve()||g.textModels[0];if(!e)throw new Error("No text model selected or available as default.");await ae(e)}async function ra(){let e=await wt()||g.imageModels[0];if(!e)throw new Error("No image model selected or available as default.");await Tt(e)}async function na(){let e=await Pt()||g.embeddingModels[0];if(!e)throw new Error("No embedding model selected or available as default.");await Ae(e)}function oa(e){let t=e.provider.toLowerCase();switch(U("client","Provider name",t),t){case"dalle":Qe=new $e(C,e.modelName,e.baseUrl||g.dallEBaseUrl);break;case"mock":Qe=new Ye(C,e.modelName);break;default:throw new Error(`Unsupported image provider: ${e.provider}. Please configure a supported provider.`)}}function ia(e){switch(e.provider.toLowerCase()){case"openai":O=new me(C,e.modelName,e.baseUrl||g.openAIBaseUrl,e.requireAuth||g.requireAuth);break;case"gemini":O=new je(C,e.modelName);break;case"ollama":O=new Be(C,e.modelName,e.baseUrl||"http://localhost:11434/v1",e.requireAuth);break;case"mock":O=new Ge(C,e.modelName,e.baseUrl);break;default:throw new Error(`Unsupported AI provider: ${e.provider}. Please configure a supported provider.`)}return O}function sa(e){switch(e.provider.toLowerCase()){case"openai":$=new He(C,e.modelName,e.baseUrl||g.openAIBaseUrl);break;case"gemini":$=new qe(C,e.modelName);break;case"ollama":$=new Ke(C,e.modelName,e.baseUrl||"http://localhost:11434",e.requireAuth);break;case"mock":$=new We(C,e.modelName,e.baseUrl);break;default:throw new Error(`Unsupported embedding provider: ${e.provider}. Please configure a supported provider.`)}}async function ae(e){if(U("client","configureSelectedModel called with:",e),!e)throw new Error("No model provided to configure");if(e.requireAuth=e.requireAuth??g.requireAuth,e.requireAuth)try{let t=await Re(e.secretName||"OPENAI_API_KEY");t!==C&&(C=t,U("client","API key updated"))}catch(t){throw console.error("Error reading secret:",t),new Error("Failed to read the AI API key. Please check the SECRETS page.")}if(e.requireAuth&&!C)throw new Error("AI API key is missing. Please set it in the secrets page.");return bt=e,ia(e)}async function Tt(e){if(U("client","configureSelectedImageModel called with:",e),!e)throw new Error("No image model provided to configure");if(e.requireAuth){let t=await Re(e.secretName||"OPENAI_API_KEY");t!==C&&(C=t,U("client","API key updated for image model"))}if(e.requireAuth&&!C)throw new Error("AI API key is missing for image model. Please set it in the secrets page.");ea=e,oa(e)}async function Ae(e){if(U("client","configureSelectedEmbeddingModel called with:",e),!e)throw new Error("No embedding model provided to configure");if(e.requireAuth){let t=await Re(e.secretName||"OPENAI_API_KEY");t!==C&&(C=t,U("client","API key updated for embedding model"))}if(e.requireAuth&&!C)throw new Error("AI API key is missing for embedding model. Please set it in the secrets page.");Pe=e,sa(e)}async function aa(){let e={openAIBaseUrl:"https://api.openai.com/v1",dallEBaseUrl:"https://api.openai.com/v1",requireAuth:!0,secretName:"OPENAI_API_KEY",provider:"OpenAI",chat:{},promptInstructions:{},imageModels:[],embeddingModels:[],textModels:[],indexEmbeddings:!1,indexSummary:!1,indexSummaryModelName:"",indexEmbeddingsExcludePages:[],indexEmbeddingsExcludeStrings:["**user**:"]},t={userInformation:"",userInstructions:"",parseWikiLinks:!0,bakeMessages:!0,customEnrichFunctions:[],searchEmbeddings:!1},r={pageRenameSystem:"",pageRenameRules:"",tagRules:"",indexSummaryPrompt:"",enhanceFrontMatterPrompt:""},o=await S.getSpaceConfig("ai",{}),n={...e,...o};return n.chat={...t,...o.chat||{}},n.promptInstructions={...r,...o.promptInstructions||{}},n}async function z(e=!0){let t=await aa();!g||JSON.stringify(g)!==JSON.stringify(t)?(U("client","aiSettings updating from",g),g=t,U("client","aiSettings updated to",g)):U("client","aiSettings unchanged",g),g.textModels.length===1&&await St(g.textModels[0]),g.imageModels.length===1&&await At(g.imageModels[0]),g.embeddingModels.length===1&&await vt(g.embeddingModels[0]),e&&(g.textModels.length>0&&await ta(),g.imageModels.length>0&&await ra(),g.embeddingModels.length>0&&await na()),we={role:"system",content:"This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet."},g.chat.userInformation&&(we.content+=`
-The user has provided the following information about themselves: ${g.chat.userInformation}`),g.chat.userInstructions&&(we.content+=`
-The user has provided the following instructions for the chat, follow them as closely as possible: ${g.chat.userInstructions}`)}var Et="\u{1F916} ";function Se(e){return!(["SETTINGS","SECRETS",...g.indexEmbeddingsExcludePages].includes(e)||e.startsWith("_")||e.startsWith("Library/")||/\.conflicted\.\d+$/.test(e))}async function Sr(){return await T(),g.indexEmbeddings&&$!==void 0&&Pe!==void 0&&g.embeddingModels.length>0&&await S.getEnv()==="server"}async function vr(){return await T(),g.indexEmbeddings&&g.indexSummary&&$!==void 0&&Pe!==void 0&&g.embeddingModels.length>0&&await S.getEnv()==="server"}async function ca(e){if(!await Sr()||!Se(e))return;let t=await D.readPage(e),r=await k.parseMarkdown(t);if(!r.children)return;let o=r.children.filter(a=>a.type==="Paragraph"),n=[],i=Date.now();for(let a of o){let p=R(a).trim();if(!p||p.length<10||g.indexEmbeddingsExcludeStrings.some(x=>p.includes(x)))continue;let d=await $.generateEmbeddings({text:p}),f=a.from??0,h={ref:`${e}@${f}`,page:e,pos:f,embedding:d,text:p,tag:"embedding"};n.push(h)}await kt(e,n);let c=(Date.now()-i)/1e3;U("any",`AI: Indexed ${n.length} embedding objects for page ${e} in ${c} seconds`)}async function la(e){if(!await vr()||!Se(e))return;let t=await D.readPage(e),r=await k.parseMarkdown(t);if(!r.children)return;let o=Date.now(),n=R(r),i=g.textModels.find(b=>b.name===g.indexSummaryModelName);if(!i)throw new Error(`Could not find summary model ${g.indexSummaryModelName}`);let s=await ae(i),c;g.promptInstructions.indexSummaryPrompt!==""?c=g.promptInstructions.indexSummaryPrompt:c=`Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:
-`;let a=await De(i.name,n,c),p=_e(a);p||(p=await s.singleMessageChat("Contents of "+e+`:
-`+n+`
+var __defProp = Object.defineProperty;
+var __export = (target, all) => {
+  for (var name in all)
+    __defProp(target, name, { get: all[name], enumerable: true });
+};
 
-`+c),Le(a,p));let d=await $.generateEmbeddings({text:p}),f={ref:`${e}@0`,page:e,embedding:d,text:p,tag:"aiSummary"};await kt(e,[f]);let x=(Date.now()-o)/1e3;U("any",`AI: Indexed summary for page ${e} in ${x} seconds`)}async function Tr({name:e,tree:t}){await T(),Se(e)&&t.children&&(await Sr()&&await oe.send("aiEmbeddingsQueue",e),await vr()&&await oe.send("aiSummaryQueue",e))}async function Er(e){await T();for(let r of e){let o=r.body;console.log(`AI: Generating and indexing embeddings for file ${o}`),await ca(o)}let t=await oe.getQueueStats("aiEmbeddingsQueue");console.log(`AI: Embeddings queue stats: ${JSON.stringify(t)}`)}async function Cr(e){await T();for(let r of e){let o=r.body;console.log(`AI: Generating and indexing summary for ${o}`),await la(o)}let t=await oe.getQueueStats("aiSummaryQueue");console.log(`AI: Summary queue stats: ${JSON.stringify(t)}`)}async function Mt(){return await Ft()?await l("system.invokeFunctionOnServer","index.queryObjects","embedding",{}):await Nt("embedding",{})}async function Mr(){return await Ft()?await l("system.invokeFunctionOnServer","index.queryObjects","aiSummary",{}):await Nt("aiSummary",{})}async function Ir(e){if(await T(),!$||!Pe)throw new Error("No embedding provider found");return await $.generateEmbeddings({text:e})}async function ve(e){return await l("system.invokeFunctionOnServer","silverbullet-ai.generateEmbeddings",e)}function Ct(e,t){let r=e.reduce((i,s,c)=>i+s*t[c],0),o=Math.sqrt(e.reduce((i,s)=>i+s*s,0)),n=Math.sqrt(t.reduce((i,s)=>i+s*s,0));return r/(o*n)}async function It(e,t=10,r=!1){await T(),await S.getEnv()==="server"&&(r=!1);let o=Date.now(),n=typeof e=="string"?await ve(e):e,i=Date.now();console.log(`searchEmbeddings: Query embedding generation took ${i-o} ms`);let s=Date.now(),c=await Mt(),a=Date.now();console.log(`Retrieved ${c.length} embeddings in ${a-s} ms`);let p="",d=0;r&&(p=`Retrieved ${c.length} embeddings in ${a-s} ms
+// https://deno.land/x/silverbullet@0.10.1/lib/plugos/worker_runtime.ts
+var workerPostMessage = (_msg) => {
+  throw new Error("Not initialized yet");
+};
+var runningAsWebWorker = typeof window === "undefined" && // @ts-ignore: globalThis
+typeof globalThis.WebSocketPair === "undefined";
+if (typeof Deno === "undefined") {
+  self.Deno = {
+    args: [],
+    // @ts-ignore: Deno hack
+    build: {
+      arch: "x86_64"
+    },
+    env: {
+      // @ts-ignore: Deno hack
+      get() {
+      }
+    }
+  };
+}
+var pendingRequests = /* @__PURE__ */ new Map();
+var syscallReqId = 0;
+if (runningAsWebWorker) {
+  globalThis.syscall = async (name, ...args) => {
+    return await new Promise((resolve, reject) => {
+      syscallReqId++;
+      pendingRequests.set(syscallReqId, { resolve, reject });
+      workerPostMessage({
+        type: "sys",
+        id: syscallReqId,
+        name,
+        args
+      });
+    });
+  };
+}
+function setupMessageListener(functionMapping2, manifest2, postMessageFn) {
+  if (!runningAsWebWorker) {
+    return;
+  }
+  workerPostMessage = postMessageFn;
+  self.addEventListener("message", (event) => {
+    (async () => {
+      const data = event.data;
+      switch (data.type) {
+        case "inv":
+          {
+            const fn = functionMapping2[data.name];
+            if (!fn) {
+              throw new Error(`Function not loaded: ${data.name}`);
+            }
+            try {
+              const result = await Promise.resolve(fn(...data.args || []));
+              workerPostMessage({
+                type: "invr",
+                id: data.id,
+                result
+              });
+            } catch (e) {
+              console.error(
+                "An exception was thrown as a result of invoking function",
+                data.name,
+                "error:",
+                e.message
+              );
+              workerPostMessage({
+                type: "invr",
+                id: data.id,
+                error: e.message
+              });
+            }
+          }
+          break;
+        case "sysr":
+          {
+            const syscallId = data.id;
+            const lookup = pendingRequests.get(syscallId);
+            if (!lookup) {
+              throw Error("Invalid request id");
+            }
+            pendingRequests.delete(syscallId);
+            if (data.error) {
+              lookup.reject(new Error(data.error));
+            } else {
+              lookup.resolve(data.result);
+            }
+          }
+          break;
+      }
+    })().catch(console.error);
+  });
+  workerPostMessage({
+    type: "manifest",
+    manifest: manifest2
+  });
+}
+function base64Decode(s) {
+  const binString = atob(s);
+  const len = binString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return bytes;
+}
+function base64Encode(buffer) {
+  if (typeof buffer === "string") {
+    buffer = new TextEncoder().encode(buffer);
+  }
+  let binary2 = "";
+  const len = buffer.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary2 += String.fromCharCode(buffer[i]);
+  }
+  return btoa(binary2);
+}
+async function sandboxFetch(reqInfo, options) {
+  if (typeof reqInfo !== "string") {
+    const body = new Uint8Array(await reqInfo.arrayBuffer());
+    const encodedBody = body.length > 0 ? base64Encode(body) : void 0;
+    options = {
+      method: reqInfo.method,
+      headers: Object.fromEntries(reqInfo.headers.entries()),
+      base64Body: encodedBody
+    };
+    reqInfo = reqInfo.url;
+  }
+  return syscall("sandboxFetch.fetch", reqInfo, options);
+}
+globalThis.nativeFetch = globalThis.fetch;
+function monkeyPatchFetch() {
+  globalThis.fetch = async function(reqInfo, init) {
+    const encodedBody = init && init.body ? base64Encode(
+      new Uint8Array(await new Response(init.body).arrayBuffer())
+    ) : void 0;
+    const r = await sandboxFetch(
+      reqInfo,
+      init && {
+        method: init.method,
+        headers: init.headers,
+        base64Body: encodedBody
+      }
+    );
+    return new Response(r.base64Body ? base64Decode(r.base64Body) : null, {
+      status: r.status,
+      headers: r.headers
+    });
+  };
+}
+if (runningAsWebWorker) {
+  monkeyPatchFetch();
+}
 
-`,d=(await u.getText()).length,await u.replaceRange(d,d,p));let f=[],h=Date.now();for(let x=0;x<c.length;x++){let b=c[x];if(Se(b.page)){if(f.push({page:b.page,ref:b.ref,text:b.text,similarity:Ct(n,b.embedding)}),r&&(x%100===0||Date.now()-h>=100)){let A=d+p.length;p=`
+// https://deno.land/x/silverbullet@0.10.1/plug-api/lib/tree.ts
+function collectNodesMatching(tree, matchFn) {
+  if (matchFn(tree)) {
+    return [tree];
+  }
+  let results = [];
+  if (tree.children) {
+    for (const child of tree.children) {
+      results = [...results, ...collectNodesMatching(child, matchFn)];
+    }
+  }
+  return results;
+}
+function findNodeOfType(tree, nodeType) {
+  return collectNodesMatching(tree, (n) => n.type === nodeType)[0];
+}
+function traverseTree(tree, matchFn) {
+  collectNodesMatching(tree, matchFn);
+}
 
-Processed ${x+1} of ${c.length} embeddings...
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls/editor.ts
+var editor_exports = {};
+__export(editor_exports, {
+  confirm: () => confirm,
+  copyToClipboard: () => copyToClipboard,
+  deleteLine: () => deleteLine,
+  dispatch: () => dispatch,
+  downloadFile: () => downloadFile,
+  filterBox: () => filterBox,
+  flashNotification: () => flashNotification,
+  fold: () => fold,
+  foldAll: () => foldAll,
+  getCurrentPage: () => getCurrentPage,
+  getCursor: () => getCursor,
+  getSelection: () => getSelection,
+  getText: () => getText,
+  getUiOption: () => getUiOption,
+  goHistory: () => goHistory,
+  hidePanel: () => hidePanel,
+  insertAtCursor: () => insertAtCursor,
+  insertAtPos: () => insertAtPos,
+  moveCursor: () => moveCursor,
+  moveCursorToLine: () => moveCursorToLine,
+  navigate: () => navigate,
+  newWindow: () => newWindow,
+  openCommandPalette: () => openCommandPalette,
+  openPageNavigator: () => openPageNavigator,
+  openSearchPanel: () => openSearchPanel,
+  openUrl: () => openUrl,
+  prompt: () => prompt,
+  redo: () => redo,
+  reloadConfigAndCommands: () => reloadConfigAndCommands,
+  reloadPage: () => reloadPage,
+  reloadUI: () => reloadUI,
+  replaceRange: () => replaceRange,
+  save: () => save,
+  setSelection: () => setSelection,
+  setText: () => setText,
+  setUiOption: () => setUiOption,
+  showPanel: () => showPanel,
+  toggleFold: () => toggleFold,
+  undo: () => undo,
+  unfold: () => unfold,
+  unfoldAll: () => unfoldAll,
+  uploadFile: () => uploadFile,
+  vimEx: () => vimEx
+});
 
-`,await u.replaceRange(d,A,p),h=Date.now()}if(r&&x>=c.length-1){let A=d+p.length;await u.replaceRange(d,A,"")}}}if(console.log(`Finished searching embeddings in ${Date.now()-s} ms`),g.indexSummary){let x=Date.now(),b=await Mr(),A=Date.now();console.log(`Retrieved ${b.length} summaries in ${A-x} ms`);let w="",N=0;r&&(w=`Retrieved ${b.length} summaries in ${A-x} ms
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscall.ts
+if (typeof self === "undefined") {
+  self = {
+    syscall: () => {
+      throw new Error("Not implemented here");
+    }
+  };
+}
+function syscall2(name, ...args) {
+  return globalThis.syscall(name, ...args);
+}
 
-`,N=(await u.getText()).length,await u.replaceRange(N,N,w));let J=[],v=Date.now();for(let F=0;F<b.length;F++){let X=b[F];if(Se(X.page)){if(J.push({page:X.page,ref:X.ref,text:`Page Summary: ${X.text}`,similarity:Ct(n,X.embedding)}),r&&(F%100===0||Date.now()-v>=100)){let E=N+w.length;w=`
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls/editor.ts
+function getCurrentPage() {
+  return syscall2("editor.getCurrentPage");
+}
+function getText() {
+  return syscall2("editor.getText");
+}
+function setText(newText, isolateHistory = false) {
+  return syscall2("editor.setText", newText, isolateHistory);
+}
+function getCursor() {
+  return syscall2("editor.getCursor");
+}
+function getSelection() {
+  return syscall2("editor.getSelection");
+}
+function setSelection(from, to) {
+  return syscall2("editor.setSelection", from, to);
+}
+function save() {
+  return syscall2("editor.save");
+}
+function navigate(pageRef, replaceState = false, newWindow3 = false) {
+  return syscall2("editor.navigate", pageRef, replaceState, newWindow3);
+}
+function openPageNavigator(mode = "page") {
+  return syscall2("editor.openPageNavigator", mode);
+}
+function openCommandPalette() {
+  return syscall2("editor.openCommandPalette");
+}
+function reloadPage() {
+  return syscall2("editor.reloadPage");
+}
+function reloadUI() {
+  return syscall2("editor.reloadUI");
+}
+function reloadConfigAndCommands() {
+  return syscall2("editor.reloadConfigAndCommands");
+}
+function openUrl(url, existingWindow = false) {
+  return syscall2("editor.openUrl", url, existingWindow);
+}
+function newWindow() {
+  return syscall2("editor.newWindow");
+}
+function goHistory(delta) {
+  return syscall2("editor.goHistory", delta);
+}
+function downloadFile(filename, dataUrl) {
+  return syscall2("editor.downloadFile", filename, dataUrl);
+}
+function uploadFile(accept, capture) {
+  return syscall2("editor.uploadFile", accept, capture);
+}
+function flashNotification(message, type = "info") {
+  return syscall2("editor.flashNotification", message, type);
+}
+function filterBox(label, options, helpText = "", placeHolder = "") {
+  return syscall2("editor.filterBox", label, options, helpText, placeHolder);
+}
+function showPanel(id, mode, html, script = "") {
+  return syscall2("editor.showPanel", id, mode, html, script);
+}
+function hidePanel(id) {
+  return syscall2("editor.hidePanel", id);
+}
+function insertAtPos(text, pos) {
+  return syscall2("editor.insertAtPos", text, pos);
+}
+function replaceRange(from, to, text) {
+  return syscall2("editor.replaceRange", from, to, text);
+}
+function moveCursor(pos, center = false) {
+  return syscall2("editor.moveCursor", pos, center);
+}
+function moveCursorToLine(line, column = 1, center = false) {
+  return syscall2("editor.moveCursorToLine", line, column, center);
+}
+function insertAtCursor(text) {
+  return syscall2("editor.insertAtCursor", text);
+}
+function dispatch(change) {
+  return syscall2("editor.dispatch", change);
+}
+function prompt(message, defaultValue = "") {
+  return syscall2("editor.prompt", message, defaultValue);
+}
+function confirm(message) {
+  return syscall2("editor.confirm", message);
+}
+function getUiOption(key) {
+  return syscall2("editor.getUiOption", key);
+}
+function setUiOption(key, value) {
+  return syscall2("editor.setUiOption", key, value);
+}
+function fold() {
+  return syscall2("editor.fold");
+}
+function unfold() {
+  return syscall2("editor.unfold");
+}
+function toggleFold() {
+  return syscall2("editor.toggleFold");
+}
+function foldAll() {
+  return syscall2("editor.foldAll");
+}
+function unfoldAll() {
+  return syscall2("editor.unfoldAll");
+}
+function undo() {
+  return syscall2("editor.undo");
+}
+function redo() {
+  return syscall2("editor.redo");
+}
+function openSearchPanel() {
+  return syscall2("editor.openSearchPanel");
+}
+function copyToClipboard(data) {
+  return syscall2("editor.copyToClipboard", data);
+}
+function deleteLine() {
+  return syscall2("editor.deleteLine");
+}
+function vimEx(exCommand) {
+  return syscall2("editor.vimEx", exCommand);
+}
 
-Processed ${F+1} of ${b.length} summaries...
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls/markdown.ts
+var markdown_exports = {};
+__export(markdown_exports, {
+  parseMarkdown: () => parseMarkdown,
+  renderParseTree: () => renderParseTree
+});
+function parseMarkdown(text) {
+  return syscall2("markdown.parseMarkdown", text);
+}
+function renderParseTree(tree) {
+  return syscall2("markdown.renderParseTree", tree);
+}
 
-`,await u.replaceRange(N,E,w),v=Date.now()}if(r&&F>=b.length-1){let E=N+w.length;await u.replaceRange(N,E,"")}}}console.log(`Finished searching summaries in ${Date.now()-x} ms`),f.push(...J)}return f.sort((x,b)=>b.similarity-x.similarity).slice(0,t)}async function Or(e,t=10){await T();let r=await ve(e);return(await Mr()).map(i=>({page:i.page,ref:i.ref,text:i.text,similarity:Ct(r,i.embedding)})).sort((i,s)=>s.similarity-i.similarity).slice(0,t)}async function ze(e,t=10,r=.15,o=!1){let n=await It(e,-1,o),i={};for(let c of n)c.similarity<r||(i[c.page]?(i[c.page].score+=c.similarity,i[c.page].children.push(c)):i[c.page]={page:c.page,score:c.similarity,children:[c]});for(let c in i)i[c].children=i[c].children.sort((a,p)=>p.similarity-a.similarity).slice(0,t);return Object.values(i).sort((c,a)=>a.score-c.score).slice(0,t)}async function Je(e,t=10){try{let r=await ze(e,t),o="";if(r.length>0)for(let n of r){o+=`>>${n.page}<<
-`;for(let i of n.children)o+=`> ${i.text}
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls/space.ts
+var space_exports = {};
+__export(space_exports, {
+  deleteAttachment: () => deleteAttachment,
+  deleteFile: () => deleteFile,
+  deletePage: () => deletePage,
+  fileExists: () => fileExists,
+  getAttachmentMeta: () => getAttachmentMeta,
+  getFileMeta: () => getFileMeta,
+  getPageMeta: () => getPageMeta,
+  listAttachments: () => listAttachments,
+  listFiles: () => listFiles,
+  listPages: () => listPages,
+  listPlugs: () => listPlugs,
+  readAttachment: () => readAttachment,
+  readFile: () => readFile,
+  readPage: () => readPage,
+  writeAttachment: () => writeAttachment,
+  writeFile: () => writeFile,
+  writePage: () => writePage
+});
+function listPages() {
+  return syscall2("space.listPages");
+}
+function getPageMeta(name) {
+  return syscall2("space.getPageMeta", name);
+}
+function readPage(name) {
+  return syscall2("space.readPage", name);
+}
+function writePage(name, text) {
+  return syscall2("space.writePage", name, text);
+}
+function deletePage(name) {
+  return syscall2("space.deletePage", name);
+}
+function listPlugs() {
+  return syscall2("space.listPlugs");
+}
+function listAttachments() {
+  return syscall2("space.listAttachments");
+}
+function getAttachmentMeta(name) {
+  return syscall2("space.getAttachmentMeta", name);
+}
+function readAttachment(name) {
+  return syscall2("space.readAttachment", name);
+}
+function writeAttachment(name, data) {
+  return syscall2("space.writeAttachment", name, data);
+}
+function deleteAttachment(name) {
+  return syscall2("space.deleteAttachment", name);
+}
+function listFiles() {
+  return syscall2("space.listFiles");
+}
+function readFile(name) {
+  return syscall2("space.readFile", name);
+}
+function getFileMeta(name) {
+  return syscall2("space.getFileMeta", name);
+}
+function writeFile(name, data) {
+  return syscall2("space.writeFile", name, data);
+}
+function deleteFile(name) {
+  return syscall2("space.deleteFile", name);
+}
+function fileExists(name) {
+  return syscall2("space.fileExists", name);
+}
 
-`}else return"No relevant pages found.";return o}catch(r){return console.error("Error in searchEmbeddingsForChat:",r),"An error occurred during the search."}}function Nr(e){return{data:new TextEncoder().encode(""),meta:{name:e,contentType:"text/markdown",size:0,created:0,lastModified:0,perm:"ro"}}}function Ot(e){return{name:e,contentType:"text/markdown",size:-1,created:0,lastModified:0,perm:"ro"}}function kr(e){return Ot(e)}async function Fr(){let e=await u.getCurrentPage();if(e.startsWith(Et)){await T();let t=e.substring(Et.length),r=`# Search results for "${t}"`,o=r+`
+// https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls/yaml.ts
+var yaml_exports = {};
+__export(yaml_exports, {
+  parse: () => parse,
+  stringify: () => stringify
+});
+function parse(text) {
+  return syscall2("yaml.parse", text);
+}
+function stringify(obj) {
+  return syscall2("yaml.stringify", obj);
+}
 
-`;if(!g.indexEmbeddings){o+=`> **warning** Embeddings generation is disabled.
-`,o+=`> You can enable it in the AI settings.
+// https://deno.land/x/silverbullet@0.10.1/plug-api/lib/yaml_page.ts
+async function readCodeBlockPage(pageName, allowedLanguages) {
+  const text = await space_exports.readPage(pageName);
+  const tree = await markdown_exports.parseMarkdown(text);
+  let codeText;
+  traverseTree(tree, (t) => {
+    if (t.type !== "FencedCode") {
+      return false;
+    }
+    const codeInfoNode = findNodeOfType(t, "CodeInfo");
+    if (allowedLanguages && !codeInfoNode) {
+      return false;
+    }
+    if (allowedLanguages && !allowedLanguages.includes(codeInfoNode.children[0].text)) {
+      return false;
+    }
+    const codeTextNode = findNodeOfType(t, "CodeText");
+    if (!codeTextNode) {
+      return false;
+    }
+    codeText = codeTextNode.children[0].text;
+    return true;
+  });
+  return codeText;
+}
+async function readYamlPage(pageName, allowedLanguages = ["yaml"]) {
+  const codeText = await readCodeBlockPage(pageName, allowedLanguages);
+  if (codeText === void 0) {
+    return void 0;
+  }
+  try {
+    return yaml_exports.parse(codeText);
+  } catch (e) {
+    console.error("YAML Page parser error", e);
+    throw new Error(`YAML Error: ${e.message}`);
+  }
+}
 
+// https://deno.land/x/silverbullet@0.10.1/plug-api/lib/secrets_page.ts
+async function readSecret(key) {
+  try {
+    const allSecrets = await readYamlPage("SECRETS", ["yaml", "secrets"]);
+    const val = allSecrets[key];
+    if (val === void 0) {
+      throw new Error(`No such secret: ${key}`);
+    }
+    return val;
+  } catch (e) {
+    if (e.message === "Not found") {
+      throw new Error(`No such secret: ${key}`);
+    }
+    throw e;
+  }
+}
 
-`,await u.setText(o);return}let n=`${r}
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/editor.ts
+var editor_exports2 = {};
+__export(editor_exports2, {
+  confirm: () => confirm2,
+  copyToClipboard: () => copyToClipboard2,
+  deleteLine: () => deleteLine2,
+  dispatch: () => dispatch2,
+  downloadFile: () => downloadFile2,
+  filterBox: () => filterBox2,
+  flashNotification: () => flashNotification2,
+  fold: () => fold2,
+  foldAll: () => foldAll2,
+  getCurrentPage: () => getCurrentPage2,
+  getCursor: () => getCursor2,
+  getSelection: () => getSelection2,
+  getText: () => getText2,
+  getUiOption: () => getUiOption2,
+  goHistory: () => goHistory2,
+  hidePanel: () => hidePanel2,
+  insertAtCursor: () => insertAtCursor2,
+  insertAtPos: () => insertAtPos2,
+  moveCursor: () => moveCursor2,
+  moveCursorToLine: () => moveCursorToLine2,
+  navigate: () => navigate2,
+  newWindow: () => newWindow2,
+  openCommandPalette: () => openCommandPalette2,
+  openPageNavigator: () => openPageNavigator2,
+  openSearchPanel: () => openSearchPanel2,
+  openUrl: () => openUrl2,
+  prompt: () => prompt2,
+  redo: () => redo2,
+  reloadConfigAndCommands: () => reloadConfigAndCommands2,
+  reloadPage: () => reloadPage2,
+  reloadUI: () => reloadUI2,
+  replaceRange: () => replaceRange2,
+  save: () => save2,
+  setSelection: () => setSelection2,
+  setText: () => setText2,
+  setUiOption: () => setUiOption2,
+  showPanel: () => showPanel2,
+  toggleFold: () => toggleFold2,
+  undo: () => undo2,
+  unfold: () => unfold2,
+  unfoldAll: () => unfoldAll2,
+  uploadFile: () => uploadFile2,
+  vimEx: () => vimEx2
+});
 
-Searching for "${t}"...`;n+=`
-Generating query vector embeddings..`,await u.setText(n);let i=[];try{i=await ve(t)}catch(a){console.error("Error generating query vector embeddings",a),n+=`
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscall.ts
+if (typeof self === "undefined") {
+  self = {
+    syscall: () => {
+      throw new Error("Not implemented here");
+    }
+  };
+}
+function syscall3(name, ...args) {
+  return globalThis.syscall(name, ...args);
+}
 
-> **error** \u26A0\uFE0F Failed to generate query vector embeddings.
-`,n+=`> ${a}
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/editor.ts
+function getCurrentPage2() {
+  return syscall3("editor.getCurrentPage");
+}
+function getText2() {
+  return syscall3("editor.getText");
+}
+function setText2(newText, isolateHistory = false) {
+  return syscall3("editor.setText", newText, isolateHistory);
+}
+function getCursor2() {
+  return syscall3("editor.getCursor");
+}
+function getSelection2() {
+  return syscall3("editor.getSelection");
+}
+function setSelection2(from, to) {
+  return syscall3("editor.setSelection", from, to);
+}
+function save2() {
+  return syscall3("editor.save");
+}
+function navigate2(pageRef, replaceState = false, newWindow3 = false) {
+  return syscall3("editor.navigate", pageRef, replaceState, newWindow3);
+}
+function openPageNavigator2(mode = "page") {
+  return syscall3("editor.openPageNavigator", mode);
+}
+function openCommandPalette2() {
+  return syscall3("editor.openCommandPalette");
+}
+function reloadPage2() {
+  return syscall3("editor.reloadPage");
+}
+function reloadUI2() {
+  return syscall3("editor.reloadUI");
+}
+function reloadConfigAndCommands2() {
+  return syscall3("editor.reloadConfigAndCommands");
+}
+function openUrl2(url, existingWindow = false) {
+  return syscall3("editor.openUrl", url, existingWindow);
+}
+function newWindow2() {
+  return syscall3("editor.newWindow");
+}
+function goHistory2(delta) {
+  return syscall3("editor.goHistory", delta);
+}
+function downloadFile2(filename, dataUrl) {
+  return syscall3("editor.downloadFile", filename, dataUrl);
+}
+function uploadFile2(accept, capture) {
+  return syscall3("editor.uploadFile", accept, capture);
+}
+function flashNotification2(message, type = "info") {
+  return syscall3("editor.flashNotification", message, type);
+}
+function filterBox2(label, options, helpText = "", placeHolder = "") {
+  return syscall3("editor.filterBox", label, options, helpText, placeHolder);
+}
+function showPanel2(id, mode, html, script = "") {
+  return syscall3("editor.showPanel", id, mode, html, script);
+}
+function hidePanel2(id) {
+  return syscall3("editor.hidePanel", id);
+}
+function insertAtPos2(text, pos) {
+  return syscall3("editor.insertAtPos", text, pos);
+}
+function replaceRange2(from, to, text) {
+  return syscall3("editor.replaceRange", from, to, text);
+}
+function moveCursor2(pos, center = false) {
+  return syscall3("editor.moveCursor", pos, center);
+}
+function moveCursorToLine2(line, column = 1, center = false) {
+  return syscall3("editor.moveCursorToLine", line, column, center);
+}
+function insertAtCursor2(text) {
+  return syscall3("editor.insertAtCursor", text);
+}
+function dispatch2(change) {
+  return syscall3("editor.dispatch", change);
+}
+function prompt2(message, defaultValue = "") {
+  return syscall3("editor.prompt", message, defaultValue);
+}
+function confirm2(message) {
+  return syscall3("editor.confirm", message);
+}
+function getUiOption2(key) {
+  return syscall3("editor.getUiOption", key);
+}
+function setUiOption2(key, value) {
+  return syscall3("editor.setUiOption", key, value);
+}
+function fold2() {
+  return syscall3("editor.fold");
+}
+function unfold2() {
+  return syscall3("editor.unfold");
+}
+function toggleFold2() {
+  return syscall3("editor.toggleFold");
+}
+function foldAll2() {
+  return syscall3("editor.foldAll");
+}
+function unfoldAll2() {
+  return syscall3("editor.unfoldAll");
+}
+function undo2() {
+  return syscall3("editor.undo");
+}
+function redo2() {
+  return syscall3("editor.redo");
+}
+function openSearchPanel2() {
+  return syscall3("editor.openSearchPanel");
+}
+function copyToClipboard2(data) {
+  return syscall3("editor.copyToClipboard", data);
+}
+function deleteLine2() {
+  return syscall3("editor.deleteLine");
+}
+function vimEx2(exCommand) {
+  return syscall3("editor.vimEx", exCommand);
+}
 
-`,await u.setText(n);return}n+=`
-Searching for similar embeddings...`,await u.setText(n);let s=[];try{s=await ze(i,void 0,void 0,!0)}catch(a){console.error("Error searching embeddings",a),n+=`
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/markdown.ts
+var markdown_exports2 = {};
+__export(markdown_exports2, {
+  parseMarkdown: () => parseMarkdown2,
+  renderParseTree: () => renderParseTree2
+});
+function parseMarkdown2(text) {
+  return syscall3("markdown.parseMarkdown", text);
+}
+function renderParseTree2(tree) {
+  return syscall3("markdown.renderParseTree", tree);
+}
 
-> **error** \u26A0\uFE0F Failed to search through embeddings.
-`,n+=`> ${a}
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/space.ts
+var space_exports2 = {};
+__export(space_exports2, {
+  deleteAttachment: () => deleteAttachment2,
+  deleteFile: () => deleteFile2,
+  deletePage: () => deletePage2,
+  fileExists: () => fileExists2,
+  getAttachmentMeta: () => getAttachmentMeta2,
+  getFileMeta: () => getFileMeta2,
+  getPageMeta: () => getPageMeta2,
+  listAttachments: () => listAttachments2,
+  listFiles: () => listFiles2,
+  listPages: () => listPages2,
+  listPlugs: () => listPlugs2,
+  readAttachment: () => readAttachment2,
+  readFile: () => readFile2,
+  readPage: () => readPage2,
+  writeAttachment: () => writeAttachment2,
+  writeFile: () => writeFile2,
+  writePage: () => writePage2
+});
+function listPages2() {
+  return syscall3("space.listPages");
+}
+function getPageMeta2(name) {
+  return syscall3("space.getPageMeta", name);
+}
+function readPage2(name) {
+  return syscall3("space.readPage", name);
+}
+function writePage2(name, text) {
+  return syscall3("space.writePage", name, text);
+}
+function deletePage2(name) {
+  return syscall3("space.deletePage", name);
+}
+function listPlugs2() {
+  return syscall3("space.listPlugs");
+}
+function listAttachments2() {
+  return syscall3("space.listAttachments");
+}
+function getAttachmentMeta2(name) {
+  return syscall3("space.getAttachmentMeta", name);
+}
+function readAttachment2(name) {
+  return syscall3("space.readAttachment", name);
+}
+function writeAttachment2(name, data) {
+  return syscall3("space.writeAttachment", name, data);
+}
+function deleteAttachment2(name) {
+  return syscall3("space.deleteAttachment", name);
+}
+function listFiles2() {
+  return syscall3("space.listFiles");
+}
+function readFile2(name) {
+  return syscall3("space.readFile", name);
+}
+function getFileMeta2(name) {
+  return syscall3("space.getFileMeta", name);
+}
+function writeFile2(name, data) {
+  return syscall3("space.writeFile", name, data);
+}
+function deleteFile2(name) {
+  return syscall3("space.deleteFile", name);
+}
+function fileExists2(name) {
+  return syscall3("space.fileExists", name);
+}
 
-`,await u.setText(n);return}let c=n.length;o=r+`
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/system.ts
+var system_exports2 = {};
+__export(system_exports2, {
+  applyAttributeExtractors: () => applyAttributeExtractors,
+  getEnv: () => getEnv,
+  getMode: () => getMode,
+  getSpaceConfig: () => getSpaceConfig,
+  getVersion: () => getVersion,
+  invokeCommand: () => invokeCommand,
+  invokeFunction: () => invokeFunction,
+  invokeSpaceFunction: () => invokeSpaceFunction,
+  listCommands: () => listCommands,
+  listSyscalls: () => listSyscalls,
+  reloadConfig: () => reloadConfig,
+  reloadPlugs: () => reloadPlugs
+});
+function invokeFunction(name, ...args) {
+  return syscall3("system.invokeFunction", name, ...args);
+}
+function invokeCommand(name, args) {
+  return syscall3("system.invokeCommand", name, args);
+}
+function listCommands() {
+  return syscall3("system.listCommands");
+}
+function listSyscalls() {
+  return syscall3("system.listSyscalls");
+}
+function invokeSpaceFunction(name, ...args) {
+  return syscall3("system.invokeSpaceFunction", name, ...args);
+}
+function applyAttributeExtractors(tags, text, tree) {
+  return syscall3("system.applyAttributeExtractors", tags, text, tree);
+}
+async function getSpaceConfig(key, defaultValue) {
+  return await syscall3("system.getSpaceConfig", key) ?? defaultValue;
+}
+function reloadPlugs() {
+  return syscall3("system.reloadPlugs");
+}
+function reloadConfig() {
+  return syscall3("system.reloadConfig");
+}
+function getEnv() {
+  return syscall3("system.getEnv");
+}
+function getMode() {
+  return syscall3("system.getMode");
+}
+function getVersion() {
+  return syscall3("system.getVersion");
+}
 
-`,s.length===0&&(o+=`No results found.
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/clientStore.ts
+var clientStore_exports2 = {};
+__export(clientStore_exports2, {
+  del: () => del,
+  get: () => get,
+  set: () => set
+});
+function set(key, value) {
+  return syscall3("clientStore.set", key, value);
+}
+function get(key) {
+  return syscall3("clientStore.get", key);
+}
+function del(key) {
+  return syscall3("clientStore.delete", key);
+}
 
-`);for(let a of s){o+=`## [[${a.page}]]
-`;for(let p of a.children){let f=p.ref.split("@")[1].padStart(4," ");o+=`> [[${p.ref}|${f}]] | ${p.text}
-`}}await u.replaceRange(0,c,o)}}async function Rr(){let e=await u.prompt("Search for: ");e&&await u.navigate({page:`${Et}${e}`})}function $r(e){return e.split("/").slice(0,-1).join("/")}async function U(e,...t){(await S.getEnv()===e||e==="any")&&console.log(...t)}async function Te(e,t){let r=await dr(e);return ua(r,t)}async function ua(e,t){e.limit||(e.limit=["number",1e3]);let r=`query:${e.querySource}`,o={query:e};t&&(o.variables=t);let n=await ye.dispatchEvent(r,o,30*1e3);if(n.length===0)throw new Error(`Unsupported query source '${e.querySource}'`);return n.flat()}async function Nt(e,t){return await S.invokeFunction("index.queryObjects",e,t)}async function kt(e,t){return await S.invokeFunction("index.indexObjects",e,t)}async function Xe(e){e||(e=await u.getText());let t=await k.parseMarkdown(e);await V(t,{removeFrontmatterSection:!0}),e=R(t);let r=e.split(`
-`),o=[],n="user",i="";return r.forEach(s=>{if(s.trim()==="")return;let c=s.match(/^\*\*(\w+)\*\*:/);if(c){let a=c[1].toLowerCase();n&&n!==a&&i.trim()!==""&&(o.push({role:n,content:i.trim()}),i=""),n=a,i+=s.replace(/^\*\*(\w+)\*\*:/,"").trim()+`
-`}else n&&(i+=s.trim()+`
-`)}),i&&n&&o.push({role:n,content:i.trim()}),o}async function Lr(){try{let e=await l("system.getVersion"),[t,r,o]=e.split(".").map(Number),[n,i,s]="0.7.2".split(".").map(Number);return t>n||t===n&&r>i||t===n&&r===i&&o>=s}catch{return!1}}async function Ft(){try{return(await S.listSyscalls()).some(t=>t.name==="system.invokeFunctionOnServer")}catch{return!1}}async function pe(e,t){let r=[],o,n;try{o=await u.getCurrentPage(),n=await D.getPageMeta(o)}catch(i){return console.error("Error fetching page metadata",i),await u.flashNotification("Error fetching page metadata","error"),[]}for(let i of e){if(i.role==="assistant"||i.role==="system"){r.push(i);continue}let s=await k.parseMarkdown(i.content),c=await fr([],s);if(i.content=i.content.replace(/\[enrich:\s*(false|true)\s*\]\s*/g,""),c.enrich!==void 0&&c.enrich===!1){console.log("Skipping message enrichment due to enrich=false attribute",c),r.push(i);continue}let a=i.content;if(i.role==="user"&&(n?(console.log("Rendering template",i.content,n),a=await ne.renderTemplate(i.content,n,{page:n,...t})):console.log("No page metadata found, skipping template rendering")),g.chat.searchEmbeddings&&g.indexEmbeddings){let h=await Je(a);h!=="No relevant pages found."&&(a+=`
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/language.ts
+var language_exports2 = {};
+__export(language_exports2, {
+  listLanguages: () => listLanguages,
+  parseLanguage: () => parseLanguage
+});
+function parseLanguage(language, code) {
+  return syscall3("language.parseLanguage", language, code);
+}
+function listLanguages() {
+  return syscall3("language.listLanguages");
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/template.ts
+var template_exports2 = {};
+__export(template_exports2, {
+  parseTemplate: () => parseTemplate,
+  renderTemplate: () => renderTemplate
+});
+function renderTemplate(template, obj, globals = {}) {
+  return syscall3("template.renderTemplate", template, obj, globals);
+}
+function parseTemplate(template) {
+  return syscall3("template.parseTemplate", template);
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/event.ts
+var event_exports2 = {};
+__export(event_exports2, {
+  dispatchEvent: () => dispatchEvent,
+  listEvents: () => listEvents
+});
+function dispatchEvent(eventName, data, timeout) {
+  return new Promise((resolve, reject) => {
+    let timeouter = -1;
+    if (timeout) {
+      timeouter = setTimeout(() => {
+        console.log("Timeout!");
+        reject("timeout");
+      }, timeout);
+    }
+    syscall3("event.dispatch", eventName, data).then((r) => {
+      if (timeouter !== -1) {
+        clearTimeout(timeouter);
+      }
+      resolve(r);
+    }).catch(reject);
+  });
+}
+function listEvents() {
+  return syscall3("event.list");
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/yaml.ts
+var yaml_exports2 = {};
+__export(yaml_exports2, {
+  parse: () => parse2,
+  stringify: () => stringify2
+});
+function parse2(text) {
+  return syscall3("yaml.parse", text);
+}
+function stringify2(obj) {
+  return syscall3("yaml.stringify", obj);
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/syscalls/mq.ts
+var mq_exports2 = {};
+__export(mq_exports2, {
+  ack: () => ack,
+  batchAck: () => batchAck,
+  batchSend: () => batchSend,
+  getQueueStats: () => getQueueStats,
+  send: () => send
+});
+function send(queue, body) {
+  return syscall3("mq.send", queue, body);
+}
+function batchSend(queue, bodies) {
+  return syscall3("mq.batchSend", queue, bodies);
+}
+function ack(queue, id) {
+  return syscall3("mq.ack", queue, id);
+}
+function batchAck(queue, ids) {
+  return syscall3("mq.batchAck", queue, ids);
+}
+function getQueueStats(queue) {
+  return syscall3("mq.getQueueStats", queue);
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/interfaces/ImageProvider.ts
+var AbstractImageProvider = class {
+  apiKey;
+  baseUrl;
+  fullName;
+  modelName;
+  requireAuth;
+  constructor(apiKey2, baseUrl, name, modelName, requireAuth = true) {
+    this.apiKey = apiKey2;
+    this.baseUrl = baseUrl;
+    this.fullName = name;
+    this.modelName = modelName;
+    this.requireAuth = requireAuth;
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/providers/dalle.ts
+var DallEProvider = class extends AbstractImageProvider {
+  constructor(apiKey2, modelName, baseUrl) {
+    super(apiKey2, baseUrl, "DALL-E", modelName);
+  }
+  async generateImage(options) {
+    try {
+      if (!apiKey)
+        await initializeOpenAI();
+      const response = await nativeFetch(
+        `${this.baseUrl}/images/generations`,
+        {
+          method: "POST",
+          headers: {
+            "Authorization": `Bearer ${this.apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            model: this.modelName,
+            prompt: options.prompt,
+            n: options.numImages,
+            size: options.size,
+            quality: options.quality,
+            response_format: "b64_json"
+          })
+        }
+      );
+      if (!response.ok) {
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || data.length === 0) {
+        throw new Error("Invalid response from DALL-E.");
+      }
+      return data;
+    } catch (error) {
+      console.error("Error calling DALL\xB7E image generation endpoint:", error);
+      throw error;
+    }
+  }
+};
+
+// ../../../../../../Users/justyns/Library/Caches/deno/deno_esbuild/sse.js@2.2.0/node_modules/sse.js/lib/sse.js
+var SSE = function(url, options) {
+  if (!(this instanceof SSE)) {
+    return new SSE(url, options);
+  }
+  this.INITIALIZING = -1;
+  this.CONNECTING = 0;
+  this.OPEN = 1;
+  this.CLOSED = 2;
+  this.url = url;
+  options = options || {};
+  this.headers = options.headers || {};
+  this.payload = options.payload !== void 0 ? options.payload : "";
+  this.method = options.method || (this.payload && "POST" || "GET");
+  this.withCredentials = !!options.withCredentials;
+  this.debug = !!options.debug;
+  this.FIELD_SEPARATOR = ":";
+  this.listeners = {};
+  this.xhr = null;
+  this.readyState = this.INITIALIZING;
+  this.progress = 0;
+  this.chunk = "";
+  this.addEventListener = function(type, listener) {
+    if (this.listeners[type] === void 0) {
+      this.listeners[type] = [];
+    }
+    if (this.listeners[type].indexOf(listener) === -1) {
+      this.listeners[type].push(listener);
+    }
+  };
+  this.removeEventListener = function(type, listener) {
+    if (this.listeners[type] === void 0) {
+      return;
+    }
+    var filtered = [];
+    this.listeners[type].forEach(function(element) {
+      if (element !== listener) {
+        filtered.push(element);
+      }
+    });
+    if (filtered.length === 0) {
+      delete this.listeners[type];
+    } else {
+      this.listeners[type] = filtered;
+    }
+  };
+  this.dispatchEvent = function(e) {
+    if (!e) {
+      return true;
+    }
+    if (this.debug) {
+      console.debug(e);
+    }
+    e.source = this;
+    var onHandler = "on" + e.type;
+    if (this.hasOwnProperty(onHandler)) {
+      this[onHandler].call(this, e);
+      if (e.defaultPrevented) {
+        return false;
+      }
+    }
+    if (this.listeners[e.type]) {
+      return this.listeners[e.type].every(function(callback) {
+        callback(e);
+        return !e.defaultPrevented;
+      });
+    }
+    return true;
+  };
+  this._setReadyState = function(state) {
+    var event = new CustomEvent("readystatechange");
+    event.readyState = state;
+    this.readyState = state;
+    this.dispatchEvent(event);
+  };
+  this._onStreamFailure = function(e) {
+    var event = new CustomEvent("error");
+    event.data = e.currentTarget.response;
+    this.dispatchEvent(event);
+    this.close();
+  };
+  this._onStreamAbort = function(e) {
+    this.dispatchEvent(new CustomEvent("abort"));
+    this.close();
+  };
+  this._onStreamProgress = function(e) {
+    if (!this.xhr) {
+      return;
+    }
+    if (this.xhr.status !== 200) {
+      this._onStreamFailure(e);
+      return;
+    }
+    if (this.readyState == this.CONNECTING) {
+      this.dispatchEvent(new CustomEvent("open"));
+      this._setReadyState(this.OPEN);
+    }
+    var data = this.xhr.responseText.substring(this.progress);
+    this.progress += data.length;
+    var parts = (this.chunk + data).split(/(\r\n\r\n|\r\r|\n\n)/g);
+    var lastPart = parts.pop();
+    parts.forEach(function(part) {
+      if (part.trim().length > 0) {
+        this.dispatchEvent(this._parseEventChunk(part));
+      }
+    }.bind(this));
+    this.chunk = lastPart;
+  };
+  this._onStreamLoaded = function(e) {
+    this._onStreamProgress(e);
+    this.dispatchEvent(this._parseEventChunk(this.chunk));
+    this.chunk = "";
+  };
+  this._parseEventChunk = function(chunk) {
+    if (!chunk || chunk.length === 0) {
+      return null;
+    }
+    if (this.debug) {
+      console.debug(chunk);
+    }
+    var e = { "id": null, "retry": null, "data": null, "event": null };
+    chunk.split(/\n|\r\n|\r/).forEach(function(line) {
+      var index = line.indexOf(this.FIELD_SEPARATOR);
+      var field, value;
+      if (index > 0) {
+        var skip = line[index + 1] === " " ? 2 : 1;
+        field = line.substring(0, index);
+        value = line.substring(index + skip);
+      } else if (index < 0) {
+        field = line;
+        value = "";
+      } else {
+        return;
+      }
+      if (!(field in e)) {
+        return;
+      }
+      if (field === "data" && e[field] !== null) {
+        e["data"] += "\n" + value;
+      } else {
+        e[field] = value;
+      }
+    }.bind(this));
+    var event = new CustomEvent(e.event || "message");
+    event.data = e.data || "";
+    event.id = e.id;
+    return event;
+  };
+  this._checkStreamClosed = function() {
+    if (!this.xhr) {
+      return;
+    }
+    if (this.xhr.readyState === XMLHttpRequest.DONE) {
+      this._setReadyState(this.CLOSED);
+    }
+  };
+  this.stream = function() {
+    if (this.xhr) {
+      return;
+    }
+    this._setReadyState(this.CONNECTING);
+    this.xhr = new XMLHttpRequest();
+    this.xhr.addEventListener("progress", this._onStreamProgress.bind(this));
+    this.xhr.addEventListener("load", this._onStreamLoaded.bind(this));
+    this.xhr.addEventListener("readystatechange", this._checkStreamClosed.bind(this));
+    this.xhr.addEventListener("error", this._onStreamFailure.bind(this));
+    this.xhr.addEventListener("abort", this._onStreamAbort.bind(this));
+    this.xhr.open(this.method, this.url);
+    for (var header in this.headers) {
+      this.xhr.setRequestHeader(header, this.headers[header]);
+    }
+    this.xhr.withCredentials = this.withCredentials;
+    this.xhr.send(this.payload);
+  };
+  this.close = function() {
+    if (this.readyState === this.CLOSED) {
+      return;
+    }
+    this.xhr.abort();
+    this.xhr = null;
+    this._setReadyState(this.CLOSED);
+  };
+  if (options.start === void 0 || options.start) {
+    this.stream();
+  }
+};
+if (typeof exports !== "undefined") {
+  exports.SSE = SSE;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/cache.ts
+var cache = {};
+function setCache(key, value) {
+  cache[key] = value;
+}
+function getCache(key) {
+  return cache[key];
+}
+async function hashStrings(...inputs) {
+  const concatenatedInput = inputs.join("");
+  const textAsBuffer = new TextEncoder().encode(concatenatedInput);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", textAsBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hash = hashArray.map((item) => item.toString(16).padStart(2, "0")).join("");
+  return hash;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/interfaces/EmbeddingProvider.ts
+var AbstractEmbeddingProvider = class {
+  apiKey;
+  baseUrl;
+  fullName;
+  modelName;
+  requireAuth;
+  proxyOnServer;
+  constructor(modelConfigName, apiKey2, baseUrl, modelName, requireAuth = true, proxyOnServer) {
+    this.apiKey = apiKey2;
+    this.baseUrl = baseUrl;
+    this.fullName = modelConfigName;
+    this.modelName = modelName;
+    this.requireAuth = requireAuth;
+    this.proxyOnServer = proxyOnServer;
+  }
+  getUrl(path) {
+    path = path.replace(/^\/+/, "");
+    if (this.proxyOnServer) {
+      path = path.replace(/^v1\//, "");
+      return `/_/ai-proxy/${this.fullName}/${path}`;
+    } else {
+      return `${this.baseUrl}/${path}`;
+    }
+  }
+  async generateEmbeddings(options) {
+    const cacheKey = await hashStrings(
+      this.modelName,
+      options.text
+    );
+    const cachedEmbedding = getCache(cacheKey);
+    if (cachedEmbedding) {
+      return cachedEmbedding;
+    }
+    const embedding = await this._generateEmbeddings(options);
+    setCache(cacheKey, embedding);
+    return embedding;
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/editorUtils.ts
+async function getSelectedText() {
+  const selectedRange = await editor_exports2.getSelection();
+  let selectedText = "";
+  if (selectedRange.from === selectedRange.to) {
+    selectedText = "";
+  } else {
+    const pageText = await editor_exports2.getText();
+    selectedText = pageText.slice(selectedRange.from, selectedRange.to);
+  }
+  return {
+    from: selectedRange.from,
+    to: selectedRange.to,
+    text: selectedText
+  };
+}
+async function getSelectedTextOrNote() {
+  const selectedTextInfo = await getSelectedText();
+  const pageText = await editor_exports2.getText();
+  if (selectedTextInfo.text === "") {
+    return {
+      from: 0,
+      to: pageText.length,
+      text: pageText,
+      isWholeNote: true
+    };
+  }
+  const isWholeNote = selectedTextInfo.from === 0 && selectedTextInfo.to === pageText.length;
+  return {
+    ...selectedTextInfo,
+    isWholeNote
+  };
+}
+async function getPageLength() {
+  const pageText = await editor_exports2.getText();
+  return pageText.length;
+}
+function getLineNumberAtPos(text, pos) {
+  const lines = text.split("\n");
+  let currentPos = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (currentPos <= pos && pos < currentPos + lines[i].length + 1) {
+      return i;
+    }
+    currentPos += lines[i].length + 1;
+  }
+  return -1;
+}
+function getLine(text, lineNumber) {
+  const lines = text.split("\n");
+  if (lineNumber < 0 || lineNumber >= lines.length) {
+    return "";
+  }
+  return lines[lineNumber];
+}
+function getLineOfPos(text, pos) {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber);
+}
+function getLineBefore(text, pos) {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber - 1);
+}
+function getLineAfter(text, pos) {
+  const lineNumber = getLineNumberAtPos(text, pos);
+  return getLine(text, lineNumber + 1);
+}
+function getParagraph(text, pos) {
+  const lines = text.split("\n");
+  let currentPos = 0;
+  let start = 0;
+  let end = text.length;
+  for (let i = 0; i < lines.length; i++) {
+    const lineLength = lines[i].length + 1;
+    if (currentPos <= pos && pos < currentPos + lineLength) {
+      console.log("Looking backwards for the start of the paragraph");
+      for (let j = i; j >= 0; j--) {
+        if (j === 0 || lines[j - 1].trim() === "") {
+          start = j === 0 ? 0 : lines.slice(0, j).join("\n").length + 1;
+          break;
+        }
+      }
+      console.log("Looking forwards for the end of the paragraph");
+      for (let k = i; k < lines.length; k++) {
+        if (k === lines.length - 1 || lines[k + 1].trim() === "") {
+          end = lines.slice(0, k + 1).join("\n").length;
+          break;
+        }
+      }
+      break;
+    }
+    currentPos += lineLength;
+  }
+  console.log("Found paragraph", text.slice(start, end));
+  return {
+    from: start,
+    to: end,
+    text: text.slice(start, end)
+  };
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/tree.ts
+function addParentPointers(tree) {
+  if (!tree.children) {
+    return;
+  }
+  for (const child of tree.children) {
+    if (child.parent) {
+      return;
+    }
+    child.parent = tree;
+    addParentPointers(child);
+  }
+}
+function collectNodesOfType(tree, nodeType) {
+  return collectNodesMatching2(tree, (n) => n.type === nodeType);
+}
+function collectNodesMatching2(tree, matchFn) {
+  if (matchFn(tree)) {
+    return [tree];
+  }
+  let results = [];
+  if (tree.children) {
+    for (const child of tree.children) {
+      results = [...results, ...collectNodesMatching2(child, matchFn)];
+    }
+  }
+  return results;
+}
+async function collectNodesMatchingAsync(tree, matchFn) {
+  if (await matchFn(tree)) {
+    return [tree];
+  }
+  let results = [];
+  if (tree.children) {
+    for (const child of tree.children) {
+      results = [
+        ...results,
+        ...await collectNodesMatchingAsync(child, matchFn)
+      ];
+    }
+  }
+  return results;
+}
+async function replaceNodesMatchingAsync(tree, substituteFn) {
+  if (tree.children) {
+    const children = tree.children.slice();
+    for (const child of children) {
+      const subst = await substituteFn(child);
+      if (subst !== void 0) {
+        const pos = tree.children.indexOf(child);
+        if (subst) {
+          tree.children.splice(pos, 1, subst);
+        } else {
+          tree.children.splice(pos, 1);
+        }
+      } else {
+        await replaceNodesMatchingAsync(child, substituteFn);
+      }
+    }
+  }
+}
+function findNodeOfType2(tree, nodeType) {
+  return collectNodesMatching2(tree, (n) => n.type === nodeType)[0];
+}
+async function traverseTreeAsync(tree, matchFn) {
+  await collectNodesMatchingAsync(tree, matchFn);
+}
+function renderToText(tree) {
+  if (!tree) {
+    return "";
+  }
+  const pieces = [];
+  if (tree.text !== void 0) {
+    return tree.text;
+  }
+  for (const child of tree.children) {
+    pieces.push(renderToText(child));
+  }
+  return pieces.join("");
+}
+function parseTreeToAST(tree, omitTrimmable = true) {
+  const parseErrorNodes = collectNodesOfType(tree, "\u26A0");
+  if (parseErrorNodes.length > 0) {
+    throw new Error(
+      `Parse error in: ${renderToText(tree)}`
+    );
+  }
+  if (tree.text !== void 0) {
+    return tree.text;
+  }
+  const ast = [tree.type];
+  for (const node of tree.children) {
+    if (node.type && !node.type.endsWith("Mark") && node.type !== "Comment") {
+      ast.push(parseTreeToAST(node, omitTrimmable));
+    }
+    if (node.text && (omitTrimmable && node.text.trim() || !omitTrimmable)) {
+      ast.push(node.text);
+    }
+  }
+  return ast;
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/parse_query.ts
+function astToKvQuery(node) {
+  const query2 = {
+    querySource: ""
+  };
+  const [queryType, querySource, ...clauses] = node;
+  if (queryType !== "Query") {
+    throw new Error(`Expected query type, got ${queryType}`);
+  }
+  query2.querySource = querySource[1];
+  for (const clause of clauses) {
+    const [clauseType] = clause;
+    switch (clauseType) {
+      case "WhereClause": {
+        if (query2.filter) {
+          query2.filter = [
+            "and",
+            query2.filter,
+            expressionToKvQueryExpression(clause[2])
+          ];
+        } else {
+          query2.filter = expressionToKvQueryExpression(clause[2]);
+        }
+        break;
+      }
+      case "OrderClause": {
+        if (!query2.orderBy) {
+          query2.orderBy = [];
+        }
+        for (const orderBy of clause.slice(2)) {
+          if (orderBy[0] === "OrderBy") {
+            const expr = orderBy[1][1];
+            if (orderBy[2]) {
+              query2.orderBy.push({
+                expr: expressionToKvQueryExpression(expr),
+                desc: orderBy[2][1][1] === "desc"
+              });
+            } else {
+              query2.orderBy.push({
+                expr: expressionToKvQueryExpression(expr),
+                desc: false
+              });
+            }
+          }
+        }
+        break;
+      }
+      case "LimitClause": {
+        query2.limit = expressionToKvQueryExpression(clause[2][1]);
+        break;
+      }
+      case "SelectClause": {
+        for (const select of clause.slice(2)) {
+          if (select[0] === "Select") {
+            if (!query2.select) {
+              query2.select = [];
+            }
+            if (select.length === 2) {
+              query2.select.push({
+                name: cleanIdentifier(select[1][1])
+              });
+            } else {
+              query2.select.push({
+                name: cleanIdentifier(select[3][1]),
+                expr: expressionToKvQueryExpression(select[1])
+              });
+            }
+          }
+        }
+        break;
+      }
+      case "RenderClause": {
+        const pageRef = clause.find((c) => c[0] === "PageRef");
+        query2.render = pageRef[1].slice(2, -2);
+        query2.renderAll = !!clause.find((c) => c[0] === "all");
+        break;
+      }
+      default:
+        throw new Error(`Unknown clause type: ${clauseType}`);
+    }
+  }
+  return query2;
+}
+function cleanIdentifier(s) {
+  if (s.startsWith("`") && s.endsWith("`")) {
+    return s.slice(1, -1);
+  }
+  return s;
+}
+function expressionToKvQueryExpression(node) {
+  if (["LVal", "Expression", "Value"].includes(node[0])) {
+    return expressionToKvQueryExpression(node[1]);
+  }
+  switch (node[0]) {
+    case "Attribute": {
+      return [
+        "attr",
+        expressionToKvQueryExpression(node[1]),
+        cleanIdentifier(node[3][1])
+      ];
+    }
+    case "Identifier":
+      return ["attr", cleanIdentifier(node[1])];
+    case "String":
+      return ["string", node[1].slice(1, -1)];
+    case "Number":
+      return ["number", +node[1]];
+    case "Bool":
+      return ["boolean", node[1][1] === "true"];
+    case "null":
+      return ["null"];
+    case "Regex":
+      return ["regexp", node[1].slice(1, -1), "i"];
+    case "List": {
+      const exprs = [];
+      for (const expr of node.slice(2)) {
+        if (expr[0] === "Expression") {
+          exprs.push(expr);
+        }
+      }
+      return ["array", exprs.map(expressionToKvQueryExpression)];
+    }
+    case "Object": {
+      const objAttrs = [];
+      for (const kv of node.slice(2)) {
+        if (typeof kv === "string") {
+          continue;
+        }
+        const [_, key, _colon, expr] = kv;
+        objAttrs.push([
+          key[1].slice(1, -1),
+          expressionToKvQueryExpression(
+            expr
+          )
+        ]);
+      }
+      return ["object", objAttrs];
+    }
+    case "BinExpression": {
+      const lval = expressionToKvQueryExpression(node[1]);
+      const binOp = node[2][0] === "in" ? "in" : node[2].trim();
+      const val = expressionToKvQueryExpression(node[3]);
+      return [binOp, lval, val];
+    }
+    case "LogicalExpression": {
+      const op1 = expressionToKvQueryExpression(node[1]);
+      const op = node[2];
+      const op2 = expressionToKvQueryExpression(node[3]);
+      return [op[1], op1, op2];
+    }
+    case "ParenthesizedExpression": {
+      return expressionToKvQueryExpression(node[2]);
+    }
+    case "Call": {
+      const fn = cleanIdentifier(node[1][1]);
+      const args = [];
+      for (const expr of node.slice(2)) {
+        if (expr[0] === "Expression") {
+          args.push(expr);
+        }
+      }
+      return ["call", fn, args.map(expressionToKvQueryExpression)];
+    }
+    case "UnaryExpression": {
+      if (node[1][0] === "not" || node[1][0] === "!") {
+        return ["not", expressionToKvQueryExpression(node[2])];
+      } else if (node[1][0] === "-") {
+        return ["-", expressionToKvQueryExpression(node[2])];
+      }
+      throw new Error(`Unknown unary expression: ${node[1][0]}`);
+    }
+    case "TopLevelVal": {
+      return ["attr"];
+    }
+    case "GlobalIdentifier": {
+      return ["global", node[1].substring(1)];
+    }
+    case "TernaryExpression": {
+      const [_, condition, _space, ifTrue, _space2, ifFalse] = node;
+      return [
+        "?",
+        expressionToKvQueryExpression(condition),
+        expressionToKvQueryExpression(ifTrue),
+        expressionToKvQueryExpression(ifFalse)
+      ];
+    }
+    case "QueryExpression": {
+      return ["query", astToKvQuery(node[2])];
+    }
+    case "PageRef": {
+      return ["pageref", node[1].slice(2, -2)];
+    }
+    default:
+      throw new Error(`Not supported: ${node[0]}`);
+  }
+}
+async function parseQuery(query2) {
+  const queryAST = parseTreeToAST(
+    await language_exports2.parseLanguage(
+      "query",
+      query2
+    )
+  );
+  return astToKvQuery(queryAST[1]);
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/json.ts
+function cleanStringDate(d) {
+  if (d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  } else {
+    return d.toISOString();
+  }
+}
+function cleanupJSON(a) {
+  if (!a) {
+    return a;
+  }
+  if (typeof a !== "object") {
+    return a;
+  }
+  if (Array.isArray(a)) {
+    return a.map(cleanupJSON);
+  }
+  if (a instanceof Date) {
+    return cleanStringDate(a);
+  }
+  const expanded = {};
+  for (const key of Object.keys(a)) {
+    const parts = key.split(".");
+    let target = expanded;
+    for (let i = 0; i < parts.length - 1; i++) {
+      const part = parts[i];
+      if (!target[part]) {
+        target[part] = {};
+      }
+      target = target[part];
+    }
+    target[parts[parts.length - 1]] = cleanupJSON(a[key]);
+  }
+  return expanded;
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/attribute.ts
+async function extractAttributes(tags, tree) {
+  let attributes = {};
+  await traverseTreeAsync(tree, async (n) => {
+    if (tree !== n && n.type === "ListItem") {
+      return true;
+    }
+    if (n.type === "Attribute") {
+      const nameNode = findNodeOfType2(n, "AttributeName");
+      const valueNode = findNodeOfType2(n, "AttributeValue");
+      if (nameNode && valueNode) {
+        const name = nameNode.children[0].text;
+        const val = valueNode.children[0].text;
+        try {
+          attributes[name] = cleanupJSON(await yaml_exports2.parse(val));
+        } catch (e) {
+          console.error("Error parsing attribute value as YAML", val, e);
+        }
+      }
+      return true;
+    }
+    return false;
+  });
+  const text = renderToText(tree);
+  const spaceScriptAttributes = await system_exports2.applyAttributeExtractors(
+    tags,
+    text,
+    tree
+  );
+  attributes = {
+    ...attributes,
+    ...spaceScriptAttributes
+  };
+  return attributes;
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/common/markdown_parser/constants.ts
+var wikiLinkRegex = /(!?\[\[)([^\]\|]+)(?:\|([^\]]+))?(\]\])/g;
+var pWikiLinkRegex = new RegExp("^" + wikiLinkRegex.source);
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/tags.ts
+function extractHashtag(text) {
+  if (text[0] !== "#") {
+    console.error("extractHashtag called on already clean string", text);
+    return text;
+  } else if (text[1] === "<") {
+    if (text.slice(-1) !== ">") {
+      return text.slice(2);
+    } else {
+      return text.slice(2, -1);
+    }
+  } else {
+    return text.slice(1);
+  }
+}
+
+// https://jsr.io/@silverbulletmd/silverbullet/0.10.1/plug-api/lib/frontmatter.ts
+async function extractFrontmatter(tree, options = {}) {
+  let data = {
+    tags: []
+  };
+  const tags = [];
+  addParentPointers(tree);
+  await replaceNodesMatchingAsync(tree, async (t) => {
+    if (t.type === "Paragraph" && t.parent?.type === "Document") {
+      let onlyTags = true;
+      const collectedTags = /* @__PURE__ */ new Set();
+      for (const child of t.children) {
+        if (child.text) {
+          if (child.text.startsWith("\n") && child.text !== "\n") {
+            break;
+          }
+          if (child.text.trim()) {
+            onlyTags = false;
+            break;
+          }
+        } else if (child.type === "Hashtag") {
+          const tagname = extractHashtag(child.children[0].text);
+          collectedTags.add(tagname);
+          if (options.removeTags === true || options.removeTags?.includes(tagname)) {
+            child.children[0].text = "";
+          }
+        } else if (child.type) {
+          onlyTags = false;
+          break;
+        }
+      }
+      if (onlyTags) {
+        tags.push(...collectedTags);
+      }
+    }
+    if (t.type === "FrontMatter") {
+      const yamlNode = t.children[1].children[0];
+      const yamlText = renderToText(yamlNode);
+      try {
+        const parsedData = await yaml_exports2.parse(yamlText);
+        const newData = { ...parsedData };
+        data = { ...data, ...parsedData };
+        if (!data.tags) {
+          data.tags = [];
+        }
+        if (typeof data.tags === "string") {
+          tags.push(...data.tags.split(/,\s*|\s+/));
+        }
+        if (Array.isArray(data.tags)) {
+          tags.push(...data.tags);
+        }
+        if (options.removeKeys && options.removeKeys.length > 0) {
+          let removedOne = false;
+          for (const key of options.removeKeys) {
+            if (key in newData) {
+              delete newData[key];
+              removedOne = true;
+            }
+          }
+          if (removedOne) {
+            yamlNode.text = await yaml_exports2.stringify(newData);
+          }
+        }
+        if (Object.keys(newData).length === 0 || options.removeFrontmatterSection) {
+          return null;
+        }
+      } catch {
+      }
+    }
+    return void 0;
+  });
+  try {
+    data.tags = [
+      .../* @__PURE__ */ new Set([...tags.map((t) => {
+        const tagAsString = String(t);
+        return tagAsString.replace(/^#/, "");
+      })])
+    ];
+  } catch (e) {
+    console.error("Error while processing tags", e);
+  }
+  data = cleanupJSON(data);
+  return data;
+}
+async function prepareFrontmatterDispatch(tree, data) {
+  let dispatchData = null;
+  await traverseTreeAsync(tree, async (t) => {
+    if (t.type === "FrontMatter") {
+      const bodyNode = t.children[1].children[0];
+      const yamlText = renderToText(bodyNode);
+      try {
+        let frontmatterText = "";
+        if (typeof data === "string") {
+          frontmatterText = yamlText + data + "\n";
+        } else {
+          const parsedYaml = await yaml_exports2.parse(yamlText);
+          const newData = { ...parsedYaml, ...data };
+          frontmatterText = await yaml_exports2.stringify(newData);
+        }
+        dispatchData = {
+          changes: {
+            from: bodyNode.from,
+            to: bodyNode.to,
+            insert: frontmatterText
+          }
+        };
+      } catch (e) {
+        console.error("Error parsing YAML", e);
+      }
+      return true;
+    }
+    return false;
+  });
+  if (!dispatchData) {
+    let frontmatterText = "";
+    if (typeof data === "string") {
+      frontmatterText = data + "\n";
+    } else {
+      frontmatterText = await yaml_exports2.stringify(data);
+    }
+    const fullFrontmatterText = "---\n" + frontmatterText + "---\n";
+    dispatchData = {
+      changes: {
+        from: 0,
+        to: 0,
+        insert: fullFrontmatterText
+      }
+    };
+  }
+  return dispatchData;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/embeddings.ts
+var searchPrefix = "\u{1F916} ";
+function canIndexPage(pageName) {
+  const excludePages = [
+    "SETTINGS",
+    "SECRETS",
+    ...aiSettings.indexEmbeddingsExcludePages
+  ];
+  if (excludePages.includes(pageName) || pageName.startsWith("_") || pageName.startsWith("Library/") || /\.conflicted\.\d+$/.test(pageName)) {
+    return false;
+  }
+  return true;
+}
+async function shouldIndexEmbeddings() {
+  await initIfNeeded();
+  return aiSettings.indexEmbeddings && currentEmbeddingProvider !== void 0 && currentEmbeddingModel !== void 0 && aiSettings.embeddingModels.length > 0 && await system_exports2.getEnv() === "server";
+}
+async function shouldIndexSummaries() {
+  await initIfNeeded();
+  return aiSettings.indexEmbeddings && aiSettings.indexSummary && currentEmbeddingProvider !== void 0 && currentEmbeddingModel !== void 0 && aiSettings.embeddingModels.length > 0 && await system_exports2.getEnv() === "server";
+}
+async function indexEmbeddings(page) {
+  if (!await shouldIndexEmbeddings()) {
+    return;
+  }
+  if (!canIndexPage(page)) {
+    return;
+  }
+  const pageText = await space_exports2.readPage(page);
+  const tree = await markdown_exports2.parseMarkdown(pageText);
+  if (!tree.children) {
+    return;
+  }
+  const paragraphs = tree.children.filter((node) => node.type === "Paragraph");
+  const objects = [];
+  const startTime = Date.now();
+  for (const paragraph of paragraphs) {
+    const paragraphText = renderToText(paragraph).trim();
+    if (!paragraphText || paragraphText.length < 10) {
+      continue;
+    }
+    if (aiSettings.indexEmbeddingsExcludeStrings.some(
+      (s) => paragraphText.includes(s)
+    )) {
+      continue;
+    }
+    const embedding = await currentEmbeddingProvider.generateEmbeddings({
+      text: paragraphText
+    });
+    const pos = paragraph.from ?? 0;
+    const embeddingObject = {
+      ref: `${page}@${pos}`,
+      page,
+      pos,
+      embedding,
+      text: paragraphText,
+      tag: "embedding"
+    };
+    objects.push(embeddingObject);
+  }
+  await indexObjects(page, objects);
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1e3;
+  log(
+    "any",
+    `AI: Indexed ${objects.length} embedding objects for page ${page} in ${duration} seconds`
+  );
+}
+async function indexSummary(page) {
+  if (!await shouldIndexSummaries()) {
+    return;
+  }
+  if (!canIndexPage(page)) {
+    return;
+  }
+  const text = await space_exports2.readPage(page);
+  const tree = await markdown_exports2.parseMarkdown(text);
+  if (!tree.children) {
+    return;
+  }
+  const startTime = Date.now();
+  const pageText = renderToText(tree);
+  const summaryModel = aiSettings.textModels.find(
+    (model) => model.name === aiSettings.indexSummaryModelName
+  );
+  if (!summaryModel) {
+    throw new Error(
+      `Could not find summary model ${aiSettings.indexSummaryModelName}`
+    );
+  }
+  const summaryProvider = await configureSelectedModel(summaryModel);
+  let summaryPrompt;
+  if (aiSettings.promptInstructions.indexSummaryPrompt !== "") {
+    summaryPrompt = aiSettings.promptInstructions.indexSummaryPrompt;
+  } else {
+    summaryPrompt = "Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:\n";
+  }
+  const cacheKey = await hashStrings(
+    summaryModel.name,
+    pageText,
+    summaryPrompt
+  );
+  let summary = getCache(cacheKey);
+  if (!summary) {
+    summary = await summaryProvider.singleMessageChat(
+      "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt
+    );
+    setCache(cacheKey, summary);
+  }
+  const summaryEmbeddings = await currentEmbeddingProvider.generateEmbeddings({
+    text: summary
+  });
+  const summaryObject = {
+    ref: `${page}@0`,
+    page,
+    embedding: summaryEmbeddings,
+    text: summary,
+    tag: "aiSummary"
+  };
+  await indexObjects(page, [summaryObject]);
+  const endTime = Date.now();
+  const duration = (endTime - startTime) / 1e3;
+  log(
+    "any",
+    `AI: Indexed summary for page ${page} in ${duration} seconds`
+  );
+}
+async function queueEmbeddingGeneration({ name: page, tree }) {
+  await initIfNeeded();
+  if (!canIndexPage(page)) {
+    return;
+  }
+  if (!tree.children) {
+    return;
+  }
+  if (await shouldIndexEmbeddings()) {
+    await mq_exports2.send("aiEmbeddingsQueue", page);
+  }
+  if (await shouldIndexSummaries()) {
+    await mq_exports2.send("aiSummaryQueue", page);
+  }
+}
+async function processEmbeddingsQueue(messages) {
+  await initIfNeeded();
+  for (const message of messages) {
+    const pageName = message.body;
+    console.log(`AI: Generating and indexing embeddings for file ${pageName}`);
+    await indexEmbeddings(pageName);
+  }
+  const queueStats = await mq_exports2.getQueueStats("aiEmbeddingsQueue");
+  console.log(`AI: Embeddings queue stats: ${JSON.stringify(queueStats)}`);
+}
+async function processSummaryQueue(messages) {
+  await initIfNeeded();
+  for (const message of messages) {
+    const pageName = message.body;
+    console.log(`AI: Generating and indexing summary for ${pageName}`);
+    await indexSummary(pageName);
+  }
+  const queueStats = await mq_exports2.getQueueStats("aiSummaryQueue");
+  console.log(`AI: Summary queue stats: ${JSON.stringify(queueStats)}`);
+}
+async function getAllEmbeddings() {
+  if (await supportsServerProxyCall()) {
+    return await syscall3(
+      "system.invokeFunctionOnServer",
+      "index.queryObjects",
+      "embedding",
+      {}
+    );
+  } else {
+    return await queryObjects("embedding", {});
+  }
+}
+async function getAllAISummaries() {
+  if (await supportsServerProxyCall()) {
+    return await syscall3(
+      "system.invokeFunctionOnServer",
+      "index.queryObjects",
+      "aiSummary",
+      {}
+    );
+  } else {
+    return await queryObjects("aiSummary", {});
+  }
+}
+async function generateEmbeddings(text) {
+  await initIfNeeded();
+  if (!currentEmbeddingProvider || !currentEmbeddingModel) {
+    throw new Error("No embedding provider found");
+  }
+  return await currentEmbeddingProvider.generateEmbeddings({ text });
+}
+async function generateEmbeddingsOnServer(text) {
+  return await syscall3(
+    "system.invokeFunctionOnServer",
+    "silverbullet-ai.generateEmbeddings",
+    text
+  );
+}
+function cosineSimilarity(vecA, vecB) {
+  const dotProduct = vecA.reduce((sum, a, idx) => sum + a * vecB[idx], 0);
+  const magnitudeA = Math.sqrt(vecA.reduce((sum, val) => sum + val * val, 0));
+  const magnitudeB = Math.sqrt(vecB.reduce((sum, val) => sum + val * val, 0));
+  return dotProduct / (magnitudeA * magnitudeB);
+}
+async function searchEmbeddings(query2, numResults = 10, updateEditorProgress = false) {
+  await initIfNeeded();
+  if (await system_exports2.getEnv() === "server") {
+    updateEditorProgress = false;
+  }
+  const startEmbeddingGeneration = Date.now();
+  const queryEmbedding = typeof query2 === "string" ? await generateEmbeddingsOnServer(query2) : query2;
+  const endEmbeddingGeneration = Date.now();
+  console.log(
+    `searchEmbeddings: Query embedding generation took ${endEmbeddingGeneration - startEmbeddingGeneration} ms`
+  );
+  const startRetrievingEmbeddings = Date.now();
+  const embeddings = await getAllEmbeddings();
+  const endRetrievingEmbeddings = Date.now();
+  console.log(
+    `Retrieved ${embeddings.length} embeddings in ${endRetrievingEmbeddings - startRetrievingEmbeddings} ms`
+  );
+  let progressText = "";
+  let progressStartPos = 0;
+  if (updateEditorProgress) {
+    progressText = `Retrieved ${embeddings.length} embeddings in ${endRetrievingEmbeddings - startRetrievingEmbeddings} ms
+
+`;
+    progressStartPos = (await editor_exports2.getText()).length;
+    await editor_exports2.replaceRange(progressStartPos, progressStartPos, progressText);
+  }
+  const results = [];
+  let lastUpdateTime = Date.now();
+  for (let i = 0; i < embeddings.length; i++) {
+    const embedding = embeddings[i];
+    if (!canIndexPage(embedding.page)) {
+      continue;
+    }
+    results.push({
+      page: embedding.page,
+      ref: embedding.ref,
+      text: embedding.text,
+      similarity: cosineSimilarity(queryEmbedding, embedding.embedding)
+    });
+    if (updateEditorProgress && (i % 100 === 0 || Date.now() - lastUpdateTime >= 100)) {
+      const pageLength = progressStartPos + progressText.length;
+      progressText = `
+
+Processed ${i + 1} of ${embeddings.length} embeddings...
+
+`;
+      await editor_exports2.replaceRange(progressStartPos, pageLength, progressText);
+      lastUpdateTime = Date.now();
+    }
+    if (updateEditorProgress && i >= embeddings.length - 1) {
+      const pageLength = progressStartPos + progressText.length;
+      await editor_exports2.replaceRange(progressStartPos, pageLength, "");
+    }
+  }
+  console.log(
+    `Finished searching embeddings in ${Date.now() - startRetrievingEmbeddings} ms`
+  );
+  if (aiSettings.indexSummary) {
+    const startRetrievingSummaries = Date.now();
+    const summaries = await getAllAISummaries();
+    const endRetrievingSummaries = Date.now();
+    console.log(
+      `Retrieved ${summaries.length} summaries in ${endRetrievingSummaries - startRetrievingSummaries} ms`
+    );
+    let progressText2 = "";
+    let progressStartPos2 = 0;
+    if (updateEditorProgress) {
+      progressText2 = `Retrieved ${summaries.length} summaries in ${endRetrievingSummaries - startRetrievingSummaries} ms
+
+`;
+      progressStartPos2 = (await editor_exports2.getText()).length;
+      await editor_exports2.replaceRange(
+        progressStartPos2,
+        progressStartPos2,
+        progressText2
+      );
+    }
+    const summaryResults = [];
+    let lastUpdateTime2 = Date.now();
+    for (let i = 0; i < summaries.length; i++) {
+      const summary = summaries[i];
+      if (!canIndexPage(summary.page)) {
+        continue;
+      }
+      summaryResults.push({
+        page: summary.page,
+        ref: summary.ref,
+        text: `Page Summary: ${summary.text}`,
+        similarity: cosineSimilarity(queryEmbedding, summary.embedding)
+      });
+      if (updateEditorProgress && (i % 100 === 0 || Date.now() - lastUpdateTime2 >= 100)) {
+        const pageLength = progressStartPos2 + progressText2.length;
+        progressText2 = `
+
+Processed ${i + 1} of ${summaries.length} summaries...
+
+`;
+        await editor_exports2.replaceRange(progressStartPos2, pageLength, progressText2);
+        lastUpdateTime2 = Date.now();
+      }
+      if (updateEditorProgress && i >= summaries.length - 1) {
+        const pageLength = progressStartPos2 + progressText2.length;
+        await editor_exports2.replaceRange(progressStartPos2, pageLength, "");
+      }
+    }
+    console.log(
+      `Finished searching summaries in ${Date.now() - startRetrievingSummaries} ms`
+    );
+    results.push(...summaryResults);
+  }
+  return results.sort((a, b) => b.similarity - a.similarity).slice(0, numResults);
+}
+async function searchSummaryEmbeddings(query2, numResults = 10) {
+  await initIfNeeded();
+  const queryEmbedding = await generateEmbeddingsOnServer(query2);
+  const summaries = await getAllAISummaries();
+  const results = summaries.map((summary) => ({
+    page: summary.page,
+    ref: summary.ref,
+    text: summary.text,
+    similarity: cosineSimilarity(queryEmbedding, summary.embedding)
+  }));
+  return results.sort((a, b) => b.similarity - a.similarity).slice(0, numResults);
+}
+async function searchCombinedEmbeddings(query2, numResults = 10, minSimilarity = 0.15, updateEditorProgress = false) {
+  const searchResults = await searchEmbeddings(query2, -1, updateEditorProgress);
+  const combinedResults = {};
+  for (const result of searchResults) {
+    if (result.similarity < minSimilarity) {
+      continue;
+    }
+    if (combinedResults[result.page]) {
+      combinedResults[result.page].score += result.similarity;
+      combinedResults[result.page].children.push(result);
+    } else {
+      combinedResults[result.page] = {
+        page: result.page,
+        score: result.similarity,
+        children: [result]
+      };
+    }
+  }
+  for (const page in combinedResults) {
+    combinedResults[page].children = combinedResults[page].children.sort((a, b) => b.similarity - a.similarity).slice(0, numResults);
+  }
+  const combinedResultsArray = Object.values(combinedResults);
+  return combinedResultsArray.sort((a, b) => b.score - a.score).slice(0, numResults);
+}
+async function searchEmbeddingsForChat(query2, numResults = 10) {
+  try {
+    const searchResults = await searchCombinedEmbeddings(query2, numResults);
+    let results = "";
+    if (searchResults.length > 0) {
+      for (const r of searchResults) {
+        results += `>>${r.page}<<
+`;
+        for (const child of r.children) {
+          results += `> ${child.text}
+
+`;
+        }
+      }
+    } else {
+      return "No relevant pages found.";
+    }
+    return results;
+  } catch (error) {
+    console.error("Error in searchEmbeddingsForChat:", error);
+    return "An error occurred during the search.";
+  }
+}
+function readFileEmbeddings(name) {
+  return {
+    data: new TextEncoder().encode(""),
+    meta: {
+      name,
+      contentType: "text/markdown",
+      size: 0,
+      created: 0,
+      lastModified: 0,
+      perm: "ro"
+    }
+  };
+}
+function getFileMetaEmbeddings(name) {
+  return {
+    name,
+    contentType: "text/markdown",
+    size: -1,
+    created: 0,
+    lastModified: 0,
+    perm: "ro"
+  };
+}
+function writeFileEmbeddings(name) {
+  return getFileMetaEmbeddings(name);
+}
+async function updateSearchPage() {
+  const page = await editor_exports2.getCurrentPage();
+  if (page.startsWith(searchPrefix)) {
+    await initIfNeeded();
+    const phrase = page.substring(searchPrefix.length);
+    const pageHeader = `# Search results for "${phrase}"`;
+    let text = pageHeader + "\n\n";
+    if (!aiSettings.indexEmbeddings) {
+      text += "> **warning** Embeddings generation is disabled.\n";
+      text += "> You can enable it in the AI settings.\n\n\n";
+      await editor_exports2.setText(text);
+      return;
+    }
+    let loadingText = `${pageHeader}
+
+Searching for "${phrase}"...`;
+    loadingText += "\nGenerating query vector embeddings..";
+    await editor_exports2.setText(loadingText);
+    let queryEmbedding = [];
+    try {
+      queryEmbedding = await generateEmbeddingsOnServer(phrase);
+    } catch (error) {
+      console.error("Error generating query vector embeddings", error);
+      loadingText += "\n\n> **error** \u26A0\uFE0F Failed to generate query vector embeddings.\n";
+      loadingText += `> ${error}
+
+`;
+      await editor_exports2.setText(loadingText);
+      return;
+    }
+    loadingText += "\nSearching for similar embeddings...";
+    await editor_exports2.setText(loadingText);
+    let results = [];
+    try {
+      results = await searchCombinedEmbeddings(
+        queryEmbedding,
+        void 0,
+        void 0,
+        true
+      );
+    } catch (error) {
+      console.error("Error searching embeddings", error);
+      loadingText += "\n\n> **error** \u26A0\uFE0F Failed to search through embeddings.\n";
+      loadingText += `> ${error}
+
+`;
+      await editor_exports2.setText(loadingText);
+      return;
+    }
+    const pageLength = loadingText.length;
+    text = pageHeader + "\n\n";
+    if (results.length === 0) {
+      text += "No results found.\n\n";
+    }
+    for (const r of results) {
+      text += `## [[${r.page}]]
+`;
+      for (const child of r.children) {
+        const childLineNo = child.ref.split("@")[1];
+        const childLineNoPadded = childLineNo.padStart(4, " ");
+        text += `> [[${child.ref}|${childLineNoPadded}]] | ${child.text}
+`;
+      }
+    }
+    await editor_exports2.replaceRange(0, pageLength, text);
+  }
+}
+async function searchCommand() {
+  const phrase = await editor_exports2.prompt("Search for: ");
+  if (phrase) {
+    await editor_exports2.navigate({ page: `${searchPrefix}${phrase}` });
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/utils.ts
+function folderName(path) {
+  return path.split("/").slice(0, -1).join("/");
+}
+async function log(env, ...args) {
+  const currentEnv = await system_exports2.getEnv();
+  if (currentEnv === env || env === "any") {
+    console.log(...args);
+  }
+}
+async function query(query2, variables) {
+  const parsedQuery = await parseQuery(query2);
+  return queryParsed(parsedQuery, variables);
+}
+async function queryParsed(parsedQuery, variables) {
+  if (!parsedQuery.limit) {
+    parsedQuery.limit = ["number", 1e3];
+  }
+  const eventName = `query:${parsedQuery.querySource}`;
+  const event = { query: parsedQuery };
+  if (variables) {
+    event.variables = variables;
+  }
+  const results = await event_exports2.dispatchEvent(eventName, event, 30 * 1e3);
+  if (results.length === 0) {
+    throw new Error(`Unsupported query source '${parsedQuery.querySource}'`);
+  }
+  return results.flat();
+}
+async function queryObjects(query2, variables) {
+  return await system_exports2.invokeFunction("index.queryObjects", query2, variables);
+}
+async function indexObjects(page, objects) {
+  return await system_exports2.invokeFunction("index.indexObjects", page, objects);
+}
+async function convertPageToMessages(pageText) {
+  if (!pageText) {
+    pageText = await editor_exports2.getText();
+  }
+  const tree = await markdown_exports2.parseMarkdown(pageText);
+  await extractFrontmatter(tree, {
+    removeFrontmatterSection: true
+  });
+  pageText = renderToText(tree);
+  const lines = pageText.split("\n");
+  const messages = [];
+  let currentRole = "user";
+  let contentBuffer = "";
+  lines.forEach((line) => {
+    if (line.trim() === "") {
+      return;
+    }
+    const match = line.match(/^\*\*(\w+)\*\*:/);
+    if (match) {
+      const newRole = match[1].toLowerCase();
+      if (currentRole && currentRole !== newRole && contentBuffer.trim() !== "") {
+        messages.push(
+          { role: currentRole, content: contentBuffer.trim() }
+        );
+        contentBuffer = "";
+      }
+      currentRole = newRole;
+      contentBuffer += line.replace(/^\*\*(\w+)\*\*:/, "").trim() + "\n";
+    } else if (currentRole) {
+      contentBuffer += line.trim() + "\n";
+    }
+  });
+  if (contentBuffer && currentRole) {
+    messages.push(
+      { role: currentRole, content: contentBuffer.trim() }
+    );
+  }
+  return messages;
+}
+async function supportsPlugSlashComplete() {
+  try {
+    const ver = await syscall3("system.getVersion");
+    const [major, minor, patch] = ver.split(".").map(Number);
+    const [reqMajor, reqMinor, reqPatch] = "0.7.2".split(".").map(Number);
+    if (major > reqMajor)
+      return true;
+    if (major === reqMajor && minor > reqMinor)
+      return true;
+    if (major === reqMajor && minor === reqMinor && patch >= reqPatch) {
+      return true;
+    }
+    return false;
+  } catch (_err) {
+    return false;
+  }
+}
+async function supportsServerProxyCall() {
+  try {
+    const syscalls = await system_exports2.listSyscalls();
+    return syscalls.some(
+      (syscall4) => syscall4.name === "system.invokeFunctionOnServer"
+    );
+  } catch (_err) {
+    return false;
+  }
+}
+async function enrichChatMessages(messages, globalMetadata) {
+  const enrichedMessages = [];
+  let currentPage, pageMeta;
+  try {
+    currentPage = await editor_exports2.getCurrentPage();
+    pageMeta = await space_exports2.getPageMeta(currentPage);
+  } catch (error) {
+    console.error("Error fetching page metadata", error);
+    await editor_exports2.flashNotification(
+      "Error fetching page metadata",
+      "error"
+    );
+    return [];
+  }
+  for (const message of messages) {
+    if (message.role === "assistant" || message.role === "system") {
+      enrichedMessages.push(message);
+      continue;
+    }
+    const messageTree = await markdown_exports2.parseMarkdown(message.content);
+    const messageAttributes = await extractAttributes(
+      [],
+      messageTree
+    );
+    message.content = message.content.replace(
+      /\[enrich:\s*(false|true)\s*\]\s*/g,
+      ""
+    );
+    if (messageAttributes.enrich !== void 0 && messageAttributes.enrich === false) {
+      console.log(
+        "Skipping message enrichment due to enrich=false attribute",
+        messageAttributes
+      );
+      enrichedMessages.push(message);
+      continue;
+    }
+    let enrichedContent = message.content;
+    if (message.role === "user") {
+      if (pageMeta) {
+        console.log("Rendering template", message.content, pageMeta);
+        const templateResult = await template_exports2.renderTemplate(
+          message.content,
+          pageMeta,
+          {
+            page: pageMeta,
+            ...globalMetadata
+          }
+        );
+        enrichedContent = templateResult;
+      } else {
+        console.log("No page metadata found, skipping template rendering");
+      }
+    }
+    if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
+      const searchResultsText = await searchEmbeddingsForChat(enrichedContent);
+      if (searchResultsText !== "No relevant pages found.") {
+        enrichedContent += `
 
 The following pages were found to be relevant to the question. You can use them as context to answer the question. Only partial content is shown. Ask for the whole page if needed. Page name is between >> and <<.
-`,a+=h)}if(g.chat.parseWikiLinks&&(a=await pa(a)),g.chat.bakeMessages){let h=await k.parseMarkdown(a),x=await S.invokeFunction("markdown.expandCodeWidgets",h,"");a=R(x).trim()}let d=(await ye.dispatchEvent("ai:enrichMessage",{enrichedContent:a,message:i})).flat().concat(g.chat.customEnrichFunctions),f=[...new Set(d)];console.log("Received custom enrich message functions",f);for(let h of f)a=await S.invokeSpaceFunction(h,a);r.push({...i,content:a})}return r}async function pa(e){let t=[],r=e,o=/\[\[([^\]]+)\]\]/g,n,i=!1;for(;(n=o.exec(e))!==null;){let s=n[1];if(!t.includes(s)){i||(r+=`
+`;
+        enrichedContent += searchResultsText;
+      }
+    }
+    if (aiSettings.chat.parseWikiLinks) {
+      enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+    }
+    if (aiSettings.chat.bakeMessages) {
+      const tree = await markdown_exports2.parseMarkdown(enrichedContent);
+      const rendered = await system_exports2.invokeFunction(
+        "markdown.expandCodeWidgets",
+        tree,
+        ""
+      );
+      enrichedContent = renderToText(rendered).trim();
+    }
+    const enrichFunctions = await event_exports2.dispatchEvent(
+      "ai:enrichMessage",
+      {
+        enrichedContent,
+        message
+      }
+    );
+    const combinedEnrichFunctions = enrichFunctions.flat().concat(
+      aiSettings.chat.customEnrichFunctions
+    );
+    const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];
+    console.log(
+      "Received custom enrich message functions",
+      finalEnrichFunctions
+    );
+    for (const func2 of finalEnrichFunctions) {
+      enrichedContent = await system_exports2.invokeSpaceFunction(func2, enrichedContent);
+    }
+    enrichedMessages.push({ ...message, content: enrichedContent });
+  }
+  return enrichedMessages;
+}
+async function enrichMesssageWithWikiLinks(content) {
+  const seenPages = [];
+  let enrichedContent = content;
+  const wikiLinkRegex2 = /\[\[([^\]]+)\]\]/g;
+  let match;
+  let hasMatch = false;
+  while ((match = wikiLinkRegex2.exec(content)) !== null) {
+    const pageName = match[1];
+    if (seenPages.includes(pageName)) {
+      continue;
+    }
+    if (!hasMatch) {
+      enrichedContent += `
 
-Base your answer on the content of the following referenced pages (referenced above using the >>page name<< format). In these listings ~~~ is used to mark the page's content start and end. If context is missing, always ask me to link directly to a page mentioned in the context.`,i=!0);try{let c=await D.readPage(s);t.push(s),r+=`
+${"Base your answer on the content of the following referenced pages (referenced above using the >>page name<< format). In these listings ~~~ is used to mark the page's content start and end. If context is missing, always ask me to link directly to a page mentioned in the context."}`;
+      hasMatch = true;
+    }
+    try {
+      const pageContent = await space_exports2.readPage(pageName);
+      seenPages.push(pageName);
+      enrichedContent += `
 
-Content of the [[${s}]] page:
+Content of the [[${pageName}]] page:
 ~~~
-${c}
+${pageContent}
 ~~~
-`}catch(c){console.error(`Error fetching page '${s}':`,c)}}}return r=r.replace(o,">>$1<<"),r}async function _r(e,t={},r={}){try{let o=await k.parseMarkdown(e),n=await V(o,{removeFrontmatterSection:!0,removeTags:["template"]});e=R(o).trimStart();let i;return n.frontmatter&&(typeof n.frontmatter=="string"?i=n.frontmatter:i=await H.stringify(n.frontmatter),i=await ne.renderTemplate(i,t,r)),{frontmatter:n,renderedFrontmatter:i,text:await ne.renderTemplate(e,t,r)}}catch(o){throw console.error("Error rendering template",o),o}}async function Dr(e){return Lr()?{options:(await Te("template where aiprompt and aiprompt.slashCommand")).map(r=>{let o=r.aiprompt;return{label:o.slashCommand,detail:o.description||r.description,order:o.order||0,templatePage:r.ref,pageName:e.pageName,invoke:"silverbullet-ai.insertAiPromptFromTemplate"}})}:void 0}async function Ur(e){let t;if(!e||!e.templatePage){let E=await Te("template where aiprompt");t=await u.filterBox("Prompt Template",E.map(q=>{let Z=q.ref.split("/").pop();return{...q,description:q.aiprompt.description||q.ref,name:q.aiprompt.displayName||Z,systemPrompt:q.aiprompt.systemPrompt||"You are an AI note assistant. Please follow the prompt instructions.",insertAt:q.aiprompt.insertAt||"cursor",chat:q.aiprompt.chat||!1,enrichMessages:q.aiprompt.enrichMessages||!1,postProcessors:q.aiprompt.postProcessors||[]}}),"Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.")}else{console.log("selectedTemplate from slash completion: ",e);let E=await D.readPage(e.templatePage),q=await k.parseMarkdown(E),{aiprompt:Z}=await V(q);console.log("templatePage from slash completion: ",E),t={ref:e.templatePage,systemPrompt:Z.systemPrompt||Z.system||"You are an AI note assistant. Please follow the prompt instructions.",insertAt:Z.insertAt||"cursor",chat:Z.chat||!1,enrichMessages:Z.enrichMessages||!1,postProcessors:Z.postProcessors||[]}}if(!t){await u.flashNotification("No template selected");return}console.log("User selected prompt template: ",t);let r=["cursor","page-start","page-end","start-of-line","end-of-line","start-of-item","end-of-item","new-line-above","new-line-below","replace-line","replace-paragraph","replace-selection","replace-smart"];if(!r.includes(t.insertAt)){console.error(`Invalid insertAt value: ${t.insertAt}. It must be one of ${r.join(", ")}`),await u.flashNotification(`Invalid insertAt value: ${t.insertAt}. Please select a valid option.`,"error");return}await T();let o,n,i;try{o=await D.readPage(t.ref),n=await u.getCurrentPage(),i=await D.getPageMeta(n)}catch(E){console.error("Error fetching template details or page metadata",E),await u.flashNotification("Error fetching template details or page metadata","error");return}let s,c,a,p,d,f,h,x,b,A,w,N,J;try{s=await u.getText(),a=await u.getCursor();let E=s.split(`
-`);c=s.substring(0,a).split(`
-`).length,p=a-(s.substring(0,a).split(`
-`).pop()?.length||0),d=p+E[c-1].length}catch(E){console.error("Error fetching current page text or cursor position",E),await u.flashNotification("Error fetching current page text or cursor position","error");return}try{(t.insertAt==="start-of-item"||t.insertAt==="end-of-item"||t.insertAt==="replace-smart")&&(f=await S.invokeFunction("editor.determineItemBounds",s,a,void 0,!0),h=s.slice(f.from,f.to),x=await S.invokeFunction("editor.determineItemBounds",s,a,0,!0),b=s.slice(x.from,x.to))}catch(E){console.error("Error fetching current item",E)}try{(t.insertAt==="replace-paragraph"||t.insertAt==="replace-smart")&&(A=Ar(s,a))}catch(E){console.error("Error fetching current paragraph",E),await u.flashNotification("Error fetching current paragraph","error");return}try{(t.insertAt=="replace-selection"||t.insertAt=="replace-smart")&&(w=await ht())}catch(E){console.error("Error fetching selected text",E)}let v;switch(t.insertAt){case"page-start":v=0;break;case"page-end":v=await se();break;case"frontmatter":await u.flashNotification("rendering in frontmatter not supported yet","error");break;case"modal":break;case"replace":break;case"replace-line":v=p,await u.replaceRange(p,d,"");break;case"replace-selection":w?.text?(v=w.from,await u.replaceRange(w.from,w.to,"")):v=await u.getCursor();break;case"replace-paragraph":A?.text?(v=A.from,await u.replaceRange(A.from,A.to,"")):await u.flashNotification("Error: current paragraph is undefined","error");break;case"replace-smart":if(w?.text)N="selected-text",J=w.text,v=w.from,await u.replaceRange(w.from,w.to,"");else if(h&&f)N="current-item",J=h,v=f.from,await u.replaceRange(f.from,f.to,`
-`);else if(A?.text)N="current-paragraph",J=A.text,v=A.from,await u.replaceRange(A.from,A.to,"");else{await u.flashNotification("Error: replace-smart: no text selected, current paragraph, or current item","error");return}console.log("smartReplaceType: ",N),console.log("smartReplaceText: ",J);break;case"start-of-line":v=p;break;case"end-of-line":v=d;break;case"new-line-above":v=p,await u.insertAtPos(`
-`,v),v+=1;break;case"new-line-below":v=d,await u.insertAtPos(`
-`,v),v+=1;break;case"start-of-item":v=f.from;break;case"end-of-item":v=f.to;break;case"cursor":default:v=await u.getCursor()}v===void 0&&(v=await se()),console.log("templatetext: ",o);let F=[],X={page:i,currentItemText:h,currentLineNumber:c,lineStartPos:p,lineEndPos:d,currentPageText:s,parentItemText:b,selectedText:w?.text,currentParagraph:A?.text,smartReplaceType:N,smartReplaceText:J};if(t.chat)F=await Xe(o),t.systemPrompt&&F.unshift({role:"system",content:t.systemPrompt}),t.chat&&t.enrichMessages&&(F=await pe(F,X));else{let E=await _r(o,i,X);console.log("Rendered template:",E),t.systemPrompt&&F.push({role:"system",content:t.systemPrompt}),F.push({role:"user",content:E.text})}console.log("Messages: ",F),await O.streamChatIntoEditor({messages:F,stream:!0,postProcessors:t.postProcessors},v)}var op=new TextEncoder;function jr(e){let t=atob(e),r=t.length,o=new Uint8Array(r);for(let n=0;n<r;n++)o[n]=t.charCodeAt(n);return o}var ee=class extends Error{constructor(r="(unknown reason)",o=""){super(`${r} ${o}`);this.mark=o;this.name=this.constructor.name}toString(r){return`${this.name}: ${this.message} ${this.mark}`}};function qr(e){return typeof e=="boolean"||e instanceof Boolean}function Hr(e){return e!==null&&typeof e=="object"}function K(e,t){let r="";for(let o=0;o<t;o++)r+=e;return r}function Ee(e){return e===0&&Number.NEGATIVE_INFINITY===1/e}var Ze=class{constructor(t,r,o,n,i){this.name=t;this.buffer=r;this.position=o;this.line=n;this.column=i}getSnippet(t=4,r=75){if(!this.buffer)return null;let o="",n=this.position;for(;n>0&&`\0\r
-\x85\u2028\u2029`.indexOf(this.buffer.charAt(n-1))===-1;)if(n-=1,this.position-n>r/2-1){o=" ... ",n+=5;break}let i="",s=this.position;for(;s<this.buffer.length&&`\0\r
-\x85\u2028\u2029`.indexOf(this.buffer.charAt(s))===-1;)if(s+=1,s-this.position>r/2-1){i=" ... ",s-=5;break}let c=this.buffer.slice(n,s);return`${K(" ",t)}${o}${c}${i}
-${K(" ",t+this.position-n+o.length)}^`}toString(t){let r,o="";return this.name&&(o+=`in "${this.name}" `),o+=`at line ${this.line+1}, column ${this.column+1}`,t||(r=this.getSnippet(),r&&(o+=`:
-${r}`)),o}};function Rt(e,t,r){let o=[];for(let n of e.include)r=Rt(n,t,r);for(let n of e[t]){for(let[i,s]of r.entries())s.tag===n.tag&&s.kind===n.kind&&o.push(i);r.push(n)}return r.filter((n,i)=>!o.includes(i))}function ma(...e){let t={fallback:{},mapping:{},scalar:{},sequence:{}};for(let r of e)for(let o of r)o.kind!==null&&(t[o.kind][o.tag]=t.fallback[o.tag]=o);return t}var B=class e{static SCHEMA_DEFAULT;implicit;explicit;include;compiledImplicit;compiledExplicit;compiledTypeMap;constructor(t){this.explicit=t.explicit||[],this.implicit=t.implicit||[],this.include=t.include||[];for(let r of this.implicit)if(r.loadKind&&r.loadKind!=="scalar")throw new ee("There is a non-scalar type in the implicit list of a schema. Implicit resolving of such types is not supported.");this.compiledImplicit=Rt(this,"implicit",[]),this.compiledExplicit=Rt(this,"explicit",[]),this.compiledTypeMap=ma(this.compiledImplicit,this.compiledExplicit)}extend(t){return new e({implicit:[...new Set([...this.implicit,...t?.implicit??[]])],explicit:[...new Set([...this.explicit,...t?.explicit??[]])],include:[...new Set([...this.include,...t?.include??[]])]})}static create(){}};var P=class{tag;kind=null;instanceOf;predicate;represent;defaultStyle;styleAliases;loadKind;constructor(t,r){this.tag=t,r&&(this.kind=r.kind,this.resolve=r.resolve||(()=>!0),this.construct=r.construct||(o=>o),this.instanceOf=r.instanceOf,this.predicate=r.predicate,this.represent=r.represent,this.defaultStyle=r.defaultStyle,this.styleAliases=r.styleAliases)}resolve=()=>!0;construct=t=>t};var $t=`ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=
-\r`;function da(e){if(e===null)return!1;let t,r=0,o=e.length,n=$t;for(let i=0;i<o;i++)if(t=n.indexOf(e.charAt(i)),!(t>64)){if(t<0)return!1;r+=6}return r%8===0}function fa(e){let t=e.replace(/[\r\n=]/g,""),r=t.length,o=$t,n=[],i=0;for(let c=0;c<r;c++)c%4===0&&c&&(n.push(i>>16&255),n.push(i>>8&255),n.push(i&255)),i=i<<6|o.indexOf(t.charAt(c));let s=r%4*6;return s===0?(n.push(i>>16&255),n.push(i>>8&255),n.push(i&255)):s===18?(n.push(i>>10&255),n.push(i>>2&255)):s===12&&n.push(i>>4&255),new Uint8Array(n)}function ga(e){let t=e.length,r=$t,o="",n=0;for(let s=0;s<t;s++)s%3===0&&s&&(o+=r[n>>18&63],o+=r[n>>12&63],o+=r[n>>6&63],o+=r[n&63]),n=(n<<8)+e[s];let i=t%3;return i===0?(o+=r[n>>18&63],o+=r[n>>12&63],o+=r[n>>6&63],o+=r[n&63]):i===2?(o+=r[n>>10&63],o+=r[n>>4&63],o+=r[n<<2&63],o+=r[64]):i===1&&(o+=r[n>>2&63],o+=r[n<<4&63],o+=r[64],o+=r[64]),o}function ha(e){return e instanceof Uint8Array}var Lt=new P("tag:yaml.org,2002:binary",{construct:fa,kind:"scalar",predicate:ha,represent:ga,resolve:da});function ya(e){let t=e.length;return t===4&&(e==="true"||e==="True"||e==="TRUE")||t===5&&(e==="false"||e==="False"||e==="FALSE")}function xa(e){return e==="true"||e==="True"||e==="TRUE"}var _t=new P("tag:yaml.org,2002:bool",{construct:xa,defaultStyle:"lowercase",kind:"scalar",predicate:qr,represent:{lowercase(e){return e?"true":"false"},uppercase(e){return e?"TRUE":"FALSE"},camelcase(e){return e?"True":"False"}},resolve:ya});var ba=new RegExp("^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$");function wa(e){return!(!ba.test(e)||e[e.length-1]==="_")}function Pa(e){let t=e.replace(/_/g,"").toLowerCase(),r=t[0]==="-"?-1:1,o=[];if(t[0]&&"+-".indexOf(t[0])>=0&&(t=t.slice(1)),t===".inf")return r===1?Number.POSITIVE_INFINITY:Number.NEGATIVE_INFINITY;if(t===".nan")return NaN;if(t.indexOf(":")>=0){t.split(":").forEach(s=>{o.unshift(parseFloat(s))});let n=0,i=1;return o.forEach(s=>{n+=s*i,i*=60}),r*n}return r*parseFloat(t)}var Aa=/^[-+]?[0-9]+e/;function Sa(e,t){if(isNaN(e))switch(t){case"lowercase":return".nan";case"uppercase":return".NAN";case"camelcase":return".NaN"}else if(Number.POSITIVE_INFINITY===e)switch(t){case"lowercase":return".inf";case"uppercase":return".INF";case"camelcase":return".Inf"}else if(Number.NEGATIVE_INFINITY===e)switch(t){case"lowercase":return"-.inf";case"uppercase":return"-.INF";case"camelcase":return"-.Inf"}else if(Ee(e))return"-0.0";let r=e.toString(10);return Aa.test(r)?r.replace("e",".e"):r}function va(e){return Object.prototype.toString.call(e)==="[object Number]"&&(e%1!==0||Ee(e))}var Dt=new P("tag:yaml.org,2002:float",{construct:Pa,defaultStyle:"lowercase",kind:"scalar",predicate:va,represent:Sa,resolve:wa});function Kr(e){let t=new Function(`return ${e}`)();if(!(t instanceof Function))throw new TypeError(`Expected function but got ${typeof t}: ${e}`);return t}var Ta=new P("tag:yaml.org,2002:js/function",{kind:"scalar",resolve(e){if(e===null)return!1;try{return Kr(`${e}`),!0}catch{return!1}},construct(e){return Kr(e)},predicate(e){return e instanceof Function},represent(e){return e.toString()}});function Ea(e){return 48<=e&&e<=57||65<=e&&e<=70||97<=e&&e<=102}function Ca(e){return 48<=e&&e<=55}function Ma(e){return 48<=e&&e<=57}function Ia(e){let t=e.length,r=0,o=!1;if(!t)return!1;let n=e[r];if((n==="-"||n==="+")&&(n=e[++r]),n==="0"){if(r+1===t)return!0;if(n=e[++r],n==="b"){for(r++;r<t;r++)if(n=e[r],n!=="_"){if(n!=="0"&&n!=="1")return!1;o=!0}return o&&n!=="_"}if(n==="x"){for(r++;r<t;r++)if(n=e[r],n!=="_"){if(!Ea(e.charCodeAt(r)))return!1;o=!0}return o&&n!=="_"}for(;r<t;r++)if(n=e[r],n!=="_"){if(!Ca(e.charCodeAt(r)))return!1;o=!0}return o&&n!=="_"}if(n==="_")return!1;for(;r<t;r++)if(n=e[r],n!=="_"){if(n===":")break;if(!Ma(e.charCodeAt(r)))return!1;o=!0}return!o||n==="_"?!1:n!==":"?!0:/^(:[0-5]?[0-9])+$/.test(e.slice(r))}function Oa(e){let t=e,r=[];t.indexOf("_")!==-1&&(t=t.replace(/_/g,""));let o=1,n=t[0];if((n==="-"||n==="+")&&(n==="-"&&(o=-1),t=t.slice(1),n=t[0]),t==="0")return 0;if(n==="0")return t[1]==="b"?o*parseInt(t.slice(2),2):t[1]==="x"?o*parseInt(t,16):o*parseInt(t,8);if(t.indexOf(":")!==-1){t.split(":").forEach(c=>{r.unshift(parseInt(c,10))});let i=0,s=1;return r.forEach(c=>{i+=c*s,s*=60}),o*i}return o*parseInt(t,10)}function Na(e){return Object.prototype.toString.call(e)==="[object Number]"&&e%1===0&&!Ee(e)}var Ut=new P("tag:yaml.org,2002:int",{construct:Oa,defaultStyle:"decimal",kind:"scalar",predicate:Na,represent:{binary(e){return e>=0?`0b${e.toString(2)}`:`-0b${e.toString(2).slice(1)}`},octal(e){return e>=0?`0${e.toString(8)}`:`-0${e.toString(8).slice(1)}`},decimal(e){return e.toString(10)},hexadecimal(e){return e>=0?`0x${e.toString(16).toUpperCase()}`:`-0x${e.toString(16).toUpperCase().slice(1)}`}},resolve:Ia,styleAliases:{binary:[2,"bin"],decimal:[10,"dec"],hexadecimal:[16,"hex"],octal:[8,"oct"]}});var jt=new P("tag:yaml.org,2002:map",{construct(e){return e!==null?e:{}},kind:"mapping"});function ka(e){return e==="<<"||e===null}var qt=new P("tag:yaml.org,2002:merge",{kind:"scalar",resolve:ka});function Fa(e){let t=e.length;return t===1&&e==="~"||t===4&&(e==="null"||e==="Null"||e==="NULL")}function Ra(){return null}function $a(e){return e===null}var Ht=new P("tag:yaml.org,2002:null",{construct:Ra,defaultStyle:"lowercase",kind:"scalar",predicate:$a,represent:{canonical(){return"~"},lowercase(){return"null"},uppercase(){return"NULL"},camelcase(){return"Null"}},resolve:Fa});var{hasOwn:La}=Object,_a=Object.prototype.toString;function Da(e){let t=[],r="",o=!1;for(let n of e){if(o=!1,_a.call(n)!=="[object Object]")return!1;for(r in n)if(La(n,r))if(!o)o=!0;else return!1;if(!o)return!1;if(t.indexOf(r)===-1)t.push(r);else return!1}return!0}function Ua(e){return e!==null?e:[]}var Bt=new P("tag:yaml.org,2002:omap",{construct:Ua,kind:"sequence",resolve:Da});var ja=Object.prototype.toString;function qa(e){let t=Array.from({length:e.length});for(let[r,o]of e.entries()){if(ja.call(o)!=="[object Object]")return!1;let n=Object.keys(o);if(n.length!==1)return!1;t[r]=[n[0],o[n[0]]]}return!0}function Ha(e){if(e===null)return[];let t=Array.from({length:e.length});for(let r=0;r<e.length;r+=1){let o=e[r],n=Object.keys(o);t[r]=[n[0],o[n[0]]]}return t}var Kt=new P("tag:yaml.org,2002:pairs",{construct:Ha,kind:"sequence",resolve:qa});var Gt=/^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/,Yt=new P("tag:yaml.org,2002:js/regexp",{kind:"scalar",resolve(e){if(e===null||!e.length)return!1;let t=`${e}`;if(t.charAt(0)==="/"){if(!Gt.test(e))return!1;let r=[...t.match(Gt)?.groups?.modifiers??""];if(new Set(r).size<r.length)return!1}return!0},construct(e){let{regexp:t=`${e}`,modifiers:r=""}=`${e}`.match(Gt)?.groups??{};return new RegExp(t,r)},predicate(e){return e instanceof RegExp},represent(e){return e.toString()}});var Wt=new P("tag:yaml.org,2002:seq",{construct(e){return e!==null?e:[]},kind:"sequence"});var{hasOwn:Ba}=Object;function Ka(e){if(e===null)return!0;for(let t in e)if(Ba(e,t)&&e[t]!==null)return!1;return!0}function Ga(e){return e!==null?e:{}}var Qt=new P("tag:yaml.org,2002:set",{construct:Ga,kind:"mapping",resolve:Ka});var Vt=new P("tag:yaml.org,2002:str",{construct(e){return e!==null?e:""},kind:"scalar"});var Gr=new RegExp("^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"),Yr=new RegExp("^([0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)(?:[Tt]|[ \\t]+)([0-9][0-9]?):([0-9][0-9]):([0-9][0-9])(?:\\.([0-9]*))?(?:[ \\t]*(Z|([-+])([0-9][0-9]?)(?::([0-9][0-9]))?))?$");function Ya(e){return e===null?!1:Gr.exec(e)!==null||Yr.exec(e)!==null}function Wa(e){let t=Gr.exec(e);if(t===null&&(t=Yr.exec(e)),t===null)throw new Error("Date resolve error");let r=+t[1],o=+t[2]-1,n=+t[3];if(!t[4])return new Date(Date.UTC(r,o,n));let i=+t[4],s=+t[5],c=+t[6],a=0;if(t[7]){let f=t[7].slice(0,3);for(;f.length<3;)f+="0";a=+f}let p=null;if(t[9]&&t[10]){let f=+t[10],h=+(t[11]||0);p=(f*60+h)*6e4,t[9]==="-"&&(p=-p)}let d=new Date(Date.UTC(r,o,n,i,s,c,a));return p&&d.setTime(d.getTime()-p),d}function Qa(e){return e.toISOString()}var zt=new P("tag:yaml.org,2002:timestamp",{construct:Wa,instanceOf:Date,kind:"scalar",represent:Qa,resolve:Ya});var Jt=new P("tag:yaml.org,2002:js/undefined",{kind:"scalar",resolve(){return!0},construct(){},predicate(e){return typeof e>"u"},represent(){return""}});var Xt=new B({explicit:[Vt,Wt,jt]});var Zt=new B({implicit:[Ht,_t,Ut,Dt],include:[Xt]});var er=new B({include:[Zt]});var Ce=new B({explicit:[Lt,Bt,Kt,Qt],implicit:[zt,qt],include:[er]});var Va=new B({explicit:[Yt,Jt],include:[Ce]});var Me=class{constructor(t=Ce){this.schema=t}};var et=class extends Me{constructor(r,{filename:o,schema:n,onWarning:i,legacy:s=!1,json:c=!1,listener:a=null}){super(n);this.input=r;this.filename=o,this.onWarning=i,this.legacy=s,this.json=c,this.listener=a,this.implicitTypes=this.schema.compiledImplicit,this.typeMap=this.schema.compiledTypeMap,this.length=r.length}documents=[];length;lineIndent=0;lineStart=0;position=0;line=0;filename;onWarning;legacy;json;listener;implicitTypes;typeMap;version;checkLineBreaks;tagMap;anchorMap;tag;anchor;kind;result=""};var{hasOwn:re}=Object,tt=1,Zr=2,en=3,rt=4,tr=1,za=2,Wr=3,Ja=/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/,Xa=/[\x85\u2028\u2029]/,Za=/[,\[\]\{\}]/,tn=/^(?:!|!!|![a-z\-]+!)$/i,rn=/^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;function Qr(e){return Object.prototype.toString.call(e)}function W(e){return e===10||e===13}function ce(e){return e===9||e===32}function j(e){return e===9||e===32||e===10||e===13}function de(e){return e===44||e===91||e===93||e===123||e===125}function ec(e){if(48<=e&&e<=57)return e-48;let t=e|32;return 97<=t&&t<=102?t-97+10:-1}function tc(e){return e===120?2:e===117?4:e===85?8:0}function rc(e){return 48<=e&&e<=57?e-48:-1}function Vr(e){return e===48?"\0":e===97?"\x07":e===98?"\b":e===116||e===9?"	":e===110?`
-`:e===118?"\v":e===102?"\f":e===114?"\r":e===101?"\x1B":e===32?" ":e===34?'"':e===47?"/":e===92?"\\":e===78?"\x85":e===95?"\xA0":e===76?"\u2028":e===80?"\u2029":""}function nc(e){return e<=65535?String.fromCharCode(e):String.fromCharCode((e-65536>>10)+55296,(e-65536&1023)+56320)}var nn=Array.from({length:256}),on=Array.from({length:256});for(let e=0;e<256;e++)nn[e]=Vr(e)?1:0,on[e]=Vr(e);function sn(e,t){return new ee(t,new Ze(e.filename,e.input,e.position,e.line,e.position-e.lineStart))}function y(e,t){throw sn(e,t)}function nt(e,t){e.onWarning&&e.onWarning.call(null,sn(e,t))}var zr={YAML(e,t,...r){if(e.version!==null)return y(e,"duplication of %YAML directive");if(r.length!==1)return y(e,"YAML directive accepts exactly one argument");let o=/^([0-9]+)\.([0-9]+)$/.exec(r[0]);if(o===null)return y(e,"ill-formed argument of the YAML directive");let n=parseInt(o[1],10),i=parseInt(o[2],10);if(n!==1)return y(e,"unacceptable YAML version of the document");if(e.version=r[0],e.checkLineBreaks=i<2,i!==1&&i!==2)return nt(e,"unsupported YAML version of the document")},TAG(e,t,...r){if(r.length!==2)return y(e,"TAG directive accepts exactly two arguments");let o=r[0],n=r[1];if(!tn.test(o))return y(e,"ill-formed tag handle (first argument) of the TAG directive");if(e.tagMap&&re(e.tagMap,o))return y(e,`there is a previously declared suffix for "${o}" tag handle`);if(!rn.test(n))return y(e,"ill-formed tag prefix (second argument) of the TAG directive");typeof e.tagMap>"u"&&(e.tagMap=Object.create(null)),e.tagMap[o]=n}};function te(e,t,r,o){let n;if(t<r){if(n=e.input.slice(t,r),o)for(let i=0;i<n.length;i++){let s=n.charCodeAt(i);if(!(s===9||32<=s&&s<=1114111))return y(e,"expected valid JSON character")}else if(Ja.test(n))return y(e,"the stream contains non-printable characters");e.result+=n}}function Jr(e,t,r,o){if(!Hr(r))return y(e,"cannot merge mappings; the provided source object is unacceptable");for(let n in Object.keys(r))re(t,n)||(Object.defineProperty(t,n,{value:r[n],writable:!0,enumerable:!0,configurable:!0}),o[n]=!0)}function fe(e,t,r,o,n,i,s,c){if(Array.isArray(n)){n=Array.prototype.slice.call(n);for(let a=0;a<n.length;a++){if(Array.isArray(n[a]))return y(e,"nested arrays are not supported inside keys");typeof n=="object"&&Qr(n[a])==="[object Object]"&&(n[a]="[object Object]")}}if(typeof n=="object"&&Qr(n)==="[object Object]"&&(n="[object Object]"),n=String(n),t===null&&(t={}),o==="tag:yaml.org,2002:merge")if(Array.isArray(i))for(let a=0;a<i.length;a++)Jr(e,t,i[a],r);else Jr(e,t,i,r);else{if(!e.json&&!re(r,n)&&re(t,n))return e.line=s||e.line,e.position=c||e.position,y(e,"duplicated mapping key");Object.defineProperty(t,n,{value:i,writable:!0,enumerable:!0,configurable:!0}),delete r[n]}return t}function rr(e){let t=e.input.charCodeAt(e.position);if(t===10)e.position++;else if(t===13)e.position++,e.input.charCodeAt(e.position)===10&&e.position++;else return y(e,"a line break is expected");e.line+=1,e.lineStart=e.position}function I(e,t,r){let o=0,n=e.input.charCodeAt(e.position);for(;n!==0;){for(;ce(n);)n=e.input.charCodeAt(++e.position);if(t&&n===35)do n=e.input.charCodeAt(++e.position);while(n!==10&&n!==13&&n!==0);if(W(n))for(rr(e),n=e.input.charCodeAt(e.position),o++,e.lineIndent=0;n===32;)e.lineIndent++,n=e.input.charCodeAt(++e.position);else break}return r!==-1&&o!==0&&e.lineIndent<r&&nt(e,"deficient indentation"),o}function ot(e){let t=e.position,r=e.input.charCodeAt(t);return!!((r===45||r===46)&&r===e.input.charCodeAt(t+1)&&r===e.input.charCodeAt(t+2)&&(t+=3,r=e.input.charCodeAt(t),r===0||j(r)))}function nr(e,t){t===1?e.result+=" ":t>1&&(e.result+=K(`
-`,t-1))}function oc(e,t,r){let o=e.kind,n=e.result,i=e.input.charCodeAt(e.position);if(j(i)||de(i)||i===35||i===38||i===42||i===33||i===124||i===62||i===39||i===34||i===37||i===64||i===96)return!1;let s;if((i===63||i===45)&&(s=e.input.charCodeAt(e.position+1),j(s)||r&&de(s)))return!1;e.kind="scalar",e.result="";let c=e.position,a=e.position,p=!1,d=0;for(;i!==0;){if(i===58){if(s=e.input.charCodeAt(e.position+1),j(s)||r&&de(s))break}else if(i===35){let f=e.input.charCodeAt(e.position-1);if(j(f))break}else{if(e.position===e.lineStart&&ot(e)||r&&de(i))break;if(W(i)){d=e.line;let f=e.lineStart,h=e.lineIndent;if(I(e,!1,-1),e.lineIndent>=t){p=!0,i=e.input.charCodeAt(e.position);continue}else{e.position=c,e.line=d,e.lineStart=f,e.lineIndent=h;break}}}p&&(te(e,a,c,!1),nr(e,e.line-d),a=c=e.position,p=!1),ce(i)||(c=e.position+1),i=e.input.charCodeAt(++e.position)}return te(e,a,c,!1),e.result?!0:(e.kind=o,e.result=n,!1)}function ic(e,t){let r,o,n;if(r=e.input.charCodeAt(e.position),r!==39)return!1;for(e.kind="scalar",e.result="",e.position++,o=n=e.position;(r=e.input.charCodeAt(e.position))!==0;)if(r===39)if(te(e,o,e.position,!0),r=e.input.charCodeAt(++e.position),r===39)o=e.position,e.position++,n=e.position;else return!0;else if(W(r))te(e,o,n,!0),nr(e,I(e,!1,t)),o=n=e.position;else{if(e.position===e.lineStart&&ot(e))return y(e,"unexpected end of the document within a single quoted scalar");e.position++,n=e.position}return y(e,"unexpected end of the stream within a single quoted scalar")}function sc(e,t){let r=e.input.charCodeAt(e.position);if(r!==34)return!1;e.kind="scalar",e.result="",e.position++;let o=e.position,n=e.position,i;for(;(r=e.input.charCodeAt(e.position))!==0;){if(r===34)return te(e,n,e.position,!0),e.position++,!0;if(r===92){if(te(e,n,e.position,!0),r=e.input.charCodeAt(++e.position),W(r))I(e,!1,t);else if(r<256&&nn[r])e.result+=on[r],e.position++;else if((i=tc(r))>0){let s=i,c=0;for(;s>0;s--)if(r=e.input.charCodeAt(++e.position),(i=ec(r))>=0)c=(c<<4)+i;else return y(e,"expected hexadecimal character");e.result+=nc(c),e.position++}else return y(e,"unknown escape sequence");n=o=e.position}else if(W(r))te(e,n,o,!0),nr(e,I(e,!1,t)),n=o=e.position;else{if(e.position===e.lineStart&&ot(e))return y(e,"unexpected end of the document within a double quoted scalar");e.position++,o=e.position}}return y(e,"unexpected end of the stream within a double quoted scalar")}function ac(e,t){let r=e.input.charCodeAt(e.position),o,n=!0,i={};if(r===91)o=93,n=!1,i=[];else if(r===123)o=125;else return!1;e.anchor!==null&&typeof e.anchor<"u"&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=i),r=e.input.charCodeAt(++e.position);let s=e.tag,c=e.anchor,a=!0,p=null,d=null,f=null,h=!1,x=!1,b=0,A=0,w=Object.create(null);for(;r!==0;){if(I(e,!0,t),r=e.input.charCodeAt(e.position),r===o)return e.position++,e.tag=s,e.anchor=c,e.kind=n?"mapping":"sequence",e.result=i,!0;if(!a)return y(e,"missed comma between flow collection entries");f=d=p=null,x=h=!1,r===63&&(b=e.input.charCodeAt(e.position+1),j(b)&&(x=h=!0,e.position++,I(e,!0,t))),A=e.line,ge(e,t,tt,!1,!0),f=e.tag||null,d=e.result,I(e,!0,t),r=e.input.charCodeAt(e.position),(h||e.line===A)&&r===58&&(x=!0,r=e.input.charCodeAt(++e.position),I(e,!0,t),ge(e,t,tt,!1,!0),p=e.result),n?fe(e,i,w,f,d,p):x?i.push(fe(e,null,w,f,d,p)):i.push(d),I(e,!0,t),r=e.input.charCodeAt(e.position),r===44?(a=!0,r=e.input.charCodeAt(++e.position)):a=!1}return y(e,"unexpected end of the stream within a flow collection")}function cc(e,t){let r=tr,o=!1,n=!1,i=t,s=0,c=!1,a=e.input.charCodeAt(e.position),p=!1;if(a===124)p=!1;else if(a===62)p=!0;else return!1;e.kind="scalar",e.result="";let d=0;for(;a!==0;)if(a=e.input.charCodeAt(++e.position),a===43||a===45)if(tr===r)r=a===43?Wr:za;else return y(e,"repeat of a chomping mode identifier");else if((d=rc(a))>=0){if(d===0)return y(e,"bad explicit indentation width of a block scalar; it cannot be less than one");if(!n)i=t+d-1,n=!0;else return y(e,"repeat of an indentation width identifier")}else break;if(ce(a)){do a=e.input.charCodeAt(++e.position);while(ce(a));if(a===35)do a=e.input.charCodeAt(++e.position);while(!W(a)&&a!==0)}for(;a!==0;){for(rr(e),e.lineIndent=0,a=e.input.charCodeAt(e.position);(!n||e.lineIndent<i)&&a===32;)e.lineIndent++,a=e.input.charCodeAt(++e.position);if(!n&&e.lineIndent>i&&(i=e.lineIndent),W(a)){s++;continue}if(e.lineIndent<i){r===Wr?e.result+=K(`
-`,o?1+s:s):r===tr&&o&&(e.result+=`
-`);break}p?ce(a)?(c=!0,e.result+=K(`
-`,o?1+s:s)):c?(c=!1,e.result+=K(`
-`,s+1)):s===0?o&&(e.result+=" "):e.result+=K(`
-`,s):e.result+=K(`
-`,o?1+s:s),o=!0,n=!0,s=0;let f=e.position;for(;!W(a)&&a!==0;)a=e.input.charCodeAt(++e.position);te(e,f,e.position,!1)}return!0}function Xr(e,t){let r,o,n=!1,i,s=e.tag,c=e.anchor,a=[];for(e.anchor!==null&&typeof e.anchor<"u"&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=a),i=e.input.charCodeAt(e.position);i!==0&&!(i!==45||(o=e.input.charCodeAt(e.position+1),!j(o)));){if(n=!0,e.position++,I(e,!0,-1)&&e.lineIndent<=t){a.push(null),i=e.input.charCodeAt(e.position);continue}if(r=e.line,ge(e,t,en,!1,!0),a.push(e.result),I(e,!0,-1),i=e.input.charCodeAt(e.position),(e.line===r||e.lineIndent>t)&&i!==0)return y(e,"bad indentation of a sequence entry");if(e.lineIndent<t)break}return n?(e.tag=s,e.anchor=c,e.kind="sequence",e.result=a,!0):!1}function lc(e,t,r){let o=e.tag,n=e.anchor,i={},s=Object.create(null),c,a=!1,p,d,f=null,h=null,x=null,b=!1,A=!1,w;for(e.anchor!==null&&typeof e.anchor<"u"&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=i),w=e.input.charCodeAt(e.position);w!==0;){if(c=e.input.charCodeAt(e.position+1),p=e.line,d=e.position,(w===63||w===58)&&j(c)){if(w===63)b&&(fe(e,i,s,f,h,null),f=h=x=null),A=!0,b=!0,a=!0;else if(b)b=!1,a=!0;else return y(e,"incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulated empty line");e.position+=1,w=c}else if(ge(e,r,Zr,!1,!0))if(e.line===p){for(w=e.input.charCodeAt(e.position);ce(w);)w=e.input.charCodeAt(++e.position);if(w===58){if(w=e.input.charCodeAt(++e.position),!j(w))return y(e,"a whitespace character is expected after the key-value separator within a block mapping");b&&(fe(e,i,s,f,h,null),f=h=x=null),A=!0,b=!1,a=!1,f=e.tag,h=e.result}else return A?y(e,"can not read an implicit mapping pair; a colon is missed"):(e.tag=o,e.anchor=n,!0)}else return A?y(e,"can not read a block mapping entry; a multiline key may not be an implicit key"):(e.tag=o,e.anchor=n,!0);else break;if((e.line===p||e.lineIndent>t)&&(ge(e,t,rt,!0,a)&&(b?h=e.result:x=e.result),b||(fe(e,i,s,f,h,x,p,d),f=h=x=null),I(e,!0,-1),w=e.input.charCodeAt(e.position)),e.lineIndent>t&&w!==0)return y(e,"bad indentation of a mapping entry");if(e.lineIndent<t)break}return b&&fe(e,i,s,f,h,null),A&&(e.tag=o,e.anchor=n,e.kind="mapping",e.result=i),A}function uc(e){let t,r=!1,o=!1,n="",i,s;if(s=e.input.charCodeAt(e.position),s!==33)return!1;if(e.tag!==null)return y(e,"duplication of a tag property");if(s=e.input.charCodeAt(++e.position),s===60?(r=!0,s=e.input.charCodeAt(++e.position)):s===33?(o=!0,n="!!",s=e.input.charCodeAt(++e.position)):n="!",t=e.position,r){do s=e.input.charCodeAt(++e.position);while(s!==0&&s!==62);if(e.position<e.length)i=e.input.slice(t,e.position),s=e.input.charCodeAt(++e.position);else return y(e,"unexpected end of the stream within a verbatim tag")}else{for(;s!==0&&!j(s);){if(s===33){if(o)return y(e,"tag suffix cannot contain exclamation marks");if(n=e.input.slice(t-1,e.position+1),!tn.test(n))return y(e,"named tag handle cannot contain such characters");o=!0,t=e.position+1}s=e.input.charCodeAt(++e.position)}if(i=e.input.slice(t,e.position),Za.test(i))return y(e,"tag suffix cannot contain flow indicator characters")}if(i&&!rn.test(i))return y(e,`tag name cannot contain such characters: ${i}`);if(r)e.tag=i;else if(typeof e.tagMap<"u"&&re(e.tagMap,n))e.tag=e.tagMap[n]+i;else if(n==="!")e.tag=`!${i}`;else if(n==="!!")e.tag=`tag:yaml.org,2002:${i}`;else return y(e,`undeclared tag handle "${n}"`);return!0}function pc(e){let t=e.input.charCodeAt(e.position);if(t!==38)return!1;if(e.anchor!==null)return y(e,"duplication of an anchor property");t=e.input.charCodeAt(++e.position);let r=e.position;for(;t!==0&&!j(t)&&!de(t);)t=e.input.charCodeAt(++e.position);return e.position===r?y(e,"name of an anchor node must contain at least one character"):(e.anchor=e.input.slice(r,e.position),!0)}function mc(e){let t=e.input.charCodeAt(e.position);if(t!==42)return!1;t=e.input.charCodeAt(++e.position);let r=e.position;for(;t!==0&&!j(t)&&!de(t);)t=e.input.charCodeAt(++e.position);if(e.position===r)return y(e,"name of an alias node must contain at least one character");let o=e.input.slice(r,e.position);return typeof e.anchorMap<"u"&&!re(e.anchorMap,o)?y(e,`unidentified alias "${o}"`):(typeof e.anchorMap<"u"&&(e.result=e.anchorMap[o]),I(e,!0,-1),!0)}function ge(e,t,r,o,n){let i,s,c=1,a=!1,p=!1,d,f,h;e.listener&&e.listener!==null&&e.listener("open",e),e.tag=null,e.anchor=null,e.kind=null,e.result=null;let x=i=s=rt===r||en===r;if(o&&I(e,!0,-1)&&(a=!0,e.lineIndent>t?c=1:e.lineIndent===t?c=0:e.lineIndent<t&&(c=-1)),c===1)for(;uc(e)||pc(e);)I(e,!0,-1)?(a=!0,s=x,e.lineIndent>t?c=1:e.lineIndent===t?c=0:e.lineIndent<t&&(c=-1)):s=!1;if(s&&(s=a||n),c===1||rt===r)if(f=tt===r||Zr===r?t:t+1,h=e.position-e.lineStart,c===1)if(s&&(Xr(e,h)||lc(e,h,f))||ac(e,f))p=!0;else{if(i&&cc(e,f)||ic(e,f)||sc(e,f))p=!0;else if(mc(e)){if(p=!0,e.tag!==null||e.anchor!==null)return y(e,"alias node should not have Any properties")}else oc(e,f,tt===r)&&(p=!0,e.tag===null&&(e.tag="?"));e.anchor!==null&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=e.result)}else c===0&&(p=s&&Xr(e,h));if(e.tag!==null&&e.tag!=="!")if(e.tag==="?"){for(let b=0;b<e.implicitTypes.length;b++)if(d=e.implicitTypes[b],d.resolve(e.result)){e.result=d.construct(e.result),e.tag=d.tag,e.anchor!==null&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=e.result);break}}else if(re(e.typeMap[e.kind||"fallback"],e.tag)){if(d=e.typeMap[e.kind||"fallback"][e.tag],e.result!==null&&d.kind!==e.kind)return y(e,`unacceptable node kind for !<${e.tag}> tag; it should be "${d.kind}", not "${e.kind}"`);if(d.resolve(e.result))e.result=d.construct(e.result),e.anchor!==null&&typeof e.anchorMap<"u"&&(e.anchorMap[e.anchor]=e.result);else return y(e,`cannot resolve a node with !<${e.tag}> explicit tag`)}else return y(e,`unknown tag !<${e.tag}>`);return e.listener&&e.listener!==null&&e.listener("close",e),e.tag!==null||e.anchor!==null||p}function dc(e){let t=e.position,r,o,n,i=!1,s;for(e.version=null,e.checkLineBreaks=e.legacy,e.tagMap=Object.create(null),e.anchorMap=Object.create(null);(s=e.input.charCodeAt(e.position))!==0&&(I(e,!0,-1),s=e.input.charCodeAt(e.position),!(e.lineIndent>0||s!==37));){for(i=!0,s=e.input.charCodeAt(++e.position),r=e.position;s!==0&&!j(s);)s=e.input.charCodeAt(++e.position);if(o=e.input.slice(r,e.position),n=[],o.length<1)return y(e,"directive name must not be less than one character in length");for(;s!==0;){for(;ce(s);)s=e.input.charCodeAt(++e.position);if(s===35){do s=e.input.charCodeAt(++e.position);while(s!==0&&!W(s));break}if(W(s))break;for(r=e.position;s!==0&&!j(s);)s=e.input.charCodeAt(++e.position);n.push(e.input.slice(r,e.position))}s!==0&&rr(e),re(zr,o)?zr[o](e,o,...n):nt(e,`unknown document directive "${o}"`)}if(I(e,!0,-1),e.lineIndent===0&&e.input.charCodeAt(e.position)===45&&e.input.charCodeAt(e.position+1)===45&&e.input.charCodeAt(e.position+2)===45)e.position+=3,I(e,!0,-1);else if(i)return y(e,"directives end mark is expected");if(ge(e,e.lineIndent-1,rt,!1,!0),I(e,!0,-1),e.checkLineBreaks&&Xa.test(e.input.slice(t,e.position))&&nt(e,"non-ASCII line breaks are interpreted as content"),e.documents.push(e.result),e.position===e.lineStart&&ot(e)){e.input.charCodeAt(e.position)===46&&(e.position+=3,I(e,!0,-1));return}if(e.position<e.length-1)return y(e,"end of the stream or a document separator is expected")}function fc(e,t){e=String(e),t=t||{},e.length!==0&&(e.charCodeAt(e.length-1)!==10&&e.charCodeAt(e.length-1)!==13&&(e+=`
-`),e.charCodeAt(0)===65279&&(e=e.slice(1)));let r=new et(e,t);for(r.input+="\0";r.input.charCodeAt(r.position)===32;)r.lineIndent+=1,r.position+=1;for(;r.position<r.length-1;)dc(r);return r.documents}function an(e,t){let r=fc(e,t);if(r.length===0)return null;if(r.length===1)return r[0];throw new ee("expected a single document in the stream, but found more")}function cn(e,t){return an(e,t)}var{hasOwn:Vm}=Object;var{hasOwn:ed}=Object;var L={};L[0]="\\0";L[7]="\\a";L[8]="\\b";L[9]="\\t";L[10]="\\n";L[11]="\\v";L[12]="\\f";L[13]="\\r";L[27]="\\e";L[34]='\\"';L[92]="\\\\";L[133]="\\N";L[160]="\\_";L[8232]="\\L";L[8233]="\\P";async function ln(e){(e==="SETTINGS"||e==="SECRETS")&&await z(!0)}async function un(){await z(!0)}async function pn(){(!g||!g.textModels)&&await z(!1);let e=g.textModels.map(o=>({...o,name:o.name,description:o.description||`${o.modelName} on ${o.provider}`})),t=await u.filterBox("Select a model",e);if(!t){await u.flashNotification("No model selected.","error");return}let r=t.name;await St(t),await ae(t),await u.flashNotification(`Selected model: ${r}`),console.log("Selected model:",t)}async function mn(){(!g||!g.imageModels)&&await z(!1);let e=g.imageModels.map(o=>({...o,name:o.name,description:o.description||`${o.modelName} on ${o.provider}`})),t=await u.filterBox("Select an image model",e);if(!t){await u.flashNotification("No image model selected.","error");return}let r=t.name;await At(t),await Tt(t),await u.flashNotification(`Selected image model: ${r}`),console.log("Selected image model:",t)}async function dn(){(!g||!g.embeddingModels)&&await z(!1);let e=g.embeddingModels.map(o=>({...o,name:o.name,description:o.description||`${o.modelName} on ${o.provider}`})),t=await u.filterBox("Select an embedding model",e);if(!t){await u.flashNotification("No embedding model selected.","error");return}let r=t.name;await vt(t),await Ae(t),await u.flashNotification(`Selected embedding model: ${r}`),console.log("Selected embedding model:",t)}async function fn(){await T();let e=await Ue(),t=await u.prompt("Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context."),r=await u.getCurrentPage(),o=new Date,n=o.toISOString().split("T")[0],i=o.toLocaleDateString("en-US",{weekday:"long"});await O.streamChatIntoEditor({messages:[{role:"system",content:"You are an AI note assistant. Follow all user instructions and use the note context and note content to help follow those instructions. Use Markdown for any formatting."},{role:"user",content:`Note Context: Today is ${i}, ${n}. The current note name is "${r}".
-User Prompt: ${t}
+`;
+    } catch (error) {
+      console.error(`Error fetching page '${pageName}':`, error);
+    }
+  }
+  enrichedContent = enrichedContent.replace(wikiLinkRegex2, ">>$1<<");
+  return enrichedContent;
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/interfaces/Provider.ts
+var AbstractProvider = class {
+  fullName;
+  apiKey;
+  baseUrl;
+  modelName;
+  proxyOnServer;
+  constructor(name, apiKey2, baseUrl, modelName, proxyOnServer = false) {
+    this.fullName = name;
+    this.apiKey = apiKey2;
+    this.baseUrl = baseUrl;
+    this.modelName = modelName;
+    this.proxyOnServer = proxyOnServer;
+  }
+  getUrl(path) {
+    path = path.replace(/^\/+/, "");
+    if (this.proxyOnServer) {
+      console.log("Proxy on server, using proxy URL:", `/_/ai-proxy/${this.fullName}/${path}`);
+      return `/_/ai-proxy/${this.fullName}/${path}`;
+    } else {
+      return `${this.baseUrl}/${path}`;
+    }
+  }
+  async streamChatIntoEditor(options, cursorStart) {
+    const { onDataReceived, onResponseComplete, postProcessors } = options;
+    const loadingMessage = "\u{1F914} Thinking \u2026 ";
+    let cursorPos = cursorStart ?? await getPageLength();
+    await editor_exports2.insertAtPos(loadingMessage, cursorPos);
+    let stillLoading = true;
+    const startOfResponse = cursorPos;
+    const onData = (data) => {
+      try {
+        if (!data) {
+          console.log("No data received from LLM");
+          return;
+        }
+        if (stillLoading) {
+          if (["`", "-", "*"].includes(data.charAt(0))) {
+            data = "\n" + data;
+          }
+          editor_exports2.replaceRange(
+            cursorPos,
+            cursorPos + loadingMessage.length,
+            data
+          );
+          stillLoading = false;
+        } else {
+          editor_exports2.insertAtPos(data, cursorPos);
+        }
+        cursorPos += data.length;
+        if (onDataReceived)
+          onDataReceived(data);
+      } catch (error) {
+        console.error("Error handling chat stream data:", error);
+        editor_exports2.flashNotification(
+          "An error occurred while processing chat data.",
+          "error"
+        );
+      }
+    };
+    const onDataComplete = async (data) => {
+      console.log("Response complete:", data);
+      const endOfResponse = startOfResponse + data.length;
+      console.log("Start of response:", startOfResponse);
+      console.log("End of response:", endOfResponse);
+      console.log("Full response:", data);
+      console.log("Post-processors:", postProcessors);
+      let newData = data;
+      if (postProcessors) {
+        const pageText = await editor_exports2.getText();
+        const postProcessorData = {
+          response: data,
+          lineBefore: getLineBefore(pageText, startOfResponse),
+          lineCurrent: getLineOfPos(pageText, startOfResponse),
+          lineAfter: getLineAfter(pageText, endOfResponse)
+        };
+        for (const processor of postProcessors) {
+          console.log("Applying post-processor:", processor);
+          newData = await system_exports2.invokeSpaceFunction(
+            processor,
+            postProcessorData
+          );
+        }
+        console.log("Data changed by post-processors, updating editor");
+        editor_exports2.replaceRange(startOfResponse, endOfResponse, newData);
+      }
+      if (onResponseComplete)
+        onResponseComplete(data);
+    };
+    await this.chatWithAI({
+      ...options,
+      onDataReceived: onData,
+      onResponseComplete: onDataComplete
+    });
+  }
+  async singleMessageChat(userMessage, systemPrompt, enrichMessages = false) {
+    let messages = [
+      {
+        role: "user",
+        content: userMessage
+      }
+    ];
+    if (systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: systemPrompt
+      });
+    }
+    if (enrichMessages) {
+      messages = await enrichChatMessages(messages);
+    }
+    return await this.chatWithAI({
+      messages,
+      stream: false
+    });
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/providers/gemini.ts
+var GeminiProvider = class extends AbstractProvider {
+  constructor(modelConfigName, apiKey2, modelName, proxyOnServer) {
+    const baseUrl = "https://generativelanguage.googleapis.com";
+    super(modelConfigName, apiKey2, baseUrl, modelName, proxyOnServer);
+  }
+  async listModels() {
+    const apiUrl = this.getUrl(`v1beta/models?key=${this.apiKey}`);
+    try {
+      const response = await fetch(apiUrl);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.models || [];
+    } catch (error) {
+      console.error("Failed to fetch models:", error);
+      throw error;
+    }
+  }
+  async chatWithAI({ messages, stream, onDataReceived }) {
+    if (stream) {
+      return await this.streamChat({ messages, stream, onDataReceived });
+    } else {
+      return await this.nonStreamingChat(messages);
+    }
+  }
+  mapRolesForGemini(messages) {
+    const payloadContents = [];
+    let previousRole = "";
+    messages.forEach((message) => {
+      let role = "user";
+      if (message.role === "system" || message.role === "user") {
+        role = "user";
+      } else if (message.role === "assistant") {
+        role = "model";
+      }
+      if (role === "model" && (payloadContents.length === 0 || previousRole === "model")) {
+      } else if (role === "user" && previousRole === "user") {
+        payloadContents[payloadContents.length - 1].parts[0].text += " " + message.content;
+      } else {
+        payloadContents.push({
+          role,
+          parts: [{ text: message.content }]
+        });
+      }
+      previousRole = role;
+    });
+    return payloadContents;
+  }
+  streamChat(options) {
+    const { messages, onDataReceived } = options;
+    try {
+      const sseUrl = this.getUrl(`v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`);
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      const payloadContents = this.mapRolesForGemini(
+        messages
+      );
+      const sseOptions = {
+        method: "POST",
+        headers,
+        payload: JSON.stringify({
+          contents: payloadContents
+        }),
+        withCredentials: false
+      };
+      const source = new SSE(sseUrl, sseOptions);
+      let fullMsg = "";
+      source.addEventListener("message", (e) => {
+        try {
+          if (e.data == "[DONE]") {
+            source.close();
+            return fullMsg;
+          } else if (!e.data) {
+            console.error("Received empty message from Gemini");
+            console.log("source: ", source);
+          } else {
+            const data = JSON.parse(e.data);
+            const msg = data.candidates[0].content.parts[0].text || data.text || "";
+            fullMsg += msg;
+            if (onDataReceived)
+              onDataReceived(msg);
+          }
+        } catch (error) {
+          console.error("Error processing message event:", error, e.data);
+        }
+      });
+      source.addEventListener("end", () => {
+        source.close();
+        return fullMsg;
+      });
+      source.addEventListener("error", (e) => {
+        console.error("SSE error:", e);
+        source.close();
+      });
+      source.stream();
+    } catch (error) {
+      console.error("Error streaming from Gemini chat endpoint:", error);
+      throw error;
+    }
+  }
+  async nonStreamingChat(messages) {
+    const payloadContents = this.mapRolesForGemini(
+      messages
+    );
+    const response = await nativeFetch(
+      this.getUrl(`v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`),
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ contents: payloadContents })
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const responseData = await response.json();
+    return responseData.candidates[0].content.parts[0].text;
+  }
+};
+var GeminiEmbeddingProvider = class extends AbstractEmbeddingProvider {
+  constructor(apiKey2, modelName, baseUrl = "https://generativelanguage.googleapis.com", requireAuth = true) {
+    super(apiKey2, baseUrl, "Gemini", modelName, requireAuth);
+  }
+  async _generateEmbeddings(options) {
+    const body = JSON.stringify({
+      model: this.modelName,
+      content: {
+        parts: [{ text: options.text }]
+      }
+    });
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.requireAuth) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+    const response = await nativeFetch(
+      this.getUrl(`v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`),
+      {
+        method: "POST",
+        headers,
+        body
+      }
+    );
+    if (!response.ok) {
+      console.error("HTTP response: ", response);
+      console.error("HTTP response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data || !data.embedding || !data.embedding.values) {
+      throw new Error("Invalid response from Gemini.");
+    }
+    return data.embedding.values;
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/providers/openai.ts
+var OpenAIProvider = class extends AbstractProvider {
+  requireAuth;
+  constructor(modelConfigName, apiKey2, modelName, baseUrl, requireAuth, proxyOnServer) {
+    super(modelConfigName, apiKey2, baseUrl, modelName, proxyOnServer);
+    this.requireAuth = requireAuth;
+    this.proxyOnServer = proxyOnServer;
+  }
+  async chatWithAI({ messages, stream, onDataReceived, onResponseComplete }) {
+    if (stream) {
+      return await this.streamChat({
+        messages,
+        onDataReceived,
+        onResponseComplete
+      });
+    } else {
+      return await this.nonStreamingChat(messages);
+    }
+  }
+  async streamChat(options) {
+    const { messages, onDataReceived, onResponseComplete } = options;
+    try {
+      const sseUrl = this.getUrl("chat/completions");
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+      const sseOptions = {
+        method: "POST",
+        headers,
+        payload: JSON.stringify({
+          model: this.modelName,
+          stream: true,
+          messages
+        }),
+        withCredentials: false
+      };
+      const source = new SSE(sseUrl, sseOptions);
+      let fullMsg = "";
+      source.addEventListener("message", function(e) {
+        try {
+          if (e.data == "[DONE]") {
+            source.close();
+            if (onResponseComplete)
+              onResponseComplete(fullMsg);
+            return fullMsg;
+          } else {
+            const data = JSON.parse(e.data);
+            const msg = data.choices[0]?.delta?.content || "";
+            fullMsg += msg;
+            if (onDataReceived) {
+              onDataReceived(msg);
+            }
+          }
+        } catch (error) {
+          console.error("Error processing message event:", error, e.data);
+        }
+      });
+      source.addEventListener("end", function() {
+        source.close();
+        if (onResponseComplete)
+          onResponseComplete(fullMsg);
+        return fullMsg;
+      });
+      source.addEventListener("error", (e) => {
+        console.error("SSE error sseEvent.data:", e.data, " ssEventObj:", e);
+        source.close();
+      });
+      source.stream();
+    } catch (error) {
+      console.error("Error streaming from OpenAI chat endpoint:", error);
+      await editor_exports.flashNotification(
+        "Error streaming from OpenAI chat endpoint.",
+        "error"
+      );
+      throw error;
+    }
+    return "";
+  }
+  async listModels() {
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+      const response = await nativeFetch(
+        this.getUrl("models"),
+        {
+          method: "GET",
+          headers
+        }
+      );
+      if (!response.ok) {
+        console.error("HTTP response: ", response);
+        console.error("HTTP response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || !data.data) {
+        throw new Error("Invalid response from OpenAI models endpoint.");
+      }
+      return data.data.map((model) => model.id);
+    } catch (error) {
+      console.error("Error fetching OpenAI models:", error);
+      throw error;
+    }
+  }
+  async nonStreamingChat(messages) {
+    try {
+      const body = JSON.stringify({
+        model: this.modelName,
+        messages
+      });
+      const headers = {
+        "Authorization": `Bearer ${this.apiKey}`,
+        "Content-Type": "application/json"
+      };
+      const response = await nativeFetch(
+        this.getUrl("chat/completions"),
+        {
+          method: "POST",
+          headers,
+          body
+        }
+      );
+      if (!response.ok) {
+        console.error("http response: ", response);
+        console.error("http response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || !data.choices || data.choices.length === 0) {
+        throw new Error("Invalid response from OpenAI.");
+      }
+      return data.choices[0].message.content;
+    } catch (error) {
+      console.error("Error calling OpenAI chat endpoint:", error);
+      await editor_exports.flashNotification(
+        "Error calling OpenAI chat endpoint.",
+        "error"
+      );
+      throw error;
+    }
+  }
+};
+var OpenAIEmbeddingProvider = class extends AbstractEmbeddingProvider {
+  constructor(modelConfigName, apiKey2, modelName, baseUrl, requireAuth = true) {
+    super(modelConfigName, apiKey2, baseUrl, modelName, requireAuth);
+  }
+  async _generateEmbeddings(options) {
+    const body = JSON.stringify({
+      model: this.modelName,
+      input: options.text,
+      encoding_format: "float"
+    });
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.requireAuth) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+    const response = await nativeFetch(
+      this.getUrl("embeddings"),
+      {
+        method: "POST",
+        headers,
+        body
+      }
+    );
+    if (!response.ok) {
+      console.error("HTTP response: ", response);
+      console.error("HTTP response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data || !data.data || data.data.length === 0) {
+      throw new Error("Invalid response from OpenAI.");
+    }
+    return data.data[0].embedding;
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/providers/ollama.ts
+var OllamaProvider = class extends AbstractProvider {
+  requireAuth;
+  openaiProvider;
+  constructor(modelConfigName, apiKey2, modelName, baseUrl, requireAuth, proxyOnServer) {
+    super(modelConfigName, apiKey2, baseUrl, modelName, proxyOnServer);
+    this.requireAuth = requireAuth;
+    this.proxyOnServer = proxyOnServer;
+    this.openaiProvider = new OpenAIProvider(
+      modelConfigName,
+      apiKey2,
+      modelName,
+      baseUrl,
+      requireAuth,
+      proxyOnServer
+    );
+  }
+  async chatWithAI({ messages, stream, onDataReceived, onResponseComplete }) {
+    return await this.openaiProvider.chatWithAI({
+      messages,
+      stream,
+      onDataReceived,
+      onResponseComplete
+    });
+  }
+  async listModels() {
+    try {
+      const headers = {
+        "Content-Type": "application/json"
+      };
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+      const response = await nativeFetch(
+        this.getUrl("api/tags").replace(/\/v1\/?/, ""),
+        {
+          method: "GET",
+          headers
+        }
+      );
+      if (!response.ok) {
+        console.error("HTTP response: ", response);
+        console.error("HTTP response body: ", await response.json());
+        throw new Error(`HTTP error, status: ${response.status}`);
+      }
+      const data = await response.json();
+      if (!data || !data.models) {
+        throw new Error("Invalid response from Ollama models endpoint.");
+      }
+      return data.models.map((model) => model.name);
+    } catch (error) {
+      console.error("Error fetching Ollama models:", error);
+      throw error;
+    }
+  }
+};
+var OllamaEmbeddingProvider = class extends AbstractEmbeddingProvider {
+  constructor(modelConfigName, apiKey2, modelName, baseUrl, requireAuth = false) {
+    super(modelConfigName, apiKey2, baseUrl, modelName, requireAuth);
+  }
+  // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
+  async _generateEmbeddings(options) {
+    const body = JSON.stringify({
+      model: this.modelName,
+      prompt: options.text
+    });
+    const headers = {
+      "Content-Type": "application/json"
+    };
+    if (this.requireAuth) {
+      headers["Authorization"] = `Bearer ${this.apiKey}`;
+    }
+    const response = await nativeFetch(
+      this.getUrl("api/embeddings"),
+      {
+        method: "POST",
+        headers,
+        body
+      }
+    );
+    if (!response.ok) {
+      console.error("HTTP response: ", response);
+      console.error("HTTP response body: ", await response.json());
+      throw new Error(`HTTP error, status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (!data || !data.embedding || data.embedding.length === 0) {
+      throw new Error("Invalid response from Ollama.");
+    }
+    return data.embedding;
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/mocks/mockproviders.ts
+var MockProvider = class extends AbstractProvider {
+  constructor(apiKey2, modelName, baseUrl = "http://localhost") {
+    super(apiKey2, baseUrl, "mock", modelName);
+  }
+  async chatWithAI(options) {
+    const mockResponse = "This is a mock response from the AI.";
+    if (options.onDataReceived) {
+      for (const char of mockResponse) {
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        options.onDataReceived(char);
+      }
+    }
+    return mockResponse;
+  }
+  listModels() {
+    return Promise.resolve([
+      "mock-gpt-3.5",
+      "mock-gpt-4",
+      "mock-claude-2",
+      this.modelName
+      // Include the currently configured model
+    ]);
+  }
+};
+var MockImageProvider = class extends AbstractImageProvider {
+  constructor(apiKey2, modelName, baseUrl = "http://localhost") {
+    super(apiKey2, baseUrl, "mock", modelName);
+  }
+  generateImage(_options) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve("https://example.com/mock-image.jpg");
+      }, 5);
+    });
+  }
+};
+var MockEmbeddingProvider = class extends AbstractEmbeddingProvider {
+  constructor(apiKey2, modelName, baseUrl = "http://localhost") {
+    super(apiKey2, baseUrl, "mock", modelName);
+  }
+  _generateEmbeddings(_options) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const mockEmbedding = Array(1536).fill(0).map(() => Math.random());
+        resolve(mockEmbedding);
+      }, 5);
+    });
+  }
+};
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/init.ts
+var apiKey;
+var aiSettings;
+var chatSystemPrompt;
+var currentAIProvider;
+var currentImageProvider;
+var currentEmbeddingProvider;
+var currentModel;
+var currentImageModel;
+var currentEmbeddingModel;
+async function initIfNeeded() {
+  const selectedModel = await getSelectedTextModel();
+  if (!apiKey || !currentAIProvider || !aiSettings || !currentModel || JSON.stringify(selectedModel) !== JSON.stringify(currentModel)) {
+    await initializeOpenAI(true);
+  }
+}
+async function getSelectedTextModel() {
+  if (await system_exports2.getEnv() == "server") {
+    return void 0;
+  }
+  try {
+    return await clientStore_exports2.get("ai.selectedTextModel");
+  } catch (_error) {
+    return void 0;
+  }
+}
+async function getSelectedImageModel() {
+  if (await system_exports2.getEnv() == "server") {
+    return void 0;
+  }
+  try {
+    return await clientStore_exports2.get("ai.selectedImageModel");
+  } catch (_error) {
+    return void 0;
+  }
+}
+async function getSelectedEmbeddingModel() {
+  if (await system_exports2.getEnv() == "server") {
+    return;
+  }
+  try {
+    return await clientStore_exports2.get("ai.selectedEmbeddingModel");
+  } catch (_error) {
+    return void 0;
+  }
+}
+async function setSelectedImageModel(model) {
+  if (await system_exports2.getEnv() == "server") {
+    return;
+  }
+  await clientStore_exports2.set("ai.selectedImageModel", model);
+}
+async function setSelectedTextModel(model) {
+  if (await system_exports2.getEnv() == "server") {
+    return;
+  }
+  await clientStore_exports2.set("ai.selectedTextModel", model);
+}
+async function setSelectedEmbeddingModel(model) {
+  if (await system_exports2.getEnv() == "server") {
+    return;
+  }
+  await clientStore_exports2.set("ai.selectedEmbeddingModel", model);
+}
+async function getAndConfigureModel() {
+  const selectedModel = await getSelectedTextModel() || aiSettings.textModels[0];
+  if (!selectedModel) {
+    throw new Error("No text model selected or available as default.");
+  }
+  await configureSelectedModel(selectedModel);
+}
+async function getAndConfigureImageModel() {
+  const selectedImageModel = await getSelectedImageModel() || aiSettings.imageModels[0];
+  if (!selectedImageModel) {
+    throw new Error("No image model selected or available as default.");
+  }
+  await configureSelectedImageModel(selectedImageModel);
+}
+async function getAndConfigureEmbeddingModel() {
+  const selectedEmbeddingModel = await getSelectedEmbeddingModel() || aiSettings.embeddingModels[0];
+  if (!selectedEmbeddingModel) {
+    throw new Error("No embedding model selected or available as default.");
+  }
+  await configureSelectedEmbeddingModel(selectedEmbeddingModel);
+}
+function setupImageProvider(model) {
+  const providerName = model.provider.toLowerCase();
+  log("client", "Provider name", providerName);
+  switch (providerName) {
+    case "dalle" /* DallE */:
+      currentImageProvider = new DallEProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.dallEBaseUrl
+      );
+      break;
+    case "mock" /* Mock */:
+      currentImageProvider = new MockImageProvider(
+        apiKey,
+        model.modelName
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported image provider: ${model.provider}. Please configure a supported provider.`
+      );
+  }
+}
+function setupAIProvider(model) {
+  const providerName = model.provider.toLowerCase();
+  switch (providerName) {
+    case "openai" /* OpenAI */:
+      currentAIProvider = new OpenAIProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.openAIBaseUrl,
+        model.requireAuth || aiSettings.requireAuth,
+        model.proxyOnServer || false
+      );
+      break;
+    case "gemini" /* Gemini */:
+      currentAIProvider = new GeminiProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.proxyOnServer || false
+      );
+      break;
+    case "ollama" /* Ollama */:
+      currentAIProvider = new OllamaProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.baseUrl || "http://localhost:11434/v1",
+        model.requireAuth,
+        model.proxyOnServer || false
+      );
+      break;
+    case "mock" /* Mock */:
+      currentAIProvider = new MockProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported AI provider: ${model.provider}. Please configure a supported provider.`
+      );
+  }
+  return currentAIProvider;
+}
+function setupEmbeddingProvider(model) {
+  const providerName = model.provider.toLowerCase();
+  switch (providerName) {
+    case "openai" /* OpenAI */:
+      currentEmbeddingProvider = new OpenAIEmbeddingProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.baseUrl || aiSettings.openAIBaseUrl
+      );
+      break;
+    case "gemini" /* Gemini */:
+      currentEmbeddingProvider = new GeminiEmbeddingProvider(
+        model.name,
+        apiKey,
+        model.modelName
+      );
+      break;
+    case "ollama" /* Ollama */:
+      currentEmbeddingProvider = new OllamaEmbeddingProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.baseUrl || "http://localhost:11434",
+        model.requireAuth
+      );
+      break;
+    case "mock" /* Mock */:
+      currentEmbeddingProvider = new MockEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl
+      );
+      break;
+    default:
+      throw new Error(
+        `Unsupported embedding provider: ${model.provider}. Please configure a supported provider.`
+      );
+  }
+}
+async function configureSelectedModel(model) {
+  log("client", "configureSelectedModel called with:", model);
+  if (!model) {
+    throw new Error("No model provided to configure");
+  }
+  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
+  if (model.requireAuth) {
+    try {
+      const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+      if (newApiKey !== apiKey) {
+        apiKey = newApiKey;
+        log("client", "API key updated");
+      }
+    } catch (_error) {
+      console.error("Error reading secret:", _error);
+      throw new Error(
+        "Failed to read the AI API key. Please check the SECRETS page."
+      );
+    }
+  }
+  if (model.requireAuth && !apiKey) {
+    throw new Error(
+      "AI API key is missing. Please set it in the secrets page."
+    );
+  }
+  currentModel = model;
+  return setupAIProvider(model);
+}
+async function configureSelectedImageModel(model) {
+  log("client", "configureSelectedImageModel called with:", model);
+  if (!model) {
+    throw new Error("No image model provided to configure");
+  }
+  if (model.requireAuth) {
+    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    if (newApiKey !== apiKey) {
+      apiKey = newApiKey;
+      log("client", "API key updated for image model");
+    }
+  }
+  if (model.requireAuth && !apiKey) {
+    throw new Error(
+      "AI API key is missing for image model. Please set it in the secrets page."
+    );
+  }
+  currentImageModel = model;
+  setupImageProvider(model);
+}
+async function configureSelectedEmbeddingModel(model) {
+  log("client", "configureSelectedEmbeddingModel called with:", model);
+  if (!model) {
+    throw new Error("No embedding model provided to configure");
+  }
+  if (model.requireAuth) {
+    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    if (newApiKey !== apiKey) {
+      apiKey = newApiKey;
+      log("client", "API key updated for embedding model");
+    }
+  }
+  if (model.requireAuth && !apiKey) {
+    throw new Error(
+      "AI API key is missing for embedding model. Please set it in the secrets page."
+    );
+  }
+  currentEmbeddingModel = model;
+  setupEmbeddingProvider(model);
+}
+async function loadAndMergeSettings() {
+  const defaultSettings = {
+    openAIBaseUrl: "https://api.openai.com/v1",
+    dallEBaseUrl: "https://api.openai.com/v1",
+    requireAuth: true,
+    secretName: "OPENAI_API_KEY",
+    provider: "OpenAI",
+    chat: {},
+    promptInstructions: {},
+    imageModels: [],
+    embeddingModels: [],
+    textModels: [],
+    indexEmbeddings: false,
+    indexSummary: false,
+    indexSummaryModelName: "",
+    indexEmbeddingsExcludePages: [],
+    indexEmbeddingsExcludeStrings: ["**user**:"]
+  };
+  const defaultChatSettings = {
+    userInformation: "",
+    userInstructions: "",
+    parseWikiLinks: true,
+    bakeMessages: true,
+    customEnrichFunctions: [],
+    searchEmbeddings: false
+  };
+  const defaultPromptInstructions = {
+    pageRenameSystem: "",
+    pageRenameRules: "",
+    tagRules: "",
+    indexSummaryPrompt: "",
+    enhanceFrontMatterPrompt: ""
+  };
+  const newSettings = await system_exports2.getSpaceConfig("ai", {});
+  const newCombinedSettings = { ...defaultSettings, ...newSettings };
+  newCombinedSettings.chat = {
+    ...defaultChatSettings,
+    ...newSettings.chat || {}
+  };
+  newCombinedSettings.promptInstructions = {
+    ...defaultPromptInstructions,
+    ...newSettings.promptInstructions || {}
+  };
+  return newCombinedSettings;
+}
+async function initializeOpenAI(configure = true) {
+  const newCombinedSettings = await loadAndMergeSettings();
+  if (!aiSettings || JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)) {
+    log("client", "aiSettings updating from", aiSettings);
+    aiSettings = newCombinedSettings;
+    log("client", "aiSettings updated to", aiSettings);
+  } else {
+    log("client", "aiSettings unchanged", aiSettings);
+  }
+  if (aiSettings.textModels.length === 1) {
+    await setSelectedTextModel(aiSettings.textModels[0]);
+  }
+  if (aiSettings.imageModels.length === 1) {
+    await setSelectedImageModel(aiSettings.imageModels[0]);
+  }
+  if (aiSettings.embeddingModels.length === 1) {
+    await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
+  }
+  if (configure) {
+    if (aiSettings.textModels.length > 0) {
+      await getAndConfigureModel();
+    }
+    if (aiSettings.imageModels.length > 0) {
+      await getAndConfigureImageModel();
+    }
+    if (aiSettings.embeddingModels.length > 0) {
+      await getAndConfigureEmbeddingModel();
+    }
+  }
+  chatSystemPrompt = {
+    role: "system",
+    content: `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet.`
+  };
+  if (aiSettings.chat.userInformation) {
+    chatSystemPrompt.content += `
+The user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;
+  }
+  if (aiSettings.chat.userInstructions) {
+    chatSystemPrompt.content += `
+The user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/proxyHandler.ts
+async function proxyHandler(request) {
+  console.log("ai:proxyHandler called to handle path:", request.path);
+  const pathParts = request.path.split("/");
+  const modelName = pathParts[2];
+  let remainingPath = pathParts.slice(3).join("/");
+  console.log("proxyHandler handling request for model:", modelName);
+  if (!modelName) {
+    return new Response("Model name not specified", { status: 400 });
+  }
+  try {
+    const aiSettings2 = await system_exports2.getSpaceConfig("ai", {});
+    if (!aiSettings2 || !aiSettings2.textModels) {
+      return new Response("No AI models configured", { status: 404 });
+    }
+    const modelConfig = aiSettings2.textModels.find(
+      (model) => model.name === modelName
+    );
+    if (!modelConfig) {
+      return new Response(`Model '${modelName}' not found in configuration`, { status: 404 });
+    }
+    if (modelConfig.proxyOnServer === false) {
+      return new Response(`Proxy is disabled for model '${modelName}'`, { status: 403 });
+    }
+    await configureSelectedModel(modelConfig);
+    let baseUrl = modelConfig.baseUrl;
+    console.log("proxyHandler baseUrl:", baseUrl, "provider:", modelConfig.provider, "remainingPath:", remainingPath);
+    if (modelConfig.provider === "ollama" /* Ollama */) {
+      if (remainingPath.includes("models") || remainingPath == "api/tags") {
+        baseUrl = baseUrl.replace(/v1\/?/, "");
+      } else {
+        baseUrl = baseUrl.replace(/\/v1\/?$/, "") + "/v1/";
+      }
+      console.log("New baseUrl for ollama:", baseUrl);
+    }
+    const apiUrl = baseUrl.endsWith("/") ? `${baseUrl}${remainingPath}` : `${baseUrl}/${remainingPath}`;
+    const requestHeaders = {
+      "Content-Type": "application/json",
+      "Accept": "*/*"
+    };
+    for (const [key, value] of Object.entries(request.headers)) {
+      if (!["host", "connection", "origin", "content-type", "content-length"].includes(key.toLowerCase())) {
+        requestHeaders[key] = value;
+      }
+    }
+    let requestBody = void 0;
+    if (request.body) {
+      try {
+        requestBody = typeof request.body === "string" ? JSON.parse(request.body) : request.body;
+      } catch (error) {
+        console.error("Error processing request body:", error);
+        if (remainingPath === "chat/completions") {
+          return new Response("Invalid JSON in request body", { status: 400 });
+        }
+      }
+    }
+    const isStreamingRequest = requestBody?.stream === true;
+    console.log("Streaming request:", isStreamingRequest);
+    if (isStreamingRequest) {
+      console.log("proxyHandler handling streaming request");
+      console.log("Request body before sending:", JSON.stringify(requestBody, null, 2));
+      requestHeaders["Accept"] = "text/event-stream";
+      requestHeaders["Cache-Control"] = "no-cache";
+      requestHeaders["Connection"] = "keep-alive";
+      const response2 = await nativeFetch(apiUrl, {
+        method: request.method,
+        headers: requestHeaders,
+        body: JSON.stringify(requestBody)
+      });
+      console.log("Response from LLM API:", response2);
+      const { readable, writable } = new TransformStream();
+      response2.body.pipeTo(writable);
+      if (!response2.ok) {
+        const errorText = await response2.text();
+        console.log("Error from LLM API:", errorText);
+        return new Response(`Failed to fetch from LLM API: ${errorText}`, { status: response2.status });
+      }
+      return {
+        status: response2.status,
+        headers: {
+          ...Object.fromEntries(response2.headers.entries()),
+          "content-type": "text/event-stream"
+        },
+        // Send the response as an object that can be serialized
+        body: {
+          __type: "STREAM_PROXY",
+          url: apiUrl,
+          method: request.method,
+          headers: requestHeaders,
+          requestBody
+        }
+      };
+    }
+    const response = await nativeFetch(apiUrl, {
+      method: request.method,
+      headers: requestHeaders,
+      body: request.method !== "GET" && request.method !== "HEAD" && requestBody ? JSON.stringify(requestBody) : void 0
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      log("server", "LLM API error:", errorText);
+      return {
+        status: response.status,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: `Failed to fetch from LLM API: ${errorText}`
+      };
+    }
+    const responseBody = await response.json().catch(async () => {
+      console.log("proxyHandler JSON parsing failed, falling back to text");
+      return await response.text();
+    });
+    return {
+      status: response.status,
+      headers: Object.fromEntries(response.headers.entries()),
+      body: responseBody
+    };
+  } catch (error) {
+    log("server", "Error in proxyHandler:", error);
+    return {
+      status: 500,
+      body: `Internal server error: ${error.message}`
+    };
+  }
+}
+
+// https://deno.land/x/silverbullet@0.10.1/plugs/template/api.ts
+async function renderTemplate2(templateText, data = {}, variables = {}) {
+  try {
+    const tree = await markdown_exports2.parseMarkdown(templateText);
+    const frontmatter = await extractFrontmatter(
+      tree,
+      {
+        removeFrontmatterSection: true,
+        removeTags: ["template"]
+      }
+    );
+    templateText = renderToText(tree).trimStart();
+    let frontmatterText;
+    if (frontmatter.frontmatter) {
+      if (typeof frontmatter.frontmatter === "string") {
+        frontmatterText = frontmatter.frontmatter;
+      } else {
+        frontmatterText = await yaml_exports2.stringify(frontmatter.frontmatter);
+      }
+      frontmatterText = await template_exports2.renderTemplate(
+        frontmatterText,
+        data,
+        variables
+      );
+    }
+    return {
+      frontmatter,
+      renderedFrontmatter: frontmatterText,
+      text: await template_exports2.renderTemplate(templateText, data, variables)
+    };
+  } catch (e) {
+    console.error("Error rendering template", e);
+    throw e;
+  }
+}
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/prompts.ts
+async function aiPromptSlashComplete(completeEvent) {
+  if (!supportsPlugSlashComplete()) {
+    return;
+  }
+  const allTemplates = await query(
+    "template where aiprompt and aiprompt.slashCommand"
+  );
+  return {
+    options: allTemplates.map((template) => {
+      const aiPromptTemplate = template.aiprompt;
+      return {
+        label: aiPromptTemplate.slashCommand,
+        detail: aiPromptTemplate.description || template.description,
+        order: aiPromptTemplate.order || 0,
+        templatePage: template.ref,
+        pageName: completeEvent.pageName,
+        invoke: "silverbullet-ai.insertAiPromptFromTemplate"
+      };
+    })
+  };
+}
+async function insertAiPromptFromTemplate(SlashCompletions) {
+  let selectedTemplate;
+  if (!SlashCompletions || !SlashCompletions.templatePage) {
+    const aiPromptTemplates = await query("template where aiprompt");
+    selectedTemplate = await editor_exports2.filterBox(
+      "Prompt Template",
+      aiPromptTemplates.map((templateObj) => {
+        const niceName = templateObj.ref.split("/").pop();
+        return {
+          ...templateObj,
+          description: templateObj.aiprompt.description || templateObj.ref,
+          name: templateObj.aiprompt.displayName || niceName,
+          systemPrompt: templateObj.aiprompt.systemPrompt || "You are an AI note assistant. Please follow the prompt instructions.",
+          insertAt: templateObj.aiprompt.insertAt || "cursor",
+          chat: templateObj.aiprompt.chat || false,
+          enrichMessages: templateObj.aiprompt.enrichMessages || false,
+          postProcessors: templateObj.aiprompt.postProcessors || []
+        };
+      }),
+      `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`
+    );
+  } else {
+    console.log("selectedTemplate from slash completion: ", SlashCompletions);
+    const templatePage = await space_exports2.readPage(SlashCompletions.templatePage);
+    const tree = await markdown_exports2.parseMarkdown(templatePage);
+    const { aiprompt } = await extractFrontmatter(tree);
+    console.log("templatePage from slash completion: ", templatePage);
+    selectedTemplate = {
+      ref: SlashCompletions.templatePage,
+      systemPrompt: aiprompt.systemPrompt || aiprompt.system || "You are an AI note assistant. Please follow the prompt instructions.",
+      insertAt: aiprompt.insertAt || "cursor",
+      chat: aiprompt.chat || false,
+      enrichMessages: aiprompt.enrichMessages || false,
+      postProcessors: aiprompt.postProcessors || []
+    };
+  }
+  if (!selectedTemplate) {
+    await editor_exports2.flashNotification("No template selected");
+    return;
+  }
+  console.log("User selected prompt template: ", selectedTemplate);
+  const validInsertAtOptions = [
+    "cursor",
+    "page-start",
+    "page-end",
+    "start-of-line",
+    "end-of-line",
+    // Item can mean either a list item or a task
+    "start-of-item",
+    "end-of-item",
+    "new-line-above",
+    "new-line-below",
+    "replace-line",
+    "replace-paragraph",
+    "replace-selection",
+    "replace-smart"
+    // "frontmatter",
+    // "modal",
+    // "replace",
+  ];
+  if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
+    console.error(
+      `Invalid insertAt value: ${selectedTemplate.insertAt}. It must be one of ${validInsertAtOptions.join(", ")}`
+    );
+    await editor_exports2.flashNotification(
+      `Invalid insertAt value: ${selectedTemplate.insertAt}. Please select a valid option.`,
+      "error"
+    );
+    return;
+  }
+  await initIfNeeded();
+  let templateText, currentPage, pageMeta;
+  try {
+    templateText = await space_exports2.readPage(selectedTemplate.ref);
+    currentPage = await editor_exports2.getCurrentPage();
+    pageMeta = await space_exports2.getPageMeta(currentPage);
+  } catch (error) {
+    console.error("Error fetching template details or page metadata", error);
+    await editor_exports2.flashNotification(
+      "Error fetching template details or page metadata",
+      "error"
+    );
+    return;
+  }
+  let currentPageText, currentLineNumber, curCursorPos, lineStartPos, lineEndPos, currentItemBounds, currentItemText, parentItemBounds, parentItemText, currentParagraph, selectedText;
+  let smartReplaceType;
+  let smartReplaceText;
+  try {
+    currentPageText = await editor_exports2.getText();
+    curCursorPos = await editor_exports2.getCursor();
+    const lines = currentPageText.split("\n");
+    currentLineNumber = currentPageText.substring(0, curCursorPos).split("\n").length;
+    lineStartPos = curCursorPos - (currentPageText.substring(0, curCursorPos).split("\n").pop()?.length || 0);
+    lineEndPos = lineStartPos + lines[currentLineNumber - 1].length;
+  } catch (error) {
+    console.error("Error fetching current page text or cursor position", error);
+    await editor_exports2.flashNotification(
+      "Error fetching current page text or cursor position",
+      "error"
+    );
+    return;
+  }
+  try {
+    if (selectedTemplate.insertAt === "start-of-item" || selectedTemplate.insertAt === "end-of-item" || selectedTemplate.insertAt === "replace-smart") {
+      currentItemBounds = await system_exports2.invokeFunction(
+        "editor.determineItemBounds",
+        currentPageText,
+        curCursorPos,
+        void 0,
+        true
+      );
+      currentItemText = currentPageText.slice(
+        currentItemBounds.from,
+        currentItemBounds.to
+      );
+      parentItemBounds = await system_exports2.invokeFunction(
+        "editor.determineItemBounds",
+        currentPageText,
+        curCursorPos,
+        0,
+        true
+      );
+      parentItemText = currentPageText.slice(
+        parentItemBounds.from,
+        parentItemBounds.to
+      );
+    }
+  } catch (error) {
+    console.error("Error fetching current item", error);
+  }
+  try {
+    if (selectedTemplate.insertAt === "replace-paragraph" || selectedTemplate.insertAt === "replace-smart") {
+      currentParagraph = getParagraph(currentPageText, curCursorPos);
+    }
+  } catch (error) {
+    console.error("Error fetching current paragraph", error);
+    await editor_exports2.flashNotification(
+      "Error fetching current paragraph",
+      "error"
+    );
+    return;
+  }
+  try {
+    if (selectedTemplate.insertAt == "replace-selection" || selectedTemplate.insertAt == "replace-smart") {
+      selectedText = await getSelectedText();
+    }
+  } catch (error) {
+    console.error("Error fetching selected text", error);
+  }
+  let cursorPos;
+  switch (selectedTemplate.insertAt) {
+    case "page-start":
+      cursorPos = 0;
+      break;
+    case "page-end":
+      cursorPos = await getPageLength();
+      break;
+    case "frontmatter":
+      await editor_exports2.flashNotification(
+        `rendering in frontmatter not supported yet`,
+        "error"
+      );
+      break;
+    case "modal":
+      break;
+    case "replace":
+      break;
+    case "replace-line":
+      cursorPos = lineStartPos;
+      await editor_exports2.replaceRange(lineStartPos, lineEndPos, "");
+      break;
+    case "replace-selection":
+      if (selectedText?.text) {
+        cursorPos = selectedText.from;
+        await editor_exports2.replaceRange(selectedText.from, selectedText.to, "");
+      } else {
+        cursorPos = await editor_exports2.getCursor();
+      }
+      break;
+    case "replace-paragraph":
+      if (currentParagraph?.text) {
+        cursorPos = currentParagraph.from;
+        await editor_exports2.replaceRange(
+          currentParagraph.from,
+          currentParagraph.to,
+          ""
+        );
+      } else {
+        await editor_exports2.flashNotification(
+          "Error: current paragraph is undefined",
+          "error"
+        );
+      }
+      break;
+    case "replace-smart":
+      if (selectedText?.text) {
+        smartReplaceType = "selected-text";
+        smartReplaceText = selectedText.text;
+        cursorPos = selectedText.from;
+        await editor_exports2.replaceRange(selectedText.from, selectedText.to, "");
+      } else if (currentItemText && currentItemBounds) {
+        smartReplaceType = "current-item";
+        smartReplaceText = currentItemText;
+        cursorPos = currentItemBounds.from;
+        await editor_exports2.replaceRange(
+          currentItemBounds.from,
+          currentItemBounds.to,
+          "\n"
+        );
+      } else if (currentParagraph?.text) {
+        smartReplaceType = "current-paragraph";
+        smartReplaceText = currentParagraph.text;
+        cursorPos = currentParagraph.from;
+        await editor_exports2.replaceRange(
+          currentParagraph.from,
+          currentParagraph.to,
+          ""
+        );
+      } else {
+        await editor_exports2.flashNotification(
+          "Error: replace-smart: no text selected, current paragraph, or current item",
+          "error"
+        );
+        return;
+      }
+      console.log("smartReplaceType: ", smartReplaceType);
+      console.log("smartReplaceText: ", smartReplaceText);
+      break;
+    case "start-of-line":
+      cursorPos = lineStartPos;
+      break;
+    case "end-of-line":
+      cursorPos = lineEndPos;
+      break;
+    case "new-line-above":
+      cursorPos = lineStartPos;
+      await editor_exports2.insertAtPos("\n", cursorPos);
+      cursorPos += 1;
+      break;
+    case "new-line-below":
+      cursorPos = lineEndPos;
+      await editor_exports2.insertAtPos("\n", cursorPos);
+      cursorPos += 1;
+      break;
+    case "start-of-item":
+      cursorPos = currentItemBounds.from;
+      break;
+    case "end-of-item":
+      cursorPos = currentItemBounds.to;
+      break;
+    case "cursor":
+    default:
+      cursorPos = await editor_exports2.getCursor();
+  }
+  if (cursorPos === void 0) {
+    cursorPos = await getPageLength();
+  }
+  console.log("templatetext: ", templateText);
+  let messages = [];
+  const globalMetadata = {
+    page: pageMeta,
+    currentItemText,
+    currentLineNumber,
+    lineStartPos,
+    lineEndPos,
+    currentPageText,
+    parentItemText,
+    selectedText: selectedText?.text,
+    currentParagraph: currentParagraph?.text,
+    smartReplaceType,
+    smartReplaceText
+  };
+  if (!selectedTemplate.chat) {
+    const renderedTemplate = await renderTemplate2(
+      templateText,
+      pageMeta,
+      globalMetadata
+    );
+    console.log("Rendered template:", renderedTemplate);
+    if (selectedTemplate.systemPrompt) {
+      messages.push({
+        role: "system",
+        content: selectedTemplate.systemPrompt
+      });
+    }
+    messages.push({
+      role: "user",
+      content: renderedTemplate.text
+    });
+  } else {
+    messages = await convertPageToMessages(templateText);
+    if (selectedTemplate.systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: selectedTemplate.systemPrompt
+      });
+    }
+    if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
+      messages = await enrichChatMessages(messages, globalMetadata);
+    }
+  }
+  console.log("Messages: ", messages);
+  await currentAIProvider.streamChatIntoEditor({
+    messages,
+    stream: true,
+    postProcessors: selectedTemplate.postProcessors
+  }, cursorPos);
+}
+
+// https://deno.land/std@0.224.0/encoding/_util.ts
+var encoder = new TextEncoder();
+
+// https://deno.land/std@0.224.0/encoding/base64.ts
+function decodeBase64(b64) {
+  const binString = atob(b64);
+  const size = binString.length;
+  const bytes = new Uint8Array(size);
+  for (let i = 0; i < size; i++) {
+    bytes[i] = binString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+// https://deno.land/std@0.224.0/yaml/_error.ts
+var YAMLError = class extends Error {
+  constructor(message = "(unknown reason)", mark = "") {
+    super(`${message} ${mark}`);
+    this.mark = mark;
+    this.name = this.constructor.name;
+  }
+  toString(_compact) {
+    return `${this.name}: ${this.message} ${this.mark}`;
+  }
+};
+
+// https://deno.land/std@0.224.0/yaml/_utils.ts
+function isBoolean(value) {
+  return typeof value === "boolean" || value instanceof Boolean;
+}
+function isObject(value) {
+  return value !== null && typeof value === "object";
+}
+function repeat(str2, count) {
+  let result = "";
+  for (let cycle = 0; cycle < count; cycle++) {
+    result += str2;
+  }
+  return result;
+}
+function isNegativeZero(i) {
+  return i === 0 && Number.NEGATIVE_INFINITY === 1 / i;
+}
+
+// https://deno.land/std@0.224.0/yaml/_mark.ts
+var Mark = class {
+  constructor(name, buffer, position, line, column) {
+    this.name = name;
+    this.buffer = buffer;
+    this.position = position;
+    this.line = line;
+    this.column = column;
+  }
+  getSnippet(indent = 4, maxLength = 75) {
+    if (!this.buffer)
+      return null;
+    let head = "";
+    let start = this.position;
+    while (start > 0 && "\0\r\n\x85\u2028\u2029".indexOf(this.buffer.charAt(start - 1)) === -1) {
+      start -= 1;
+      if (this.position - start > maxLength / 2 - 1) {
+        head = " ... ";
+        start += 5;
+        break;
+      }
+    }
+    let tail = "";
+    let end = this.position;
+    while (end < this.buffer.length && "\0\r\n\x85\u2028\u2029".indexOf(this.buffer.charAt(end)) === -1) {
+      end += 1;
+      if (end - this.position > maxLength / 2 - 1) {
+        tail = " ... ";
+        end -= 5;
+        break;
+      }
+    }
+    const snippet = this.buffer.slice(start, end);
+    return `${repeat(" ", indent)}${head}${snippet}${tail}
+${repeat(
+      " ",
+      indent + this.position - start + head.length
+    )}^`;
+  }
+  toString(compact) {
+    let snippet;
+    let where = "";
+    if (this.name) {
+      where += `in "${this.name}" `;
+    }
+    where += `at line ${this.line + 1}, column ${this.column + 1}`;
+    if (!compact) {
+      snippet = this.getSnippet();
+      if (snippet) {
+        where += `:
+${snippet}`;
+      }
+    }
+    return where;
+  }
+};
+
+// https://deno.land/std@0.224.0/yaml/schema.ts
+function compileList(schema, name, result) {
+  const exclude = [];
+  for (const includedSchema of schema.include) {
+    result = compileList(includedSchema, name, result);
+  }
+  for (const currentType of schema[name]) {
+    for (const [previousIndex, previousType] of result.entries()) {
+      if (previousType.tag === currentType.tag && previousType.kind === currentType.kind) {
+        exclude.push(previousIndex);
+      }
+    }
+    result.push(currentType);
+  }
+  return result.filter((_type, index) => !exclude.includes(index));
+}
+function compileMap(...typesList) {
+  const result = {
+    fallback: {},
+    mapping: {},
+    scalar: {},
+    sequence: {}
+  };
+  for (const types of typesList) {
+    for (const type of types) {
+      if (type.kind !== null) {
+        result[type.kind][type.tag] = result["fallback"][type.tag] = type;
+      }
+    }
+  }
+  return result;
+}
+var Schema = class _Schema {
+  static SCHEMA_DEFAULT;
+  implicit;
+  explicit;
+  include;
+  compiledImplicit;
+  compiledExplicit;
+  compiledTypeMap;
+  constructor(definition) {
+    this.explicit = definition.explicit || [];
+    this.implicit = definition.implicit || [];
+    this.include = definition.include || [];
+    for (const type of this.implicit) {
+      if (type.loadKind && type.loadKind !== "scalar") {
+        throw new YAMLError(
+          "There is a non-scalar type in the implicit list of a schema. Implicit resolving of such types is not supported."
+        );
+      }
+    }
+    this.compiledImplicit = compileList(this, "implicit", []);
+    this.compiledExplicit = compileList(this, "explicit", []);
+    this.compiledTypeMap = compileMap(
+      this.compiledImplicit,
+      this.compiledExplicit
+    );
+  }
+  /* Returns a new extended schema from current schema */
+  extend(definition) {
+    return new _Schema({
+      implicit: [
+        .../* @__PURE__ */ new Set([...this.implicit, ...definition?.implicit ?? []])
+      ],
+      explicit: [
+        .../* @__PURE__ */ new Set([...this.explicit, ...definition?.explicit ?? []])
+      ],
+      include: [.../* @__PURE__ */ new Set([...this.include, ...definition?.include ?? []])]
+    });
+  }
+  static create() {
+  }
+};
+
+// https://deno.land/std@0.224.0/yaml/type.ts
+function checkTagFormat(tag) {
+  return tag;
+}
+var Type = class {
+  tag;
+  kind = null;
+  instanceOf;
+  predicate;
+  represent;
+  defaultStyle;
+  styleAliases;
+  loadKind;
+  constructor(tag, options) {
+    this.tag = checkTagFormat(tag);
+    if (options) {
+      this.kind = options.kind;
+      this.resolve = options.resolve || (() => true);
+      this.construct = options.construct || ((data) => data);
+      this.instanceOf = options.instanceOf;
+      this.predicate = options.predicate;
+      this.represent = options.represent;
+      this.defaultStyle = options.defaultStyle;
+      this.styleAliases = options.styleAliases;
+    }
+  }
+  resolve = () => true;
+  construct = (data) => data;
+};
+
+// https://deno.land/std@0.224.0/yaml/_type/binary.ts
+var BASE64_MAP = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r";
+function resolveYamlBinary(data) {
+  if (data === null)
+    return false;
+  let code;
+  let bitlen = 0;
+  const max = data.length;
+  const map2 = BASE64_MAP;
+  for (let idx = 0; idx < max; idx++) {
+    code = map2.indexOf(data.charAt(idx));
+    if (code > 64)
+      continue;
+    if (code < 0)
+      return false;
+    bitlen += 6;
+  }
+  return bitlen % 8 === 0;
+}
+function constructYamlBinary(data) {
+  const input = data.replace(/[\r\n=]/g, "");
+  const max = input.length;
+  const map2 = BASE64_MAP;
+  const result = [];
+  let bits = 0;
+  for (let idx = 0; idx < max; idx++) {
+    if (idx % 4 === 0 && idx) {
+      result.push(bits >> 16 & 255);
+      result.push(bits >> 8 & 255);
+      result.push(bits & 255);
+    }
+    bits = bits << 6 | map2.indexOf(input.charAt(idx));
+  }
+  const tailbits = max % 4 * 6;
+  if (tailbits === 0) {
+    result.push(bits >> 16 & 255);
+    result.push(bits >> 8 & 255);
+    result.push(bits & 255);
+  } else if (tailbits === 18) {
+    result.push(bits >> 10 & 255);
+    result.push(bits >> 2 & 255);
+  } else if (tailbits === 12) {
+    result.push(bits >> 4 & 255);
+  }
+  return new Uint8Array(result);
+}
+function representYamlBinary(object) {
+  const max = object.length;
+  const map2 = BASE64_MAP;
+  let result = "";
+  let bits = 0;
+  for (let idx = 0; idx < max; idx++) {
+    if (idx % 3 === 0 && idx) {
+      result += map2[bits >> 18 & 63];
+      result += map2[bits >> 12 & 63];
+      result += map2[bits >> 6 & 63];
+      result += map2[bits & 63];
+    }
+    bits = (bits << 8) + object[idx];
+  }
+  const tail = max % 3;
+  if (tail === 0) {
+    result += map2[bits >> 18 & 63];
+    result += map2[bits >> 12 & 63];
+    result += map2[bits >> 6 & 63];
+    result += map2[bits & 63];
+  } else if (tail === 2) {
+    result += map2[bits >> 10 & 63];
+    result += map2[bits >> 4 & 63];
+    result += map2[bits << 2 & 63];
+    result += map2[64];
+  } else if (tail === 1) {
+    result += map2[bits >> 2 & 63];
+    result += map2[bits << 4 & 63];
+    result += map2[64];
+    result += map2[64];
+  }
+  return result;
+}
+function isBinary(obj) {
+  return obj instanceof Uint8Array;
+}
+var binary = new Type("tag:yaml.org,2002:binary", {
+  construct: constructYamlBinary,
+  kind: "scalar",
+  predicate: isBinary,
+  represent: representYamlBinary,
+  resolve: resolveYamlBinary
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/bool.ts
+function resolveYamlBoolean(data) {
+  const max = data.length;
+  return max === 4 && (data === "true" || data === "True" || data === "TRUE") || max === 5 && (data === "false" || data === "False" || data === "FALSE");
+}
+function constructYamlBoolean(data) {
+  return data === "true" || data === "True" || data === "TRUE";
+}
+var bool = new Type("tag:yaml.org,2002:bool", {
+  construct: constructYamlBoolean,
+  defaultStyle: "lowercase",
+  kind: "scalar",
+  predicate: isBoolean,
+  represent: {
+    lowercase(object) {
+      return object ? "true" : "false";
+    },
+    uppercase(object) {
+      return object ? "TRUE" : "FALSE";
+    },
+    camelcase(object) {
+      return object ? "True" : "False";
+    }
+  },
+  resolve: resolveYamlBoolean
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/float.ts
+var YAML_FLOAT_PATTERN = new RegExp(
+  // 2.5e4, 2.5 and integers
+  "^(?:[-+]?(?:0|[1-9][0-9_]*)(?:\\.[0-9_]*)?(?:[eE][-+]?[0-9]+)?|\\.[0-9_]+(?:[eE][-+]?[0-9]+)?|[-+]?[0-9][0-9_]*(?::[0-5]?[0-9])+\\.[0-9_]*|[-+]?\\.(?:inf|Inf|INF)|\\.(?:nan|NaN|NAN))$"
+);
+function resolveYamlFloat(data) {
+  if (!YAML_FLOAT_PATTERN.test(data) || // Quick hack to not allow integers end with `_`
+  // Probably should update regexp & check speed
+  data[data.length - 1] === "_") {
+    return false;
+  }
+  return true;
+}
+function constructYamlFloat(data) {
+  let value = data.replace(/_/g, "").toLowerCase();
+  const sign = value[0] === "-" ? -1 : 1;
+  const digits = [];
+  if (value[0] && "+-".indexOf(value[0]) >= 0) {
+    value = value.slice(1);
+  }
+  if (value === ".inf") {
+    return sign === 1 ? Number.POSITIVE_INFINITY : Number.NEGATIVE_INFINITY;
+  }
+  if (value === ".nan") {
+    return NaN;
+  }
+  if (value.indexOf(":") >= 0) {
+    value.split(":").forEach((v) => {
+      digits.unshift(parseFloat(v));
+    });
+    let valueNb = 0;
+    let base = 1;
+    digits.forEach((d) => {
+      valueNb += d * base;
+      base *= 60;
+    });
+    return sign * valueNb;
+  }
+  return sign * parseFloat(value);
+}
+var SCIENTIFIC_WITHOUT_DOT = /^[-+]?[0-9]+e/;
+function representYamlFloat(object, style) {
+  if (isNaN(object)) {
+    switch (style) {
+      case "lowercase":
+        return ".nan";
+      case "uppercase":
+        return ".NAN";
+      case "camelcase":
+        return ".NaN";
+    }
+  } else if (Number.POSITIVE_INFINITY === object) {
+    switch (style) {
+      case "lowercase":
+        return ".inf";
+      case "uppercase":
+        return ".INF";
+      case "camelcase":
+        return ".Inf";
+    }
+  } else if (Number.NEGATIVE_INFINITY === object) {
+    switch (style) {
+      case "lowercase":
+        return "-.inf";
+      case "uppercase":
+        return "-.INF";
+      case "camelcase":
+        return "-.Inf";
+    }
+  } else if (isNegativeZero(object)) {
+    return "-0.0";
+  }
+  const res = object.toString(10);
+  return SCIENTIFIC_WITHOUT_DOT.test(res) ? res.replace("e", ".e") : res;
+}
+function isFloat(object) {
+  return Object.prototype.toString.call(object) === "[object Number]" && (object % 1 !== 0 || isNegativeZero(object));
+}
+var float = new Type("tag:yaml.org,2002:float", {
+  construct: constructYamlFloat,
+  defaultStyle: "lowercase",
+  kind: "scalar",
+  predicate: isFloat,
+  represent: representYamlFloat,
+  resolve: resolveYamlFloat
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/function.ts
+function reconstructFunction(code) {
+  const func2 = new Function(`return ${code}`)();
+  if (!(func2 instanceof Function)) {
+    throw new TypeError(`Expected function but got ${typeof func2}: ${code}`);
+  }
+  return func2;
+}
+var func = new Type("tag:yaml.org,2002:js/function", {
+  kind: "scalar",
+  resolve(data) {
+    if (data === null) {
+      return false;
+    }
+    try {
+      reconstructFunction(`${data}`);
+      return true;
+    } catch (_err) {
+      return false;
+    }
+  },
+  construct(data) {
+    return reconstructFunction(data);
+  },
+  predicate(object) {
+    return object instanceof Function;
+  },
+  represent(object) {
+    return object.toString();
+  }
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/int.ts
+function isHexCode(c) {
+  return 48 <= /* 0 */
+  c && c <= 57 || 65 <= /* A */
+  c && c <= 70 || 97 <= /* a */
+  c && c <= 102;
+}
+function isOctCode(c) {
+  return 48 <= /* 0 */
+  c && c <= 55;
+}
+function isDecCode(c) {
+  return 48 <= /* 0 */
+  c && c <= 57;
+}
+function resolveYamlInteger(data) {
+  const max = data.length;
+  let index = 0;
+  let hasDigits = false;
+  if (!max)
+    return false;
+  let ch = data[index];
+  if (ch === "-" || ch === "+") {
+    ch = data[++index];
+  }
+  if (ch === "0") {
+    if (index + 1 === max)
+      return true;
+    ch = data[++index];
+    if (ch === "b") {
+      index++;
+      for (; index < max; index++) {
+        ch = data[index];
+        if (ch === "_")
+          continue;
+        if (ch !== "0" && ch !== "1")
+          return false;
+        hasDigits = true;
+      }
+      return hasDigits && ch !== "_";
+    }
+    if (ch === "x") {
+      index++;
+      for (; index < max; index++) {
+        ch = data[index];
+        if (ch === "_")
+          continue;
+        if (!isHexCode(data.charCodeAt(index)))
+          return false;
+        hasDigits = true;
+      }
+      return hasDigits && ch !== "_";
+    }
+    for (; index < max; index++) {
+      ch = data[index];
+      if (ch === "_")
+        continue;
+      if (!isOctCode(data.charCodeAt(index)))
+        return false;
+      hasDigits = true;
+    }
+    return hasDigits && ch !== "_";
+  }
+  if (ch === "_")
+    return false;
+  for (; index < max; index++) {
+    ch = data[index];
+    if (ch === "_")
+      continue;
+    if (ch === ":")
+      break;
+    if (!isDecCode(data.charCodeAt(index))) {
+      return false;
+    }
+    hasDigits = true;
+  }
+  if (!hasDigits || ch === "_")
+    return false;
+  if (ch !== ":")
+    return true;
+  return /^(:[0-5]?[0-9])+$/.test(data.slice(index));
+}
+function constructYamlInteger(data) {
+  let value = data;
+  const digits = [];
+  if (value.indexOf("_") !== -1) {
+    value = value.replace(/_/g, "");
+  }
+  let sign = 1;
+  let ch = value[0];
+  if (ch === "-" || ch === "+") {
+    if (ch === "-")
+      sign = -1;
+    value = value.slice(1);
+    ch = value[0];
+  }
+  if (value === "0")
+    return 0;
+  if (ch === "0") {
+    if (value[1] === "b")
+      return sign * parseInt(value.slice(2), 2);
+    if (value[1] === "x")
+      return sign * parseInt(value, 16);
+    return sign * parseInt(value, 8);
+  }
+  if (value.indexOf(":") !== -1) {
+    value.split(":").forEach((v) => {
+      digits.unshift(parseInt(v, 10));
+    });
+    let valueInt = 0;
+    let base = 1;
+    digits.forEach((d) => {
+      valueInt += d * base;
+      base *= 60;
+    });
+    return sign * valueInt;
+  }
+  return sign * parseInt(value, 10);
+}
+function isInteger(object) {
+  return Object.prototype.toString.call(object) === "[object Number]" && object % 1 === 0 && !isNegativeZero(object);
+}
+var int = new Type("tag:yaml.org,2002:int", {
+  construct: constructYamlInteger,
+  defaultStyle: "decimal",
+  kind: "scalar",
+  predicate: isInteger,
+  represent: {
+    binary(obj) {
+      return obj >= 0 ? `0b${obj.toString(2)}` : `-0b${obj.toString(2).slice(1)}`;
+    },
+    octal(obj) {
+      return obj >= 0 ? `0${obj.toString(8)}` : `-0${obj.toString(8).slice(1)}`;
+    },
+    decimal(obj) {
+      return obj.toString(10);
+    },
+    hexadecimal(obj) {
+      return obj >= 0 ? `0x${obj.toString(16).toUpperCase()}` : `-0x${obj.toString(16).toUpperCase().slice(1)}`;
+    }
+  },
+  resolve: resolveYamlInteger,
+  styleAliases: {
+    binary: [2, "bin"],
+    decimal: [10, "dec"],
+    hexadecimal: [16, "hex"],
+    octal: [8, "oct"]
+  }
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/map.ts
+var map = new Type("tag:yaml.org,2002:map", {
+  construct(data) {
+    return data !== null ? data : {};
+  },
+  kind: "mapping"
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/merge.ts
+function resolveYamlMerge(data) {
+  return data === "<<" || data === null;
+}
+var merge = new Type("tag:yaml.org,2002:merge", {
+  kind: "scalar",
+  resolve: resolveYamlMerge
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/nil.ts
+function resolveYamlNull(data) {
+  const max = data.length;
+  return max === 1 && data === "~" || max === 4 && (data === "null" || data === "Null" || data === "NULL");
+}
+function constructYamlNull() {
+  return null;
+}
+function isNull(object) {
+  return object === null;
+}
+var nil = new Type("tag:yaml.org,2002:null", {
+  construct: constructYamlNull,
+  defaultStyle: "lowercase",
+  kind: "scalar",
+  predicate: isNull,
+  represent: {
+    canonical() {
+      return "~";
+    },
+    lowercase() {
+      return "null";
+    },
+    uppercase() {
+      return "NULL";
+    },
+    camelcase() {
+      return "Null";
+    }
+  },
+  resolve: resolveYamlNull
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/omap.ts
+var { hasOwn } = Object;
+var _toString = Object.prototype.toString;
+function resolveYamlOmap(data) {
+  const objectKeys = [];
+  let pairKey = "";
+  let pairHasKey = false;
+  for (const pair of data) {
+    pairHasKey = false;
+    if (_toString.call(pair) !== "[object Object]")
+      return false;
+    for (pairKey in pair) {
+      if (hasOwn(pair, pairKey)) {
+        if (!pairHasKey)
+          pairHasKey = true;
+        else
+          return false;
+      }
+    }
+    if (!pairHasKey)
+      return false;
+    if (objectKeys.indexOf(pairKey) === -1)
+      objectKeys.push(pairKey);
+    else
+      return false;
+  }
+  return true;
+}
+function constructYamlOmap(data) {
+  return data !== null ? data : [];
+}
+var omap = new Type("tag:yaml.org,2002:omap", {
+  construct: constructYamlOmap,
+  kind: "sequence",
+  resolve: resolveYamlOmap
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/pairs.ts
+var _toString2 = Object.prototype.toString;
+function resolveYamlPairs(data) {
+  const result = Array.from({ length: data.length });
+  for (const [index, pair] of data.entries()) {
+    if (_toString2.call(pair) !== "[object Object]")
+      return false;
+    const keys = Object.keys(pair);
+    if (keys.length !== 1)
+      return false;
+    result[index] = [keys[0], pair[keys[0]]];
+  }
+  return true;
+}
+function constructYamlPairs(data) {
+  if (data === null)
+    return [];
+  const result = Array.from({ length: data.length });
+  for (let index = 0; index < data.length; index += 1) {
+    const pair = data[index];
+    const keys = Object.keys(pair);
+    result[index] = [keys[0], pair[keys[0]]];
+  }
+  return result;
+}
+var pairs = new Type("tag:yaml.org,2002:pairs", {
+  construct: constructYamlPairs,
+  kind: "sequence",
+  resolve: resolveYamlPairs
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/regexp.ts
+var REGEXP = /^\/(?<regexp>[\s\S]+)\/(?<modifiers>[gismuy]*)$/;
+var regexp = new Type("tag:yaml.org,2002:js/regexp", {
+  kind: "scalar",
+  resolve(data) {
+    if (data === null || !data.length) {
+      return false;
+    }
+    const regexp2 = `${data}`;
+    if (regexp2.charAt(0) === "/") {
+      if (!REGEXP.test(data)) {
+        return false;
+      }
+      const modifiers = [...regexp2.match(REGEXP)?.groups?.modifiers ?? ""];
+      if (new Set(modifiers).size < modifiers.length) {
+        return false;
+      }
+    }
+    return true;
+  },
+  construct(data) {
+    const { regexp: regexp2 = `${data}`, modifiers = "" } = `${data}`.match(REGEXP)?.groups ?? {};
+    return new RegExp(regexp2, modifiers);
+  },
+  predicate(object) {
+    return object instanceof RegExp;
+  },
+  represent(object) {
+    return object.toString();
+  }
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/seq.ts
+var seq = new Type("tag:yaml.org,2002:seq", {
+  construct(data) {
+    return data !== null ? data : [];
+  },
+  kind: "sequence"
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/set.ts
+var { hasOwn: hasOwn2 } = Object;
+function resolveYamlSet(data) {
+  if (data === null)
+    return true;
+  for (const key in data) {
+    if (hasOwn2(data, key)) {
+      if (data[key] !== null)
+        return false;
+    }
+  }
+  return true;
+}
+function constructYamlSet(data) {
+  return data !== null ? data : {};
+}
+var set2 = new Type("tag:yaml.org,2002:set", {
+  construct: constructYamlSet,
+  kind: "mapping",
+  resolve: resolveYamlSet
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/str.ts
+var str = new Type("tag:yaml.org,2002:str", {
+  construct(data) {
+    return data !== null ? data : "";
+  },
+  kind: "scalar"
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/timestamp.ts
+var YAML_DATE_REGEXP = new RegExp(
+  "^([0-9][0-9][0-9][0-9])-([0-9][0-9])-([0-9][0-9])$"
+  // [3] day
+);
+var YAML_TIMESTAMP_REGEXP = new RegExp(
+  "^([0-9][0-9][0-9][0-9])-([0-9][0-9]?)-([0-9][0-9]?)(?:[Tt]|[ \\t]+)([0-9][0-9]?):([0-9][0-9]):([0-9][0-9])(?:\\.([0-9]*))?(?:[ \\t]*(Z|([-+])([0-9][0-9]?)(?::([0-9][0-9]))?))?$"
+  // [11] tz_minute
+);
+function resolveYamlTimestamp(data) {
+  if (data === null)
+    return false;
+  if (YAML_DATE_REGEXP.exec(data) !== null)
+    return true;
+  if (YAML_TIMESTAMP_REGEXP.exec(data) !== null)
+    return true;
+  return false;
+}
+function constructYamlTimestamp(data) {
+  let match = YAML_DATE_REGEXP.exec(data);
+  if (match === null)
+    match = YAML_TIMESTAMP_REGEXP.exec(data);
+  if (match === null)
+    throw new Error("Date resolve error");
+  const year = +match[1];
+  const month = +match[2] - 1;
+  const day = +match[3];
+  if (!match[4]) {
+    return new Date(Date.UTC(year, month, day));
+  }
+  const hour = +match[4];
+  const minute = +match[5];
+  const second = +match[6];
+  let fraction = 0;
+  if (match[7]) {
+    let partFraction = match[7].slice(0, 3);
+    while (partFraction.length < 3) {
+      partFraction += "0";
+    }
+    fraction = +partFraction;
+  }
+  let delta = null;
+  if (match[9] && match[10]) {
+    const tzHour = +match[10];
+    const tzMinute = +(match[11] || 0);
+    delta = (tzHour * 60 + tzMinute) * 6e4;
+    if (match[9] === "-")
+      delta = -delta;
+  }
+  const date = new Date(
+    Date.UTC(year, month, day, hour, minute, second, fraction)
+  );
+  if (delta)
+    date.setTime(date.getTime() - delta);
+  return date;
+}
+function representYamlTimestamp(date) {
+  return date.toISOString();
+}
+var timestamp = new Type("tag:yaml.org,2002:timestamp", {
+  construct: constructYamlTimestamp,
+  instanceOf: Date,
+  kind: "scalar",
+  represent: representYamlTimestamp,
+  resolve: resolveYamlTimestamp
+});
+
+// https://deno.land/std@0.224.0/yaml/_type/undefined.ts
+var undefinedType = new Type("tag:yaml.org,2002:js/undefined", {
+  kind: "scalar",
+  resolve() {
+    return true;
+  },
+  construct() {
+    return void 0;
+  },
+  predicate(object) {
+    return typeof object === "undefined";
+  },
+  represent() {
+    return "";
+  }
+});
+
+// https://deno.land/std@0.224.0/yaml/schema/failsafe.ts
+var FAILSAFE_SCHEMA = new Schema({
+  explicit: [str, seq, map]
+});
+
+// https://deno.land/std@0.224.0/yaml/schema/json.ts
+var JSON_SCHEMA = new Schema({
+  implicit: [nil, bool, int, float],
+  include: [FAILSAFE_SCHEMA]
+});
+
+// https://deno.land/std@0.224.0/yaml/schema/core.ts
+var CORE_SCHEMA = new Schema({
+  include: [JSON_SCHEMA]
+});
+
+// https://deno.land/std@0.224.0/yaml/schema/default.ts
+var DEFAULT_SCHEMA = new Schema({
+  explicit: [binary, omap, pairs, set2],
+  implicit: [timestamp, merge],
+  include: [CORE_SCHEMA]
+});
+
+// https://deno.land/std@0.224.0/yaml/schema/extended.ts
+var EXTENDED_SCHEMA = new Schema({
+  explicit: [regexp, undefinedType],
+  include: [DEFAULT_SCHEMA]
+});
+
+// https://deno.land/std@0.224.0/yaml/_state.ts
+var State = class {
+  constructor(schema = DEFAULT_SCHEMA) {
+    this.schema = schema;
+  }
+};
+
+// https://deno.land/std@0.224.0/yaml/_loader/loader_state.ts
+var LoaderState = class extends State {
+  constructor(input, {
+    filename,
+    schema,
+    onWarning,
+    legacy = false,
+    json = false,
+    listener = null
+  }) {
+    super(schema);
+    this.input = input;
+    this.filename = filename;
+    this.onWarning = onWarning;
+    this.legacy = legacy;
+    this.json = json;
+    this.listener = listener;
+    this.implicitTypes = this.schema.compiledImplicit;
+    this.typeMap = this.schema.compiledTypeMap;
+    this.length = input.length;
+  }
+  documents = [];
+  length;
+  lineIndent = 0;
+  lineStart = 0;
+  position = 0;
+  line = 0;
+  filename;
+  onWarning;
+  legacy;
+  json;
+  listener;
+  implicitTypes;
+  typeMap;
+  version;
+  checkLineBreaks;
+  tagMap;
+  anchorMap;
+  tag;
+  anchor;
+  kind;
+  result = "";
+};
+
+// https://deno.land/std@0.224.0/yaml/_loader/loader.ts
+var { hasOwn: hasOwn3 } = Object;
+var CONTEXT_FLOW_IN = 1;
+var CONTEXT_FLOW_OUT = 2;
+var CONTEXT_BLOCK_IN = 3;
+var CONTEXT_BLOCK_OUT = 4;
+var CHOMPING_CLIP = 1;
+var CHOMPING_STRIP = 2;
+var CHOMPING_KEEP = 3;
+var PATTERN_NON_PRINTABLE = (
+  // deno-lint-ignore no-control-regex
+  /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x84\x86-\x9F\uFFFE\uFFFF]|[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?:[^\uD800-\uDBFF]|^)[\uDC00-\uDFFF]/
+);
+var PATTERN_NON_ASCII_LINE_BREAKS = /[\x85\u2028\u2029]/;
+var PATTERN_FLOW_INDICATORS = /[,\[\]\{\}]/;
+var PATTERN_TAG_HANDLE = /^(?:!|!!|![a-z\-]+!)$/i;
+var PATTERN_TAG_URI = /^(?:!|[^,\[\]\{\}])(?:%[0-9a-f]{2}|[0-9a-z\-#;\/\?:@&=\+\$,_\.!~\*'\(\)\[\]])*$/i;
+function _class(obj) {
+  return Object.prototype.toString.call(obj);
+}
+function isEOL(c) {
+  return c === 10 || /* LF */
+  c === 13;
+}
+function isWhiteSpace(c) {
+  return c === 9 || /* Tab */
+  c === 32;
+}
+function isWsOrEol(c) {
+  return c === 9 || c === 32 || c === 10 || c === 13;
+}
+function isFlowIndicator(c) {
+  return c === 44 || c === 91 || c === 93 || c === 123 || c === 125;
+}
+function fromHexCode(c) {
+  if (48 <= /* 0 */
+  c && c <= 57) {
+    return c - 48;
+  }
+  const lc = c | 32;
+  if (97 <= /* a */
+  lc && lc <= 102) {
+    return lc - 97 + 10;
+  }
+  return -1;
+}
+function escapedHexLen(c) {
+  if (c === 120) {
+    return 2;
+  }
+  if (c === 117) {
+    return 4;
+  }
+  if (c === 85) {
+    return 8;
+  }
+  return 0;
+}
+function fromDecimalCode(c) {
+  if (48 <= /* 0 */
+  c && c <= 57) {
+    return c - 48;
+  }
+  return -1;
+}
+function simpleEscapeSequence(c) {
+  return c === 48 ? "\0" : c === 97 ? "\x07" : c === 98 ? "\b" : c === 116 ? "	" : c === 9 ? "	" : c === 110 ? "\n" : c === 118 ? "\v" : c === 102 ? "\f" : c === 114 ? "\r" : c === 101 ? "\x1B" : c === 32 ? " " : c === 34 ? '"' : c === 47 ? "/" : c === 92 ? "\\" : c === 78 ? "\x85" : c === 95 ? "\xA0" : c === 76 ? "\u2028" : c === 80 ? "\u2029" : "";
+}
+function charFromCodepoint(c) {
+  if (c <= 65535) {
+    return String.fromCharCode(c);
+  }
+  return String.fromCharCode(
+    (c - 65536 >> 10) + 55296,
+    (c - 65536 & 1023) + 56320
+  );
+}
+var simpleEscapeCheck = Array.from({ length: 256 });
+var simpleEscapeMap = Array.from({ length: 256 });
+for (let i = 0; i < 256; i++) {
+  simpleEscapeCheck[i] = simpleEscapeSequence(i) ? 1 : 0;
+  simpleEscapeMap[i] = simpleEscapeSequence(i);
+}
+function generateError(state, message) {
+  return new YAMLError(
+    message,
+    new Mark(
+      state.filename,
+      state.input,
+      state.position,
+      state.line,
+      state.position - state.lineStart
+    )
+  );
+}
+function throwError(state, message) {
+  throw generateError(state, message);
+}
+function throwWarning(state, message) {
+  if (state.onWarning) {
+    state.onWarning.call(null, generateError(state, message));
+  }
+}
+var directiveHandlers = {
+  YAML(state, _name, ...args) {
+    if (state.version !== null) {
+      return throwError(state, "duplication of %YAML directive");
+    }
+    if (args.length !== 1) {
+      return throwError(state, "YAML directive accepts exactly one argument");
+    }
+    const match = /^([0-9]+)\.([0-9]+)$/.exec(args[0]);
+    if (match === null) {
+      return throwError(state, "ill-formed argument of the YAML directive");
+    }
+    const major = parseInt(match[1], 10);
+    const minor = parseInt(match[2], 10);
+    if (major !== 1) {
+      return throwError(state, "unacceptable YAML version of the document");
+    }
+    state.version = args[0];
+    state.checkLineBreaks = minor < 2;
+    if (minor !== 1 && minor !== 2) {
+      return throwWarning(state, "unsupported YAML version of the document");
+    }
+  },
+  TAG(state, _name, ...args) {
+    if (args.length !== 2) {
+      return throwError(state, "TAG directive accepts exactly two arguments");
+    }
+    const handle = args[0];
+    const prefix = args[1];
+    if (!PATTERN_TAG_HANDLE.test(handle)) {
+      return throwError(
+        state,
+        "ill-formed tag handle (first argument) of the TAG directive"
+      );
+    }
+    if (state.tagMap && hasOwn3(state.tagMap, handle)) {
+      return throwError(
+        state,
+        `there is a previously declared suffix for "${handle}" tag handle`
+      );
+    }
+    if (!PATTERN_TAG_URI.test(prefix)) {
+      return throwError(
+        state,
+        "ill-formed tag prefix (second argument) of the TAG directive"
+      );
+    }
+    if (typeof state.tagMap === "undefined") {
+      state.tagMap = /* @__PURE__ */ Object.create(null);
+    }
+    state.tagMap[handle] = prefix;
+  }
+};
+function captureSegment(state, start, end, checkJson) {
+  let result;
+  if (start < end) {
+    result = state.input.slice(start, end);
+    if (checkJson) {
+      for (let position = 0; position < result.length; position++) {
+        const character = result.charCodeAt(position);
+        if (!(character === 9 || 32 <= character && character <= 1114111)) {
+          return throwError(state, "expected valid JSON character");
+        }
+      }
+    } else if (PATTERN_NON_PRINTABLE.test(result)) {
+      return throwError(state, "the stream contains non-printable characters");
+    }
+    state.result += result;
+  }
+}
+function mergeMappings(state, destination, source, overridableKeys) {
+  if (!isObject(source)) {
+    return throwError(
+      state,
+      "cannot merge mappings; the provided source object is unacceptable"
+    );
+  }
+  for (const key in Object.keys(source)) {
+    if (!hasOwn3(destination, key)) {
+      Object.defineProperty(destination, key, {
+        value: source[key],
+        writable: true,
+        enumerable: true,
+        configurable: true
+      });
+      overridableKeys[key] = true;
+    }
+  }
+}
+function storeMappingPair(state, result, overridableKeys, keyTag, keyNode, valueNode, startLine, startPos) {
+  if (Array.isArray(keyNode)) {
+    keyNode = Array.prototype.slice.call(keyNode);
+    for (let index = 0; index < keyNode.length; index++) {
+      if (Array.isArray(keyNode[index])) {
+        return throwError(state, "nested arrays are not supported inside keys");
+      }
+      if (typeof keyNode === "object" && _class(keyNode[index]) === "[object Object]") {
+        keyNode[index] = "[object Object]";
+      }
+    }
+  }
+  if (typeof keyNode === "object" && _class(keyNode) === "[object Object]") {
+    keyNode = "[object Object]";
+  }
+  keyNode = String(keyNode);
+  if (result === null) {
+    result = {};
+  }
+  if (keyTag === "tag:yaml.org,2002:merge") {
+    if (Array.isArray(valueNode)) {
+      for (let index = 0; index < valueNode.length; index++) {
+        mergeMappings(state, result, valueNode[index], overridableKeys);
+      }
+    } else {
+      mergeMappings(state, result, valueNode, overridableKeys);
+    }
+  } else {
+    if (!state.json && !hasOwn3(overridableKeys, keyNode) && hasOwn3(result, keyNode)) {
+      state.line = startLine || state.line;
+      state.position = startPos || state.position;
+      return throwError(state, "duplicated mapping key");
+    }
+    Object.defineProperty(result, keyNode, {
+      value: valueNode,
+      writable: true,
+      enumerable: true,
+      configurable: true
+    });
+    delete overridableKeys[keyNode];
+  }
+  return result;
+}
+function readLineBreak(state) {
+  const ch = state.input.charCodeAt(state.position);
+  if (ch === 10) {
+    state.position++;
+  } else if (ch === 13) {
+    state.position++;
+    if (state.input.charCodeAt(state.position) === 10) {
+      state.position++;
+    }
+  } else {
+    return throwError(state, "a line break is expected");
+  }
+  state.line += 1;
+  state.lineStart = state.position;
+}
+function skipSeparationSpace(state, allowComments, checkIndent) {
+  let lineBreaks = 0;
+  let ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    while (isWhiteSpace(ch)) {
+      ch = state.input.charCodeAt(++state.position);
+    }
+    if (allowComments && ch === 35) {
+      do {
+        ch = state.input.charCodeAt(++state.position);
+      } while (ch !== 10 && /* LF */
+      ch !== 13 && /* CR */
+      ch !== 0);
+    }
+    if (isEOL(ch)) {
+      readLineBreak(state);
+      ch = state.input.charCodeAt(state.position);
+      lineBreaks++;
+      state.lineIndent = 0;
+      while (ch === 32) {
+        state.lineIndent++;
+        ch = state.input.charCodeAt(++state.position);
+      }
+    } else {
+      break;
+    }
+  }
+  if (checkIndent !== -1 && lineBreaks !== 0 && state.lineIndent < checkIndent) {
+    throwWarning(state, "deficient indentation");
+  }
+  return lineBreaks;
+}
+function testDocumentSeparator(state) {
+  let _position = state.position;
+  let ch = state.input.charCodeAt(_position);
+  if ((ch === 45 || /* - */
+  ch === 46) && ch === state.input.charCodeAt(_position + 1) && ch === state.input.charCodeAt(_position + 2)) {
+    _position += 3;
+    ch = state.input.charCodeAt(_position);
+    if (ch === 0 || isWsOrEol(ch)) {
+      return true;
+    }
+  }
+  return false;
+}
+function writeFoldedLines(state, count) {
+  if (count === 1) {
+    state.result += " ";
+  } else if (count > 1) {
+    state.result += repeat("\n", count - 1);
+  }
+}
+function readPlainScalar(state, nodeIndent, withinFlowCollection) {
+  const kind = state.kind;
+  const result = state.result;
+  let ch = state.input.charCodeAt(state.position);
+  if (isWsOrEol(ch) || isFlowIndicator(ch) || ch === 35 || ch === 38 || ch === 42 || ch === 33 || ch === 124 || ch === 62 || ch === 39 || ch === 34 || ch === 37 || ch === 64 || ch === 96) {
+    return false;
+  }
+  let following;
+  if (ch === 63 || /* ? */
+  ch === 45) {
+    following = state.input.charCodeAt(state.position + 1);
+    if (isWsOrEol(following) || withinFlowCollection && isFlowIndicator(following)) {
+      return false;
+    }
+  }
+  state.kind = "scalar";
+  state.result = "";
+  let captureEnd = state.position;
+  let captureStart = state.position;
+  let hasPendingContent = false;
+  let line = 0;
+  while (ch !== 0) {
+    if (ch === 58) {
+      following = state.input.charCodeAt(state.position + 1);
+      if (isWsOrEol(following) || withinFlowCollection && isFlowIndicator(following)) {
+        break;
+      }
+    } else if (ch === 35) {
+      const preceding = state.input.charCodeAt(state.position - 1);
+      if (isWsOrEol(preceding)) {
+        break;
+      }
+    } else if (state.position === state.lineStart && testDocumentSeparator(state) || withinFlowCollection && isFlowIndicator(ch)) {
+      break;
+    } else if (isEOL(ch)) {
+      line = state.line;
+      const lineStart = state.lineStart;
+      const lineIndent = state.lineIndent;
+      skipSeparationSpace(state, false, -1);
+      if (state.lineIndent >= nodeIndent) {
+        hasPendingContent = true;
+        ch = state.input.charCodeAt(state.position);
+        continue;
+      } else {
+        state.position = captureEnd;
+        state.line = line;
+        state.lineStart = lineStart;
+        state.lineIndent = lineIndent;
+        break;
+      }
+    }
+    if (hasPendingContent) {
+      captureSegment(state, captureStart, captureEnd, false);
+      writeFoldedLines(state, state.line - line);
+      captureStart = captureEnd = state.position;
+      hasPendingContent = false;
+    }
+    if (!isWhiteSpace(ch)) {
+      captureEnd = state.position + 1;
+    }
+    ch = state.input.charCodeAt(++state.position);
+  }
+  captureSegment(state, captureStart, captureEnd, false);
+  if (state.result) {
+    return true;
+  }
+  state.kind = kind;
+  state.result = result;
+  return false;
+}
+function readSingleQuotedScalar(state, nodeIndent) {
+  let ch;
+  let captureStart;
+  let captureEnd;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 39) {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  state.position++;
+  captureStart = captureEnd = state.position;
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    if (ch === 39) {
+      captureSegment(state, captureStart, state.position, true);
+      ch = state.input.charCodeAt(++state.position);
+      if (ch === 39) {
+        captureStart = state.position;
+        state.position++;
+        captureEnd = state.position;
+      } else {
+        return true;
+      }
+    } else if (isEOL(ch)) {
+      captureSegment(state, captureStart, captureEnd, true);
+      writeFoldedLines(state, skipSeparationSpace(state, false, nodeIndent));
+      captureStart = captureEnd = state.position;
+    } else if (state.position === state.lineStart && testDocumentSeparator(state)) {
+      return throwError(
+        state,
+        "unexpected end of the document within a single quoted scalar"
+      );
+    } else {
+      state.position++;
+      captureEnd = state.position;
+    }
+  }
+  return throwError(
+    state,
+    "unexpected end of the stream within a single quoted scalar"
+  );
+}
+function readDoubleQuotedScalar(state, nodeIndent) {
+  let ch = state.input.charCodeAt(state.position);
+  if (ch !== 34) {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  state.position++;
+  let captureEnd = state.position;
+  let captureStart = state.position;
+  let tmp;
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    if (ch === 34) {
+      captureSegment(state, captureStart, state.position, true);
+      state.position++;
+      return true;
+    }
+    if (ch === 92) {
+      captureSegment(state, captureStart, state.position, true);
+      ch = state.input.charCodeAt(++state.position);
+      if (isEOL(ch)) {
+        skipSeparationSpace(state, false, nodeIndent);
+      } else if (ch < 256 && simpleEscapeCheck[ch]) {
+        state.result += simpleEscapeMap[ch];
+        state.position++;
+      } else if ((tmp = escapedHexLen(ch)) > 0) {
+        let hexLength = tmp;
+        let hexResult = 0;
+        for (; hexLength > 0; hexLength--) {
+          ch = state.input.charCodeAt(++state.position);
+          if ((tmp = fromHexCode(ch)) >= 0) {
+            hexResult = (hexResult << 4) + tmp;
+          } else {
+            return throwError(state, "expected hexadecimal character");
+          }
+        }
+        state.result += charFromCodepoint(hexResult);
+        state.position++;
+      } else {
+        return throwError(state, "unknown escape sequence");
+      }
+      captureStart = captureEnd = state.position;
+    } else if (isEOL(ch)) {
+      captureSegment(state, captureStart, captureEnd, true);
+      writeFoldedLines(state, skipSeparationSpace(state, false, nodeIndent));
+      captureStart = captureEnd = state.position;
+    } else if (state.position === state.lineStart && testDocumentSeparator(state)) {
+      return throwError(
+        state,
+        "unexpected end of the document within a double quoted scalar"
+      );
+    } else {
+      state.position++;
+      captureEnd = state.position;
+    }
+  }
+  return throwError(
+    state,
+    "unexpected end of the stream within a double quoted scalar"
+  );
+}
+function readFlowCollection(state, nodeIndent) {
+  let ch = state.input.charCodeAt(state.position);
+  let terminator;
+  let isMapping = true;
+  let result = {};
+  if (ch === 91) {
+    terminator = 93;
+    isMapping = false;
+    result = [];
+  } else if (ch === 123) {
+    terminator = 125;
+  } else {
+    return false;
+  }
+  if (state.anchor !== null && typeof state.anchor !== "undefined" && typeof state.anchorMap !== "undefined") {
+    state.anchorMap[state.anchor] = result;
+  }
+  ch = state.input.charCodeAt(++state.position);
+  const tag = state.tag;
+  const anchor = state.anchor;
+  let readNext = true;
+  let valueNode = null;
+  let keyNode = null;
+  let keyTag = null;
+  let isExplicitPair = false;
+  let isPair = false;
+  let following = 0;
+  let line = 0;
+  const overridableKeys = /* @__PURE__ */ Object.create(null);
+  while (ch !== 0) {
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if (ch === terminator) {
+      state.position++;
+      state.tag = tag;
+      state.anchor = anchor;
+      state.kind = isMapping ? "mapping" : "sequence";
+      state.result = result;
+      return true;
+    }
+    if (!readNext) {
+      return throwError(state, "missed comma between flow collection entries");
+    }
+    keyTag = keyNode = valueNode = null;
+    isPair = isExplicitPair = false;
+    if (ch === 63) {
+      following = state.input.charCodeAt(state.position + 1);
+      if (isWsOrEol(following)) {
+        isPair = isExplicitPair = true;
+        state.position++;
+        skipSeparationSpace(state, true, nodeIndent);
+      }
+    }
+    line = state.line;
+    composeNode(state, nodeIndent, CONTEXT_FLOW_IN, false, true);
+    keyTag = state.tag || null;
+    keyNode = state.result;
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if ((isExplicitPair || state.line === line) && ch === 58) {
+      isPair = true;
+      ch = state.input.charCodeAt(++state.position);
+      skipSeparationSpace(state, true, nodeIndent);
+      composeNode(state, nodeIndent, CONTEXT_FLOW_IN, false, true);
+      valueNode = state.result;
+    }
+    if (isMapping) {
+      storeMappingPair(
+        state,
+        result,
+        overridableKeys,
+        keyTag,
+        keyNode,
+        valueNode
+      );
+    } else if (isPair) {
+      result.push(
+        storeMappingPair(
+          state,
+          null,
+          overridableKeys,
+          keyTag,
+          keyNode,
+          valueNode
+        )
+      );
+    } else {
+      result.push(keyNode);
+    }
+    skipSeparationSpace(state, true, nodeIndent);
+    ch = state.input.charCodeAt(state.position);
+    if (ch === 44) {
+      readNext = true;
+      ch = state.input.charCodeAt(++state.position);
+    } else {
+      readNext = false;
+    }
+  }
+  return throwError(
+    state,
+    "unexpected end of the stream within a flow collection"
+  );
+}
+function readBlockScalar(state, nodeIndent) {
+  let chomping = CHOMPING_CLIP;
+  let didReadContent = false;
+  let detectedIndent = false;
+  let textIndent = nodeIndent;
+  let emptyLines = 0;
+  let atMoreIndented = false;
+  let ch = state.input.charCodeAt(state.position);
+  let folding = false;
+  if (ch === 124) {
+    folding = false;
+  } else if (ch === 62) {
+    folding = true;
+  } else {
+    return false;
+  }
+  state.kind = "scalar";
+  state.result = "";
+  let tmp = 0;
+  while (ch !== 0) {
+    ch = state.input.charCodeAt(++state.position);
+    if (ch === 43 || /* + */
+    ch === 45) {
+      if (CHOMPING_CLIP === chomping) {
+        chomping = ch === 43 ? CHOMPING_KEEP : CHOMPING_STRIP;
+      } else {
+        return throwError(state, "repeat of a chomping mode identifier");
+      }
+    } else if ((tmp = fromDecimalCode(ch)) >= 0) {
+      if (tmp === 0) {
+        return throwError(
+          state,
+          "bad explicit indentation width of a block scalar; it cannot be less than one"
+        );
+      } else if (!detectedIndent) {
+        textIndent = nodeIndent + tmp - 1;
+        detectedIndent = true;
+      } else {
+        return throwError(state, "repeat of an indentation width identifier");
+      }
+    } else {
+      break;
+    }
+  }
+  if (isWhiteSpace(ch)) {
+    do {
+      ch = state.input.charCodeAt(++state.position);
+    } while (isWhiteSpace(ch));
+    if (ch === 35) {
+      do {
+        ch = state.input.charCodeAt(++state.position);
+      } while (!isEOL(ch) && ch !== 0);
+    }
+  }
+  while (ch !== 0) {
+    readLineBreak(state);
+    state.lineIndent = 0;
+    ch = state.input.charCodeAt(state.position);
+    while ((!detectedIndent || state.lineIndent < textIndent) && ch === 32) {
+      state.lineIndent++;
+      ch = state.input.charCodeAt(++state.position);
+    }
+    if (!detectedIndent && state.lineIndent > textIndent) {
+      textIndent = state.lineIndent;
+    }
+    if (isEOL(ch)) {
+      emptyLines++;
+      continue;
+    }
+    if (state.lineIndent < textIndent) {
+      if (chomping === CHOMPING_KEEP) {
+        state.result += repeat(
+          "\n",
+          didReadContent ? 1 + emptyLines : emptyLines
+        );
+      } else if (chomping === CHOMPING_CLIP) {
+        if (didReadContent) {
+          state.result += "\n";
+        }
+      }
+      break;
+    }
+    if (folding) {
+      if (isWhiteSpace(ch)) {
+        atMoreIndented = true;
+        state.result += repeat(
+          "\n",
+          didReadContent ? 1 + emptyLines : emptyLines
+        );
+      } else if (atMoreIndented) {
+        atMoreIndented = false;
+        state.result += repeat("\n", emptyLines + 1);
+      } else if (emptyLines === 0) {
+        if (didReadContent) {
+          state.result += " ";
+        }
+      } else {
+        state.result += repeat("\n", emptyLines);
+      }
+    } else {
+      state.result += repeat(
+        "\n",
+        didReadContent ? 1 + emptyLines : emptyLines
+      );
+    }
+    didReadContent = true;
+    detectedIndent = true;
+    emptyLines = 0;
+    const captureStart = state.position;
+    while (!isEOL(ch) && ch !== 0) {
+      ch = state.input.charCodeAt(++state.position);
+    }
+    captureSegment(state, captureStart, state.position, false);
+  }
+  return true;
+}
+function readBlockSequence(state, nodeIndent) {
+  let line;
+  let following;
+  let detected = false;
+  let ch;
+  const tag = state.tag;
+  const anchor = state.anchor;
+  const result = [];
+  if (state.anchor !== null && typeof state.anchor !== "undefined" && typeof state.anchorMap !== "undefined") {
+    state.anchorMap[state.anchor] = result;
+  }
+  ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    if (ch !== 45) {
+      break;
+    }
+    following = state.input.charCodeAt(state.position + 1);
+    if (!isWsOrEol(following)) {
+      break;
+    }
+    detected = true;
+    state.position++;
+    if (skipSeparationSpace(state, true, -1)) {
+      if (state.lineIndent <= nodeIndent) {
+        result.push(null);
+        ch = state.input.charCodeAt(state.position);
+        continue;
+      }
+    }
+    line = state.line;
+    composeNode(state, nodeIndent, CONTEXT_BLOCK_IN, false, true);
+    result.push(state.result);
+    skipSeparationSpace(state, true, -1);
+    ch = state.input.charCodeAt(state.position);
+    if ((state.line === line || state.lineIndent > nodeIndent) && ch !== 0) {
+      return throwError(state, "bad indentation of a sequence entry");
+    } else if (state.lineIndent < nodeIndent) {
+      break;
+    }
+  }
+  if (detected) {
+    state.tag = tag;
+    state.anchor = anchor;
+    state.kind = "sequence";
+    state.result = result;
+    return true;
+  }
+  return false;
+}
+function readBlockMapping(state, nodeIndent, flowIndent) {
+  const tag = state.tag;
+  const anchor = state.anchor;
+  const result = {};
+  const overridableKeys = /* @__PURE__ */ Object.create(null);
+  let following;
+  let allowCompact = false;
+  let line;
+  let pos;
+  let keyTag = null;
+  let keyNode = null;
+  let valueNode = null;
+  let atExplicitKey = false;
+  let detected = false;
+  let ch;
+  if (state.anchor !== null && typeof state.anchor !== "undefined" && typeof state.anchorMap !== "undefined") {
+    state.anchorMap[state.anchor] = result;
+  }
+  ch = state.input.charCodeAt(state.position);
+  while (ch !== 0) {
+    following = state.input.charCodeAt(state.position + 1);
+    line = state.line;
+    pos = state.position;
+    if ((ch === 63 || /* ? */
+    ch === 58) && /* : */
+    isWsOrEol(following)) {
+      if (ch === 63) {
+        if (atExplicitKey) {
+          storeMappingPair(
+            state,
+            result,
+            overridableKeys,
+            keyTag,
+            keyNode,
+            null
+          );
+          keyTag = keyNode = valueNode = null;
+        }
+        detected = true;
+        atExplicitKey = true;
+        allowCompact = true;
+      } else if (atExplicitKey) {
+        atExplicitKey = false;
+        allowCompact = true;
+      } else {
+        return throwError(
+          state,
+          "incomplete explicit mapping pair; a key node is missed; or followed by a non-tabulated empty line"
+        );
+      }
+      state.position += 1;
+      ch = following;
+    } else if (composeNode(state, flowIndent, CONTEXT_FLOW_OUT, false, true)) {
+      if (state.line === line) {
+        ch = state.input.charCodeAt(state.position);
+        while (isWhiteSpace(ch)) {
+          ch = state.input.charCodeAt(++state.position);
+        }
+        if (ch === 58) {
+          ch = state.input.charCodeAt(++state.position);
+          if (!isWsOrEol(ch)) {
+            return throwError(
+              state,
+              "a whitespace character is expected after the key-value separator within a block mapping"
+            );
+          }
+          if (atExplicitKey) {
+            storeMappingPair(
+              state,
+              result,
+              overridableKeys,
+              keyTag,
+              keyNode,
+              null
+            );
+            keyTag = keyNode = valueNode = null;
+          }
+          detected = true;
+          atExplicitKey = false;
+          allowCompact = false;
+          keyTag = state.tag;
+          keyNode = state.result;
+        } else if (detected) {
+          return throwError(
+            state,
+            "can not read an implicit mapping pair; a colon is missed"
+          );
+        } else {
+          state.tag = tag;
+          state.anchor = anchor;
+          return true;
+        }
+      } else if (detected) {
+        return throwError(
+          state,
+          "can not read a block mapping entry; a multiline key may not be an implicit key"
+        );
+      } else {
+        state.tag = tag;
+        state.anchor = anchor;
+        return true;
+      }
+    } else {
+      break;
+    }
+    if (state.line === line || state.lineIndent > nodeIndent) {
+      if (composeNode(state, nodeIndent, CONTEXT_BLOCK_OUT, true, allowCompact)) {
+        if (atExplicitKey) {
+          keyNode = state.result;
+        } else {
+          valueNode = state.result;
+        }
+      }
+      if (!atExplicitKey) {
+        storeMappingPair(
+          state,
+          result,
+          overridableKeys,
+          keyTag,
+          keyNode,
+          valueNode,
+          line,
+          pos
+        );
+        keyTag = keyNode = valueNode = null;
+      }
+      skipSeparationSpace(state, true, -1);
+      ch = state.input.charCodeAt(state.position);
+    }
+    if (state.lineIndent > nodeIndent && ch !== 0) {
+      return throwError(state, "bad indentation of a mapping entry");
+    } else if (state.lineIndent < nodeIndent) {
+      break;
+    }
+  }
+  if (atExplicitKey) {
+    storeMappingPair(
+      state,
+      result,
+      overridableKeys,
+      keyTag,
+      keyNode,
+      null
+    );
+  }
+  if (detected) {
+    state.tag = tag;
+    state.anchor = anchor;
+    state.kind = "mapping";
+    state.result = result;
+  }
+  return detected;
+}
+function readTagProperty(state) {
+  let position;
+  let isVerbatim = false;
+  let isNamed = false;
+  let tagHandle = "";
+  let tagName;
+  let ch;
+  ch = state.input.charCodeAt(state.position);
+  if (ch !== 33)
+    return false;
+  if (state.tag !== null) {
+    return throwError(state, "duplication of a tag property");
+  }
+  ch = state.input.charCodeAt(++state.position);
+  if (ch === 60) {
+    isVerbatim = true;
+    ch = state.input.charCodeAt(++state.position);
+  } else if (ch === 33) {
+    isNamed = true;
+    tagHandle = "!!";
+    ch = state.input.charCodeAt(++state.position);
+  } else {
+    tagHandle = "!";
+  }
+  position = state.position;
+  if (isVerbatim) {
+    do {
+      ch = state.input.charCodeAt(++state.position);
+    } while (ch !== 0 && ch !== 62);
+    if (state.position < state.length) {
+      tagName = state.input.slice(position, state.position);
+      ch = state.input.charCodeAt(++state.position);
+    } else {
+      return throwError(
+        state,
+        "unexpected end of the stream within a verbatim tag"
+      );
+    }
+  } else {
+    while (ch !== 0 && !isWsOrEol(ch)) {
+      if (ch === 33) {
+        if (!isNamed) {
+          tagHandle = state.input.slice(position - 1, state.position + 1);
+          if (!PATTERN_TAG_HANDLE.test(tagHandle)) {
+            return throwError(
+              state,
+              "named tag handle cannot contain such characters"
+            );
+          }
+          isNamed = true;
+          position = state.position + 1;
+        } else {
+          return throwError(
+            state,
+            "tag suffix cannot contain exclamation marks"
+          );
+        }
+      }
+      ch = state.input.charCodeAt(++state.position);
+    }
+    tagName = state.input.slice(position, state.position);
+    if (PATTERN_FLOW_INDICATORS.test(tagName)) {
+      return throwError(
+        state,
+        "tag suffix cannot contain flow indicator characters"
+      );
+    }
+  }
+  if (tagName && !PATTERN_TAG_URI.test(tagName)) {
+    return throwError(
+      state,
+      `tag name cannot contain such characters: ${tagName}`
+    );
+  }
+  if (isVerbatim) {
+    state.tag = tagName;
+  } else if (typeof state.tagMap !== "undefined" && hasOwn3(state.tagMap, tagHandle)) {
+    state.tag = state.tagMap[tagHandle] + tagName;
+  } else if (tagHandle === "!") {
+    state.tag = `!${tagName}`;
+  } else if (tagHandle === "!!") {
+    state.tag = `tag:yaml.org,2002:${tagName}`;
+  } else {
+    return throwError(state, `undeclared tag handle "${tagHandle}"`);
+  }
+  return true;
+}
+function readAnchorProperty(state) {
+  let ch = state.input.charCodeAt(state.position);
+  if (ch !== 38)
+    return false;
+  if (state.anchor !== null) {
+    return throwError(state, "duplication of an anchor property");
+  }
+  ch = state.input.charCodeAt(++state.position);
+  const position = state.position;
+  while (ch !== 0 && !isWsOrEol(ch) && !isFlowIndicator(ch)) {
+    ch = state.input.charCodeAt(++state.position);
+  }
+  if (state.position === position) {
+    return throwError(
+      state,
+      "name of an anchor node must contain at least one character"
+    );
+  }
+  state.anchor = state.input.slice(position, state.position);
+  return true;
+}
+function readAlias(state) {
+  let ch = state.input.charCodeAt(state.position);
+  if (ch !== 42)
+    return false;
+  ch = state.input.charCodeAt(++state.position);
+  const _position = state.position;
+  while (ch !== 0 && !isWsOrEol(ch) && !isFlowIndicator(ch)) {
+    ch = state.input.charCodeAt(++state.position);
+  }
+  if (state.position === _position) {
+    return throwError(
+      state,
+      "name of an alias node must contain at least one character"
+    );
+  }
+  const alias = state.input.slice(_position, state.position);
+  if (typeof state.anchorMap !== "undefined" && !hasOwn3(state.anchorMap, alias)) {
+    return throwError(state, `unidentified alias "${alias}"`);
+  }
+  if (typeof state.anchorMap !== "undefined") {
+    state.result = state.anchorMap[alias];
+  }
+  skipSeparationSpace(state, true, -1);
+  return true;
+}
+function composeNode(state, parentIndent, nodeContext, allowToSeek, allowCompact) {
+  let allowBlockScalars;
+  let allowBlockCollections;
+  let indentStatus = 1;
+  let atNewLine = false;
+  let hasContent = false;
+  let type;
+  let flowIndent;
+  let blockIndent;
+  if (state.listener && state.listener !== null) {
+    state.listener("open", state);
+  }
+  state.tag = null;
+  state.anchor = null;
+  state.kind = null;
+  state.result = null;
+  const allowBlockStyles = allowBlockScalars = allowBlockCollections = CONTEXT_BLOCK_OUT === nodeContext || CONTEXT_BLOCK_IN === nodeContext;
+  if (allowToSeek) {
+    if (skipSeparationSpace(state, true, -1)) {
+      atNewLine = true;
+      if (state.lineIndent > parentIndent) {
+        indentStatus = 1;
+      } else if (state.lineIndent === parentIndent) {
+        indentStatus = 0;
+      } else if (state.lineIndent < parentIndent) {
+        indentStatus = -1;
+      }
+    }
+  }
+  if (indentStatus === 1) {
+    while (readTagProperty(state) || readAnchorProperty(state)) {
+      if (skipSeparationSpace(state, true, -1)) {
+        atNewLine = true;
+        allowBlockCollections = allowBlockStyles;
+        if (state.lineIndent > parentIndent) {
+          indentStatus = 1;
+        } else if (state.lineIndent === parentIndent) {
+          indentStatus = 0;
+        } else if (state.lineIndent < parentIndent) {
+          indentStatus = -1;
+        }
+      } else {
+        allowBlockCollections = false;
+      }
+    }
+  }
+  if (allowBlockCollections) {
+    allowBlockCollections = atNewLine || allowCompact;
+  }
+  if (indentStatus === 1 || CONTEXT_BLOCK_OUT === nodeContext) {
+    const cond = CONTEXT_FLOW_IN === nodeContext || CONTEXT_FLOW_OUT === nodeContext;
+    flowIndent = cond ? parentIndent : parentIndent + 1;
+    blockIndent = state.position - state.lineStart;
+    if (indentStatus === 1) {
+      if (allowBlockCollections && (readBlockSequence(state, blockIndent) || readBlockMapping(state, blockIndent, flowIndent)) || readFlowCollection(state, flowIndent)) {
+        hasContent = true;
+      } else {
+        if (allowBlockScalars && readBlockScalar(state, flowIndent) || readSingleQuotedScalar(state, flowIndent) || readDoubleQuotedScalar(state, flowIndent)) {
+          hasContent = true;
+        } else if (readAlias(state)) {
+          hasContent = true;
+          if (state.tag !== null || state.anchor !== null) {
+            return throwError(
+              state,
+              "alias node should not have Any properties"
+            );
+          }
+        } else if (readPlainScalar(state, flowIndent, CONTEXT_FLOW_IN === nodeContext)) {
+          hasContent = true;
+          if (state.tag === null) {
+            state.tag = "?";
+          }
+        }
+        if (state.anchor !== null && typeof state.anchorMap !== "undefined") {
+          state.anchorMap[state.anchor] = state.result;
+        }
+      }
+    } else if (indentStatus === 0) {
+      hasContent = allowBlockCollections && readBlockSequence(state, blockIndent);
+    }
+  }
+  if (state.tag !== null && state.tag !== "!") {
+    if (state.tag === "?") {
+      for (let typeIndex = 0; typeIndex < state.implicitTypes.length; typeIndex++) {
+        type = state.implicitTypes[typeIndex];
+        if (type.resolve(state.result)) {
+          state.result = type.construct(state.result);
+          state.tag = type.tag;
+          if (state.anchor !== null && typeof state.anchorMap !== "undefined") {
+            state.anchorMap[state.anchor] = state.result;
+          }
+          break;
+        }
+      }
+    } else if (hasOwn3(state.typeMap[state.kind || "fallback"], state.tag)) {
+      type = state.typeMap[state.kind || "fallback"][state.tag];
+      if (state.result !== null && type.kind !== state.kind) {
+        return throwError(
+          state,
+          `unacceptable node kind for !<${state.tag}> tag; it should be "${type.kind}", not "${state.kind}"`
+        );
+      }
+      if (!type.resolve(state.result)) {
+        return throwError(
+          state,
+          `cannot resolve a node with !<${state.tag}> explicit tag`
+        );
+      } else {
+        state.result = type.construct(state.result);
+        if (state.anchor !== null && typeof state.anchorMap !== "undefined") {
+          state.anchorMap[state.anchor] = state.result;
+        }
+      }
+    } else {
+      return throwError(state, `unknown tag !<${state.tag}>`);
+    }
+  }
+  if (state.listener && state.listener !== null) {
+    state.listener("close", state);
+  }
+  return state.tag !== null || state.anchor !== null || hasContent;
+}
+function readDocument(state) {
+  const documentStart = state.position;
+  let position;
+  let directiveName;
+  let directiveArgs;
+  let hasDirectives = false;
+  let ch;
+  state.version = null;
+  state.checkLineBreaks = state.legacy;
+  state.tagMap = /* @__PURE__ */ Object.create(null);
+  state.anchorMap = /* @__PURE__ */ Object.create(null);
+  while ((ch = state.input.charCodeAt(state.position)) !== 0) {
+    skipSeparationSpace(state, true, -1);
+    ch = state.input.charCodeAt(state.position);
+    if (state.lineIndent > 0 || ch !== 37) {
+      break;
+    }
+    hasDirectives = true;
+    ch = state.input.charCodeAt(++state.position);
+    position = state.position;
+    while (ch !== 0 && !isWsOrEol(ch)) {
+      ch = state.input.charCodeAt(++state.position);
+    }
+    directiveName = state.input.slice(position, state.position);
+    directiveArgs = [];
+    if (directiveName.length < 1) {
+      return throwError(
+        state,
+        "directive name must not be less than one character in length"
+      );
+    }
+    while (ch !== 0) {
+      while (isWhiteSpace(ch)) {
+        ch = state.input.charCodeAt(++state.position);
+      }
+      if (ch === 35) {
+        do {
+          ch = state.input.charCodeAt(++state.position);
+        } while (ch !== 0 && !isEOL(ch));
+        break;
+      }
+      if (isEOL(ch))
+        break;
+      position = state.position;
+      while (ch !== 0 && !isWsOrEol(ch)) {
+        ch = state.input.charCodeAt(++state.position);
+      }
+      directiveArgs.push(state.input.slice(position, state.position));
+    }
+    if (ch !== 0)
+      readLineBreak(state);
+    if (hasOwn3(directiveHandlers, directiveName)) {
+      directiveHandlers[directiveName](state, directiveName, ...directiveArgs);
+    } else {
+      throwWarning(state, `unknown document directive "${directiveName}"`);
+    }
+  }
+  skipSeparationSpace(state, true, -1);
+  if (state.lineIndent === 0 && state.input.charCodeAt(state.position) === 45 && state.input.charCodeAt(state.position + 1) === 45 && state.input.charCodeAt(state.position + 2) === 45) {
+    state.position += 3;
+    skipSeparationSpace(state, true, -1);
+  } else if (hasDirectives) {
+    return throwError(state, "directives end mark is expected");
+  }
+  composeNode(state, state.lineIndent - 1, CONTEXT_BLOCK_OUT, false, true);
+  skipSeparationSpace(state, true, -1);
+  if (state.checkLineBreaks && PATTERN_NON_ASCII_LINE_BREAKS.test(
+    state.input.slice(documentStart, state.position)
+  )) {
+    throwWarning(state, "non-ASCII line breaks are interpreted as content");
+  }
+  state.documents.push(state.result);
+  if (state.position === state.lineStart && testDocumentSeparator(state)) {
+    if (state.input.charCodeAt(state.position) === 46) {
+      state.position += 3;
+      skipSeparationSpace(state, true, -1);
+    }
+    return;
+  }
+  if (state.position < state.length - 1) {
+    return throwError(
+      state,
+      "end of the stream or a document separator is expected"
+    );
+  }
+}
+function loadDocuments(input, options) {
+  input = String(input);
+  options = options || {};
+  if (input.length !== 0) {
+    if (input.charCodeAt(input.length - 1) !== 10 && input.charCodeAt(input.length - 1) !== 13) {
+      input += "\n";
+    }
+    if (input.charCodeAt(0) === 65279) {
+      input = input.slice(1);
+    }
+  }
+  const state = new LoaderState(input, options);
+  state.input += "\0";
+  while (state.input.charCodeAt(state.position) === 32) {
+    state.lineIndent += 1;
+    state.position += 1;
+  }
+  while (state.position < state.length - 1) {
+    readDocument(state);
+  }
+  return state.documents;
+}
+function load(input, options) {
+  const documents = loadDocuments(input, options);
+  if (documents.length === 0) {
+    return null;
+  }
+  if (documents.length === 1) {
+    return documents[0];
+  }
+  throw new YAMLError(
+    "expected a single document in the stream, but found more"
+  );
+}
+
+// https://deno.land/std@0.224.0/yaml/parse.ts
+function parse3(content, options) {
+  return load(content, options);
+}
+
+// https://deno.land/std@0.224.0/yaml/_dumper/dumper_state.ts
+var { hasOwn: hasOwn4 } = Object;
+
+// https://deno.land/std@0.224.0/yaml/_dumper/dumper.ts
+var { hasOwn: hasOwn5 } = Object;
+var ESCAPE_SEQUENCES = {};
+ESCAPE_SEQUENCES[0] = "\\0";
+ESCAPE_SEQUENCES[7] = "\\a";
+ESCAPE_SEQUENCES[8] = "\\b";
+ESCAPE_SEQUENCES[9] = "\\t";
+ESCAPE_SEQUENCES[10] = "\\n";
+ESCAPE_SEQUENCES[11] = "\\v";
+ESCAPE_SEQUENCES[12] = "\\f";
+ESCAPE_SEQUENCES[13] = "\\r";
+ESCAPE_SEQUENCES[27] = "\\e";
+ESCAPE_SEQUENCES[34] = '\\"';
+ESCAPE_SEQUENCES[92] = "\\\\";
+ESCAPE_SEQUENCES[133] = "\\N";
+ESCAPE_SEQUENCES[160] = "\\_";
+ESCAPE_SEQUENCES[8232] = "\\L";
+ESCAPE_SEQUENCES[8233] = "\\P";
+
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/sbai.ts
+async function reloadSettingsPage(pageName) {
+  if (pageName === "SETTINGS" || pageName === "SECRETS") {
+    await initializeOpenAI(true);
+  }
+}
+async function reloadConfig2() {
+  await initializeOpenAI(true);
+}
+async function selectModelFromConfig() {
+  if (!aiSettings || !aiSettings.textModels) {
+    await initializeOpenAI(false);
+  }
+  const modelOptions = aiSettings.textModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`
+  }));
+  const selectedModel = await editor_exports2.filterBox("Select a model", modelOptions);
+  if (!selectedModel) {
+    await editor_exports2.flashNotification("No model selected.", "error");
+    return;
+  }
+  const selectedModelName = selectedModel.name;
+  await setSelectedTextModel(selectedModel);
+  await configureSelectedModel(selectedModel);
+  await editor_exports2.flashNotification(`Selected model: ${selectedModelName}`);
+  console.log(`Selected model:`, selectedModel);
+}
+async function selectImageModelFromConfig() {
+  if (!aiSettings || !aiSettings.imageModels) {
+    await initializeOpenAI(false);
+  }
+  const imageModelOptions = aiSettings.imageModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`
+  }));
+  const selectedImageModel = await editor_exports2.filterBox(
+    "Select an image model",
+    imageModelOptions
+  );
+  if (!selectedImageModel) {
+    await editor_exports2.flashNotification("No image model selected.", "error");
+    return;
+  }
+  const selectedImageModelName = selectedImageModel.name;
+  await setSelectedImageModel(selectedImageModel);
+  await configureSelectedImageModel(selectedImageModel);
+  await editor_exports2.flashNotification(
+    `Selected image model: ${selectedImageModelName}`
+  );
+  console.log(`Selected image model:`, selectedImageModel);
+}
+async function selectEmbeddingModelFromConfig() {
+  if (!aiSettings || !aiSettings.embeddingModels) {
+    await initializeOpenAI(false);
+  }
+  const embeddingModelOptions = aiSettings.embeddingModels.map((model) => ({
+    ...model,
+    name: model.name,
+    description: model.description || `${model.modelName} on ${model.provider}`
+  }));
+  const selectedEmbeddingModel = await editor_exports2.filterBox(
+    "Select an embedding model",
+    embeddingModelOptions
+  );
+  if (!selectedEmbeddingModel) {
+    await editor_exports2.flashNotification("No embedding model selected.", "error");
+    return;
+  }
+  const selectedEmbeddingModelName = selectedEmbeddingModel.name;
+  await setSelectedEmbeddingModel(
+    selectedEmbeddingModel
+  );
+  await configureSelectedEmbeddingModel(
+    selectedEmbeddingModel
+  );
+  await editor_exports2.flashNotification(
+    `Selected embedding model: ${selectedEmbeddingModelName}`
+  );
+  console.log(`Selected embedding model:`, selectedEmbeddingModel);
+}
+async function callOpenAIwithNote() {
+  await initIfNeeded();
+  const selectedTextInfo = await getSelectedTextOrNote();
+  const userPrompt = await editor_exports2.prompt(
+    "Please enter a prompt to send to the LLM. Selected text or the entire note will also be sent as context."
+  );
+  const noteName = await editor_exports2.getCurrentPage();
+  const currentDate = /* @__PURE__ */ new Date();
+  const dateString = currentDate.toISOString().split("T")[0];
+  const dayString = currentDate.toLocaleDateString("en-US", {
+    weekday: "long"
+  });
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content: "You are an AI note assistant. Follow all user instructions and use the note context and note content to help follow those instructions. Use Markdown for any formatting."
+      },
+      {
+        role: "user",
+        content: `Note Context: Today is ${dayString}, ${dateString}. The current note name is "${noteName}".
+User Prompt: ${userPrompt}
 Note Content:
-${e.text}`}],stream:!0},e.to)}async function gn(){await T();let e=await Ue();if(console.log("selectedTextInfo",e),e.text.length>0){let t=await u.getCurrentPage(),r=await O.chatWithAI({messages:[{role:"user",content:`Please summarize this note using markdown for any formatting. Your summary will be appended to the end of this note, do not include any of the note contents yourself. Keep the summary brief. The note name is ${t}.
+${selectedTextInfo.text}`
+      }
+    ],
+    stream: true
+  }, selectedTextInfo.to);
+}
+async function summarizeNote() {
+  await initIfNeeded();
+  const selectedTextInfo = await getSelectedTextOrNote();
+  console.log("selectedTextInfo", selectedTextInfo);
+  if (selectedTextInfo.text.length > 0) {
+    const noteName = await editor_exports2.getCurrentPage();
+    const response = await currentAIProvider.chatWithAI({
+      messages: [{
+        role: "user",
+        content: `Please summarize this note using markdown for any formatting. Your summary will be appended to the end of this note, do not include any of the note contents yourself. Keep the summary brief. The note name is ${noteName}.
 
-${e.text}`}],stream:!1});return console.log("OpenAI response:",r),{summary:r,selectedTextInfo:e}}return{summary:"",selectedTextInfo:null}}async function hn(){let{summary:e,selectedTextInfo:t}=await gn();e&&t&&await u.insertAtPos(`
-
-`+e,t.to)}async function yn(){let{summary:e}=await gn();e?await u.showPanel("rhs",2,e):await u.flashNotification("No summary available.")}async function or(){await T();let e=await u.getText(),t=await u.getCurrentPage(),r=(await Te("tag select name where parent = 'page' order by name")).map(f=>f.name);console.log("All tags:",r);let o=`You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
+${selectedTextInfo.text}`
+      }],
+      stream: false
+    });
+    console.log("OpenAI response:", response);
+    return {
+      summary: response,
+      selectedTextInfo
+    };
+  }
+  return { summary: "", selectedTextInfo: null };
+}
+async function insertSummary() {
+  const { summary, selectedTextInfo } = await summarizeNote();
+  if (summary && selectedTextInfo) {
+    await editor_exports2.insertAtPos(
+      "\n\n" + summary,
+      selectedTextInfo.to
+    );
+  }
+}
+async function openSummaryPanel() {
+  const { summary } = await summarizeNote();
+  if (summary) {
+    await editor_exports2.showPanel("rhs", 2, summary);
+  } else {
+    await editor_exports2.flashNotification("No summary available.");
+  }
+}
+async function tagNoteWithAI() {
+  await initIfNeeded();
+  const noteContent = await editor_exports2.getText();
+  const noteName = await editor_exports2.getCurrentPage();
+  const allTags = (await query(
+    "tag select name where parent = 'page' order by name"
+  )).map((tag) => tag.name);
+  console.log("All tags:", allTags);
+  const systemPrompt = `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
     - Only return tags and no other content.
     - Tags must be one word only and in lowercase.
     - Use existing tags as a starting point.
     - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
 
     The following tags are currently being used by other notes:
-    ${r.join(", ")}
+    ${allTags.join(", ")}
     
     Always follow the below rules, if any, given by the user:
-    ${g.promptInstructions.tagRules}`,n=`Page Title: ${t}
+    ${aiSettings.promptInstructions.tagRules}`;
+  const userPrompt = `Page Title: ${noteName}
 
 Page Content:
-${e}`,s=(await O.singleMessageChat(n,o)).trim().replace(/,/g,"").split(/\s+/),c=await k.parseMarkdown(e),a=await V(c),p=[...new Set([...a.tags||[],...s])];a.tags=p,console.log("Current frontmatter:",a);let d=await dt(c,a);console.log("updatedNoteContent",d),await u.dispatch(d),await u.flashNotification("Note tagged successfully.")}async function ir(){await T();let e=await u.getText(),t=await u.getCurrentPage(),r=[{name:"Generating suggestions...",description:""}];u.filterBox("Loading...",r,"Retrieving suggestions from LLM provider.").then(p=>{console.log("Selected option (initial):",p)});let n="";g.promptInstructions.pageRenameSystem?n=g.promptInstructions.pageRenameSystem:n=`You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
+${noteContent}`;
+  const response = await currentAIProvider.singleMessageChat(
+    userPrompt,
+    systemPrompt
+  );
+  const tags = response.trim().replace(/,/g, "").split(/\s+/);
+  const tree = await markdown_exports2.parseMarkdown(noteContent);
+  const frontMatter = await extractFrontmatter(tree);
+  const updatedTags = [.../* @__PURE__ */ new Set([...frontMatter.tags || [], ...tags])];
+  frontMatter.tags = updatedTags;
+  console.log("Current frontmatter:", frontMatter);
+  const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
+  console.log("updatedNoteContent", frontMatterChange);
+  await editor_exports2.dispatch(frontMatterChange);
+  await editor_exports2.flashNotification("Note tagged successfully.");
+}
+async function suggestPageName() {
+  await initIfNeeded();
+  const noteContent = await editor_exports2.getText();
+  const noteName = await editor_exports2.getCurrentPage();
+  const loadingOption = [{
+    name: "Generating suggestions...",
+    description: ""
+  }];
+  const filterBoxPromise = editor_exports2.filterBox(
+    "Loading...",
+    loadingOption,
+    "Retrieving suggestions from LLM provider."
+  );
+  filterBoxPromise.then((selectedOption) => {
+    console.log("Selected option (initial):", selectedOption);
+  });
+  let systemPrompt = "";
+  if (aiSettings.promptInstructions.pageRenameSystem) {
+    systemPrompt = aiSettings.promptInstructions.pageRenameSystem;
+  } else {
+    systemPrompt = `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
     - Provide each name on a new line.
     - Use only spaces, forward slashes (as folder separators), and hyphens as special characters.
     - Ensure the names are concise, descriptive, and relevant to the content.
     - Avoid suggesting the same name as the current note.
     - Include as much detail as possible within 3 to 10 words.
     - Start names with ASCII characters only.
-    - Do not use markdown or any other formatting in your response.`;let s=(await O.singleMessageChat(`Current Page Title: ${t}
+    - Do not use markdown or any other formatting in your response.`;
+  }
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}
 
 Page Content:
-${e}`,`${n}
+${noteContent}`,
+    `${systemPrompt}
 
 Always follow the below rules, if any, given by the user:
-${g.promptInstructions.pageRenameRules}`,!0)).trim().split(`
-`).filter(p=>p.trim()!=="").map(p=>p.replace(/^[*-]\s*/,"").trim());s.push(t),s=[...new Set(s)],s.length===0&&await u.flashNotification("No suggestions available.");let c=await u.filterBox("New page name",s.map(p=>({name:p})),"Select a new page name from one of the suggestions below.");if(!c){await u.flashNotification("No page name selected.","error");return}console.log("selectedSuggestion",c);let a=await S.invokeFunction("index.renamePageCommand",{oldPage:t,page:c.name});console.log("renamedPage",a),a||await u.flashNotification("Error renaming page.","error")}async function sr(){await T();let e=await u.getText(),t=await u.getCurrentPage(),r=["title","tags"],n=await O.singleMessageChat(`Current Page Title: ${t}
-
-Page Content:
-${e}`,`You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
+${aiSettings.promptInstructions.pageRenameRules}`,
+    true
+  );
+  let suggestions = response.trim().split("\n").filter(
+    (line) => line.trim() !== ""
+  ).map((line) => line.replace(/^[*-]\s*/, "").trim());
+  suggestions.push(noteName);
+  suggestions = [...new Set(suggestions)];
+  if (suggestions.length === 0) {
+    await editor_exports2.flashNotification("No suggestions available.");
+  }
+  const selectedSuggestion = await editor_exports2.filterBox(
+    "New page name",
+    suggestions.map((suggestion) => ({
+      name: suggestion
+    })),
+    "Select a new page name from one of the suggestions below."
+  );
+  if (!selectedSuggestion) {
+    await editor_exports2.flashNotification("No page name selected.", "error");
+    return;
+  }
+  console.log("selectedSuggestion", selectedSuggestion);
+  const renamedPage = await system_exports2.invokeFunction("index.renamePageCommand", {
+    oldPage: noteName,
+    page: selectedSuggestion.name
+  });
+  console.log("renamedPage", renamedPage);
+  if (!renamedPage) {
+    await editor_exports2.flashNotification("Error renaming page.", "error");
+  }
+}
+async function enhanceNoteFrontMatter() {
+  await initIfNeeded();
+  const noteContent = await editor_exports2.getText();
+  const noteName = await editor_exports2.getCurrentPage();
+  const blacklistedAttrs = ["title", "tags"];
+  const systemPrompt = `You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
       - Only return valid YAML frontmatter.
       - Do not use any markdown or any other formatting in your response.
       - Do not include --- in your response.
@@ -139,147 +6576,713 @@ ${e}`,`You are an AI note enhancing assistant. Your task is to understand the co
       - Do not return a new note title.
       - Do not use special characters in key names.  Only ASCII.
       - Only return important information that would be useful when searching or filtering notes.
-      
+      `;
+  const response = await currentAIProvider.singleMessageChat(
+    `Current Page Title: ${noteName}
+
+Page Content:
+${noteContent}`,
+    `${systemPrompt}
 
 Always follow the below rules, if any, given by the user:
-${g.promptInstructions.enhanceFrontMatterPrompt}`,!0);console.log("frontmatter returned by enhanceNoteFrontMatter",n);try{let i=cn(n);if(typeof i!="object"||Array.isArray(i)||!i)throw new Error("Invalid YAML: Not an object");r.forEach(d=>{delete i[d]});let s=await k.parseMarkdown(e),a={...await V(s),...i},p=await dt(s,a);console.log("updatedNoteContent",p),await u.dispatch(p)}catch(i){console.error("Invalid YAML returned by enhanceNoteFrontMatter",i),await u.flashNotification("Error: Invalid Frontmatter YAML returned.","error");return}await u.flashNotification("Frontmatter enhanced successfully.","info")}async function xn(){await or(),await sr(),await ir()}async function bn(){let e=await Ue(),t=e.to;await O.streamChatIntoEditor({messages:[{role:"system",content:"You are an AI note assistant in a markdown-based note tool."},{role:"user",content:e.text}],stream:!0},t)}async function wn(){await T();let e=await Xe();if(e.length===0){await u.flashNotification("Error: The page does not match the required format for a chat.");return}e.unshift(we);let t=await pe(e);console.log("enrichedMessages",t);let r=await se();await u.insertAtPos(`
+${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
+    true
+  );
+  console.log("frontmatter returned by enhanceNoteFrontMatter", response);
+  try {
+    const newFrontMatter = parse3(response);
+    if (typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) || !newFrontMatter) {
+      throw new Error("Invalid YAML: Not an object");
+    }
+    blacklistedAttrs.forEach((attr) => {
+      delete newFrontMatter[attr];
+    });
+    const tree = await markdown_exports2.parseMarkdown(noteContent);
+    const frontMatter = await extractFrontmatter(tree);
+    const updatedFrontmatter = {
+      ...frontMatter,
+      ...newFrontMatter
+    };
+    const frontMatterChange = await prepareFrontmatterDispatch(
+      tree,
+      updatedFrontmatter
+    );
+    console.log("updatedNoteContent", frontMatterChange);
+    await editor_exports2.dispatch(frontMatterChange);
+  } catch (e) {
+    console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
+    await editor_exports2.flashNotification(
+      "Error: Invalid Frontmatter YAML returned.",
+      "error"
+    );
+    return;
+  }
+  await editor_exports2.flashNotification(
+    "Frontmatter enhanced successfully.",
+    "info"
+  );
+}
+async function enhanceNoteWithAI() {
+  await tagNoteWithAI();
+  await enhanceNoteFrontMatter();
+  await suggestPageName();
+}
+async function streamOpenAIWithSelectionAsPrompt() {
+  const selectedTextInfo = await getSelectedTextOrNote();
+  const cursorPos = selectedTextInfo.to;
+  await currentAIProvider.streamChatIntoEditor({
+    messages: [
+      {
+        role: "system",
+        content: "You are an AI note assistant in a markdown-based note tool."
+      },
+      { role: "user", content: selectedTextInfo.text }
+    ],
+    stream: true
+  }, cursorPos);
+}
+async function streamChatOnPage() {
+  await initIfNeeded();
+  const messages = await convertPageToMessages();
+  if (messages.length === 0) {
+    await editor_exports2.flashNotification(
+      "Error: The page does not match the required format for a chat."
+    );
+    return;
+  }
+  messages.unshift(chatSystemPrompt);
+  const enrichedMessages = await enrichChatMessages(messages);
+  console.log("enrichedMessages", enrichedMessages);
+  let cursorPos = await getPageLength();
+  await editor_exports2.insertAtPos("\n\n**assistant**: ", cursorPos);
+  cursorPos += "\n\n**assistant**: ".length;
+  await editor_exports2.insertAtPos("\n\n**user**: ", cursorPos);
+  await editor_exports2.moveCursor(cursorPos + "\n\n**user**: ".length);
+  try {
+    await currentAIProvider.streamChatIntoEditor({
+      messages: enrichedMessages,
+      stream: true
+    }, cursorPos);
+  } catch (error) {
+    console.error("Error streaming chat on page:", error);
+    await editor_exports2.flashNotification("Error streaming chat on page.", "error");
+  }
+}
+async function promptAndGenerateImage() {
+  await initIfNeeded();
+  if (!aiSettings.imageModels || aiSettings.imageModels.length === 0) {
+    await editor_exports2.flashNotification("No image models available.", "error");
+    return;
+  }
+  try {
+    const prompt3 = await editor_exports2.prompt("Enter a prompt for DALL\xB7E:");
+    if (!prompt3 || !prompt3.trim()) {
+      await editor_exports2.flashNotification(
+        "No prompt entered. Operation cancelled.",
+        "error"
+      );
+      return;
+    }
+    const imageOptions = {
+      prompt: prompt3,
+      numImages: 1,
+      size: "1024x1024",
+      quality: "hd"
+    };
+    const imageData = await currentImageProvider.generateImage(imageOptions);
+    if (imageData && imageData.data && imageData.data.length > 0) {
+      const base64Image = imageData.data[0].b64_json;
+      const revisedPrompt = imageData.data[0].revised_prompt;
+      const decodedImage = new Uint8Array(decodeBase64(base64Image));
+      const finalFileName = `dall-e-${Date.now()}.png`;
+      let prefix = folderName(await editor_exports2.getCurrentPage()) + "/";
+      if (prefix === "/") {
+        prefix = "";
+      }
+      await space_exports2.writeAttachment(prefix + finalFileName, decodedImage);
+      const markdownImg = `![${finalFileName}](${finalFileName})
+*${revisedPrompt}*`;
+      await editor_exports2.insertAtCursor(markdownImg);
+      await editor_exports2.flashNotification(
+        "Image generated and inserted with caption successfully."
+      );
+    } else {
+      await editor_exports2.flashNotification("Failed to generate image.", "error");
+    }
+  } catch (error) {
+    console.error("Error generating image with DALL\xB7E:", error);
+    await editor_exports2.flashNotification("Error generating image.", "error");
+  }
+}
+async function queryAI(userPrompt, systemPrompt) {
+  try {
+    await initIfNeeded();
+    const defaultSystemPrompt = "You are an AI note assistant helping to render content for a note. Please follow user instructions and keep your response short and concise.";
+    const response = await currentAIProvider.singleMessageChat(
+      userPrompt,
+      systemPrompt || defaultSystemPrompt
+    );
+    return response;
+  } catch (error) {
+    console.error("Error querying OpenAI:", error);
+    throw error;
+  }
+}
+async function testEmbeddingGeneration() {
+  await initIfNeeded();
+  const text = await editor_exports2.prompt("Enter some text to embed:");
+  if (!text) {
+    await editor_exports2.flashNotification("No text entered.", "error");
+    return;
+  }
+  const embedding = await currentEmbeddingProvider.generateEmbeddings({
+    text
+  });
+  await editor_exports2.insertAtCursor(`
 
-**assistant**: `,r),r+=17,await u.insertAtPos(`
+Embedding: ${embedding}`);
+}
 
-**user**: `,r),await u.moveCursor(r+12);try{await O.streamChatIntoEditor({messages:t,stream:!0},r)}catch(o){console.error("Error streaming chat on page:",o),await u.flashNotification("Error streaming chat on page.","error")}}async function Pn(){if(await T(),!g.imageModels||g.imageModels.length===0){await u.flashNotification("No image models available.","error");return}try{let e=await u.prompt("Enter a prompt for DALL\xB7E:");if(!e||!e.trim()){await u.flashNotification("No prompt entered. Operation cancelled.","error");return}let t={prompt:e,numImages:1,size:"1024x1024",quality:"hd"},r=await Qe.generateImage(t);if(r&&r.data&&r.data.length>0){let o=r.data[0].b64_json,n=r.data[0].revised_prompt,i=new Uint8Array(jr(o)),s=`dall-e-${Date.now()}.png`,c=$r(await u.getCurrentPage())+"/";c==="/"&&(c=""),await D.writeAttachment(c+s,i);let a=`![${s}](${s})
-*${n}*`;await u.insertAtCursor(a),await u.flashNotification("Image generated and inserted with caption successfully.")}else await u.flashNotification("Failed to generate image.","error")}catch(e){console.error("Error generating image with DALL\xB7E:",e),await u.flashNotification("Error generating image.","error")}}async function An(e,t){try{return await T(),await O.singleMessageChat(e,t||"You are an AI note assistant helping to render content for a note. Please follow user instructions and keep your response short and concise.")}catch(r){throw console.error("Error querying OpenAI:",r),r}}async function Sn(){await T();let e=await u.prompt("Enter some text to embed:");if(!e){await u.flashNotification("No text entered.","error");return}let t=await $.generateEmbeddings({text:e});await u.insertAtCursor(`
-
-Embedding: ${t}`)}var vn="\u{1F6F0}\uFE0F AI Connectivity Test";function Tn(e){return{data:new TextEncoder().encode(""),meta:{name:e,contentType:"text/markdown",size:0,created:0,lastModified:0,perm:"ro"}}}function ar(e){return{name:e,contentType:"text/markdown",size:-1,created:0,lastModified:0,perm:"ro"}}function En(e){return ar(e)}async function Cn(){if(await u.getCurrentPage()===vn){await T();let t=`# \u{1F6F0}\uFE0F AI Connectivity Test
+// ../../../../../../Users/justyns/dev/silverbullet-ai/proxy-llm-calls/src/connectivity.ts
+var connectivityTestPage = "\u{1F6F0}\uFE0F AI Connectivity Test";
+function readFileConnectivityTest(name) {
+  return {
+    data: new TextEncoder().encode(""),
+    meta: {
+      name,
+      contentType: "text/markdown",
+      size: 0,
+      created: 0,
+      lastModified: 0,
+      perm: "ro"
+    }
+  };
+}
+function getFileMetaConnectivityTest(name) {
+  return {
+    name,
+    contentType: "text/markdown",
+    size: -1,
+    created: 0,
+    lastModified: 0,
+    perm: "ro"
+  };
+}
+function writeFileConnectivityTest(name) {
+  return getFileMetaConnectivityTest(name);
+}
+async function updateConnectivityTestPage() {
+  const page = await editor_exports2.getCurrentPage();
+  if (page === connectivityTestPage) {
+    await initIfNeeded();
+    let text = `# \u{1F6F0}\uFE0F AI Connectivity Test
 
 ## Status Overview
 
-`,r=await Ve(),o=await wt(),n=await Pt();if(!r&&!o&&!n)t+=`> \u26A0\uFE0F **No models currently selected**
+`;
+    const textModel = await getSelectedTextModel();
+    const imageModel = await getSelectedImageModel();
+    const embeddingModel = await getSelectedEmbeddingModel();
+    if (!textModel && !imageModel && !embeddingModel) {
+      text += `> \u26A0\uFE0F **No models currently selected**
 
 ## Available Models
 
-`,g.textModels.length>0?(t+=`### \u{1F4AC} Text Models
-
-`,g.textModels.forEach(i=>t+=`* ${i.name}
-`),t+=`
-`):t+=`### \u{1F4AC} Text Models
-
-_No text models configured._
-
-`,g.imageModels.length>0?(t+=`### \u{1F3A8} Image Models
-
-`,g.imageModels.forEach(i=>t+=`* ${i.name}
-`),t+=`
-`):t+=`### \u{1F3A8} Image Models
-
-_No image models configured._
-
-`,g.embeddingModels.length>0?(t+=`### \u{1F524} Embedding Models
-
-`,g.embeddingModels.forEach(i=>t+=`* ${i.name}
-`),t+=`
-`):t+=`### \u{1F524} Embedding Models
-
-_No embedding models configured._
-
-`,t+=`## Quick Setup
+`;
+      if (aiSettings.textModels.length > 0) {
+        text += "### \u{1F4AC} Text Models\n\n";
+        aiSettings.textModels.forEach((m) => text += `* ${m.name}
+`);
+        text += "\n";
+      } else {
+        text += "### \u{1F4AC} Text Models\n\n_No text models configured._\n\n";
+      }
+      if (aiSettings.imageModels.length > 0) {
+        text += "### \u{1F3A8} Image Models\n\n";
+        aiSettings.imageModels.forEach((m) => text += `* ${m.name}
+`);
+        text += "\n";
+      } else {
+        text += "### \u{1F3A8} Image Models\n\n_No image models configured._\n\n";
+      }
+      if (aiSettings.embeddingModels.length > 0) {
+        text += "### \u{1F524} Embedding Models\n\n";
+        aiSettings.embeddingModels.forEach((m) => text += `* ${m.name}
+`);
+        text += "\n";
+      } else {
+        text += "### \u{1F524} Embedding Models\n\n_No embedding models configured._\n\n";
+      }
+      text += `## Quick Setup
 
 Use these commands to select your models:
 
 * \`AI: Select Text Model from Config\`
 * \`AI: Select Image Model from Config\`
 * \`AI: Select Embedding Model from Config\`
-`;else{let i=(s,c,a)=>{t+=`## ${a} ${c} Configuration
+`;
+    } else {
+      const showModelDetails = (model, type, emoji) => {
+        text += `## ${emoji} ${type} Configuration
 
 ### Model Details
 
 | Setting | Value |
 |---------|-------|
-| Name | ${s.name} |
-| Description | ${s.description||"_No description provided_"} |
-| Provider | ${s.provider} |
-| Model Name | \`${s.modelName}\` |
-| Authentication | ${s.requireAuth?"Required":"Not Required"} |
-| Secret Name | ${s.secretName?`\`${s.secretName}\``:"_Not provided_"} |${s.baseUrl?`
-| API Endpoint | \`${s.baseUrl}\` |`:""}
+| Name | ${model.name} |
+| Description | ${model.description || "_No description provided_"} |
+| Provider | ${model.provider} |
+| Model Name | \`${model.modelName}\` |
+| Authentication | ${model.requireAuth ? "Required" : "Not Required"} |
+| Secret Name | ${model.secretName ? `\`${model.secretName}\`` : "_Not provided_"} |${model.baseUrl ? `
+| API Endpoint | \`${model.baseUrl}\` |` : ""}
 
-`};if(r){i(r,"Text Model","\u{1F4AC}"),t+=`
-> \u{1F504} Starting connectivity tests...
+`;
+      };
+      if (textModel) {
+        showModelDetails(textModel, "Text Model", "\u{1F4AC}");
+        text += "\n> \u{1F504} Starting connectivity tests...\n\n";
+        await editor_exports2.setText(text);
+        text += "### \u{1F50C} Provider Setup\n\n";
+        try {
+          const provider = await configureSelectedModel(textModel);
+          text += "> \u2705 Provider successfully configured\n\n";
+          text += "### \u{1F4CB} Model Availability\n\n";
+          try {
+            const availableModels = await provider.listModels();
+            if (availableModels.includes(textModel.modelName)) {
+              text += "> \u2705 Selected model is available\n\n";
+            } else {
+              text += "> \u26A0\uFE0F Selected model not found in available models\n\n";
+              text += "#### Available Models\n\n";
+              availableModels.forEach((model) => text += `* \`${model}\`
+`);
+              text += "\n";
+            }
+          } catch (error) {
+            text += `> \u274C Failed to fetch available models: ${error}
 
-`,await u.setText(t),t+=`### \u{1F50C} Provider Setup
+`;
+          }
+          text += "### \u{1F50C} API Connectivity\n\n";
+          try {
+            text += "#### \u{1F4E1} Non-Streaming Test\n\n";
+            const response = await provider.singleMessageChat(
+              "This is a connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text)."
+            );
+            if (response && response.trim() === "CONNECTED") {
+              text += "> \u2705 Successfully connected to API and received expected response\n\n";
+            } else {
+              text += "> \u26A0\uFE0F Connected to API but received unexpected response\n\n";
+              text += "```diff\n";
+              text += "- Expected: CONNECTED\n";
+              text += `+ Received: ${response}
+`;
+              text += "```\n\n";
+              text += "_Note: The API is accessible but may not be following instructions precisely._\n\n";
+            }
+            text += "#### \u{1F4E1} Streaming Test\n\n";
+            try {
+              const chunks = [];
+              const streamingResult = await new Promise(
+                (resolve, reject) => {
+                  let fullResponse = "";
+                  provider.chatWithAI({
+                    messages: [{
+                      role: "user",
+                      content: "This is a streaming connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text)."
+                    }],
+                    stream: true,
+                    onDataReceived: (chunk) => {
+                      console.log("Streaming chunk received:", chunk);
+                      chunks.push(chunk);
+                      fullResponse += chunk;
+                    },
+                    onResponseComplete: (finalResponse) => {
+                      resolve(finalResponse);
+                    }
+                  }).catch(reject);
+                }
+              );
+              if (streamingResult.trim() === "CONNECTED") {
+                text += "> \u2705 Successfully connected to streaming API and received expected response\n\n";
+              } else {
+                text += "> \u26A0\uFE0F Connected to streaming API but received unexpected response\n\n";
+                text += "```diff\n";
+                text += "- Expected: CONNECTED\n";
+                text += `+ Received: ${streamingResult}
+`;
+                text += "```\n\n";
+                text += "_Note: The streaming API is accessible but may not be following instructions precisely._\n\n";
+              }
+              text += "Received chunks: \n```\n";
+              chunks.forEach((chunk, index) => {
+                text += `Chunk ${index + 1}: "${chunk}"
+`;
+              });
+              text += "```\n\n\n";
+            } catch (streamError) {
+              text += `> \u274C Failed to connect to streaming API: ${streamError}
 
-`;try{let s=await ae(r);t+=`> \u2705 Provider successfully configured
+`;
+              text += "**Troubleshooting Tips:**\n\n";
+              text += "* Verify your provider supports streaming\n";
+              text += "* Ensure there isn't a proxy affecting streaming\n\n";
+            }
+          } catch (error) {
+            text += `> \u274C Failed to connect to API: ${error}
 
-`,t+=`### \u{1F4CB} Model Availability
+`;
+            text += "**Troubleshooting Tips:**\n\n";
+            text += "* Check your API key if needed\n";
+            text += "* Ensure the API endpoint is accessible\n";
+            text += "* Check if you have exceeded API rate limits\n";
+            text += "* Verify you are not using https on silverbullet and connecting to regular http for the api endpoint\n\n";
+          }
+        } catch (error) {
+          text += `> **error** \u26A0\uFE0F Failed to configure provider: ${error}
 
-`;try{let c=await s.listModels();c.includes(r.modelName)?t+=`> \u2705 Selected model is available
-
-`:(t+=`> \u26A0\uFE0F Selected model not found in available models
-
-`,t+=`#### Available Models
-
-`,c.forEach(a=>t+=`* \`${a}\`
-`),t+=`
-`)}catch(c){t+=`> \u274C Failed to fetch available models: ${c}
-
-`}t+=`### \u{1F50C} API Connectivity
-
-`;try{t+=`#### \u{1F4E1} Non-Streaming Test
-
-`;let c=await s.singleMessageChat("This is a connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).");c&&c.trim()==="CONNECTED"?t+=`> \u2705 Successfully connected to API and received expected response
-
-`:(t+=`> \u26A0\uFE0F Connected to API but received unexpected response
-
-`,t+="```diff\n",t+=`- Expected: CONNECTED
-`,t+=`+ Received: ${c}
-`,t+="```\n\n",t+=`_Note: The API is accessible but may not be following instructions precisely._
-
-`),t+=`#### \u{1F4E1} Streaming Test
-
-`;try{let a=[],p=await new Promise((d,f)=>{let h="";s.chatWithAI({messages:[{role:"user",content:"This is a streaming connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text)."}],stream:!0,onDataReceived:x=>{console.log("Streaming chunk received:",x),a.push(x),h+=x},onResponseComplete:x=>{d(x)}}).catch(f)});p.trim()==="CONNECTED"?t+=`> \u2705 Successfully connected to streaming API and received expected response
-
-`:(t+=`> \u26A0\uFE0F Connected to streaming API but received unexpected response
-
-`,t+="```diff\n",t+=`- Expected: CONNECTED
-`,t+=`+ Received: ${p}
-`,t+="```\n\n",t+=`_Note: The streaming API is accessible but may not be following instructions precisely._
-
-`),t+="Received chunks: \n```\n",a.forEach((d,f)=>{t+=`Chunk ${f+1}: "${d}"
-`}),t+="```\n\n\n"}catch(a){t+=`> \u274C Failed to connect to streaming API: ${a}
-
-`,t+=`**Troubleshooting Tips:**
-
-`,t+=`* Verify your provider supports streaming
-`,t+=`* Ensure there isn't a proxy affecting streaming
-
-`}}catch(c){t+=`> \u274C Failed to connect to API: ${c}
-
-`,t+=`**Troubleshooting Tips:**
-
-`,t+=`* Check your API key if needed
-`,t+=`* Ensure the API endpoint is accessible
-`,t+=`* Check if you have exceeded API rate limits
-`,t+=`* Verify you are not using https on silverbullet and connecting to regular http for the api endpoint
-
-`}}catch(s){t+=`> **error** \u26A0\uFE0F Failed to configure provider: ${s}
-
-`}}if(o&&(i(o,"Image Model","\u{1F3A8}"),t+=`> \u2139\uFE0F Image generation testing is disabled to avoid unnecessary API usage
-
-`),n){i(n,"Embedding Model","\u{1F524}"),t+=`### \u{1F50C} Embedding Provider Setup
-
-`;try{await Ae(n),t+=`> \u2705 Embedding provider successfully configured
-
-`,t+=`### \u{1F9EE} Embedding Generation
-
-`;try{let c=await $.generateEmbeddings({text:"This is a connectivity test."});c&&c.length>0?(t+=`> \u2705 Successfully generated embeddings
-
-`,t+=`\`\`\`
-Generated ${c.length}-dimensional embedding vector
+`;
+        }
+      }
+      if (imageModel) {
+        showModelDetails(imageModel, "Image Model", "\u{1F3A8}");
+        text += "> \u2139\uFE0F Image generation testing is disabled to avoid unnecessary API usage\n\n";
+      }
+      if (embeddingModel) {
+        showModelDetails(embeddingModel, "Embedding Model", "\u{1F524}");
+        text += "### \u{1F50C} Embedding Provider Setup\n\n";
+        try {
+          await configureSelectedEmbeddingModel(embeddingModel);
+          text += "> \u2705 Embedding provider successfully configured\n\n";
+          text += "### \u{1F9EE} Embedding Generation\n\n";
+          try {
+            const testText = "This is a connectivity test.";
+            const embeddings = await currentEmbeddingProvider.generateEmbeddings({ text: testText });
+            if (embeddings && embeddings.length > 0) {
+              text += "> \u2705 Successfully generated embeddings\n\n";
+              text += `\`\`\`
+Generated ${embeddings.length}-dimensional embedding vector
 \`\`\`
 
-`):t+=`> \u26A0\uFE0F Connected to API but received empty embeddings
+`;
+            } else {
+              text += "> \u26A0\uFE0F Connected to API but received empty embeddings\n\n";
+            }
+          } catch (error) {
+            text += `> \u274C Failed to generate embeddings: ${error}
 
-`}catch(s){t+=`> \u274C Failed to generate embeddings: ${s}
+`;
+          }
+        } catch (error) {
+          text += `> \u274C Failed to configure embedding provider: ${error}
 
-`}}catch(s){t+=`> \u274C Failed to configure embedding provider: ${s}
+`;
+        }
+      }
+    }
+    await editor_exports2.setText(text);
+  }
+}
+async function connectivityTestCommand() {
+  await initIfNeeded();
+  await editor_exports2.navigate({ page: connectivityTestPage });
+}
 
-`}}}await u.setText(t)}}async function Mn(){await T(),await u.navigate({page:vn})}var In={aiPromptSlashCommplete:Dr,queryAI:An,reloadSettingsPageEvent:ln,reloadConfigEvent:un,summarizeNote:yn,insertSummary:hn,callOpenAI:fn,tagNoteWithAI:or,promptAndGenerateImage:Pn,streamOpenAIWithSelectionAsPrompt:bn,streamChatOnPage:wn,insertAiPromptFromTemplate:Ur,suggestPageName:ir,enhanceNoteFrontMatter:sr,enhanceNoteWithAI:xn,selectTextModel:pn,selectImageModel:mn,selectEmbeddingModel:dn,testEmbeddingGeneration:Sn,getAllEmbeddings:Mt,searchEmbeddings:It,queueEmbeddingGeneration:Tr,processEmbeddingsQueue:Er,processSummaryQueue:Cr,generateEmbeddings:Ir,generateEmbeddingsOnServer:ve,searchEmbeddingsForChat:Je,searchCombinedEmbeddings:ze,searchSummaryEmbeddings:Or,readPageSearchEmbeddings:Nr,writePageSearchEmbeddings:kr,getPageMetaSearchEmbeddings:Ot,searchCommand:Rr,updateSearchPage:Fr,readPageConnectivityTest:Tn,writePageConnectivityTest:En,getPageMetaConnectivityTest:ar,connectivityTestCommand:Mn,updateConnectivityTestPage:Cn},On={name:"silverbullet-ai",requiredPermissions:["fetch"],functions:{aiPromptSlashCommplete:{path:"src/prompts.ts:aiPromptSlashComplete",events:["slash:complete"]},queryAI:{path:"sbai.ts:queryAI"},reloadSettingsPageEvent:{path:"sbai.ts:reloadSettingsPage",events:["page:saved"]},reloadConfigEvent:{path:"sbai.ts:reloadConfig",events:["config:loaded"]},summarizeNote:{path:"sbai.ts:openSummaryPanel",command:{name:"AI: Summarize Note and open summary"}},insertSummary:{path:"sbai.ts:insertSummary",command:{name:"AI: Insert Summary"}},callOpenAI:{path:"sbai.ts:callOpenAIwithNote",command:{name:"AI: Call OpenAI with Note as context"}},tagNoteWithAI:{path:"sbai.ts:tagNoteWithAI",command:{name:"AI: Generate tags for note"}},promptAndGenerateImage:{path:"sbai.ts:promptAndGenerateImage",command:{name:"AI: Generate and insert image using DallE"}},streamOpenAIWithSelectionAsPrompt:{path:"sbai.ts:streamOpenAIWithSelectionAsPrompt",command:{name:"AI: Stream response with selection or note as prompt"}},streamChatOnPage:{path:"sbai.ts:streamChatOnPage",command:{name:"AI: Chat on current page",key:"Ctrl-Shift-Enter",mac:"Cmd-Shift-Enter"}},insertAiPromptFromTemplate:{path:"src/prompts.ts:insertAiPromptFromTemplate",command:{name:"AI: Execute AI Prompt from Custom Template"}},suggestPageName:{path:"sbai.ts:suggestPageName",command:{name:"AI: Suggest Page Name"}},enhanceNoteFrontMatter:{path:"sbai.ts:enhanceNoteFrontMatter",command:{name:"AI: Generate Note FrontMatter"}},enhanceNoteWithAI:{path:"sbai.ts:enhanceNoteWithAI",command:{name:"AI: Enhance Note"}},selectTextModel:{path:"sbai.ts:selectModelFromConfig",command:{name:"AI: Select Text Model from Config"}},selectImageModel:{path:"sbai.ts:selectImageModelFromConfig",command:{name:"AI: Select Image Model from Config"}},selectEmbeddingModel:{path:"sbai.ts:selectEmbeddingModelFromConfig",command:{name:"AI: Select Embedding Model from Config"}},testEmbeddingGeneration:{path:"sbai.ts:testEmbeddingGeneration",command:{name:"AI: Test Embedding Generation"}},getAllEmbeddings:{path:"src/embeddings.ts:getAllEmbeddings",env:"server"},searchEmbeddings:{path:"src/embeddings.ts:searchEmbeddings",env:"server"},queueEmbeddingGeneration:{path:"src/embeddings.ts:queueEmbeddingGeneration",env:"server",events:["page:index"]},processEmbeddingsQueue:{path:"src/embeddings.ts:processEmbeddingsQueue",mqSubscriptions:[{queue:"aiEmbeddingsQueue",batchSize:1,autoAck:!0,pollInterval:6e5}]},processSummaryQueue:{path:"src/embeddings.ts:processSummaryQueue",mqSubscriptions:[{queue:"aiSummaryQueue",batchSize:1,autoAck:!0,pollInterval:6e5}]},generateEmbeddings:{path:"src/embeddings.ts:generateEmbeddings"},generateEmbeddingsOnServer:{path:"src/embeddings.ts:generateEmbeddingsOnServer"},searchEmbeddingsForChat:{path:"src/embeddings.ts:searchEmbeddingsForChat"},searchCombinedEmbeddings:{path:"src/embeddings.ts:searchCombinedEmbeddings"},searchSummaryEmbeddings:{path:"src/embeddings.ts:searchSummaryEmbeddings"},readPageSearchEmbeddings:{path:"src/embeddings.ts:readFileEmbeddings",pageNamespace:{pattern:"\u{1F916} .+",operation:"readFile"}},writePageSearchEmbeddings:{path:"src/embeddings.ts:writeFileEmbeddings",pageNamespace:{pattern:"\u{1F916} .+",operation:"writeFile"}},getPageMetaSearchEmbeddings:{path:"src/embeddings.ts:getFileMetaEmbeddings",pageNamespace:{pattern:"\u{1F916} .+",operation:"getFileMeta"}},searchCommand:{path:"src/embeddings.ts:searchCommand",command:{name:"AI: Search"}},updateSearchPage:{path:"src/embeddings.ts:updateSearchPage",events:["editor:pageLoaded","editor:pageReloaded"]},readPageConnectivityTest:{path:"src/connectivity.ts:readFileConnectivityTest",pageNamespace:{pattern:"\u{1F6F0}\uFE0F AI Connectivity Test",operation:"readFile"}},writePageConnectivityTest:{path:"src/connectivity.ts:writeFileConnectivityTest",pageNamespace:{pattern:"\u{1F6F0}\uFE0F AI Connectivity Test",operation:"writeFile"}},getPageMetaConnectivityTest:{path:"src/connectivity.ts:getFileMetaConnectivityTest",pageNamespace:{pattern:"\u{1F6F0}\uFE0F AI Connectivity Test",operation:"getFileMeta"}},connectivityTestCommand:{path:"src/connectivity.ts:connectivityTestCommand",command:{name:"AI: Connectivity Test"}},updateConnectivityTestPage:{path:"src/connectivity.ts:updateConnectivityTestPage",events:["editor:pageLoaded","editor:pageReloaded"]}},assets:{}},cf={manifest:On,functionMapping:In};cr(In,On,self.postMessage);export{cf as plug};
+// 56b6008c2adee71c.js
+var functionMapping = {
+  proxyHandler,
+  aiPromptSlashCommplete: aiPromptSlashComplete,
+  queryAI,
+  reloadSettingsPageEvent: reloadSettingsPage,
+  reloadConfigEvent: reloadConfig2,
+  summarizeNote: openSummaryPanel,
+  insertSummary,
+  callOpenAI: callOpenAIwithNote,
+  tagNoteWithAI,
+  promptAndGenerateImage,
+  streamOpenAIWithSelectionAsPrompt,
+  streamChatOnPage,
+  insertAiPromptFromTemplate,
+  suggestPageName,
+  enhanceNoteFrontMatter,
+  enhanceNoteWithAI,
+  selectTextModel: selectModelFromConfig,
+  selectImageModel: selectImageModelFromConfig,
+  selectEmbeddingModel: selectEmbeddingModelFromConfig,
+  testEmbeddingGeneration,
+  getAllEmbeddings,
+  searchEmbeddings,
+  queueEmbeddingGeneration,
+  processEmbeddingsQueue,
+  processSummaryQueue,
+  generateEmbeddings,
+  generateEmbeddingsOnServer,
+  searchEmbeddingsForChat,
+  searchCombinedEmbeddings,
+  searchSummaryEmbeddings,
+  readPageSearchEmbeddings: readFileEmbeddings,
+  writePageSearchEmbeddings: writeFileEmbeddings,
+  getPageMetaSearchEmbeddings: getFileMetaEmbeddings,
+  searchCommand,
+  updateSearchPage,
+  readPageConnectivityTest: readFileConnectivityTest,
+  writePageConnectivityTest: writeFileConnectivityTest,
+  getPageMetaConnectivityTest: getFileMetaConnectivityTest,
+  connectivityTestCommand,
+  updateConnectivityTestPage
+};
+var manifest = {
+  "name": "silverbullet-ai",
+  "requiredPermissions": [
+    "fetch"
+  ],
+  "functions": {
+    "proxyHandler": {
+      "path": "src/proxyHandler.ts:proxyHandler",
+      "events": [
+        "http:request:/ai-proxy/*"
+      ]
+    },
+    "aiPromptSlashCommplete": {
+      "path": "src/prompts.ts:aiPromptSlashComplete",
+      "events": [
+        "slash:complete"
+      ]
+    },
+    "queryAI": {
+      "path": "sbai.ts:queryAI"
+    },
+    "reloadSettingsPageEvent": {
+      "path": "sbai.ts:reloadSettingsPage",
+      "events": [
+        "page:saved"
+      ]
+    },
+    "reloadConfigEvent": {
+      "path": "sbai.ts:reloadConfig",
+      "events": [
+        "config:loaded"
+      ]
+    },
+    "summarizeNote": {
+      "path": "sbai.ts:openSummaryPanel",
+      "command": {
+        "name": "AI: Summarize Note and open summary"
+      }
+    },
+    "insertSummary": {
+      "path": "sbai.ts:insertSummary",
+      "command": {
+        "name": "AI: Insert Summary"
+      }
+    },
+    "callOpenAI": {
+      "path": "sbai.ts:callOpenAIwithNote",
+      "command": {
+        "name": "AI: Call OpenAI with Note as context"
+      }
+    },
+    "tagNoteWithAI": {
+      "path": "sbai.ts:tagNoteWithAI",
+      "command": {
+        "name": "AI: Generate tags for note"
+      }
+    },
+    "promptAndGenerateImage": {
+      "path": "sbai.ts:promptAndGenerateImage",
+      "command": {
+        "name": "AI: Generate and insert image using DallE"
+      }
+    },
+    "streamOpenAIWithSelectionAsPrompt": {
+      "path": "sbai.ts:streamOpenAIWithSelectionAsPrompt",
+      "command": {
+        "name": "AI: Stream response with selection or note as prompt"
+      }
+    },
+    "streamChatOnPage": {
+      "path": "sbai.ts:streamChatOnPage",
+      "command": {
+        "name": "AI: Chat on current page",
+        "key": "Ctrl-Shift-Enter",
+        "mac": "Cmd-Shift-Enter"
+      }
+    },
+    "insertAiPromptFromTemplate": {
+      "path": "src/prompts.ts:insertAiPromptFromTemplate",
+      "command": {
+        "name": "AI: Execute AI Prompt from Custom Template"
+      }
+    },
+    "suggestPageName": {
+      "path": "sbai.ts:suggestPageName",
+      "command": {
+        "name": "AI: Suggest Page Name"
+      }
+    },
+    "enhanceNoteFrontMatter": {
+      "path": "sbai.ts:enhanceNoteFrontMatter",
+      "command": {
+        "name": "AI: Generate Note FrontMatter"
+      }
+    },
+    "enhanceNoteWithAI": {
+      "path": "sbai.ts:enhanceNoteWithAI",
+      "command": {
+        "name": "AI: Enhance Note"
+      }
+    },
+    "selectTextModel": {
+      "path": "sbai.ts:selectModelFromConfig",
+      "command": {
+        "name": "AI: Select Text Model from Config"
+      }
+    },
+    "selectImageModel": {
+      "path": "sbai.ts:selectImageModelFromConfig",
+      "command": {
+        "name": "AI: Select Image Model from Config"
+      }
+    },
+    "selectEmbeddingModel": {
+      "path": "sbai.ts:selectEmbeddingModelFromConfig",
+      "command": {
+        "name": "AI: Select Embedding Model from Config"
+      }
+    },
+    "testEmbeddingGeneration": {
+      "path": "sbai.ts:testEmbeddingGeneration",
+      "command": {
+        "name": "AI: Test Embedding Generation"
+      }
+    },
+    "getAllEmbeddings": {
+      "path": "src/embeddings.ts:getAllEmbeddings",
+      "env": "server"
+    },
+    "searchEmbeddings": {
+      "path": "src/embeddings.ts:searchEmbeddings",
+      "env": "server"
+    },
+    "queueEmbeddingGeneration": {
+      "path": "src/embeddings.ts:queueEmbeddingGeneration",
+      "env": "server",
+      "events": [
+        "page:index"
+      ]
+    },
+    "processEmbeddingsQueue": {
+      "path": "src/embeddings.ts:processEmbeddingsQueue",
+      "mqSubscriptions": [
+        {
+          "queue": "aiEmbeddingsQueue",
+          "batchSize": 1,
+          "autoAck": true,
+          "pollInterval": 6e5
+        }
+      ]
+    },
+    "processSummaryQueue": {
+      "path": "src/embeddings.ts:processSummaryQueue",
+      "mqSubscriptions": [
+        {
+          "queue": "aiSummaryQueue",
+          "batchSize": 1,
+          "autoAck": true,
+          "pollInterval": 6e5
+        }
+      ]
+    },
+    "generateEmbeddings": {
+      "path": "src/embeddings.ts:generateEmbeddings"
+    },
+    "generateEmbeddingsOnServer": {
+      "path": "src/embeddings.ts:generateEmbeddingsOnServer"
+    },
+    "searchEmbeddingsForChat": {
+      "path": "src/embeddings.ts:searchEmbeddingsForChat"
+    },
+    "searchCombinedEmbeddings": {
+      "path": "src/embeddings.ts:searchCombinedEmbeddings"
+    },
+    "searchSummaryEmbeddings": {
+      "path": "src/embeddings.ts:searchSummaryEmbeddings"
+    },
+    "readPageSearchEmbeddings": {
+      "path": "src/embeddings.ts:readFileEmbeddings",
+      "pageNamespace": {
+        "pattern": "\u{1F916} .+",
+        "operation": "readFile"
+      }
+    },
+    "writePageSearchEmbeddings": {
+      "path": "src/embeddings.ts:writeFileEmbeddings",
+      "pageNamespace": {
+        "pattern": "\u{1F916} .+",
+        "operation": "writeFile"
+      }
+    },
+    "getPageMetaSearchEmbeddings": {
+      "path": "src/embeddings.ts:getFileMetaEmbeddings",
+      "pageNamespace": {
+        "pattern": "\u{1F916} .+",
+        "operation": "getFileMeta"
+      }
+    },
+    "searchCommand": {
+      "path": "src/embeddings.ts:searchCommand",
+      "command": {
+        "name": "AI: Search"
+      }
+    },
+    "updateSearchPage": {
+      "path": "src/embeddings.ts:updateSearchPage",
+      "events": [
+        "editor:pageLoaded",
+        "editor:pageReloaded"
+      ]
+    },
+    "readPageConnectivityTest": {
+      "path": "src/connectivity.ts:readFileConnectivityTest",
+      "pageNamespace": {
+        "pattern": "\u{1F6F0}\uFE0F AI Connectivity Test",
+        "operation": "readFile"
+      }
+    },
+    "writePageConnectivityTest": {
+      "path": "src/connectivity.ts:writeFileConnectivityTest",
+      "pageNamespace": {
+        "pattern": "\u{1F6F0}\uFE0F AI Connectivity Test",
+        "operation": "writeFile"
+      }
+    },
+    "getPageMetaConnectivityTest": {
+      "path": "src/connectivity.ts:getFileMetaConnectivityTest",
+      "pageNamespace": {
+        "pattern": "\u{1F6F0}\uFE0F AI Connectivity Test",
+        "operation": "getFileMeta"
+      }
+    },
+    "connectivityTestCommand": {
+      "path": "src/connectivity.ts:connectivityTestCommand",
+      "command": {
+        "name": "AI: Connectivity Test"
+      }
+    },
+    "updateConnectivityTestPage": {
+      "path": "src/connectivity.ts:updateConnectivityTestPage",
+      "events": [
+        "editor:pageLoaded",
+        "editor:pageReloaded"
+      ]
+    }
+  },
+  "assets": {}
+};
+var plug = { manifest, functionMapping };
+setupMessageListener(functionMapping, manifest, self.postMessage);
+export {
+  plug
+};
+//# sourceMappingURL=silverbullet-ai.plug.js.map
