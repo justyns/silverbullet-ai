@@ -61,7 +61,7 @@ jobs:
           cp -Rv docs/Library/AICore/* site/Library/AICore/
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           # path: ./docs/_public
           path: ./site
