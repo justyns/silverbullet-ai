@@ -166,21 +166,30 @@ function setupAIProvider(model: ModelConfig) {
   switch (providerName) {
     case Provider.OpenAI:
       currentAIProvider = new OpenAIProvider(
+        model.name,
         apiKey,
         model.modelName,
         model.baseUrl || aiSettings.openAIBaseUrl,
         model.requireAuth || aiSettings.requireAuth,
+        model.proxyOnServer || false,
       );
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      currentAIProvider = new GeminiProvider(
+        model.name,
+        apiKey,
+        model.modelName,
+        model.proxyOnServer || false,
+      );
       break;
     case Provider.Ollama:
       currentAIProvider = new OllamaProvider(
+        model.name,
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
         model.requireAuth,
+        model.proxyOnServer || false,
       );
       break;
     case Provider.Mock:
@@ -204,6 +213,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
   switch (providerName) {
     case EmbeddingProvider.OpenAI:
       currentEmbeddingProvider = new OpenAIEmbeddingProvider(
+        model.name,
         apiKey,
         model.modelName,
         model.baseUrl || aiSettings.openAIBaseUrl,
@@ -211,12 +221,14 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
       break;
     case EmbeddingProvider.Gemini:
       currentEmbeddingProvider = new GeminiEmbeddingProvider(
+        model.name,
         apiKey,
         model.modelName,
       );
       break;
     case EmbeddingProvider.Ollama:
       currentEmbeddingProvider = new OllamaEmbeddingProvider(
+        model.name,
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434",

@@ -6,6 +6,7 @@ This page is a brief overview of each version.
 - Better logging when SSE events have errors
 - Add support for retrieving list of models from openai and ollama providers
 - Add a Connectivity Test command and page to test whether an api is working
+- Add experimental support for proxying all LLM calls through the silverbullet server
 
 ---
 ## 0.4.1 (2024-11-15)
