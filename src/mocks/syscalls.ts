@@ -1,5 +1,5 @@
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-import { syscall, markdown } from "@silverbulletmd/silverbullet/syscalls";
+import { markdown, syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;

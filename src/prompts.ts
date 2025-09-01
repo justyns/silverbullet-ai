@@ -388,7 +388,9 @@ export async function insertAiPromptFromTemplate(
     try {
       // Use SilverBullet v2's native template system via spacelua.interpolate
       renderedTemplate = await lua.evalExpression(
-        `spacelua.interpolate(${JSON.stringify(templateText.text)}, ${JSON.stringify(globalMetadata)})`
+        `spacelua.interpolate(${JSON.stringify(templateText.text)}, ${
+          JSON.stringify(globalMetadata)
+        })`,
       );
       console.log("Template rendered successfully:", renderedTemplate);
     } catch (error) {

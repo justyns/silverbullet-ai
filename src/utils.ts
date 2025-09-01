@@ -205,7 +205,9 @@ export async function enrichChatMessages(
         try {
           // Use SilverBullet v2's native template system via spacelua.interpolate
           enrichedContent = await lua.evalExpression(
-            `spacelua.interpolate(${JSON.stringify(message.content)}, ${JSON.stringify({ page: pageMeta })})`
+            `spacelua.interpolate(${JSON.stringify(message.content)}, ${
+              JSON.stringify({ page: pageMeta })
+            })`,
           );
           console.log("Message template rendered successfully");
         } catch (error) {
@@ -296,11 +298,12 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
       continue;
     }
     if (!hasMatch) {
-      enrichedContent += `\n\n${"Base your answer on the content of the following referenced pages " +
+      enrichedContent += `\n\n${
+        "Base your answer on the content of the following referenced pages " +
         "(referenced above using the >>page name<< format). In these listings ~~~ " +
         "is used to mark the page's content start and end. If context is missing, " +
         "always ask me to link directly to a page mentioned in the context."
-        }`;
+      }`;
       hasMatch = true;
     }
     try {

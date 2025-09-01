@@ -72,7 +72,6 @@ Deno.test("shouldIndexEmbeddings returns true when conditions are met", async ()
   assertEquals(result, true);
 });
 
-
 Deno.test("shouldIndexEmbeddings returns false when indexEmbeddings is disabled", async () => {
   const modifiedSettings = settingsPageSample.replace(
     "indexEmbeddings: true",

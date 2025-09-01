@@ -1,6 +1,4 @@
-import type {
-  FileMeta,
-} from "@silverbulletmd/silverbullet/type/index";
+import type { FileMeta } from "@silverbulletmd/silverbullet/type/index";
 import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
 import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
 import type {
