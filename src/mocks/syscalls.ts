@@ -1,6 +1,5 @@
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-// parseMarkdown mock implementation for tests
-import { syscall } from "@silverbulletmd/silverbullet/syscalls";
+import { syscall, markdown } from "@silverbulletmd/silverbullet/syscalls";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
@@ -37,7 +36,7 @@ let _spaceConfig = {};
 
     // Pass through to the real functions
     case "markdown.parseMarkdown":
-      return await parseMarkdown(args[0]);
+      return await markdown.parseMarkdown(args[0]);
     case "yaml.parse":
       return await parseYAML(args[0]);
 
