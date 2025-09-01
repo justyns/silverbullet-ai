@@ -1,4 +1,3 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 import { StreamChatOptions } from "../types.ts";
@@ -165,7 +164,7 @@ export class GeminiProvider extends AbstractProvider {
       messages,
     );
 
-    const response = await nativeFetch(
+    const response = await fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
       {
         method: "POST",
@@ -213,7 +212,7 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
       {
         method: "POST",

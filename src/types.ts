@@ -1,4 +1,4 @@
-import { ObjectValue } from "@silverbulletmd/silverbullet/types";
+import { ObjectValue } from "@silverbulletmd/silverbullet/type/index";
 
 export type sseEvent = {
   data: string;

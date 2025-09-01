@@ -1,4 +1,3 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { apiKey, initializeOpenAI } from "../init.ts";
 import { ImageGenerationOptions } from "../types.ts";
 import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
@@ -13,7 +12,7 @@ export class DallEProvider extends AbstractImageProvider {
   ): Promise<any> {
     try {
       if (!apiKey) await initializeOpenAI();
-      const response = await nativeFetch(
+      const response = await fetch(
         `${this.baseUrl}/images/generations`,
         {
           method: "POST",

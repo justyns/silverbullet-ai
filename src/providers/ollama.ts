@@ -1,4 +1,3 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { EmbeddingGenerationOptions, StreamChatOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
@@ -53,7 +52,7 @@ export class OllamaProvider extends AbstractProvider {
       }
 
       // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
-      const response = await nativeFetch(
+      const response = await fetch(
         `${this.baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
         {
           method: "GET",
@@ -107,7 +106,7 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await fetch(
       `${this.baseUrl}/api/embeddings`,
       {
         method: "POST",

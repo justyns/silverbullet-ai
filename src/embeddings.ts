@@ -2,7 +2,7 @@ import type {
   FileMeta,
   IndexTreeEvent,
   MQMessage,
-} from "@silverbulletmd/silverbullet/types";
+} from "@silverbulletmd/silverbullet/type/index";
 import type {
   AISummaryObject,
   CombinedEmbeddingResult,
@@ -66,7 +66,7 @@ export async function shouldIndexEmbeddings() {
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
     aiSettings.embeddingModels.length > 0 &&
-    (await system.getEnv()) === "server";
+    false; // Always run in client in v2
 }
 
 export async function shouldIndexSummaries() {
@@ -76,7 +76,7 @@ export async function shouldIndexSummaries() {
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
     aiSettings.embeddingModels.length > 0 &&
-    (await system.getEnv()) === "server";
+    false; // Always run in client in v2
 }
 
 /**
@@ -341,9 +341,7 @@ export async function searchEmbeddings(
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
 
-  if ((await system.getEnv()) === "server") {
-    updateEditorProgress = false;
-  }
+  // Always run in client in v2
 
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
@@ -708,6 +706,6 @@ export async function updateSearchPage() {
 export async function searchCommand() {
   const phrase = await editor.prompt("Search for: ");
   if (phrase) {
-    await editor.navigate({ page: `${searchPrefix}${phrase}` });
+    await editor.navigate(`${searchPrefix}${phrase}`);
   }
 }

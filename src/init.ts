@@ -1,4 +1,3 @@
-import { readSecret } from "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/secrets_page.ts";
 import { clientStore, system } from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
@@ -45,10 +44,7 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return undefined;
-  }
+  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedTextModel");
   } catch (_error) {
@@ -59,10 +55,7 @@ export async function getSelectedTextModel() {
 }
 
 export async function getSelectedImageModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return undefined;
-  }
+  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedImageModel");
   } catch (_error) {
@@ -73,10 +66,7 @@ export async function getSelectedImageModel() {
 }
 
 export async function getSelectedEmbeddingModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
+  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedEmbeddingModel");
   } catch (_error) {
@@ -87,26 +77,17 @@ export async function getSelectedEmbeddingModel() {
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
+  // Always run in client in v2
   await clientStore.set("ai.selectedImageModel", model);
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
+  // Always run in client in v2
   await clientStore.set("ai.selectedTextModel", model);
 }
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
+  // Always run in client in v2
   await clientStore.set("ai.selectedEmbeddingModel", model);
 }
 
@@ -239,13 +220,14 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
 
 export async function configureSelectedModel(model: ModelConfig) {
   log("client", "configureSelectedModel called with:", model);
+  log("client", "AI Keys:", await system.getConfig(`ai`));
   if (!model) {
     throw new Error("No model provided to configure");
   }
   model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     try {
-      const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+      const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
       if (newApiKey !== apiKey) {
         apiKey = newApiKey;
         log("client", "API key updated");
@@ -273,7 +255,7 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     throw new Error("No image model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
       log("client", "API key updated for image model");
@@ -297,7 +279,7 @@ export async function configureSelectedEmbeddingModel(
     throw new Error("No embedding model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
       log("client", "API key updated for embedding model");
@@ -346,7 +328,7 @@ async function loadAndMergeSettings() {
     indexSummaryPrompt: "",
     enhanceFrontMatterPrompt: "",
   };
-  const newSettings = await system.getSpaceConfig("ai", {});
+  const newSettings = await system.getConfig("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
   newCombinedSettings.chat = {
     ...defaultChatSettings,

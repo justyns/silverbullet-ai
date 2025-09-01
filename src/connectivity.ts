@@ -1,4 +1,4 @@
-import type { FileMeta } from "@silverbulletmd/silverbullet/types";
+import type { FileMeta } from "@silverbulletmd/silverbullet/type/index";
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import {
   aiSettings,
@@ -282,5 +282,5 @@ Use these commands to select your models:
  */
 export async function connectivityTestCommand() {
   await initIfNeeded();
-  await editor.navigate({ page: connectivityTestPage });
+  await editor.navigate(connectivityTestPage);
 }

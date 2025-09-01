@@ -1,7 +1,6 @@
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
 import { parseMarkdown } from "$common/markdown_parser/parser.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
-import { readSetting } from "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/settings_page.ts";
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
@@ -68,7 +67,7 @@ let _spaceConfig = {};
       break;
     case "system.getSpaceConfig":
       return readSetting(args[0], args[1]);
-      // return spaceConfig;
+    // return spaceConfig;
 
     default:
       throw Error(`Missing mock for: ${name}`);

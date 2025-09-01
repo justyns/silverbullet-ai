@@ -111,7 +111,7 @@ export abstract class AbstractProvider implements ProviderInterface {
         };
         for (const processor of postProcessors) {
           console.log("Applying post-processor:", processor);
-          newData = await system.invokeSpaceFunction(
+          newData = await system.invokeFunction(
             processor,
             postProcessorData,
           );

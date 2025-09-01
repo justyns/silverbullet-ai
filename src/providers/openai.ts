@@ -1,5 +1,4 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
-import { editor } from "https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls.ts";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 
@@ -132,7 +131,7 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await nativeFetch(
+      const response = await fetch(
         `${this.baseUrl}/models`,
         {
           method: "GET",
@@ -170,7 +169,7 @@ export class OpenAIProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const response = await nativeFetch(
+      const response = await fetch(
         this.baseUrl + "/chat/completions",
         {
           method: "POST",
@@ -228,7 +227,7 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await fetch(
       `${this.baseUrl}/embeddings`,
       {
         method: "POST",

@@ -4,14 +4,13 @@ import {
   markdown,
   space,
   system,
-  template,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { Query, QueryProviderEvent } from "@silverbulletmd/silverbullet/types";
-import { parseQuery } from "@silverbulletmd/silverbullet/lib/parse_query";
-import { SyscallMeta } from "@silverbulletmd/silverbullet/types";
+import { Query, QueryProviderEvent } from "@silverbulletmd/silverbullet/type/index";
+// parseQuery removed in v2
+import { SyscallMeta } from "@silverbulletmd/silverbullet/type/index";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
-import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { aiSettings } from "./init.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
@@ -26,8 +25,8 @@ export function folderName(path: string) {
  * useful debug logs on the client by default without polluting the server logs.
  */
 export async function log(env: "client" | "server" | "any", ...args: any[]) {
-  const currentEnv = await system.getEnv();
-  if (currentEnv === env || env === "any") {
+  // Always log in client in v2
+  if (env === "client" || env === "any") {
     console.log(...args);
   }
 }
@@ -37,31 +36,14 @@ export async function query(
   query: string,
   variables?: Record<string, any>,
 ): Promise<any> {
-  const parsedQuery = await parseQuery(query);
-
-  return queryParsed(parsedQuery, variables);
+  throw new Error("query() is not implemented in v2. Use index.queryLuaObjects() instead.");
 }
 
-export async function queryParsed(
+export function queryParsed(
   parsedQuery: Query,
   variables?: Record<string, any>,
 ) {
-  if (!parsedQuery.limit) {
-    parsedQuery.limit = ["number", 1000];
-  }
-
-  const eventName = `query:${parsedQuery.querySource}`;
-  // console.log("Parsed query", parsedQuery);
-  // Let's dispatch an event and see what happens
-  const event: QueryProviderEvent = { query: parsedQuery };
-  if (variables) {
-    event.variables = variables;
-  }
-  const results = await events.dispatchEvent(eventName, event, 30 * 1000);
-  if (results.length === 0) {
-    throw new Error(`Unsupported query source '${parsedQuery.querySource}'`);
-  }
-  return results.flat();
+  throw new Error("queryParsed() is not implemented in v2. Use index.queryLuaObjects() instead.");
 }
 
 // Proxies to index plug
@@ -93,8 +75,8 @@ export async function convertPageToMessages(
 
   // Remove frontmatter from page
   const tree = await markdown.parseMarkdown(pageText);
-  await extractFrontmatter(tree, {
-    removeFrontmatterSection: true,
+  await extractFrontMatter(tree, {
+    removeFrontMatterSection: true,
   });
   pageText = renderToText(tree);
 
@@ -205,10 +187,7 @@ export async function enrichChatMessages(
 
     // Extract attributes from the message
     const messageTree = await markdown.parseMarkdown(message.content);
-    const messageAttributes = await extractAttributes(
-      [],
-      messageTree,
-    );
+    const messageAttributes = await extractAttributes(messageTree);
 
     // TODO: This or the extractAttributes causes templates to no longer work
     // message.content = renderToText(messageTree);
@@ -240,15 +219,8 @@ export async function enrichChatMessages(
     if (message.role === "user") {
       if (pageMeta) {
         console.log("Rendering template", message.content, pageMeta);
-        const templateResult = await template.renderTemplate(
-          message.content,
-          pageMeta,
-          {
-            page: pageMeta,
-            ...globalMetadata,
-          },
-        );
-        enrichedContent = templateResult;
+        // TODO: template.renderTemplate removed in v2
+        enrichedContent = message.content;
       } else {
         console.log("No page metadata found, skipping template rendering");
       }
@@ -274,11 +246,7 @@ export async function enrichChatMessages(
       // This copies the logic from the share plugin and renders all of the queries/templates
       // TODO: This can be disabled globally, but it might be useful to have a temporary toggle per page
       const tree = await markdown.parseMarkdown(enrichedContent);
-      const rendered = await system.invokeFunction(
-        "markdown.expandCodeWidgets",
-        tree,
-        "",
-      );
+      const rendered = await markdown.expandMarkdown(tree);
       // TODO: Re-add cleanMarkdown
       // enrichedContent = renderToText(cleanMarkdown(rendered)).trim();
       enrichedContent = renderToText(rendered).trim();
@@ -309,7 +277,7 @@ export async function enrichChatMessages(
     );
     for (const func of finalEnrichFunctions) {
       // console.log("Enriching message with function", func);
-      enrichedContent = await system.invokeSpaceFunction(func, enrichedContent);
+      enrichedContent = await system.invokeFunction(func, enrichedContent);
     }
 
     enrichedMessages.push({ ...message, content: enrichedContent });

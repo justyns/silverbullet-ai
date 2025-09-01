@@ -1,6 +1,5 @@
 import {
-  extractFrontmatter,
-  prepareFrontmatterDispatch,
+  extractFrontMatter,
 } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
@@ -274,7 +273,7 @@ export async function tagNoteWithAI() {
 
   // Extract current frontmatter from the note
   const tree = await markdown.parseMarkdown(noteContent);
-  const frontMatter = await extractFrontmatter(tree);
+  const frontMatter = await extractFrontMatter(tree);
 
   // Add new tags to the existing ones in the frontmatter
   const updatedTags = [...new Set([...(frontMatter.tags || []), ...tags])];
@@ -282,10 +281,10 @@ export async function tagNoteWithAI() {
 
   console.log("Current frontmatter:", frontMatter);
   // Prepare the updated frontmatter and apply it to the note
-  const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
-  console.log("updatedNoteContent", frontMatterChange);
-
-  await editor.dispatch(frontMatterChange);
+  // TODO: prepareFrontmatterDispatch removed in v2, need to implement frontmatter updates differently
+  // const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
+  // console.log("updatedNoteContent", frontMatterChange);
+  // await editor.dispatch(frontMatterChange);
   await editor.flashNotification("Note tagged successfully.");
 }
 
@@ -429,7 +428,7 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
 
     // Extract current frontmatter from the note
     const tree = await markdown.parseMarkdown(noteContent);
-    const frontMatter = await extractFrontmatter(tree);
+    const frontMatter = await extractFrontMatter(tree);
 
     // Merge old and new frontmatter
     const updatedFrontmatter = {
@@ -437,13 +436,13 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
       ...newFrontMatter,
     };
 
-    // Prepare the updated frontmatter and apply it to the note
-    const frontMatterChange = await prepareFrontmatterDispatch(
-      tree,
-      updatedFrontmatter,
-    );
-    console.log("updatedNoteContent", frontMatterChange);
-    await editor.dispatch(frontMatterChange);
+    // TODO: prepareFrontmatterDispatch removed in v2, need to implement frontmatter updates differently
+    // const frontMatterChange = await prepareFrontmatterDispatch(
+    //   tree,
+    //   updatedFrontmatter,
+    // );
+    // console.log("updatedNoteContent", frontMatterChange);
+    // await editor.dispatch(frontMatterChange);
   } catch (e) {
     console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
     await editor.flashNotification(
@@ -567,7 +566,7 @@ export async function promptAndGenerateImage() {
       }
 
       // Upload the image to the space
-      await space.writeAttachment(prefix + finalFileName, decodedImage);
+      await space.writeDocument(prefix + finalFileName, decodedImage);
 
       // And then insert it with the prompt dall-e rewrote for us
       // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long. I'd like to let the user provide a template for how this looks.

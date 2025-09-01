@@ -1,4 +1,4 @@
-import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
   markdown,
@@ -6,12 +6,12 @@ import {
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { query } from "./utils.ts";
-import { renderTemplate } from "https://deno.land/x/silverbullet@0.10.1/plugs/template/api.ts";
+// renderTemplate removed in v2
 import type {
   CompleteEvent,
   SlashCompletionOption,
   SlashCompletions,
-} from "@silverbulletmd/silverbullet/types";
+} from "@silverbulletmd/silverbullet/type/index";
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import {
@@ -82,7 +82,7 @@ export async function insertAiPromptFromTemplate(
     console.log("selectedTemplate from slash completion: ", SlashCompletions);
     const templatePage = await space.readPage(SlashCompletions.templatePage);
     const tree = await markdown.parseMarkdown(templatePage);
-    const { aiprompt } = await extractFrontmatter(tree);
+    const { aiprompt } = await extractFrontMatter(tree);
     console.log("templatePage from slash completion: ", templatePage);
     selectedTemplate = {
       ref: SlashCompletions.templatePage,
@@ -383,12 +383,9 @@ export async function insertAiPromptFromTemplate(
 
   if (!selectedTemplate.chat) {
     // non-multi-chat template
-    const renderedTemplate = await renderTemplate(
-      templateText,
-      pageMeta,
-      globalMetadata,
-    );
-    console.log("Rendered template:", renderedTemplate);
+    // TODO: renderTemplate removed in v2, need to implement Lua template rendering
+    const renderedTemplate = templateText; // Fallback to plain text for now
+    console.log("Template (no rendering in v2):", renderedTemplate);
     if (selectedTemplate.systemPrompt) {
       messages.push({
         role: "system",

@@ -1,16 +1,16 @@
 {
   "imports": {
-    "@silverbulletmd/silverbullet": "jsr:@silverbulletmd/silverbullet@0.10.1",
-    "@silverbulletmd/silverbullet/lib/frontmatter": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/frontmatter",
-    "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@0.10.1/syscalls",
-    "@silverbulletmd/silverbullet/lib/tree": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/tree",
-    "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/parse_query",
-    "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/attribute",
-    "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@0.10.1/types",
-    "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/yaml_page",
-    "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@0.10.1/type/client",
+    "@silverbulletmd/silverbullet": "jsr:@silverbulletmd/silverbullet@2.0.0",
+    "@silverbulletmd/silverbullet/lib/frontmatter": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/frontmatter",
+    "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@2.0.0/syscalls",
+    "@silverbulletmd/silverbullet/lib/tree": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/tree",
+    "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/parse_query",
+    "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/attribute",
+    "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@2.0.0/types",
+    "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/yaml_page",
+    "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@2.0.0/type/client",
 
-    "$common/": "https://deno.land/x/silverbullet@0.10.1/common/",
+    "$common/": "https://deno.land/x/silverbullet@2.0.0/common/",
 
     "@lezer/common": "https://esm.sh/@lezer/common@1.2.1&target=es2022",
     "@lezer/lr": "https://esm.sh/@lezer/lr@1.4.0?external=@lezer/common&target=es2022",

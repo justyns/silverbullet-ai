@@ -7,7 +7,7 @@ export interface ImageProviderInterface {
   modelName: string;
   generateImage: (
     options: ImageGenerationOptions,
-  ) => Promise<string>;
+  ) => Promise<any>;
 }
 
 export abstract class AbstractImageProvider implements ImageProviderInterface {
