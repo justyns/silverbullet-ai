@@ -3,56 +3,60 @@ import "./mocks/syscalls.ts";
 import { aiSettings, getAndConfigureModel, initializeOpenAI } from "./init.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
-const settingsPageSample = `
-Mock settings, yay
-\`\`\`yaml
-ai:
-  indexEmbeddings: true
-  indexEmbeddingsExcludePages:
-  - passwords
-  indexEmbeddingsExcludeStrings:
-  - foo
-  chat:
-    bakeMessages: false
-    customEnrichFunctions:
-    - enrichWithURL
-  textModels:
-    - name: gpt-4o
-      provider: openai
-      modelName: gpt-4o
-    - name: gemini-pro
-      modelName: gemini-pro
-      provider: gemini
-      baseUrl: https://api.gemini.ai/v1
-      secretName: GOOGLE_AI_STUDIO_KEY
-  imageModels:
-    - name: dall-e
-      provider: dalle
-      modelName: dall-e
-  embeddingModels:
-    - name: text-embedding-3-small
-      provider: openai
-      modelName: text-embedding-3-small
-    - name: ollama-all-minilm
-      modelName: all-minilm
-      provider: ollama
-      baseUrl: http://localhost:11434
-      requireAuth: false
-\`\`\`
-  `;
+const aiConfigSample = {
+  indexEmbeddings: true,
+  indexEmbeddingsExcludePages: ["passwords"],
+  indexEmbeddingsExcludeStrings: ["foo"],
+  chat: {
+    bakeMessages: false,
+    customEnrichFunctions: ["enrichWithURL"],
+  },
+  textModels: [
+    {
+      name: "gpt-4o",
+      provider: "openai",
+      modelName: "gpt-4o",
+    },
+    {
+      name: "gemini-pro",
+      modelName: "gemini-pro",
+      provider: "gemini",
+      baseUrl: "https://api.gemini.ai/v1",
+      secretName: "GOOGLE_AI_STUDIO_KEY",
+    },
+  ],
+  imageModels: [
+    {
+      name: "dall-e",
+      provider: "dalle",
+      modelName: "dall-e",
+    },
+  ],
+  embeddingModels: [
+    {
+      name: "text-embedding-3-small",
+      provider: "openai",
+      modelName: "text-embedding-3-small",
+    },
+    {
+      name: "ollama-all-minilm",
+      modelName: "all-minilm",
+      provider: "ollama",
+      baseUrl: "http://localhost:11434",
+      requireAuth: false,
+    },
+  ],
+};
 
-const secretsPageSample = `
-Mock secrets, yay
-\`\`\`yaml
-GOOGLE_AI_STUDIO_KEY: foo
-OPENAI_API_KEY: bar
-\`\`\`
-  `;
+const secretsConfigSample = {
+  "GOOGLE_AI_STUDIO_KEY": "foo",
+  "OPENAI_API_KEY": "bar",
+};
 
 Deno.test("initializeOpenAI should set aiSettings correctly", async () => {
   try {
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
     await initializeOpenAI();
     assertEquals(
       aiSettings.textModels.length,
@@ -75,8 +79,8 @@ Deno.test("initializeOpenAI should set aiSettings correctly", async () => {
 
 Deno.test("initializeOpenAI should configure the selected model", async () => {
   try {
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
     await initializeOpenAI();
     await getAndConfigureModel();
     assertEquals(
@@ -95,8 +99,8 @@ Deno.test("initializeOpenAI should configure the selected model", async () => {
 
 Deno.test("initializeOpenAI should set image models correctly", async () => {
   try {
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
     await initializeOpenAI();
     assertEquals(
       aiSettings.imageModels.length,
@@ -119,8 +123,8 @@ Deno.test("initializeOpenAI should set image models correctly", async () => {
 
 Deno.test("initializeOpenAI should set embedding models correctly", async () => {
   try {
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
     await initializeOpenAI();
     assertEquals(
       aiSettings.embeddingModels.length,
@@ -143,8 +147,8 @@ Deno.test("initializeOpenAI should set embedding models correctly", async () => 
 
 Deno.test("initializeOpenAI should handle missing settings gracefully", async () => {
   try {
-    await syscall("mock.setPage", "SETTINGS", "");
-    await syscall("mock.setPage", "SECRETS", secretsPageSample);
+    await syscall("mock.setConfig", "ai", {});
+    await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
     await initializeOpenAI();
     assertEquals(
       aiSettings.textModels.length,
@@ -162,9 +166,11 @@ Deno.test("initializeOpenAI should handle missing settings gracefully", async ()
 
 Deno.test("initializeOpenAI should throw an error if the API key is empty", async () => {
   try {
-    const secretsPage = '```yaml\nOPENAI_API_KEY: ""\n```';
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPage);
+    const emptySecrets = {
+      "OPENAI_API_KEY": "",
+    };
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", emptySecrets);
     await initializeOpenAI();
   } catch (error) {
     if (error instanceof Error) {
@@ -181,9 +187,9 @@ Deno.test("initializeOpenAI should throw an error if the API key is empty", asyn
 
 Deno.test("initializeOpenAI should throw an error if the API secret is missing", async () => {
   try {
-    const secretsPage = "```yaml\n\n```";
-    await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-    await syscall("mock.setPage", "SECRETS", secretsPage);
+    const emptySecrets = {};
+    await syscall("mock.setConfig", "ai", aiConfigSample);
+    await syscall("mock.setConfig", "ai.keys", emptySecrets);
     await initializeOpenAI();
   } catch (error) {
     if (error instanceof Error) {
@@ -203,7 +209,7 @@ Deno.test(
   { sanitizeOps: false, sanitizeResources: false },
   async () => {
     try {
-      await syscall("mock.setPage", "SETTINGS", settingsPageSample);
+      await syscall("mock.setConfig", "ai", aiConfigSample);
       await initializeOpenAI();
     } catch (error) {
       if (error instanceof Error) {
