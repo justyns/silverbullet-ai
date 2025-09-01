@@ -5,7 +5,7 @@ import {
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { query } from "./utils.ts";
+import { queryObjects } from "./utils.ts";
 // renderTemplate removed in v2
 import type {
   CompleteEvent,
@@ -28,7 +28,7 @@ export async function aiPromptSlashComplete(
   if (!supportsPlugSlashComplete()) {
     return;
   }
-  const allTemplates = await query(
+  const allTemplates = await queryObjects(
     "template where aiprompt and aiprompt.slashCommand",
   );
   return {
@@ -58,7 +58,7 @@ export async function insertAiPromptFromTemplate(
   let selectedTemplate;
 
   if (!SlashCompletions || !SlashCompletions.templatePage) {
-    const aiPromptTemplates = await query("template where aiprompt");
+    const aiPromptTemplates = await queryObjects("template where aiprompt");
 
     selectedTemplate = await editor.filterBox(
       "Prompt Template",

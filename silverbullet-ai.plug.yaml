@@ -9,11 +9,6 @@ functions:
   queryAI:
     path: sbai.ts:queryAI
 
-  reloadSettingsPageEvent:
-    path: sbai.ts:reloadSettingsPage
-    events:
-      - page:saved
-
   reloadConfigEvent:
     path: sbai.ts:reloadConfig
     events:

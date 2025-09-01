@@ -5,7 +5,7 @@ import {
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { Query, QueryProviderEvent } from "@silverbulletmd/silverbullet/type/index";
+// Query, QueryProviderEvent removed in v2
 // parseQuery removed in v2
 import { SyscallMeta } from "@silverbulletmd/silverbullet/type/index";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
@@ -24,26 +24,11 @@ export function folderName(path: string) {
  * Console logs can get noisy on the server side, this lets us still have
  * useful debug logs on the client by default without polluting the server logs.
  */
-export async function log(env: "client" | "server" | "any", ...args: any[]) {
+export function log(env: "client" | "server" | "any", ...args: any[]) {
   // Always log in client in v2
   if (env === "client" || env === "any") {
     console.log(...args);
   }
-}
-
-// TODO: Copied this from the query plug, but it should be exposed, or I should use something else
-export async function query(
-  query: string,
-  variables?: Record<string, any>,
-): Promise<any> {
-  throw new Error("query() is not implemented in v2. Use index.queryLuaObjects() instead.");
-}
-
-export function queryParsed(
-  parsedQuery: Query,
-  variables?: Record<string, any>,
-) {
-  throw new Error("queryParsed() is not implemented in v2. Use index.queryLuaObjects() instead.");
 }
 
 // Proxies to index plug
@@ -157,7 +142,7 @@ export async function supportsServerProxyCall(): Promise<boolean> {
  */
 export async function enrichChatMessages(
   messages: ChatMessage[],
-  globalMetadata?: Record<string, any>,
+  _globalMetadata?: Record<string, any>,
 ): Promise<ChatMessage[]> {
   const enrichedMessages: ChatMessage[] = [];
   let currentPage, pageMeta;
@@ -189,9 +174,8 @@ export async function enrichChatMessages(
     const messageTree = await markdown.parseMarkdown(message.content);
     const messageAttributes = await extractAttributes(messageTree);
 
-    // TODO: This or the extractAttributes causes templates to no longer work
-    // message.content = renderToText(messageTree);
-    // Filter out attributes with our friend regex instead
+    // Filter out attributes with regex instead of renderToText(messageTree)
+    // because renderToText breaks template processing
     message.content = message.content.replace(
       /\[enrich:\s*(false|true)\s*\]\s*/g,
       "",

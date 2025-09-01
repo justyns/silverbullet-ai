@@ -227,7 +227,9 @@ export async function configureSelectedModel(model: ModelConfig) {
   model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     try {
-      const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
+      const newApiKey = await system.getConfig(
+        `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+      );
       if (newApiKey !== apiKey) {
         apiKey = newApiKey;
         log("client", "API key updated");
@@ -255,7 +257,9 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     throw new Error("No image model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
+    const newApiKey = await system.getConfig(
+      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+    );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
       log("client", "API key updated for image model");
@@ -279,7 +283,9 @@ export async function configureSelectedEmbeddingModel(
     throw new Error("No embedding model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await system.getConfig(`ai.keys.${model.secretName || "OPENAI_API_KEY"}`);
+    const newApiKey = await system.getConfig(
+      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+    );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
       log("client", "API key updated for embedding model");

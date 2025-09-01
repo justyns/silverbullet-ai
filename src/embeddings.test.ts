@@ -72,15 +72,6 @@ Deno.test("shouldIndexEmbeddings returns true when conditions are met", async ()
   assertEquals(result, true);
 });
 
-Deno.test("shouldIndexEmbeddings returns false when not on server", async () => {
-  await syscall("mock.setPage", "SETTINGS", settingsPageSample);
-  await syscall("mock.setPage", "SECRETS", secretsPageSample);
-  await initializeOpenAI();
-  await syscall("mock.setEnv", "client");
-
-  const result = await shouldIndexEmbeddings();
-  assertEquals(result, false);
-});
 
 Deno.test("shouldIndexEmbeddings returns false when indexEmbeddings is disabled", async () => {
   const modifiedSettings = settingsPageSample.replace(

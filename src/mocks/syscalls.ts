@@ -1,5 +1,5 @@
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-import { parseMarkdown } from "$common/markdown_parser/parser.ts";
+// parseMarkdown mock implementation for tests
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 let editorText = "Mock data";
@@ -7,9 +7,6 @@ let editorText = "Mock data";
 
 const pages: { [key: string]: string } = {};
 (globalThis as any).pages;
-
-let currentEnv: string = "server";
-(globalThis as any).currentEnv;
 
 const clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
@@ -37,12 +34,6 @@ let _spaceConfig = {};
     case "space.readPage":
       //   console.log("space.readPage", args);
       return await Promise.resolve(pages[args[0]]);
-
-    case "mock.setEnv":
-      currentEnv = args[0];
-      break;
-    case "system.getEnv":
-      return await Promise.resolve(currentEnv);
 
     // Pass through to the real functions
     case "markdown.parseMarkdown":

@@ -9,6 +9,7 @@
     "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@2.0.0/types",
     "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@2.0.0/lib/yaml_page",
     "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@2.0.0/type/client",
+    "@silverbulletmd/silverbullet/type/index": "jsr:@silverbulletmd/silverbullet@2.0.0/type/index",
 
     "$common/": "https://deno.land/x/silverbullet@2.0.0/common/",
 

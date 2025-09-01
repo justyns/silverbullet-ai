@@ -1,8 +1,8 @@
 import type {
   FileMeta,
-  IndexTreeEvent,
-  MQMessage,
 } from "@silverbulletmd/silverbullet/type/index";
+import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
+import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
 import type {
   AISummaryObject,
   CombinedEmbeddingResult,
@@ -27,7 +27,6 @@ import {
   markdown,
   mq,
   space,
-  system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
@@ -56,7 +55,6 @@ export function canIndexPage(pageName: string): boolean {
 }
 
 // Logic for whether or not to index something:
-//  - On server
 //  - With embeddings enabled
 //  - With a valid embedding model and provider
 
@@ -65,8 +63,7 @@ export async function shouldIndexEmbeddings() {
   return aiSettings.indexEmbeddings &&
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0 &&
-    false; // Always run in client in v2
+    aiSettings.embeddingModels.length > 0;
 }
 
 export async function shouldIndexSummaries() {
@@ -75,8 +72,7 @@ export async function shouldIndexSummaries() {
     aiSettings.indexSummary &&
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0 &&
-    false; // Always run in client in v2
+    aiSettings.embeddingModels.length > 0;
 }
 
 /**
