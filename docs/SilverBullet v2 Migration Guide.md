@@ -1,0 +1,103 @@
+# SilverBullet v2 Migration Guide
+
+This guide covers migrating from SilverBullet v1 to v2. The main change is moving from SETTINGS/SECRETS pages to Space Lua configuration.
+
+## Quick Steps
+
+1. **Update SilverBullet**: Upgrade to v2.0.0+
+2. **Update Plugin**: Use latest silverbullet-ai version 
+3. **Move Configuration**: Migrate from SETTINGS/SECRETS to CONFIG page
+4. **Delete Old Pages**: Remove SETTINGS/SECRETS pages
+
+## Configuration Migration
+
+### 1. Update Plugin
+
+In your CONFIG page:
+
+```space-lua
+config.set("plugs", {
+  "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+})
+```
+
+Then run `Plugs: Update`.
+
+### 2. Move API Keys
+
+**Old (SECRETS page):**
+```yaml
+OPENAI_API_KEY: "sk-..."
+GEMINI_API_KEY: "ai-..."
+```
+
+**New (CONFIG page):**
+```space-lua
+config.set("OPENAI_API_KEY", "sk-...")
+config.set("GEMINI_API_KEY", "ai-...")
+```
+
+### 3. Move AI Settings
+
+**Old (SETTINGS page):**
+```yaml
+ai:
+  textModels:
+  - name: gpt-4o
+    provider: openai
+    modelName: gpt-4o
+```
+
+**New (CONFIG page):**
+```space-lua
+config.set("ai", {
+  textModels = {
+    {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"}
+  }
+})
+```
+
+## Complete Example
+
+```space-lua
+-- API Keys
+config.set("OPENAI_API_KEY", "sk-...")
+
+-- AI Configuration  
+config.set("ai", {
+  textModels = {
+    {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
+    {name = "ollama-llama", provider = "openai", modelName = "llama3", 
+     baseUrl = "http://localhost:11434/v1", requireAuth = false}
+  },
+  imageModels = {
+    {name = "dall-e-3", provider = "dalle", modelName = "dall-e-3"}
+  },
+  embeddingModels = {
+    {name = "text-embedding-3-small", provider = "openai", modelName = "text-embedding-3-small"}
+  },
+  indexEmbeddings = false,
+  chat = {
+    userInformation = "I'm a software developer who likes taking notes.",
+    userInstructions = "Give short, concise responses."
+  }
+})
+```
+
+## Testing
+
+After migration:
+1. Try `AI: Chat on current page`
+2. Run `AI: Select Text Model from Config`
+3. Test `AI: Test Connectivity`
+
+## Troubleshooting
+
+- **Plugin won't load**: Check SilverBullet version is 2.0.0+
+- **Commands missing**: Run `Plugs: Update`
+- **API errors**: Verify API keys are set correctly at top level (not under `ai.keys`)
+- **Config errors**: Check Space Lua syntax (use `=` not `:`)
+
+---
+
+**Migration complete!** Delete your old SETTINGS and SECRETS pages once everything works.
