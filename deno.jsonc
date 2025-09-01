@@ -2,8 +2,7 @@
   "importMap": "import_map.json",
   "tasks": {
     "build": "deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js -c deno.jsonc --debug --info silverbullet-ai.plug.yaml",
-    "build-release": "silverbullet plug:compile --info --importmap import_map.json silverbullet-ai.plug.yaml",
-    "watch": "silverbullet plug:compile --debug --info --importmap import_map.json silverbullet-ai.plug.yaml -w",
+    "build-release": "deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js -c deno.jsonc --info silverbullet-ai.plug.yaml",
     "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts",
     "test": "deno test --coverage=cov_profile --allow-env"
   },

@@ -13,7 +13,7 @@ For in-development code from the main branch:
 For the latest [release](https://github.com/justyns/silverbullet-ai/releases) version:
 
 ```yaml
-- ghr:justyns/silverbullet-ai/0.4.1
+- ghr:justyns/silverbullet-ai/0.5.0-alpha.2-alpha.1-alpha.2
 ```
 
 You can also use the `Plugs: Add` command and enter the above url to install.
