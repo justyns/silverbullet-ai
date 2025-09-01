@@ -1,6 +1,7 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
+  lua,
   markdown,
   space,
   system,
@@ -383,9 +384,18 @@ export async function insertAiPromptFromTemplate(
 
   if (!selectedTemplate.chat) {
     // non-multi-chat template
-    // TODO: renderTemplate removed in v2, need to implement Lua template rendering
-    const renderedTemplate = templateText; // Fallback to plain text for now
-    console.log("Template (no rendering in v2):", renderedTemplate);
+    let renderedTemplate;
+    try {
+      // Use SilverBullet v2's native template system via spacelua.interpolate
+      renderedTemplate = await lua.evalExpression(
+        `spacelua.interpolate(${JSON.stringify(templateText.text)}, ${JSON.stringify(globalMetadata)})`
+      );
+      console.log("Template rendered successfully:", renderedTemplate);
+    } catch (error) {
+      console.error("Template rendering failed:", error);
+      // Fallback to plain text if template rendering fails
+      renderedTemplate = templateText.text;
+    }
     if (selectedTemplate.systemPrompt) {
       messages.push({
         role: "system",

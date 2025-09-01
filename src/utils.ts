@@ -1,12 +1,11 @@
 import {
   editor,
   events,
+  lua,
   markdown,
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-// Query, QueryProviderEvent removed in v2
-// parseQuery removed in v2
 import { SyscallMeta } from "@silverbulletmd/silverbullet/type/index";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
@@ -203,8 +202,17 @@ export async function enrichChatMessages(
     if (message.role === "user") {
       if (pageMeta) {
         console.log("Rendering template", message.content, pageMeta);
-        // TODO: template.renderTemplate removed in v2
-        enrichedContent = message.content;
+        try {
+          // Use SilverBullet v2's native template system via spacelua.interpolate
+          enrichedContent = await lua.evalExpression(
+            `spacelua.interpolate(${JSON.stringify(message.content)}, ${JSON.stringify({ page: pageMeta })})`
+          );
+          console.log("Message template rendered successfully");
+        } catch (error) {
+          console.error("Message template rendering failed:", error);
+          // Fallback to original content if template rendering fails
+          enrichedContent = message.content;
+        }
       } else {
         console.log("No page metadata found, skipping template rendering");
       }
@@ -288,12 +296,11 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
       continue;
     }
     if (!hasMatch) {
-      enrichedContent += `\n\n${
-        "Base your answer on the content of the following referenced pages " +
+      enrichedContent += `\n\n${"Base your answer on the content of the following referenced pages " +
         "(referenced above using the >>page name<< format). In these listings ~~~ " +
         "is used to mark the page's content start and end. If context is missing, " +
         "always ask me to link directly to a page mentioned in the context."
-      }`;
+        }`;
       hasMatch = true;
     }
     try {

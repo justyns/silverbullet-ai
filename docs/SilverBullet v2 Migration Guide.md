@@ -5,9 +5,8 @@ This guide covers migrating from SilverBullet v1 to v2. The main change is movin
 ## Quick Steps
 
 1. **Update SilverBullet**: Upgrade to v2.0.0+
-2. **Update Plugin**: Use latest silverbullet-ai version 
+2. **Update Plugin**: Use v0.5.0 or newer silverbullet-ai version
 3. **Move Configuration**: Migrate from SETTINGS/SECRETS to CONFIG page
-4. **Delete Old Pages**: Remove SETTINGS/SECRETS pages
 
 ## Configuration Migration
 
@@ -26,20 +25,23 @@ Then run `Plugs: Update`.
 ### 2. Move API Keys
 
 **Old (SECRETS page):**
+
 ```yaml
 OPENAI_API_KEY: "sk-..."
 GEMINI_API_KEY: "ai-..."
 ```
 
 **New (CONFIG page):**
+
 ```space-lua
-config.set("OPENAI_API_KEY", "sk-...")
-config.set("GEMINI_API_KEY", "ai-...")
+config.set("ai.keys.OPENAI_API_KEY", "sk-...")
+config.set("ai.keys.GEMINI_API_KEY", "ai-...")
 ```
 
 ### 3. Move AI Settings
 
 **Old (SETTINGS page):**
+
 ```yaml
 ai:
   textModels:
@@ -49,6 +51,7 @@ ai:
 ```
 
 **New (CONFIG page):**
+
 ```space-lua
 config.set("ai", {
   textModels = {
@@ -61,7 +64,7 @@ config.set("ai", {
 
 ```space-lua
 -- API Keys
-config.set("OPENAI_API_KEY", "sk-...")
+config.set("ai.keys.OPENAI_API_KEY", "sk-...")
 
 -- AI Configuration  
 config.set("ai", {
@@ -87,9 +90,10 @@ config.set("ai", {
 ## Testing
 
 After migration:
-1. Try `AI: Chat on current page`
+
+1. Test `AI: Test Connectivity`
 2. Run `AI: Select Text Model from Config`
-3. Test `AI: Test Connectivity`
+3. Try `AI: Chat on current page`
 
 ## Troubleshooting
 
@@ -98,6 +102,3 @@ After migration:
 - **API errors**: Verify API keys are set correctly at top level (not under `ai.keys`)
 - **Config errors**: Check Space Lua syntax (use `=` not `:`)
 
----
-
-**Migration complete!** Delete your old SETTINGS and SECRETS pages once everything works.
