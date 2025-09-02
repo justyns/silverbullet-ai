@@ -82,9 +82,10 @@ export async function convertPageToMessages(
         currentRole !== newRole &&
         contentBuffer.trim() !== ""
       ) {
-        messages.push(
-          { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
-        );
+        messages.push({
+          role: currentRole,
+          content: contentBuffer.trim(),
+        } as ChatMessage);
         contentBuffer = "";
       }
       currentRole = newRole;
@@ -94,9 +95,10 @@ export async function convertPageToMessages(
     }
   });
   if (contentBuffer && currentRole) {
-    messages.push(
-      { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
-    );
+    messages.push({
+      role: currentRole,
+      content: contentBuffer.trim(),
+    } as ChatMessage);
   }
 
   return messages;
@@ -128,8 +130,9 @@ export async function supportsPlugSlashComplete(): Promise<boolean> {
 export async function supportsServerProxyCall(): Promise<boolean> {
   try {
     const syscalls = await system.listSyscalls();
-    return syscalls.some((syscall: SyscallMeta) =>
-      syscall.name === "system.invokeFunctionOnServer"
+    return syscalls.some(
+      (syscall: SyscallMeta) =>
+        syscall.name === "system.invokeFunctionOnServer",
     );
   } catch (_err) {
     return false;
@@ -155,10 +158,7 @@ export async function enrichChatMessages(
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
     console.error("Error fetching page metadata", error);
-    await editor.flashNotification(
-      "Error fetching page metadata",
-      "error",
-    );
+    await editor.flashNotification("Error fetching page metadata", "error");
     return [];
   }
 
@@ -203,16 +203,18 @@ export async function enrichChatMessages(
       if (pageMeta) {
         console.log("Rendering template", message.content, pageMeta);
         try {
-          // Use SilverBullet v2's native template system via spacelua.interpolate
-          enrichedContent = await lua.evalExpression(
-            `spacelua.interpolate(${JSON.stringify(message.content)}, ${
-              JSON.stringify({ page: pageMeta })
-            })`,
+          const tree = await markdown.parseMarkdown(message.content);
+          const expandedTree = await markdown.expandMarkdown(tree);
+          enrichedContent = renderToText(expandedTree).trim();
+          console.log(
+            "Message template expanded successfully via markdown system",
           );
-          console.log("Message template rendered successfully");
         } catch (error) {
-          console.error("Message template rendering failed:", error);
-          // Fallback to original content if template rendering fails
+          console.error("Message template expansion failed:", error);
+          console.error("Failed content:", message.content);
+          console.error("Page metadata:", pageMeta);
+
+          // Fallback to original content if template expansion fails
           enrichedContent = message.content;
         }
       } else {
@@ -250,18 +252,15 @@ export async function enrichChatMessages(
     // This sends the message content even though the event listener can't directly
     // modify it.  This could still be useful for detecting whether a different function
     // should be added to the list based on regex/etc.
-    const enrichFunctions = await events.dispatchEvent(
-      "ai:enrichMessage",
-      {
-        enrichedContent,
-        message,
-      },
-    );
+    const enrichFunctions = await events.dispatchEvent("ai:enrichMessage", {
+      enrichedContent,
+      message,
+    });
 
     // And also combine with the plug settings
-    const combinedEnrichFunctions = enrichFunctions.flat().concat(
-      aiSettings.chat.customEnrichFunctions,
-    );
+    const combinedEnrichFunctions = enrichFunctions
+      .flat()
+      .concat(aiSettings.chat.customEnrichFunctions);
 
     // then get rid of duplicates
     const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];

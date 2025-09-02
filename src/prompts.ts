@@ -87,7 +87,8 @@ export async function insertAiPromptFromTemplate(
     console.log("templatePage from slash completion: ", templatePage);
     selectedTemplate = {
       ref: SlashCompletions.templatePage,
-      systemPrompt: aiprompt.systemPrompt || aiprompt.system ||
+      systemPrompt: aiprompt.systemPrompt ||
+        aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",
       chat: aiprompt.chat || false,
@@ -125,7 +126,9 @@ export async function insertAiPromptFromTemplate(
   if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
     console.error(
       `Invalid insertAt value: ${selectedTemplate.insertAt}. It must be one of ${
-        validInsertAtOptions.join(", ")
+        validInsertAtOptions.join(
+          ", ",
+        )
       }`,
     );
     await editor.flashNotification(
@@ -163,10 +166,7 @@ export async function insertAiPromptFromTemplate(
     currentParagraph: { from: number; to: number; text: string },
     selectedText: { from: number; to: number; text: string };
 
-  let smartReplaceType:
-    | "selected-text"
-    | "current-paragraph"
-    | "current-item";
+  let smartReplaceType: "selected-text" | "current-paragraph" | "current-item";
   let smartReplaceText: string;
 
   try {
@@ -174,8 +174,9 @@ export async function insertAiPromptFromTemplate(
     currentPageText = await editor.getText();
     curCursorPos = await editor.getCursor();
     const lines = currentPageText.split("\n");
-    currentLineNumber =
-      currentPageText.substring(0, curCursorPos).split("\n").length;
+    currentLineNumber = currentPageText
+      .substring(0, curCursorPos)
+      .split("\n").length;
     lineStartPos = curCursorPos -
       (currentPageText.substring(0, curCursorPos).split("\n").pop()?.length ||
         0);
@@ -233,10 +234,7 @@ export async function insertAiPromptFromTemplate(
     }
   } catch (error) {
     console.error("Error fetching current paragraph", error);
-    await editor.flashNotification(
-      "Error fetching current paragraph",
-      "error",
-    );
+    await editor.flashNotification("Error fetching current paragraph", "error");
     return;
   }
 
@@ -386,15 +384,19 @@ export async function insertAiPromptFromTemplate(
     // non-multi-chat template
     let renderedTemplate;
     try {
-      // Use SilverBullet v2's native template system via spacelua.interpolate
-      renderedTemplate = await lua.evalExpression(
-        `spacelua.interpolate(${JSON.stringify(templateText.text)}, ${
-          JSON.stringify(globalMetadata)
-        })`,
-      );
+      const templateContent = templateText.text;
+      const templateData = globalMetadata;
+      const luaExpression = `spacelua.interpolate(${
+        JSON.stringify(templateContent)
+      }, ${JSON.stringify(templateData)})`;
+      console.log("Evaluating template Lua expression:", luaExpression);
+      renderedTemplate = await lua.evalExpression(luaExpression);
       console.log("Template rendered successfully:", renderedTemplate);
     } catch (error) {
       console.error("Template rendering failed:", error);
+      console.error("Failed template content:", templateText.text);
+      console.error("Template metadata:", globalMetadata);
+
       // Fallback to plain text if template rendering fails
       renderedTemplate = templateText.text;
     }
@@ -423,9 +425,12 @@ export async function insertAiPromptFromTemplate(
   }
 
   console.log("Messages: ", messages);
-  await currentAIProvider.streamChatIntoEditor({
-    messages: messages,
-    stream: true,
-    postProcessors: selectedTemplate.postProcessors,
-  }, cursorPos);
+  await currentAIProvider.streamChatIntoEditor(
+    {
+      messages: messages,
+      stream: true,
+      postProcessors: selectedTemplate.postProcessors,
+    },
+    cursorPos,
+  );
 }

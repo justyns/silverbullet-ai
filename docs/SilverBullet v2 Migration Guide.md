@@ -14,9 +14,10 @@ This guide covers migrating from SilverBullet v1 to v2. The main change is movin
 
 In your CONFIG page:
 
-```space-lua
+```lua
 config.set("plugs", {
-  "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+  -- "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+  "ghr:justyns/silverbullet-ai/0.5.0-alpha.1"
 })
 ```
 
@@ -33,9 +34,12 @@ GEMINI_API_KEY: "ai-..."
 
 **New (CONFIG page):**
 
-```space-lua
-config.set("ai.keys.OPENAI_API_KEY", "sk-...")
-config.set("ai.keys.GEMINI_API_KEY", "ai-...")
+```lua
+config.set("ai.keys", {
+  -- Add more keys here if needed
+  OPENAI_API_KEY = "sk-...",
+  GEMINI_API_KEY = "ai-..."
+})
 ```
 
 ### 3. Move AI Settings
@@ -52,7 +56,7 @@ ai:
 
 **New (CONFIG page):**
 
-```space-lua
+```lua
 config.set("ai", {
   textModels = {
     {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"}
@@ -62,15 +66,12 @@ config.set("ai", {
 
 ## Complete Example
 
-```space-lua
--- API Keys
-config.set("ai.keys.OPENAI_API_KEY", "sk-...")
-
--- AI Configuration  
+```lua
+-- AI Configuration
 config.set("ai", {
   textModels = {
     {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
-    {name = "ollama-llama", provider = "openai", modelName = "llama3", 
+    {name = "ollama-llama", provider = "openai", modelName = "llama3",
      baseUrl = "http://localhost:11434/v1", requireAuth = false}
   },
   imageModels = {
@@ -85,6 +86,9 @@ config.set("ai", {
     userInstructions = "Give short, concise responses."
   }
 })
+
+-- API Keys
+config.set("ai.keys.OPENAI_API_KEY", "sk-...")
 ```
 
 ## Testing
@@ -101,4 +105,3 @@ After migration:
 - **Commands missing**: Run `Plugs: Update`
 - **API errors**: Verify API keys are set correctly at top level (not under `ai.keys`)
 - **Config errors**: Check Space Lua syntax (use `=` not `:`)
-
