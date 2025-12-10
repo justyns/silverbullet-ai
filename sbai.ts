@@ -31,6 +31,7 @@ import {
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
+import { defineConfigSchemas } from "./src/config-schema.ts";
 import {
   convertPageToMessages,
   enrichChatMessages,
@@ -42,6 +43,11 @@ import {
  * Similar to the above function, but meant for the config:loaded event.
  */
 export async function reloadConfig() {
+  try {
+    await defineConfigSchemas();
+  } catch (error) {
+    console.error("Failed to define config schemas:", error);
+  }
   await initializeOpenAI(true);
 }
 

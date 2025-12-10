@@ -20,6 +20,7 @@ import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 import { MockImageProvider } from "./mocks/mockproviders.ts";
 import { MockProvider } from "./mocks/mockproviders.ts";
 import { MockEmbeddingProvider } from "./mocks/mockproviders.ts";
+import { defineConfigSchemas } from "./config-schema.ts";
 
 export let apiKey: string;
 export let aiSettings: AISettings;
@@ -349,6 +350,13 @@ async function loadAndMergeSettings() {
 }
 
 export async function initializeOpenAI(configure = true) {
+  // Define config schemas first to enable validation
+  try {
+    await defineConfigSchemas();
+  } catch (error) {
+    console.warn("Failed to define config schemas:", error);
+  }
+
   const newCombinedSettings = await loadAndMergeSettings();
 
   if (
