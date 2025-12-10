@@ -324,19 +324,25 @@ SilverBullet will automatically sync and load the new version of the plug (or sp
 
 ## Installation
 
-Add the following to to your `PLUGS` file, run `Plugs: Update` command and off you go!
+### Method 1: Library Manager (v2.3.0+)
 
-For in-development code from the main branch:
-```yaml
-- github:justyns/silverbullet-ai/silverbullet-ai.plug.js
+1. Run `Library: Install` command
+2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
+
+### Method 2: Space Lua Config
+
+Add to your Space Lua configuration:
+
+```space-lua
+config.set {
+  plugs = {
+    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+  }
+}
 ```
 
-For the latest "release" code, mostly also still in development for now:
+Then run `Plugs: Update`.
 
-```yaml
-- ghr:justyns/silverbullet-ai/0.5.0-alpha.2-alpha.1-alpha.2
-```
+**Upgrading?** If you have an old version in `_plug/`, delete it before reinstalling via Library Manager.
 
-You can also use the `Plugs: Add` command and enter the above url to install.
-
-After installing, be sure to make the necessary config changes in SETTINGS and SECRETS.
+See the [documentation](https://ai.silverbullet.md/) for full configuration details.

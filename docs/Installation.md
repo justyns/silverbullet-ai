@@ -3,31 +3,60 @@ tags: sidebar
 navOrder: 2
 ---
 
-Add the following to to your `PLUGS` file, run `Plugs: Update` command and off you go!
+## Method 1: Library Manager (v2.3.0+)
 
-For in-development code from the main branch:
-```yaml
-- github:justyns/silverbullet-ai/silverbullet-ai.plug.js
+1. Run `Library: Install` command
+2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
+
+## Method 2: Space Lua Config
+
+Add to your Space Lua configuration:
+
+```space-lua
+config.set {
+  plugs = {
+    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+  }
+}
 ```
 
-For the latest [release](https://github.com/justyns/silverbullet-ai/releases) version:
+Then run `Plugs: Update`.
 
-```yaml
-- ghr:justyns/silverbullet-ai/0.5.0-alpha.2-alpha.1-alpha.2
+For a specific [release](https://github.com/justyns/silverbullet-ai/releases):
+```space-lua
+config.set {
+  plugs = {
+    "ghr:justyns/silverbullet-ai/0.4.1"
+  }
+}
 ```
 
-You can also use the `Plugs: Add` command and enter the above url to install.
+**Upgrading?** If you have an old version in `_plug/`, delete it before reinstalling via Library Manager.
 
-After installing, be sure to make the necessary [[Configuration|config changes]] in **SETTINGS** and **SECRETS**.
+## Configuration
 
-After installing the plug, you can access its features through the command palette. To ensure the plug functions correctly, you must set the `OPENAI_API_KEY` on the SECRETS page.
+After installing, configure your API keys and models via Space Lua. See [[Configuration]] for full details.
 
-If you do not have a SECRETS page, create one and name it `SECRETS`. Then, insert a YAML block as shown below, replacing `"openai key here"` with your actual OpenAI API key:
+Minimal example:
 
-    ```yaml
-    OPENAI_API_KEY: "openai key here"
-    ```
+```space-lua
+config.set {
+  ai = {
+    keys = {
+      OPENAI_API_KEY = "your-key-here"
+    },
+    textModels = {
+      {
+        name = "GPT-4",
+        description = "OpenAI GPT-4",
+        modelName = "gpt-4",
+        provider = "openai",
+        secretName = "OPENAI_API_KEY",
+        requireAuth = true
+      }
+    }
+  }
+}
+```
 
-OPENAI_API_KEY is required for any openai api compatible model currently, but may not get used for local models that don't use keys.
-
-The secret does not necessary have to be `OPENAI_API_KEY`, it can be any name you want as long as you also change the `secretName` for the model to match.  This allows you to have multiple api keys for the same provider as an example.
+Run `AI: Connectivity Test` to verify your configuration.
