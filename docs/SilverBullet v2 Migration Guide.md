@@ -4,26 +4,45 @@ This guide covers migrating from SilverBullet v1 to v2. The main change is movin
 
 ## Quick Steps
 
-1. **Update SilverBullet**: Upgrade to v2.0.0+
-2. **Update Plugin**: Use v0.5.0 or newer silverbullet-ai version
-3. **Move Configuration**: Migrate from SETTINGS/SECRETS to CONFIG page
+1. **Update SilverBullet**: Upgrade to v2.0.0+ (v2.3.0+ recommended for Library Manager)
+2. **Remove old plugin**: Delete `_plug/silverbullet-ai.plug.js` if present
+3. **Install plugin**: Use Library Manager or Space Lua config
+4. **Move Configuration**: Migrate from SETTINGS/SECRETS to Space Lua
 
-## Configuration Migration
+## Plugin Installation
 
-### 1. Update Plugin
+### Option A: Library Manager (v2.3.0+)
 
-In your CONFIG page:
+1. Run `Library: Install` command
+2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
 
-```lua
-config.set("plugs", {
-  -- "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
-  "ghr:justyns/silverbullet-ai/0.5.0-alpha.1"
-})
+### Option B: Space Lua Config
+
+Latest from master:
+
+```space-lua
+config.set {
+  plugs = {
+    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+  }
+}
+```
+
+For a specific release:
+
+```space-lua
+config.set {
+  plugs = {
+    "ghr:justyns/silverbullet-ai/0.5.0"
+  }
+}
 ```
 
 Then run `Plugs: Update`.
 
-### 2. Move API Keys
+## Configuration Migration
+
+### Move API Keys
 
 **Old (SECRETS page):**
 
@@ -42,7 +61,7 @@ config.set("ai.keys", {
 })
 ```
 
-### 3. Move AI Settings
+### Move AI Settings
 
 **Old (SETTINGS page):**
 
