@@ -205,8 +205,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean = true,
+    useProxy: boolean = true,
   ) {
-    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
+    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth, useProxy);
   }
 
   async _generateEmbeddings(
@@ -226,13 +227,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await fetch(
+    const response = await this.fetch(
       `${this.baseUrl}/embeddings`,
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
+      { method: "POST", headers: headers, body: body },
     );
 
     if (!response.ok) {

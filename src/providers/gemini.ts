@@ -191,8 +191,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     modelName: string,
     baseUrl: string = "https://generativelanguage.googleapis.com",
     requireAuth: boolean = true,
+    useProxy: boolean = true,
   ) {
-    super(apiKey, baseUrl, "Gemini", modelName, requireAuth);
+    super(apiKey, baseUrl, "Gemini", modelName, requireAuth, useProxy);
   }
 
   async _generateEmbeddings(
@@ -213,13 +214,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await fetch(
+    const response = await this.fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
+      { method: "POST", headers: headers, body: body },
     );
 
     if (!response.ok) {

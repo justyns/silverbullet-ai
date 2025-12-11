@@ -140,6 +140,7 @@ export type ImageModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  useProxy?: boolean;
 };
 
 export type EmbeddingModelConfig = {
@@ -150,6 +151,7 @@ export type EmbeddingModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  useProxy?: boolean;
 };
 
 export type PostProcessorData = {

@@ -3,8 +3,13 @@ import { ImageGenerationOptions } from "../types.ts";
 import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
 
 export class DallEProvider extends AbstractImageProvider {
-  constructor(apiKey: string, modelName: string, baseUrl: string) {
-    super(apiKey, baseUrl, "DALL-E", modelName);
+  constructor(
+    apiKey: string,
+    modelName: string,
+    baseUrl: string,
+    useProxy: boolean = true,
+  ) {
+    super(apiKey, baseUrl, "DALL-E", modelName, true, useProxy);
   }
 
   async generateImage(
@@ -12,7 +17,7 @@ export class DallEProvider extends AbstractImageProvider {
   ): Promise<any> {
     try {
       if (!apiKey) await initializeOpenAI();
-      const response = await fetch(
+      const response = await this.fetch(
         `${this.baseUrl}/images/generations`,
         {
           method: "POST",

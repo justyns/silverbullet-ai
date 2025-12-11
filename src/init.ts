@@ -121,6 +121,7 @@ async function getAndConfigureEmbeddingModel() {
 
 function setupImageProvider(model: ImageModelConfig) {
   const providerName = model.provider.toLowerCase();
+  const useProxy = model.useProxy ?? true;
   log("client", "Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
@@ -128,6 +129,7 @@ function setupImageProvider(model: ImageModelConfig) {
         apiKey,
         model.modelName,
         model.baseUrl || aiSettings.dallEBaseUrl,
+        useProxy,
       );
       break;
     case ImageProvider.Mock:
@@ -186,18 +188,24 @@ function setupAIProvider(model: ModelConfig) {
 
 function setupEmbeddingProvider(model: EmbeddingModelConfig) {
   const providerName = model.provider.toLowerCase();
+  const useProxy = model.useProxy ?? true;
   switch (providerName) {
     case EmbeddingProvider.OpenAI:
       currentEmbeddingProvider = new OpenAIEmbeddingProvider(
         apiKey,
         model.modelName,
         model.baseUrl || aiSettings.openAIBaseUrl,
+        model.requireAuth ?? true,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Gemini:
       currentEmbeddingProvider = new GeminiEmbeddingProvider(
         apiKey,
         model.modelName,
+        undefined,
+        model.requireAuth ?? true,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Ollama:
@@ -205,7 +213,8 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434",
-        model.requireAuth,
+        model.requireAuth ?? false,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Mock:

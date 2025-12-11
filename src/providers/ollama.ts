@@ -84,8 +84,9 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean = false,
+    useProxy: boolean = true,
   ) {
-    super(apiKey, baseUrl, "Ollama", modelName, requireAuth);
+    super(apiKey, baseUrl, "Ollama", modelName, requireAuth, useProxy);
   }
 
   // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
@@ -105,13 +106,9 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await fetch(
+    const response = await this.fetch(
       `${this.baseUrl}/api/embeddings`,
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
+      { method: "POST", headers: headers, body: body },
     );
 
     if (!response.ok) {
