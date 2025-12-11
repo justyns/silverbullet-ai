@@ -323,9 +323,10 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
   return enrichedContent;
 }
 
-
 // Copied from silverbullet/client/plugos/syscalls/fetch.ts
-export function buildProxyHeaders(headers?: Record<string, any>): Record<string, any> {
+export function buildProxyHeaders(
+  headers?: Record<string, any>,
+): Record<string, any> {
   const newHeaders: Record<string, any> = { "X-Proxy-Request": "true" };
   if (!headers) {
     return newHeaders;
@@ -339,4 +340,3 @@ export function buildProxyHeaders(headers?: Record<string, any>): Record<string,
 export function buildProxyUrl(url: string): string {
   return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
 }
-
