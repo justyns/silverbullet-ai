@@ -114,7 +114,7 @@ config.set("ai.keys.OPENAI_API_KEY", "sk-...")
 
 After migration:
 
-1. Test `AI: Test Connectivity`
+1. Run `AI: Connectivity Test`
 2. Run `AI: Select Text Model from Config`
 3. Try `AI: Chat on current page`
 

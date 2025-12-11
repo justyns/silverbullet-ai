@@ -6,6 +6,7 @@ import { EmbeddingGenerationOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
+import { buildProxyHeaders } from "../utils.ts";
 
 type StreamChatOptions = {
   messages: Array<ChatMessage>;
@@ -55,7 +56,8 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = `${this.baseUrl}/chat/completions`;
+      // Use Silverbullet's built-in proxying to avoid CORS issues
+      const sseUrl = `/.proxy/${this.baseUrl.replace(/^https?:\/\//, '')}/chat/completions`;
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -65,9 +67,11 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
+      const proxyHeaders = buildProxyHeaders(headers);
+
       const sseOptions = {
         method: "POST",
-        headers: headers,
+        headers: proxyHeaders,
         payload: JSON.stringify({
           model: this.modelName,
           stream: true,
