@@ -4,6 +4,7 @@ import { StreamChatOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
+import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -92,22 +93,24 @@ export class GeminiProvider extends AbstractProvider {
     const { messages, onDataReceived } = options;
 
     try {
-      const sseUrl =
-        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+      // Use SilverBullet's built-in proxying to avoid CORS issues
+      const sseUrl = buildProxyUrl(
+        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`
+      );
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
 
+      const proxyHeaders = buildProxyHeaders(headers);
+
       const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
         messages,
       );
 
-      // console.log("payloadContents", payloadContents);
-
       const sseOptions = {
         method: "POST",
-        headers: headers,
+        headers: proxyHeaders,
         payload: JSON.stringify({
           contents: payloadContents,
         }),

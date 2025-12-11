@@ -335,3 +335,7 @@ export function buildProxyHeaders(headers?: Record<string, any>): Record<string,
   }
   return newHeaders;
 }
+
+export function buildProxyUrl(url: string): string {
+  return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
+}
