@@ -2,7 +2,21 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## Unreleased
+## 0.5.0 (Unreleased)
+
+### SilverBullet v2 Support
+- **BREAKING**: Now requires SilverBullet v2.3.0 or later
+- Migrated from SETTINGS/SECRETS pages to Space Lua configuration (`config.set()`)
+- API keys now configured via `config.set("ai.keys.OPENAI_API_KEY", "your-key")`
+- Uses `system.getConfig()` instead of deprecated `system.getSpaceConfig()`
+
+### Proxy Configuration
+- Added `useProxy` option to all provider types (text, embedding, image)
+- When `useProxy: false`, requests bypass SilverBullet's server proxy and go directly from the browser
+- Useful for local services like Ollama running on the same machine as the browser
+- SSE streaming now properly transforms URLs and headers for the proxy
+
+### Other Changes
 - Better logging when SSE events have errors
 - Add support for retrieving list of models from openai and ollama providers
 - Add a Connectivity Test command and page to test whether an api is working
