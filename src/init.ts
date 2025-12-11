@@ -145,6 +145,7 @@ function setupImageProvider(model: ImageModelConfig) {
 
 function setupAIProvider(model: ModelConfig) {
   const providerName = model.provider.toLowerCase();
+  const useProxy = model.useProxy ?? true;
   switch (providerName) {
     case Provider.OpenAI:
       currentAIProvider = new OpenAIProvider(
@@ -152,10 +153,11 @@ function setupAIProvider(model: ModelConfig) {
         model.modelName,
         model.baseUrl || aiSettings.openAIBaseUrl,
         model.requireAuth || aiSettings.requireAuth,
+        useProxy,
       );
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      currentAIProvider = new GeminiProvider(apiKey, model.modelName, useProxy);
       break;
     case Provider.Ollama:
       currentAIProvider = new OllamaProvider(
@@ -163,6 +165,7 @@ function setupAIProvider(model: ModelConfig) {
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
         model.requireAuth,
+        useProxy,
       );
       break;
     case Provider.Mock:

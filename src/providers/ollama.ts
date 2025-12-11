@@ -19,14 +19,16 @@ export class OllamaProvider extends AbstractProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean,
+    useProxy: boolean = true,
   ) {
-    super("Ollama", apiKey, baseUrl, modelName);
+    super("Ollama", apiKey, baseUrl, modelName, useProxy);
     this.requireAuth = requireAuth;
     this.openaiProvider = new OpenAIProvider(
       apiKey,
       modelName,
       baseUrl,
       requireAuth,
+      useProxy,
     );
   }
 
@@ -52,12 +54,9 @@ export class OllamaProvider extends AbstractProvider {
       }
 
       // List models api isn't behind /v1/ like the other endpoints, but we don't want to force the user to change the config yet
-      const response = await fetch(
+      const response = await this.fetch(
         `${this.baseUrl.replace(/\/v1\/?/, "")}/api/tags`,
-        {
-          method: "GET",
-          headers: headers,
-        },
+        { method: "GET", headers: headers },
       );
 
       if (!response.ok) {

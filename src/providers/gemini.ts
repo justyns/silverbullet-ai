@@ -26,15 +26,16 @@ export class GeminiProvider extends AbstractProvider {
   constructor(
     apiKey: string,
     modelName: string,
+    useProxy: boolean = true,
   ) {
     const baseUrl = "https://generativelanguage.googleapis.com";
-    super("Gemini", apiKey, baseUrl, modelName);
+    super("Gemini", apiKey, baseUrl, modelName, useProxy);
   }
 
   async listModels(): Promise<any> {
     const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
     try {
-      const response = await fetch(apiUrl);
+      const response = await this.fetch(apiUrl, { method: "GET" });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -93,16 +94,15 @@ export class GeminiProvider extends AbstractProvider {
     const { messages, onDataReceived } = options;
 
     try {
-      // Use SilverBullet's built-in proxying to avoid CORS issues
-      const sseUrl = buildProxyUrl(
-        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`
-      );
+      const rawUrl = `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
 
-      const proxyHeaders = buildProxyHeaders(headers);
+      // Use SilverBullet's proxy unless disabled
+      const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
+      const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
 
       const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
         messages,
@@ -110,7 +110,7 @@ export class GeminiProvider extends AbstractProvider {
 
       const sseOptions = {
         method: "POST",
-        headers: proxyHeaders,
+        headers: finalHeaders,
         payload: JSON.stringify({
           contents: payloadContents,
         }),
@@ -167,13 +167,11 @@ export class GeminiProvider extends AbstractProvider {
       messages,
     );
 
-    const response = await fetch(
+    const response = await this.fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: payloadContents }),
       },
     );

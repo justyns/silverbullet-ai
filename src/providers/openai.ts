@@ -33,8 +33,9 @@ export class OpenAIProvider extends AbstractProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean,
+    useProxy: boolean = true,
   ) {
-    super("OpenAI", apiKey, baseUrl, modelName);
+    super("OpenAI", apiKey, baseUrl, modelName, useProxy);
     this.requireAuth = requireAuth;
   }
 
@@ -56,9 +57,6 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      // Use SilverBullet's built-in proxying to avoid CORS issues
-      const sseUrl = buildProxyUrl(`${this.baseUrl}/chat/completions`);
-
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
@@ -67,11 +65,15 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const proxyHeaders = buildProxyHeaders(headers);
+      // Use SilverBullet's proxy unless disabled
+      const sseUrl = this.useProxy
+        ? buildProxyUrl(`${this.baseUrl}/chat/completions`)
+        : `${this.baseUrl}/chat/completions`;
+      const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
 
       const sseOptions = {
         method: "POST",
-        headers: proxyHeaders,
+        headers: finalHeaders,
         payload: JSON.stringify({
           model: this.modelName,
           stream: true,
@@ -135,12 +137,9 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await fetch(
+      const response = await this.fetch(
         `${this.baseUrl}/models`,
-        {
-          method: "GET",
-          headers: headers,
-        },
+        { method: "GET", headers: headers },
       );
 
       if (!response.ok) {
@@ -173,13 +172,9 @@ export class OpenAIProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const response = await fetch(
-        this.baseUrl + "/chat/completions",
-        {
-          method: "POST",
-          headers: headers,
-          body: body,
-        },
+      const response = await this.fetch(
+        `${this.baseUrl}/chat/completions`,
+        { method: "POST", headers: headers, body: body },
       );
 
       if (!response.ok) {

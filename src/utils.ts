@@ -339,3 +339,4 @@ export function buildProxyHeaders(headers?: Record<string, any>): Record<string,
 export function buildProxyUrl(url: string): string {
   return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
 }
+
