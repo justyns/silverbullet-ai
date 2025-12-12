@@ -4,41 +4,32 @@ This guide covers migrating from SilverBullet v1 to v2. The main change is movin
 
 ## Quick Steps
 
-1. **Update SilverBullet**: Upgrade to v2.0.0+ (v2.3.0+ recommended for Library Manager)
+1. **Update SilverBullet**: Upgrade to v2.3.0+
 2. **Remove old plugin**: Delete `_plug/silverbullet-ai.plug.js` if present
-3. **Install plugin**: Use Library Manager or Space Lua config
+3. **Install plugin**: Use Library Manager
 4. **Move Configuration**: Migrate from SETTINGS/SECRETS to Space Lua
 
 ## Plugin Installation
 
-### Option A: Library Manager (v2.3.0+)
-
 1. Run `Library: Install` command
-2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
+2. Enter one of the following:
 
-### Option B: Space Lua Config
-
-Latest from master:
-
-```space-lua
-config.set {
-  plugs = {
-    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
-  }
-}
+**Latest release:**
+```
+ghr:justyns/silverbullet-ai/PLUG.md
 ```
 
-For a specific release:
-
-```space-lua
-config.set {
-  plugs = {
-    "ghr:justyns/silverbullet-ai/0.5.0"
-  }
-}
+**Specific release:**
+```
+ghr:justyns/silverbullet-ai@0.5.0/PLUG.md
 ```
 
-Then run `Plugs: Update`.
+**Latest dev version:**
+```
+github:justyns/silverbullet-ai/PLUG.md
+```
+
+See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
 
 ## Configuration Migration
 
@@ -51,14 +42,17 @@ OPENAI_API_KEY: "sk-..."
 GEMINI_API_KEY: "ai-..."
 ```
 
-**New (CONFIG page):**
+**New (Space Lua config):**
 
 ```lua
-config.set("ai.keys", {
-  -- Add more keys here if needed
-  OPENAI_API_KEY = "sk-...",
-  GEMINI_API_KEY = "ai-..."
-})
+config.set {
+  ai = {
+    keys = {
+      OPENAI_API_KEY = "sk-...",
+      GEMINI_API_KEY = "ai-..."
+    }
+  }
+}
 ```
 
 ### Move AI Settings
@@ -73,41 +67,50 @@ ai:
     modelName: gpt-4o
 ```
 
-**New (CONFIG page):**
+**New (Space Lua config):**
 
 ```lua
-config.set("ai", {
-  textModels = {
-    {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"}
+config.set {
+  ai = {
+    textModels = {
+      {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"}
+    }
   }
-})
+}
 ```
 
 ## Complete Example
 
 ```lua
--- AI Configuration
-config.set("ai", {
-  textModels = {
-    {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
-    {name = "ollama-llama", provider = "openai", modelName = "llama3",
-     baseUrl = "http://localhost:11434/v1", requireAuth = false}
-  },
-  imageModels = {
-    {name = "dall-e-3", provider = "dalle", modelName = "dall-e-3"}
-  },
-  embeddingModels = {
-    {name = "text-embedding-3-small", provider = "openai", modelName = "text-embedding-3-small"}
-  },
-  indexEmbeddings = false,
-  chat = {
-    userInformation = "I'm a software developer who likes taking notes.",
-    userInstructions = "Give short, concise responses."
+config.set {
+  ai = {
+    keys = {
+      OPENAI_API_KEY = "sk-..."
+    },
+    textModels = {
+      {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
+      {
+        name = "ollama-llama",
+        provider = "openai",
+        modelName = "llama3",
+        baseUrl = "http://localhost:11434/v1",
+        requireAuth = false,
+        useProxy = false  -- Bypass SilverBullet's proxy for local services
+      }
+    },
+    imageModels = {
+      {name = "dall-e-3", provider = "dalle", modelName = "dall-e-3"}
+    },
+    embeddingModels = {
+      {name = "text-embedding-3-small", provider = "openai", modelName = "text-embedding-3-small"}
+    },
+    indexEmbeddings = false,
+    chat = {
+      userInformation = "I'm a software developer who likes taking notes.",
+      userInstructions = "Give short, concise responses."
+    }
   }
-})
-
--- API Keys
-config.set("ai.keys.OPENAI_API_KEY", "sk-...")
+}
 ```
 
 ## Testing
@@ -120,7 +123,7 @@ After migration:
 
 ## Troubleshooting
 
-- **Plugin won't load**: Check SilverBullet version is 2.0.0+
-- **Commands missing**: Run `Plugs: Update`
-- **API errors**: Verify API keys are set correctly at top level (not under `ai.keys`)
+- **Plugin won't load**: Check SilverBullet version is 2.3.0+
+- **API errors**: Verify API keys are set correctly under `ai.keys`
 - **Config errors**: Check Space Lua syntax (use `=` not `:`)
+- **Local models not working**: Add `useProxy = false` to bypass SilverBullet's proxy and connect directly from the browser

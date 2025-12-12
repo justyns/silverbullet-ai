@@ -1,19 +1,19 @@
+The Chat section is optional, but may help provide better results when using the [[Commands/AI: Chat on current page]] command.
 
-
-In `SETTINGS`, the Chat section is optional, but may help provide better results when using the [[Commands/AI: Chat on current page]] command.
-
-```yaml
-ai:
-  chat:
-    userInformation: >
-      I'm a software developer who likes taking notes.
-    userInstructions: >
-      Please give short and concise responses.  When providing code, do so in python unless requested otherwise.
+```lua
+config.set {
+  ai = {
+    chat = {
+      userInformation = "I'm a software developer who likes taking notes.",
+      userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
+    }
+  }
+}
 ```
 
 ## Chat Custom Instructions
 
-OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) a while back to help improve the responses from ChatGPT.  We are emulating that feature by allowing a system prompt to be injected into each new chat session.
+OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) a while back to help improve the responses from ChatGPT. We are emulating that feature by allowing a system prompt to be injected into each new chat session.
 
 The system prompt is rendered similar to the one below, see the example config above for where to configure these settings:
 

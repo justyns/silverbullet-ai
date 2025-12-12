@@ -3,33 +3,29 @@ tags: sidebar
 navOrder: 2
 ---
 
-## Method 1: Library Manager (v2.3.0+)
+## Library Manager (Recommended)
+
+Requires SilverBullet v2.3.0+
 
 1. Run `Library: Install` command
-2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
+2. Enter one of the following:
 
-## Method 2: Space Lua Config
-
-Add to your Space Lua configuration:
-
-```space-lua
-config.set {
-  plugs = {
-    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
-  }
-}
+**Latest release:**
+```
+ghr:justyns/silverbullet-ai/PLUG.md
 ```
 
-Then run `Plugs: Update`.
-
-For a specific [release](https://github.com/justyns/silverbullet-ai/releases):
-```space-lua
-config.set {
-  plugs = {
-    "ghr:justyns/silverbullet-ai/0.4.1"
-  }
-}
+**Specific release:**
 ```
+ghr:justyns/silverbullet-ai@0.5.0/PLUG.md
+```
+
+**Latest dev version:**
+```
+github:justyns/silverbullet-ai/PLUG.md
+```
+
+See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
 
 **Upgrading?** If you have an old version in `_plug/`, delete it before reinstalling via Library Manager.
 
@@ -39,7 +35,7 @@ After installing, configure your API keys and models via Space Lua. See [[Config
 
 Minimal example:
 
-```space-lua
+```lua
 config.set {
   ai = {
     keys = {
