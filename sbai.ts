@@ -9,7 +9,11 @@ import {
 } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-import { getPageLength, getSelectedTextOrNote } from "./src/editorUtils.ts";
+import {
+  getPageLength,
+  getSelectedTextOrNote,
+  updateFrontmatter,
+} from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
   ImageGenerationOptions,
@@ -272,12 +276,7 @@ export async function tagNoteWithAI() {
   const updatedTags = [...new Set([...(frontMatter.tags || []), ...tags])];
   frontMatter.tags = updatedTags;
 
-  console.log("Current frontmatter:", frontMatter);
-  // Prepare the updated frontmatter and apply it to the note
-  // TODO: prepareFrontmatterDispatch removed in v2, need to implement frontmatter updates differently
-  // const frontMatterChange = await prepareFrontmatterDispatch(tree, frontMatter);
-  // console.log("updatedNoteContent", frontMatterChange);
-  // await editor.dispatch(frontMatterChange);
+  await updateFrontmatter(frontMatter);
   await editor.flashNotification("Note tagged successfully.");
 }
 
@@ -429,13 +428,7 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
       ...newFrontMatter,
     };
 
-    // TODO: prepareFrontmatterDispatch removed in v2, need to implement frontmatter updates differently
-    // const frontMatterChange = await prepareFrontmatterDispatch(
-    //   tree,
-    //   updatedFrontmatter,
-    // );
-    // console.log("updatedNoteContent", frontMatterChange);
-    // await editor.dispatch(frontMatterChange);
+    await updateFrontmatter(updatedFrontmatter);
   } catch (e) {
     console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
     await editor.flashNotification(
