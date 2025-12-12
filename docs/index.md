@@ -35,16 +35,16 @@ If you're new here, we recommend starting with:
 
 ## Features
 
-```template
-{{[[Features]]}}
-```
+![[Features]]
 
 ### Available commands
 
 The list below are the commands available in this plugin.
 
-```query
-commands select name, commandName, commandSummary render [[template/Command]]
-```
+${template.each(query[[
+  from index.tag "page"
+  where string.find(name, "Commands/") == 1
+  order by name
+]], template.new[==[* [[${name}]]]==])}
 
 

@@ -1,5 +1,7 @@
 The following commands are currently available:
 
-```query
-commands select name, commandName, commandSummary render [[template/Command]]
-```
+${template.each(query[[
+  from index.tag "page"
+  where string.find(name, "Commands/") == 1
+  order by name
+]], template.new[==[* [[${name}]]]==])}

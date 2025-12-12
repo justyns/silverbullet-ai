@@ -16,7 +16,7 @@ To be a templated prompt, the note must have the following frontmatter:
 - Optionally, `aiprompt.systemPrompt` can be specified to override the system prompt
 - Optionally, `aiprompt.chat` can be specified to treat the template as a multi-turn chat instead of single message
 - Optionally, `aiprompt.enrichMessages` can be set to true to enrich each chat message
-- Optionally, `aiprompt.postProcessors` can be set to a list of space-script function names to manipulate text returned by the llm
+- Optionally, `aiprompt.postProcessors` can be set to a list of Space Lua function names to manipulate text returned by the llm
 
 For example, here is a templated prompt to summarize the current note and insert the summary at the cursor:
 
@@ -30,16 +30,16 @@ aiprompt:
   description: "Generate a summary of the current page."
 ---
 
-Generate a short and concise summary of the note below. 
+Generate a short and concise summary of the note below.
 
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
 With the above note saved as `AI: Generate note summary`, you can run the `AI: Execute AI Prompt from Custom Template` command from the command palette, select the `AI: Generate note summary` template, and the summary will be streamed to the current cursor position.
 
-Another example prompt is to pull in remote pages via federation and ask the llm to generate a space script for you:
+Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
 
 ```
 ---
@@ -48,21 +48,21 @@ tags:
 - aiPrompt
 
 aiprompt:
-  description: "Describe the space script functionality you want and generate it"
-  systemPrompt: "You are an expert javascript developer.  Help the user develop new functionality for their personal note taking tool."
-  slashCommand: aiSpaceScript
+  description: "Describe the Space Lua functionality you want and generate it"
+  systemPrompt: "You are an expert Lua developer. Help the user develop new functionality for their personal note taking tool using SilverBullet's Space Lua."
+  slashCommand: aiSpaceLua
 ---
 
-SilverBullet space script documentation:
+SilverBullet Space Lua documentation:
 
-{{readPage([[!silverbullet.md/Space%20Script]])}}
+${readPage([[!silverbullet.md/Space%20Lua]])}
 
 
-Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain silverbullet.registerFunction or silverbullet.registerCommand.
+Using the above documentation, please create Space Lua code following the user's description in the note below. Output only valid markdown with a code block using space-lua. No explanations, code in a markdown space-lua block only.
 
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
 
@@ -133,11 +133,11 @@ aiprompt:
   chat: true
 ---
 
-**user**: [enrich:false] I’ll provide the note contents, and instructions.
+**user**: [enrich:false] I'll provide the note contents, and instructions.
 **assistant**: What are the note contents?
-**user**: [enrich:true] title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+**user**: [enrich:true] title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 **assistant**: What are the instructions?
 **user**: [enrich:false] Generate a short and concise summary of the note.
 ```
@@ -148,35 +148,21 @@ The `enrich` attribute can also be toggled on or off per message. By default it 
 
 ## Post Processors
 
-As of version 0.4.0, `aiPrompt.postProcessors` can be set to a list of space-script function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
+As of version 0.4.0, `aiPrompt.postProcessors` can be set to a list of Space Lua function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
 
-Each function must accept a single data parameter. Currently, the parameter follows this typing:
+Each function must accept a single data parameter containing these fields:
 
-```javascript
-export type PostProcessorData = {
-  // The full response text
-  response: string;
-  // The line before where the response was inserted
-  lineBefore: string;
-  // The line after where the response was inserted
-  lineAfter: string;
-  // The line where the cursor was before the response was inserted
-  lineCurrent: string;
-};
-```
+- `response`: The full response text
+- `lineBefore`: The line before where the response was inserted
+- `lineAfter`: The line after where the response was inserted
+- `lineCurrent`: The line where the cursor was before the response was inserted
 
 A simple post processing function looks like this:
 
-```javascript
-silverbullet.registerFunction({ name: "aiFooBar" }, async (data) => {
-
-  // Extract variables from PostProcessorData
-  const { response, lineBefore, lineCurrent, lineAfter } = data;
-
-  // Put the current response between FOO and BAR and return it
-  const newResponse = `FOO ${response} BAR`;
-  return newResponse
-}
+```lua
+function aiFooBar(data)
+  return "FOO " .. data.response .. " BAR"
+end
 ```
 
 This function could be used in a template prompt like this:

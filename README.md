@@ -68,161 +68,154 @@ query embedding and each indexed embedding.
 
 ## Usage
 
-After installing the plug, you can access its features through the command palette. To ensure the plug functions correctly, you must set the `OPENAI_API_KEY` on the SECRETS page.
-
-If you do not have a SECRETS page, create one and name it `SECRETS`. Then, insert a YAML block as shown below, replacing `"openai key here"` with your actual OpenAI API key:
-
-    ```yaml
-    OPENAI_API_KEY: "openai key here"
-    ```
-
-OPENAI_API_KEY is required for any openai api compatible model currently, but may not get used for local models that don't use keys.
-
-The secret does not necessary have to be `OPENAI_API_KEY`, it can be any name you want as long as you also change the `secretName` for the model to match.  This allows you to have multiple api keys for the same provider as an example.
+After installing the plug, you can access its features through the command palette. Configuration is done using Space Lua in your `CONFIG` page (or any page with a `space-lua` block).
 
 ### Configuration
 
-To change the text generation model used by all commands, or other configurable options, open your `SETTINGS` page and change the setting below:
+SilverBullet v2 uses Space Lua for configuration. Add a `space-lua` block to your `CONFIG` page:
 
-```yaml
-ai:
-  # configure one or more image models.  Only OpenAI's api is currently supported
-  imageModels:
-  - name: dall-e-3
-    modelName: dall-e-3
-    provider: dalle
-  - name: dall-e-2
-    modelName: dall-e-2
-    provider: dalle
+```lua
+-- Set your API keys
+config.set("OPENAI_API_KEY", "your-openai-key-here")
 
-  # Configure one or more text models
-  # Provider may be openai or gemini.  Most local or self-hosted LLMs offer an openai compatible api, so choose openai as the provider for those and change the baseUrl accordingly.
-  textModels:
-  - name: ollama-phi-2
-    modelName: phi-2
-    provider: openai
-    baseUrl: http://localhost:11434/v1
-    requireAuth: false
-  - name: gpt-4-turbo
-    provider: openai
-    modelName: gpt-4-0125-preview
-  - name: gpt-4-vision-preview
-    provider: openai
-    modelName: gpt-4-vision-preview
-  - name: gpt-3-turbo
-    provider: openai
-    modelName: gpt-3.5-turbo-0125
-  
-  # Chat section is optional, but may help provide better results when using the Chat On Page command
-  chat:
-    userInformation: >
-      I'm a software developer who likes taking notes.
-    userInstructions: >
-      Please give short and concise responses.  When providing code, do so in python unless requested otherwise.
+-- Configure AI models
+config.set("ai", {
+  -- Configure one or more image models
+  imageModels = {
+    {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
+    {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+  },
 
+  -- Configure one or more text models
+  -- Provider may be openai or gemini. Most local or self-hosted LLMs offer an openai compatible api.
+  textModels = {
+    {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-turbo"},
+    {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo"},
+    {
+      name = "ollama-llama3",
+      modelName = "llama3",
+      provider = "openai",
+      baseUrl = "http://localhost:11434/v1",
+      requireAuth = false
+    }
+  },
+
+  -- Chat section is optional, but may help provide better results
+  chat = {
+    userInformation = "I'm a software developer who likes taking notes.",
+    userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
+  }
+})
 ```
 
 #### Ollama
 
-To use Ollama locally, make sure you have it running first and the desired models downloaded.  Then, set the `openAIBaseUrl` to the url of your ollama instance:
+To use Ollama locally, make sure you have it running first and the desired models downloaded:
 
-```yaml
-ai:
-  textModels:
-  - name: ollama-phi-2
-    # Run `ollama list` to see a list of models downloaded
-    modelName: phi
-    provider: openai
-    baseUrl: http://localhost:11434/v1
-    requireAuth: false
+```lua
+config.set("ai", {
+  textModels = {
+    {
+      name = "ollama-llama3",
+      modelName = "llama3",  -- Run `ollama list` to see available models
+      provider = "openai",
+      baseUrl = "http://localhost:11434/v1",
+      requireAuth = false
+    }
+  }
+})
 ```
 
-**requireAuth**: When using Ollama and chrome, requireAuth needs to be set to false so that the Authorization header isn't set.  Otherwise you will get a CORS error.
+**requireAuth**: When using Ollama and Chrome, requireAuth needs to be set to false so that the Authorization header isn't set. Otherwise you will get a CORS error.
 
 #### Mistral.ai
 
-Mistral.ai is a hosted service that offers an openai-compatible api.  You can use it with settings like this:
+Mistral.ai is a hosted service that offers an openai-compatible api:
 
-```yaml
-ai:
-  textModels:
-    - name: mistral-medium
-      modelName: mistral-medium
-      provider: openai
-      baseUrl: https://api.mistral.ai/v1
-      secretName: MISTRAL_API_KEY
+```lua
+config.set("MISTRAL_API_KEY", "your-mistral-key-here")
+
+config.set("ai", {
+  textModels = {
+    {
+      name = "mistral-medium",
+      modelName = "mistral-medium",
+      provider = "openai",
+      baseUrl = "https://api.mistral.ai/v1",
+      secretName = "MISTRAL_API_KEY"
+    }
+  }
+})
 ```
-
-`MISTRAL_API_KEY` also needs to be set in `SECRETS` using an api key generated from their web console.
-
 
 #### Perplexity.ai
 
-Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards).  You can use it with settings like this:
+Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards):
 
-```yaml
-ai:
-  textModels:
-    - name: sonar-medium-online
-      modelName: sonar-medium-online
-      provider: openai
-      baseUrl: https://api.perplexity.ai
+```lua
+config.set("OPENAI_API_KEY", "your-perplexity-key-here")
+
+config.set("ai", {
+  textModels = {
+    {
+      name = "sonar-medium-online",
+      modelName = "sonar-medium-online",
+      provider = "openai",
+      baseUrl = "https://api.perplexity.ai"
+    }
+  }
+})
 ```
-
-`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated from [their web console](https://www.perplexity.ai/settings/api).
 
 #### Google Gemini (Experimental)
 
-Google does not offer an openai-compatible api, so consider the support for Gemini to be very experimental for now.
+Google does not offer an openai-compatible api, so consider the support for Gemini to be experimental:
 
-To configure it, you can use these settings:
+```lua
+config.set("GOOGLE_AI_STUDIO_KEY", "your-google-ai-studio-key-here")
 
-```yaml
-ai:
-  textModels:
-    - name: gemini-pro
-      modelName: gemini-pro
-      provider: gemini
-      baseUrl: https://api.gemini.ai/v1
-      secretName: GOOGLE_AI_STUDIO_KEY
+config.set("ai", {
+  textModels = {
+    {
+      name = "gemini-pro",
+      modelName = "gemini-pro",
+      provider = "gemini",
+      secretName = "GOOGLE_AI_STUDIO_KEY"
+    }
+  }
+})
 ```
 
-**Note**: The secretName defined means you need to put the api key from [google ai studio](https://aistudio.google.com/app/apikey) in your SECRETS file as `GOOGLE_AI_STUDIO_KEY`.
-
-**Note 2**: AI Studio is not the same as the Gemini App (previously Bard).  You may have access to https://gemini.google.com/app but it does not offer an api key needed for integrating 3rd party tools.  Instead, you need access to https://aistudio.google.com/app specifically.
-
+**Note**: AI Studio is not the same as the Gemini App (previously Bard). You need access to https://aistudio.google.com/app specifically.
 
 #### Dall-E
 
-Dall-E can be configured to use for generating images with these settings:
+Dall-E can be configured for generating images:
 
-```yaml
-ai:
-  imageModels:
-  - name: dall-e-3
-    modelName: dall-e-3
-    provider: dalle
-  - name: dall-e-2
-    modelName: dall-e-2
-    provider: dalle
+```lua
+config.set("OPENAI_API_KEY", "your-openai-key-here")
+
+config.set("ai", {
+  imageModels = {
+    {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
+    {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+  }
+})
 ```
-
-`OPENAI_API_KEY` also needs to be set in `SECRETS` to an API key generated in the OpenAI web console.
-`baseUrl` can also be set to another api compatible with openai/dall-e.
 
 #### Chat Custom Instructions
 
-OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) a while back to help improve the responses from ChatGPT.  We are emulating that feature by allowing a system prompt to be injected into each new chat session.
+OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) to help improve responses. We emulate this by allowing a system prompt to be injected into each new chat session.
 
-The system prompt is rendered similar to the one below, see the example config above for where to configure these settings:
+The system prompt is rendered similar to the one below:
 
 Always added:
 > This is an interactive chat session with a user in a note-taking tool called SilverBullet.
 
-If **userInformation** is set, this is added:
+If **userInformation** is set:
 > The user has provided the following information about their self: **${ai.chat.userInformation}**
 
-If **userInstructions** is set, this is added:
+If **userInstructions** is set:
 > The user has provided the following instructions for the chat, follow them as closely as possible: **${ai.chat.userInstructions}**
 
 
@@ -230,9 +223,9 @@ If **userInstructions** is set, this is added:
 
 **NOTE:** All built-in prompts will be replaced with templated prompts eventually.
 
-As of 0.0.6, you can use template notes to create your own custom prompts to send to the LLM.
+You can use template notes to create your own custom prompts to send to the LLM.
 
-Template notes make use of all of the template language available to SilverBullet. 
+Template notes make use of all of the template language available to SilverBullet.
 
 To be a templated prompt, the note must have the following frontmatter:
 
@@ -252,16 +245,16 @@ aiprompt:
   description: "Generate a summary of the current page."
 ---
 
-Generate a short and concise summary of the note below. 
+Generate a short and concise summary of the note below.
 
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
 With the above note saved as `AI: Generate note summary`, you can run the `AI: Execute AI Prompt from Custom Template` command from the command palette, select the `AI: Generate note summary` template, and the summary will be streamed to the current cursor position.
 
-Another example prompt is to pull in remote pages via federation and ask the llm to generate a space script for you:
+Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
 
 ```
 ---
@@ -270,21 +263,20 @@ tags:
 - aiPrompt
 
 aiprompt:
-  description: "Describe the space script functionality you want and generate it"
-  systemPrompt: "You are an expert javascript developer.  Help the user develop new functionality for their personal note taking tool."
-  slashCommand: aiSpaceScript
+  description: "Describe the Space Lua functionality you want and generate it"
+  systemPrompt: "You are an expert Lua developer. Help the user develop new functionality for their personal note taking tool."
+  slashCommand: aiSpaceLua
 ---
 
-SilverBullet space script documentation:
+SilverBullet Space Lua documentation:
 
-{{readPage([[!silverbullet.md/Space%20Script]])}}
+${readPage([[!silverbullet.md/Space%20Lua]])}
 
+Using the above documentation, please create Space Lua code following the user's description in the note below. Output only valid markdown with a code block using space-lua. No explanations, code in a markdown space-lua block only.
 
-Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain silverbullet.registerFunction or silverbullet.registerCommand.
-
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
 
@@ -333,12 +325,10 @@ SilverBullet will automatically sync and load the new version of the plug (or sp
 
 Add to your Space Lua configuration:
 
-```space-lua
-config.set {
-  plugs = {
-    "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
-  }
-}
+```lua
+config.set("plugs", {
+  "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
+})
 ```
 
 Then run `Plugs: Update`.
