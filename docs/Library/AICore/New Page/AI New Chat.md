@@ -1,13 +1,12 @@
 ---
 description: "Create a chat session with your LLM"
-tags: template
-hooks.newPage:
-  suggestedName: "Inbox/{{today}} {{time}} - AI Chat"
-  confirmName: false
-  command: "New AI Chat"
-  key: "Alt-Shift-c"
-frontmatter:
-  dateCreated: "{{today}}"
+tags: meta/template/page
+suggestedName: "Inbox/${date.today()} ${os.date('%H:%M')} - AI Chat"
+confirmName: false
+command: "New AI Chat"
+key: "Alt-Shift-c"
+frontmatter: |
+  dateCreated: "${date.today()}"
   tags: aichat
 ---
 

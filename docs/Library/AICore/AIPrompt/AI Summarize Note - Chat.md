@@ -10,10 +10,10 @@ aiprompt:
   chat: true
 ---
 
-**user**: [enrich:false] I’ll provide the note contents, and instructions.
+**user**: [enrich:false] I'll provide the note contents, and instructions.
 **assistant**: What are the note contents?
-**user**: [enrich:true] title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+**user**: [enrich:true] title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 **assistant**: What are the instructions?
 **user**: [enrich:false] Generate a short and concise summary of the note.
