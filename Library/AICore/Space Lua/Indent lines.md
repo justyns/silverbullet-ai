@@ -9,8 +9,6 @@ description: >
 
 
 ```space-lua
-ai = ai or {}
-
 function ai.indentOneLevel(data)
   local response = data.response
   local lineBefore = data.lineBefore

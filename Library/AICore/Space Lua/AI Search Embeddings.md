@@ -10,9 +10,7 @@ description: >
 
 
 ```space-lua
-ai = ai or {}
-
-function ai.searchEmbeddings(query)
-  return system.invokeFunction("silverbullet-ai.searchEmbeddingsForChat", query)
+function ai.searchEmbeddings(searchQuery)
+  return system.invokeFunction("silverbullet-ai.searchEmbeddingsForChat", searchQuery)
 end
 ```

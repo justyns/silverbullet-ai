@@ -9,8 +9,6 @@ description: >
 
 
 ```space-lua
-ai = ai or {}
-
 function ai.convertToTaskList(data)
   local response = data.response
 

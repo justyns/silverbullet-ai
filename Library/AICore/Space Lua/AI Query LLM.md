@@ -9,8 +9,6 @@ description: >
 
 
 ```space-lua
-ai = ai or {}
-
 function ai.queryLLM(userPrompt, systemPrompt)
   return system.invokeFunction("silverbullet-ai.queryAI", userPrompt, systemPrompt)
 end
