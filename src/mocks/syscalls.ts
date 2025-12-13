@@ -46,6 +46,10 @@ let _spaceConfig = {};
 const systemConfig: { [key: string]: any } = {};
 (globalThis as any).systemConfig;
 
+// Mock storage for indexed objects by tag
+const indexedObjectsByTag: { [tag: string]: any[] } = {};
+(globalThis as any).indexedObjectsByTag;
+
 // Helper functions for nested config access
 function getNestedValue(obj: any, path: string, defaultValue?: any): any {
   const keys = path.split(".");
@@ -131,6 +135,47 @@ function setNestedValue(obj: any, path: string, value: any): void {
       break;
     case "clientStore.get":
       return clientStore[args[0]];
+
+    // Index syscalls for v2
+    case "index.queryLuaObjects": {
+      const tag = args[0];
+      const _query = args[1];
+      return indexedObjectsByTag[tag] || [];
+    }
+    case "index.indexObjects": {
+      const page = args[0];
+      const objects = args[1] as any[];
+      for (const obj of objects) {
+        if (obj.tag) {
+          if (!indexedObjectsByTag[obj.tag]) {
+            indexedObjectsByTag[obj.tag] = [];
+          }
+          indexedObjectsByTag[obj.tag].push({ ...obj, page });
+        }
+      }
+      return;
+    }
+
+    // Lua syscalls for v2
+    case "lua.parseExpression":
+      return { type: "MockExpression", expr: args[0] };
+
+    // Config syscalls for v2
+    case "config.define":
+      return;
+
+    // Mock helpers for tests
+    case "mock.setIndexedObjects": {
+      const tag = args[0];
+      const objects = args[1];
+      indexedObjectsByTag[tag] = objects;
+      break;
+    }
+    case "mock.clearIndexedObjects":
+      for (const key in indexedObjectsByTag) {
+        delete indexedObjectsByTag[key];
+      }
+      break;
 
     default:
       throw Error(`Missing mock for: ${name}`);

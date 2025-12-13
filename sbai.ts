@@ -3,6 +3,8 @@ import {
 } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
+  index,
+  lua,
   markdown,
   space,
   system,
@@ -36,7 +38,6 @@ import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
-  queryObjects,
 } from "./src/utils.ts";
 import { installAICoreLibrary } from "./src/libraryInstaller.ts";
 
@@ -153,9 +154,11 @@ export async function tagNoteWithAI() {
   await initIfNeeded();
   const noteContent = await editor.getText();
   const noteName = await editor.getCurrentPage();
-  const allTags = (await queryObjects(
-    "tag select name where parent = 'page' order by name",
-  )).map((tag: any) => tag.name);
+  const tagResults = await index.queryLuaObjects<{ name: string }>("tag", {
+    objectVariable: "_",
+    where: await lua.parseExpression(`_.parent == "page"`),
+  });
+  const allTags = tagResults.map((t: { name: string }) => t.name);
   console.log("All tags:", allTags);
   const systemPrompt =
     `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:

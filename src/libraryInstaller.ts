@@ -59,7 +59,9 @@ export async function installAICoreLibrary(): Promise<void> {
     const frontmatter = await extractFrontMatter(tree);
 
     if (!frontmatter?.share?.uri) {
-      log("Plug not installed via Library Manager, skipping AICore library auto-install");
+      log(
+        "Plug not installed via Library Manager, skipping AICore library auto-install",
+      );
       return;
     }
 

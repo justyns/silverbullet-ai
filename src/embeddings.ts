@@ -13,9 +13,10 @@ import {
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
-import { indexObjects, log, queryObjects } from "./utils.ts";
+import { log } from "./utils.ts";
 import {
   editor,
+  index,
   markdown,
   mq,
   space,
@@ -134,7 +135,7 @@ export async function indexEmbeddings(page: string) {
     objects.push(embeddingObject);
   }
 
-  await indexObjects(page, objects);
+  await index.indexObjects(page, objects);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
@@ -208,7 +209,7 @@ export async function indexSummary(page: string) {
     tag: "aiSummary",
   };
 
-  await indexObjects(page, [summaryObject]);
+  await index.indexObjects(page, [summaryObject]);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
@@ -262,11 +263,11 @@ export async function processSummaryQueue(messages: MQMessage[]) {
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
-  return await queryObjects("embedding", {});
+  return await index.queryLuaObjects<EmbeddingObject>("embedding", {});
 }
 
 export async function getAllAISummaries(): Promise<AISummaryObject[]> {
-  return await queryObjects("aiSummary", {});
+  return await index.queryLuaObjects<AISummaryObject>("aiSummary", {});
 }
 
 export async function generateEmbeddings(text: string): Promise<number[]> {

@@ -1,17 +1,33 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
+  index,
   lua,
   markdown,
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { queryObjects } from "./utils.ts";
 import type {
   CompleteEvent,
   SlashCompletionOption,
   SlashCompletions,
 } from "@silverbulletmd/silverbullet/type/client";
+
+interface AIPromptTemplate {
+  ref: string;
+  description?: string;
+  aiprompt: {
+    slashCommand?: string;
+    description?: string;
+    displayName?: string;
+    systemPrompt?: string;
+    insertAt?: string;
+    chat?: boolean;
+    enrichMessages?: boolean;
+    postProcessors?: string[];
+    order?: number;
+  };
+}
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import { convertPageToMessages, enrichChatMessages } from "./utils.ts";
@@ -20,8 +36,14 @@ import { ChatMessage } from "./types.ts";
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
 ): Promise<{ options: SlashCompletions[] } | void> {
-  const allTemplates = await queryObjects(
-    "template where aiprompt and aiprompt.slashCommand",
+  const allTemplates = await index.queryLuaObjects<AIPromptTemplate>(
+    "template",
+    {
+      objectVariable: "_",
+      where: await lua.parseExpression(
+        "_.aiprompt and _.aiprompt.slashCommand",
+      ),
+    },
   );
   return {
     options: allTemplates.map((template) => {
@@ -50,7 +72,13 @@ export async function insertAiPromptFromTemplate(
   let selectedTemplate;
 
   if (!SlashCompletions || !SlashCompletions.templatePage) {
-    const aiPromptTemplates = await queryObjects("template where aiprompt");
+    const aiPromptTemplates = await index.queryLuaObjects<AIPromptTemplate>(
+      "template",
+      {
+        objectVariable: "_",
+        where: await lua.parseExpression("_.aiprompt"),
+      },
+    );
 
     selectedTemplate = await editor.filterBox(
       "Prompt Template",

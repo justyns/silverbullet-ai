@@ -20,19 +20,6 @@ export function log(...args: any[]) {
   console.log(...args);
 }
 
-// Proxies to index plug
-// TODO: move to another file
-export async function queryObjects(
-  query: string,
-  variables?: Record<string, any>,
-): Promise<any> {
-  return await system.invokeFunction("index.queryObjects", query, variables);
-}
-
-export async function indexObjects(page: string, objects: any[]): Promise<any> {
-  return await system.invokeFunction("index.indexObjects", page, objects);
-}
-
 /**
  * Converts the current page into a list of messages for the LLM.
  * Each message is a line of text, with the role being the bolded word at the beginning of the line.
