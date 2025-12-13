@@ -123,8 +123,6 @@ function setNestedValue(obj: any, path: string, value: any): void {
     case "yaml.parse":
       return await parseYAML(args[0]);
 
-    case "system.invokeFunctionOnServer":
-      return invokeFunctionMock(args);
     case "system.invokeFunction":
       return invokeFunctionMock(args);
 
@@ -144,7 +142,7 @@ function invokeFunctionMock(args: readonly any[]) {
     case "index.indexObjects":
       return true;
     default:
-      console.log("system.invokeFunctionOnServer", args);
+      console.log("system.invokeFunction", args);
       throw Error(`Missing invokeFunction mock for ${args[0]}`);
   }
 }

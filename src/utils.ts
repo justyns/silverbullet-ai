@@ -1,33 +1,23 @@
 import {
   editor,
   events,
-  lua,
   markdown,
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { SyscallMeta } from "@silverbulletmd/silverbullet/type/index";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { aiSettings } from "./init.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
-import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
 }
 
-/**
- * Console logs can get noisy on the server side, this lets us still have
- * useful debug logs on the client by default without polluting the server logs.
- */
-export function log(env: "client" | "server" | "any", ...args: any[]) {
-  // Always log in client in v2
-  if (env === "client" || env === "any") {
-    console.log(...args);
-  }
+export function log(...args: any[]) {
+  console.log(...args);
 }
 
 // Proxies to index plug
@@ -102,41 +92,6 @@ export async function convertPageToMessages(
   }
 
   return messages;
-}
-
-// Borrowed from https://github.com/joekrill/silverbullet-treeview/blob/main/compatability.ts
-// TODO: There's probably a library for comparing semver versions, but this works for now (thanks chatgpt)
-export async function supportsPlugSlashComplete(): Promise<boolean> {
-  try {
-    const ver = await syscall("system.getVersion");
-    const [major, minor, patch] = ver.split(".").map(Number);
-    const [reqMajor, reqMinor, reqPatch] = "0.7.2".split(".").map(Number);
-    if (major > reqMajor) return true;
-    if (major === reqMajor && minor > reqMinor) return true;
-    if (major === reqMajor && minor === reqMinor && patch >= reqPatch) {
-      return true;
-    }
-    return false;
-  } catch (_err) {
-    // system.getVersion was added in edge before 0.7.2, so assume this wont' work if the call doesn't succeed
-    return false;
-  }
-}
-
-/**
- * Check whether the invokeFunctionOnServer syscall is availble.
- * It's needed so that we can force certain things to run on the server.
- */
-export async function supportsServerProxyCall(): Promise<boolean> {
-  try {
-    const syscalls = await system.listSyscalls();
-    return syscalls.some(
-      (syscall: SyscallMeta) =>
-        syscall.name === "system.invokeFunctionOnServer",
-    );
-  } catch (_err) {
-    return false;
-  }
 }
 
 /**

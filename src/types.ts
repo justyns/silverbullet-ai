@@ -111,14 +111,6 @@ export type AISettings = {
   indexEmbeddingsExcludeStrings: string[];
   indexSummary: boolean;
   indexSummaryModelName: string;
-
-  // These are deprecated and will be removed in a future release
-  openAIBaseUrl: string;
-  dallEBaseUrl: string;
-  requireAuth: boolean;
-  secretName: string;
-  provider: Provider;
-  // Above is left for backwards compatibility
 };
 
 export type ModelConfig = {

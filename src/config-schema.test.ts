@@ -33,11 +33,6 @@ Deno.test("defineConfigSchemas - calls config.define for all schemas", async () 
     "ai.indexEmbeddingsExcludeStrings",
     "ai.indexSummary",
     "ai.indexSummaryModelName",
-    "ai.openAIBaseUrl",
-    "ai.dallEBaseUrl",
-    "ai.requireAuth",
-    "ai.secretName",
-    "ai.provider",
   ];
 
   assertEquals(

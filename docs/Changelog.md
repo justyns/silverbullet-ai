@@ -9,12 +9,26 @@ This page is a brief overview of each version.
 - Migrated from SETTINGS/SECRETS pages to Space Lua configuration (`config.set()`)
 - API keys now configured via `config.set("ai.keys.OPENAI_API_KEY", "your-key")`
 - Uses `system.getConfig()` instead of deprecated `system.getSpaceConfig()`
+- Removed all of the server vs client logic and assume we're always in a client now
 
 ### Proxy Configuration
 - Added `useProxy` option to all provider types (text, embedding, image)
 - When `useProxy: false`, requests bypass SilverBullet's server proxy and go directly from the browser
 - Useful for local services like Ollama running on the same machine as the browser
 - SSE streaming now properly transforms URLs and headers for the proxy
+
+### Removed deprecated stuff
+- Removed deprecated commands (use [[Templated Prompts]] instead):
+  - `AI: Summarize Note and open summary`
+  - `AI: Insert Summary`
+  - `AI: Call OpenAI with Note as context`
+  - `AI: Stream response with selection or note as prompt`
+- Removed deprecated config settings:
+  - `ai.openAIBaseUrl` - use `baseUrl` in model config instead
+  - `ai.dallEBaseUrl` - use `baseUrl` in model config instead
+  - `ai.requireAuth` - use `requireAuth` in model config instead
+  - `ai.secretName` - use `ai.keys.*` instead
+  - `ai.provider` - use `provider` in model config instead
 
 ### Other Changes
 - Better logging when SSE events have errors

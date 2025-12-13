@@ -45,7 +45,6 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
-  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedTextModel");
   } catch (_error) {
@@ -56,7 +55,6 @@ export async function getSelectedTextModel() {
 }
 
 export async function getSelectedImageModel() {
-  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedImageModel");
   } catch (_error) {
@@ -67,7 +65,6 @@ export async function getSelectedImageModel() {
 }
 
 export async function getSelectedEmbeddingModel() {
-  // Always run in client in v2
   try {
     return await clientStore.get("ai.selectedEmbeddingModel");
   } catch (_error) {
@@ -78,17 +75,14 @@ export async function getSelectedEmbeddingModel() {
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
-  // Always run in client in v2
   await clientStore.set("ai.selectedImageModel", model);
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
-  // Always run in client in v2
   await clientStore.set("ai.selectedTextModel", model);
 }
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
-  // Always run in client in v2
   await clientStore.set("ai.selectedEmbeddingModel", model);
 }
 
@@ -122,13 +116,13 @@ async function getAndConfigureEmbeddingModel() {
 function setupImageProvider(model: ImageModelConfig) {
   const providerName = model.provider.toLowerCase();
   const useProxy = model.useProxy ?? true;
-  log("client", "Provider name", providerName);
+  log("Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
       currentImageProvider = new DallEProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.dallEBaseUrl,
+        model.baseUrl || "https://api.openai.com/v1",
         useProxy,
       );
       break;
@@ -153,8 +147,8 @@ function setupAIProvider(model: ModelConfig) {
       currentAIProvider = new OpenAIProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
-        model.requireAuth || aiSettings.requireAuth,
+        model.baseUrl || "https://api.openai.com/v1",
+        model.requireAuth,
         useProxy,
       );
       break;
@@ -194,7 +188,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
       currentEmbeddingProvider = new OpenAIEmbeddingProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
+        model.baseUrl || "https://api.openai.com/v1",
         model.requireAuth ?? true,
         useProxy,
       );
@@ -232,12 +226,11 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
 }
 
 export async function configureSelectedModel(model: ModelConfig) {
-  log("client", "configureSelectedModel called with:", model);
-  log("client", "AI Keys:", await system.getConfig(`ai`));
+  log("configureSelectedModel called with:", model);
+  log("AI Keys:", await system.getConfig(`ai`));
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     try {
       const newApiKey = await system.getConfig(
@@ -245,18 +238,18 @@ export async function configureSelectedModel(model: ModelConfig) {
       );
       if (newApiKey !== apiKey) {
         apiKey = newApiKey;
-        log("client", "API key updated");
+        log("API key updated");
       }
     } catch (_error) {
       console.error("Error reading secret:", _error);
       throw new Error(
-        "Failed to read the AI API key. Please check the SECRETS page.",
+        "Failed to read the AI API key. Please check your Space Lua config.",
       );
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing. Please set it in the secrets page.",
+      "AI API key is missing. Please set it in your Space Lua config.",
     );
   }
 
@@ -265,7 +258,7 @@ export async function configureSelectedModel(model: ModelConfig) {
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
-  log("client", "configureSelectedImageModel called with:", model);
+  log("configureSelectedImageModel called with:", model);
   if (!model) {
     throw new Error("No image model provided to configure");
   }
@@ -275,12 +268,12 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      log("client", "API key updated for image model");
+      log("API key updated for image model");
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing for image model. Please set it in the secrets page.",
+      "AI API key is missing for image model. Please set it in your Space Lua config.",
     );
   }
 
@@ -291,7 +284,7 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
 export async function configureSelectedEmbeddingModel(
   model: EmbeddingModelConfig,
 ) {
-  log("client", "configureSelectedEmbeddingModel called with:", model);
+  log("configureSelectedEmbeddingModel called with:", model);
   if (!model) {
     throw new Error("No embedding model provided to configure");
   }
@@ -301,12 +294,12 @@ export async function configureSelectedEmbeddingModel(
     );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      log("client", "API key updated for embedding model");
+      log("API key updated for embedding model");
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing for embedding model. Please set it in the secrets page.",
+      "AI API key is missing for embedding model. Please set it in your Space Lua config.",
     );
   }
 
@@ -316,11 +309,6 @@ export async function configureSelectedEmbeddingModel(
 
 async function loadAndMergeSettings() {
   const defaultSettings = {
-    openAIBaseUrl: "https://api.openai.com/v1",
-    dallEBaseUrl: "https://api.openai.com/v1",
-    requireAuth: true,
-    secretName: "OPENAI_API_KEY",
-    provider: "OpenAI",
     chat: {},
     promptInstructions: {},
     imageModels: [],
@@ -375,11 +363,11 @@ export async function initializeOpenAI(configure = true) {
     !aiSettings ||
     JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)
   ) {
-    log("client", "aiSettings updating from", aiSettings);
+    log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
-    log("client", "aiSettings updated to", aiSettings);
+    log("aiSettings updated to", aiSettings);
   } else {
-    log("client", "aiSettings unchanged", aiSettings);
+    log("aiSettings unchanged", aiSettings);
   }
 
   if (aiSettings.textModels.length === 1) {

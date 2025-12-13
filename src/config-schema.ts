@@ -269,35 +269,4 @@ export async function defineConfigSchemas(): Promise<void> {
     type: "string",
     description: "Model name to use for generating summaries",
   });
-
-  // Define schemas for deprecated settings (for backwards compatibility)
-  await syscall("config.define", "ai.openAIBaseUrl", {
-    type: "string",
-    format: "uri",
-    description: "Deprecated: Use baseUrl in model config instead",
-  });
-
-  await syscall("config.define", "ai.dallEBaseUrl", {
-    type: "string",
-    format: "uri",
-    description: "Deprecated: Use baseUrl in image model config instead",
-  });
-
-  await syscall("config.define", "ai.requireAuth", {
-    type: "boolean",
-    description:
-      "Deprecated: Use requireAuth in individual model configs instead",
-  });
-
-  await syscall("config.define", "ai.secretName", {
-    type: "string",
-    description:
-      "Deprecated: Use secretName in individual model configs instead",
-  });
-
-  await syscall("config.define", "ai.provider", {
-    type: "string",
-    enum: ["openai", "gemini", "ollama", "mock"],
-    description: "Deprecated: Use provider in individual model configs instead",
-  });
 }

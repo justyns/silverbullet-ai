@@ -7,28 +7,19 @@ import {
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { queryObjects } from "./utils.ts";
-// renderTemplate removed in v2
 import type {
   CompleteEvent,
   SlashCompletionOption,
   SlashCompletions,
-} from "@silverbulletmd/silverbullet/type/index";
+} from "@silverbulletmd/silverbullet/type/client";
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import {
-  convertPageToMessages,
-  enrichChatMessages,
-  supportsPlugSlashComplete,
-} from "./utils.ts";
+import { convertPageToMessages, enrichChatMessages } from "./utils.ts";
 import { ChatMessage } from "./types.ts";
 
-// This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
 ): Promise<{ options: SlashCompletions[] } | void> {
-  if (!supportsPlugSlashComplete()) {
-    return;
-  }
   const allTemplates = await queryObjects(
     "template where aiprompt and aiprompt.slashCommand",
   );
@@ -154,20 +145,23 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
-  let currentPageText: string,
-    currentLineNumber: number,
-    curCursorPos: number,
-    lineStartPos: number,
-    lineEndPos: number,
-    currentItemBounds: { from: number; to: number },
-    currentItemText: string,
-    parentItemBounds: { from: number; to: number },
-    parentItemText: string,
-    currentParagraph: { from: number; to: number; text: string },
-    selectedText: { from: number; to: number; text: string };
-
-  let smartReplaceType: "selected-text" | "current-paragraph" | "current-item";
-  let smartReplaceText: string;
+  let currentPageText: string = "";
+  let currentLineNumber: number = 0;
+  let curCursorPos: number = 0;
+  let lineStartPos: number = 0;
+  let lineEndPos: number = 0;
+  let currentItemBounds: { from: number; to: number } | undefined;
+  let currentItemText: string | undefined;
+  let parentItemBounds: { from: number; to: number } | undefined;
+  let parentItemText: string | undefined;
+  let currentParagraph: { from: number; to: number; text: string } | undefined;
+  let selectedText: { from: number; to: number; text: string } | undefined;
+  let smartReplaceType:
+    | "selected-text"
+    | "current-paragraph"
+    | "current-item"
+    | undefined;
+  let smartReplaceText: string | undefined;
 
   try {
     // This is all to get the current line number and position
@@ -204,10 +198,12 @@ export async function insertAiPromptFromTemplate(
         undefined,
         true,
       );
-      currentItemText = currentPageText.slice(
-        currentItemBounds.from,
-        currentItemBounds.to,
-      );
+      if (currentItemBounds) {
+        currentItemText = currentPageText.slice(
+          currentItemBounds.from,
+          currentItemBounds.to,
+        );
+      }
 
       parentItemBounds = await system.invokeFunction(
         "editor.determineItemBounds",
@@ -216,10 +212,12 @@ export async function insertAiPromptFromTemplate(
         0,
         true,
       );
-      parentItemText = currentPageText.slice(
-        parentItemBounds.from,
-        parentItemBounds.to,
-      );
+      if (parentItemBounds) {
+        parentItemText = currentPageText.slice(
+          parentItemBounds.from,
+          parentItemBounds.to,
+        );
+      }
     }
   } catch (error) {
     console.error("Error fetching current item", error);
@@ -349,10 +347,10 @@ export async function insertAiPromptFromTemplate(
       cursorPos += 1;
       break;
     case "start-of-item":
-      cursorPos = currentItemBounds.from;
+      cursorPos = currentItemBounds?.from ?? curCursorPos;
       break;
     case "end-of-item":
-      cursorPos = currentItemBounds.to;
+      cursorPos = currentItemBounds?.to ?? curCursorPos;
       break;
     case "cursor":
     default:
@@ -382,9 +380,9 @@ export async function insertAiPromptFromTemplate(
 
   if (!selectedTemplate.chat) {
     // non-multi-chat template
-    let renderedTemplate;
+    let renderedTemplate: string;
     try {
-      const templateContent = templateText.text;
+      const templateContent = templateText;
       const templateData = globalMetadata;
       const luaExpression = `spacelua.interpolate(${
         JSON.stringify(templateContent)
@@ -394,11 +392,11 @@ export async function insertAiPromptFromTemplate(
       console.log("Template rendered successfully:", renderedTemplate);
     } catch (error) {
       console.error("Template rendering failed:", error);
-      console.error("Failed template content:", templateText.text);
+      console.error("Failed template content:", templateText);
       console.error("Template metadata:", globalMetadata);
 
       // Fallback to plain text if template rendering fails
-      renderedTemplate = templateText.text;
+      renderedTemplate = templateText;
     }
     if (selectedTemplate.systemPrompt) {
       messages.push({
@@ -408,7 +406,7 @@ export async function insertAiPromptFromTemplate(
     }
     messages.push({
       role: "user",
-      content: renderedTemplate.text,
+      content: renderedTemplate,
     });
   } else {
     // multi-turn-chat template

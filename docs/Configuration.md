@@ -5,8 +5,6 @@ navOrder: 3
 
 Configuration is done using SilverBullet v2's Space Lua configuration system.
 
-For complete configuration reference, see [[CONFIG]].
-
 ## Basic Example
 
 ```lua

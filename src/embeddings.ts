@@ -8,18 +8,12 @@ import type {
   EmbeddingResult,
 } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
-import {
-  indexObjects,
-  log,
-  queryObjects,
-  supportsServerProxyCall,
-} from "./utils.ts";
+import { indexObjects, log, queryObjects } from "./utils.ts";
 import {
   editor,
   markdown,
@@ -136,7 +130,7 @@ export async function indexEmbeddings(page: string) {
       tag: "embedding",
     };
 
-    // log("any", "Indexing embedding object", embeddingObject);
+    // log("Indexing embedding object", embeddingObject);
     objects.push(embeddingObject);
   }
 
@@ -146,7 +140,6 @@ export async function indexEmbeddings(page: string) {
   const duration = (endTime - startTime) / 1000;
 
   log(
-    "any",
     `AI: Indexed ${objects.length} embedding objects for page ${page} in ${duration} seconds`,
   );
 }
@@ -219,10 +212,7 @@ export async function indexSummary(page: string) {
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
-  log(
-    "any",
-    `AI: Indexed summary for page ${page} in ${duration} seconds`,
-  );
+  log(`AI: Indexed summary for page ${page} in ${duration} seconds`);
 }
 
 // Listen for page:index events and queue up embedding and summary indexing to
@@ -272,29 +262,11 @@ export async function processSummaryQueue(messages: MQMessage[]) {
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
-  if (await supportsServerProxyCall()) {
-    return (await syscall(
-      "system.invokeFunctionOnServer",
-      "index.queryObjects",
-      "embedding",
-      {},
-    ));
-  } else {
-    return (await queryObjects("embedding", {}));
-  }
+  return await queryObjects("embedding", {});
 }
 
 export async function getAllAISummaries(): Promise<AISummaryObject[]> {
-  if (await supportsServerProxyCall()) {
-    return (await syscall(
-      "system.invokeFunctionOnServer",
-      "index.queryObjects",
-      "aiSummary",
-      {},
-    ));
-  } else {
-    return (await queryObjects("aiSummary", {}));
-  }
+  return await queryObjects("aiSummary", {});
 }
 
 export async function generateEmbeddings(text: string): Promise<number[]> {
@@ -303,16 +275,6 @@ export async function generateEmbeddings(text: string): Promise<number[]> {
     throw new Error("No embedding provider found");
   }
   return await currentEmbeddingProvider.generateEmbeddings({ text });
-}
-
-export async function generateEmbeddingsOnServer(
-  text: string,
-): Promise<number[]> {
-  return await syscall(
-    "system.invokeFunctionOnServer",
-    "silverbullet-ai.generateEmbeddings",
-    text,
-  );
 }
 
 // Full disclosure, I don't really understand how this part works - thanks chatgpt!
@@ -335,12 +297,10 @@ export async function searchEmbeddings(
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
 
-  // Always run in client in v2
-
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
   const queryEmbedding = typeof query === "string"
-    ? await generateEmbeddingsOnServer(query)
+    ? await generateEmbeddings(query)
     : query;
   const endEmbeddingGeneration = Date.now();
   console.log(
@@ -495,7 +455,7 @@ export async function searchSummaryEmbeddings(
   numResults = 10,
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
-  const queryEmbedding = await generateEmbeddingsOnServer(query);
+  const queryEmbedding = await generateEmbeddings(query);
   const summaries = await getAllAISummaries();
 
   const results: EmbeddingResult[] = summaries.map((summary) => ({
@@ -643,7 +603,7 @@ export async function updateSearchPage() {
     await editor.setText(loadingText);
     let queryEmbedding: number[] = [];
     try {
-      queryEmbedding = await generateEmbeddingsOnServer(phrase);
+      queryEmbedding = await generateEmbeddings(phrase);
     } catch (error) {
       console.error("Error generating query vector embeddings", error);
       // deno-fmt-ignore

@@ -22,25 +22,6 @@ export async function getSelectedText() {
   };
 }
 
-export async function getSelectedTextOrNote() {
-  const selectedTextInfo = await getSelectedText();
-  const pageText = await editor.getText();
-  if (selectedTextInfo.text === "") {
-    return {
-      from: 0,
-      to: pageText.length,
-      text: pageText,
-      isWholeNote: true,
-    };
-  }
-  const isWholeNote = selectedTextInfo.from === 0 &&
-    selectedTextInfo.to === pageText.length;
-  return {
-    ...selectedTextInfo,
-    isWholeNote: isWholeNote,
-  };
-}
-
 export async function getPageLength() {
   const pageText = await editor.getText();
   return pageText.length;

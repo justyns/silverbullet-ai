@@ -195,7 +195,7 @@ Deno.test("initializeOpenAI should throw an error if the API secret is missing",
     if (error instanceof Error) {
       assertEquals(
         error.message,
-        "Failed to read the AI API key. Please check the SECRETS page.",
+        "Failed to read the AI API key. Please check your Space Lua config.",
         "initializeOpenAI did not handle missing secrets correctly",
       );
     } else {
@@ -215,7 +215,7 @@ Deno.test(
       if (error instanceof Error) {
         assertEquals(
           error.message,
-          "Failed to read the AI API key. Please check the SECRETS page.",
+          "Failed to read the AI API key. Please check your Space Lua config.",
           "initializeOpenAI did not handle missing secrets correctly",
         );
       } else {
