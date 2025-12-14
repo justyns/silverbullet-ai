@@ -1,7 +1,15 @@
 The following commands are currently available:
 
-${template.each(query[[
-  from index.tag "page"
-  where string.find(name, "Commands/") == 1
-  order by name
-]], template.new[==[* [[${name}]]]==])}
+* [[Commands/AI: Chat on current page]]
+* [[Commands/AI: Connectivity Test]]
+* [[Commands/AI: Enhance Note]]
+* [[Commands/AI: Execute AI Prompt from Custom Template]]
+* [[Commands/AI: Generate and insert image using DallE]]
+* [[Commands/AI: Generate Note FrontMatter]]
+* [[Commands/AI: Generate tags for note]]
+* [[Commands/AI: Search]]
+* [[Commands/AI: Select Embedding Model from Config]]
+* [[Commands/AI: Select Image Model from Config]]
+* [[Commands/AI: Select Text Model from Config]]
+* [[Commands/AI: Suggest Page Name]]
+* [[Commands/AI: Test Embedding Generation]]

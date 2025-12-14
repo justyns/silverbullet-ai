@@ -3,10 +3,6 @@ tags: sidebar
 navOrder: 20
 ---
 
-> **note:** All built-in prompts may be replaced with templated prompts eventually.
-
-As of 0.0.6, you can use template notes to create your own custom prompts to send to the LLM.
-
 Template notes make use of all of the template language available to SilverBullet. 
 
 To be a templated prompt, the note must have the following frontmatter:

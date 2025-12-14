@@ -31,11 +31,15 @@ This page is a brief overview of each version.
   - `ai.secretName` - use `ai.keys.*` instead
   - `ai.provider` - use `provider` in model config instead
 
+### Library Changes
+- **BREAKING**: The AICore Library is now merged into the main plug - no separate install needed
+- Converted library scripts from Space Script to Space Lua
+
 ### Other Changes
 - Better logging when SSE events have errors
 - Add support for retrieving list of models from openai and ollama providers
 - Add a Connectivity Test command and page to test whether an api is working
-- Auto install the [[AI Core Library]] initially
+- Docs site now uses mkdocs only (removed silverbullet-pub dependency)
 
 ---
 ## 0.4.1 (2024-11-15)
@@ -67,10 +71,10 @@ This page is a brief overview of each version.
   - **new-line-below**: Inserts on a new line below the current line.
   - **replace-line**: Replaces the current line with the generated content.
   - **replace-smart**: Intelligently replaces content based on context (selected text, current item, or current paragraph).
-- AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
+- AICore Library: Add `aiSplitTodo` slash command and `AI Split Task` templated prompt to split a task into smaller subtasks.
 - AICore Library: Add template prompts for rewriting text, mostly as a demo for the `replace-smart` insertAt option.
 - Remove need for duplicate `description` frontmatter field for templated prompts.
-- Revamp [docs website](https://ai.silverbullet.md) to use mkdocs (and mkdocs-material) in addition to silverbullet-pub to handle the silverbullet-specific things like templates/queries.
+- Revamp [docs website](https://ai.silverbullet.md) to use mkdocs and mkdocs-material.
 
 ---
 ## 0.3.2

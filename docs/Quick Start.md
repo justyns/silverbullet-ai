@@ -64,6 +64,4 @@ Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+S
 
 Or try searching with [[Commands/AI: Search]] after configuring an [[Configuration/Embedding Models|Embedding model]] and re-indexing the space.
 
-And that's it! Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go futher.
-
-Also consider importing the [[AI Core Library]] for some helpful templates and snippets.
+And that's it! Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go further.

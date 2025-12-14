@@ -1,7 +1,7 @@
 site_name: Silverbullet AI Plug
 repo_url: https://github.com/justyns/silverbullet-ai
 edit_uri: edit/main/docs/
-docs_dir: docs/_public
+docs_dir: docs
 theme:
   name: material
   color_mode: auto
@@ -54,17 +54,17 @@ extra:
 plugins:
   - include_dir_to_nav
   - search
-  # TODO: Doesn't really work with pub since it creates new files
-  # - git-revision-date-localized:
-  #     enable_creation_date: true
-  # - optimize
+  - macros:
+      module_name: mkdocs_hooks
+  - git-revision-date-localized:
+      enable_creation_date: true
 
 hooks:
-  - docs/mkdocs-sb.py
+  - mkdocs_hooks.py
 
 watch:
-  - docs/_public
-  - docs/mkdocs-sb.py
+  - docs
+  - mkdocs_hooks.py
   - mkdocs.yml
 
 exclude_docs: |
@@ -73,8 +73,10 @@ exclude_docs: |
   SECRETS.md
   template/
   Library/
+  _plug/
+  _public/
   Features.md
-  Commands.md
+  __pycache__/
 
 nav:
   - Home: index.md
@@ -83,7 +85,6 @@ nav:
   - Configuration:
       - Configuration.md
       - Configuration
-  - AI Core Library.md
   - Templated Prompts.md
   - Commands:
       - Commands

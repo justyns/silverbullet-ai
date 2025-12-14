@@ -26,25 +26,30 @@ You can do so through our [Github Issues](https://github.com/justyns/silverbulle
 
 ## Getting Started
 
-If you're new here, we recommend starting with:
-
-1. [[Quick Start]]
-2. [[AI Core Library]]
+If you're new here, we recommend starting with the [[Quick Start]] guide.
 
 > **Warning**: Please back up your notes before using this plug. It inserts and replaces text at certain points. We recommend using the git plug to keep your notes versioned automatically in a git repository.
 
 ## Features
 
-![[Features]]
+{{ include_file("Features") }}
 
 ### Available commands
 
 The list below are the commands available in this plugin.
 
-${template.each(query[[
-  from index.tag "page"
-  where string.find(name, "Commands/") == 1
-  order by name
-]], template.new[==[* [[${name}]]]==])}
+* [[Commands/AI: Chat on current page]]
+* [[Commands/AI: Connectivity Test]]
+* [[Commands/AI: Enhance Note]]
+* [[Commands/AI: Execute AI Prompt from Custom Template]]
+* [[Commands/AI: Generate and insert image using DallE]]
+* [[Commands/AI: Generate Note FrontMatter]]
+* [[Commands/AI: Generate tags for note]]
+* [[Commands/AI: Search]]
+* [[Commands/AI: Select Embedding Model from Config]]
+* [[Commands/AI: Select Image Model from Config]]
+* [[Commands/AI: Select Text Model from Config]]
+* [[Commands/AI: Suggest Page Name]]
+* [[Commands/AI: Test Embedding Generation]]
 
 
