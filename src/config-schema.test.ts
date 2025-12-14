@@ -88,14 +88,8 @@ Deno.test("defineConfigSchemas - validates model config schemas", async () => {
     assertEquals(schema.type, "array");
     assertEquals(schema.items.type, "object");
 
-    const requiredFields = [
-      "name",
-      "description",
-      "modelName",
-      "provider",
-      "secretName",
-      "requireAuth",
-    ];
+    // Only essential fields are required
+    const requiredFields = ["name", "modelName", "provider"];
     assertEquals(schema.items.required, requiredFields);
 
     // Check provider enum
@@ -105,6 +99,9 @@ Deno.test("defineConfigSchemas - validates model config schemas", async () => {
       "ollama",
       "mock",
     ]);
+
+    // Check useProxy property exists
+    assertEquals(schema.items.properties.useProxy.type, "boolean");
   }
 
   // Check image models schema structure
@@ -169,11 +166,7 @@ Deno.test("defineConfigSchemas - validates API keys schema", async () => {
   if (keysCall) {
     const schema = keysCall.args[1];
     assertEquals(schema.type, "object");
-    assertEquals(schema.additionalProperties, false);
-
-    // Check pattern properties for API key names
-    assertEquals(schema.patternProperties["^[A-Z_]+$"] !== undefined, true);
-    assertEquals(schema.patternProperties["^[A-Z_]+$"].type, "string");
-    assertEquals(schema.patternProperties["^[A-Z_]+$"].minLength, 1);
+    // Simplified: allow any string key with string value
+    assertEquals(schema.additionalProperties, { type: "string" });
   }
 });

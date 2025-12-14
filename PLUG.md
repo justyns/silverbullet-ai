@@ -5,7 +5,7 @@ author: justyns
 website: https://github.com/justyns/silverbullet-ai
 files:
 - silverbullet-ai.plug.js
-- silverbullet-ai/Space Lua/AI Init.md
+- silverbullet-ai/Space Lua/AI Config.md
 - silverbullet-ai/Space Lua/AI Query LLM.md
 - silverbullet-ai/Space Lua/AI Search Embeddings.md
 - silverbullet-ai/Space Lua/Remove Duplicate Start.md

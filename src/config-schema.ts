@@ -1,20 +1,12 @@
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 export async function defineConfigSchemas(): Promise<void> {
-  // TODO: Verify that this actually works
-
-  // Define schema for API keys - these should be non-empty strings
+  // Define schema for API keys
   await syscall("config.define", "ai.keys", {
     type: "object",
-    patternProperties: {
-      "^[A-Z_]+$": {
-        type: "string",
-        minLength: 1,
-        description: "API key for AI service",
-      },
-    },
-    additionalProperties: false,
-    description: "API keys for various AI services",
+    additionalProperties: { type: "string" },
+    description:
+      "API keys for AI services (e.g., OPENAI_API_KEY, GEMINI_API_KEY)",
   });
 
   // Define schema for text models
@@ -25,7 +17,6 @@ export async function defineConfigSchemas(): Promise<void> {
       properties: {
         name: {
           type: "string",
-          minLength: 1,
           description: "Display name for the model",
         },
         description: {
@@ -34,7 +25,6 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         modelName: {
           type: "string",
-          minLength: 1,
           description: "Technical model name/identifier",
         },
         provider: {
@@ -52,18 +42,14 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         baseUrl: {
           type: "string",
-          format: "uri",
           description: "Optional custom base URL for the API",
         },
+        useProxy: {
+          type: "boolean",
+          description: "Whether to use SilverBullet's proxy for requests",
+        },
       },
-      required: [
-        "name",
-        "description",
-        "modelName",
-        "provider",
-        "secretName",
-        "requireAuth",
-      ],
+      required: ["name", "modelName", "provider"],
       additionalProperties: false,
     },
     description: "Available text/chat models",
@@ -77,7 +63,6 @@ export async function defineConfigSchemas(): Promise<void> {
       properties: {
         name: {
           type: "string",
-          minLength: 1,
           description: "Display name for the image model",
         },
         description: {
@@ -86,7 +71,6 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         modelName: {
           type: "string",
-          minLength: 1,
           description: "Technical model name/identifier",
         },
         provider: {
@@ -104,18 +88,14 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         baseUrl: {
           type: "string",
-          format: "uri",
           description: "Optional custom base URL for the API",
         },
+        useProxy: {
+          type: "boolean",
+          description: "Whether to use SilverBullet's proxy for requests",
+        },
       },
-      required: [
-        "name",
-        "description",
-        "modelName",
-        "provider",
-        "secretName",
-        "requireAuth",
-      ],
+      required: ["name", "modelName", "provider"],
       additionalProperties: false,
     },
     description: "Available image generation models",
@@ -129,7 +109,6 @@ export async function defineConfigSchemas(): Promise<void> {
       properties: {
         name: {
           type: "string",
-          minLength: 1,
           description: "Display name for the embedding model",
         },
         description: {
@@ -138,7 +117,6 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         modelName: {
           type: "string",
-          minLength: 1,
           description: "Technical model name/identifier",
         },
         provider: {
@@ -156,18 +134,14 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         baseUrl: {
           type: "string",
-          format: "uri",
           description: "Optional custom base URL for the API",
         },
+        useProxy: {
+          type: "boolean",
+          description: "Whether to use SilverBullet's proxy for requests",
+        },
       },
-      required: [
-        "name",
-        "description",
-        "modelName",
-        "provider",
-        "secretName",
-        "requireAuth",
-      ],
+      required: ["name", "modelName", "provider"],
       additionalProperties: false,
     },
     description: "Available embedding models for semantic search",
