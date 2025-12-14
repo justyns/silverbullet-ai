@@ -1,4 +1,3 @@
-import type { FileMeta } from "@silverbulletmd/silverbullet/type/index";
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import {
   aiSettings,
@@ -13,49 +12,58 @@ import {
 
 const connectivityTestPage = "🛰️ AI Connectivity Test";
 
-export function readFileConnectivityTest(
-  name: string,
-): { data: Uint8Array; meta: FileMeta } {
-  return {
-    data: new TextEncoder().encode(""),
-    meta: {
-      name,
-      contentType: "text/markdown",
-      size: 0,
-      created: 0,
-      lastModified: 0,
-      perm: "ro",
-    },
-  };
-}
+// Cache for test results - populated by runConnectivityTests, read by getConnectivityTestResults
+let cachedTestResults: string | null = null;
 
-export function getFileMetaConnectivityTest(name: string): FileMeta {
-  return {
-    name,
-    contentType: "text/markdown",
-    size: -1,
-    created: 0,
-    lastModified: 0,
-    perm: "ro",
-  };
-}
+/**
+ * Runs all connectivity tests and returns the markdown results.
+ * Shows a modal while tests are running.
+ */
+export async function runConnectivityTests(): Promise<string> {
+  await initIfNeeded();
 
-export function writeFileConnectivityTest(
-  name: string,
-): FileMeta {
-  return getFileMetaConnectivityTest(name);
-}
+  // Show modal while waiting
+  // mode value becomes: style={{ inset: `${mode}px` }}
+  await editor.showPanel(
+    "modal",
+    20,
+    `<style>
+      .ai-modal-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .ai-modal {
+        padding: 24px 32px;
+        text-align: center;
+        background: var(--editor-background-color, var(--root-background-color, Canvas));
+        color: var(--editor-text-color, var(--root-text-color, CanvasText));
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 400px;
+        width: 100%;
+      }
+      .ai-modal h3 { margin-top: 0; }
+      .ai-modal p { margin-bottom: 0; }
+    </style>
+    <div class="ai-modal-wrapper">
+      <div class="ai-modal">
+        <h3>🛰️ Running Connectivity Tests...</h3>
+        <p>Testing AI provider connections. This may take a moment.</p>
+      </div>
+    </div>`,
+  );
 
-export async function updateConnectivityTestPage() {
-  const page = await editor.getCurrentPage();
-  if (page === connectivityTestPage) {
-    await initIfNeeded();
-    let text = `# 🛰️ AI Connectivity Test
+  let text = `# 🛰️ AI Connectivity Test
 
 ## Status Overview
 
 `;
 
+  try {
     // Get currently selected models
     const textModel = await getSelectedTextModel();
     const imageModel = await getSelectedImageModel();
@@ -123,8 +131,6 @@ Use these commands to select your models:
 
       if (textModel) {
         showModelDetails(textModel, "Text Model", "💬");
-        text += "\n> 🔄 Starting connectivity tests...\n\n";
-        await editor.setText(text);
 
         // Test text model connectivity
         text += "### 🔌 Provider Setup\n\n";
@@ -176,7 +182,6 @@ Use these commands to select your models:
               const chunks: string[] = [];
               const streamingResult = await new Promise<string>(
                 (resolve, reject) => {
-                  let fullResponse = "";
                   provider.chatWithAI({
                     messages: [{
                       role: "user",
@@ -187,7 +192,6 @@ Use these commands to select your models:
                     onDataReceived: (chunk) => {
                       console.log("Streaming chunk received:", chunk);
                       chunks.push(chunk);
-                      fullResponse += chunk;
                     },
                     onResponseComplete: (finalResponse) => {
                       resolve(finalResponse);
@@ -272,15 +276,36 @@ Use these commands to select your models:
         }
       }
     }
-
-    await editor.setText(text);
+  } finally {
+    // Always hide the modal
+    await editor.hidePanel("modal");
   }
+
+  // Cache the results
+  cachedTestResults = text;
+  return text;
 }
 
 /**
- * Command to navigate to the AI Connectivity Test page, which runs various tests against the currently selected models.
+ * Returns the cached connectivity test results.
+ * Used by the virtual page to display results.
+ */
+export function getConnectivityTestResults(): string {
+  if (cachedTestResults) {
+    return cachedTestResults;
+  }
+  return `# 🛰️ AI Connectivity Test
+
+> ℹ️ No test results available yet.
+
+Run the **AI: Connectivity Test** command to test your AI provider connections.
+`;
+}
+
+/**
+ * Command to run connectivity tests and navigate to the results page.
  */
 export async function connectivityTestCommand() {
-  await initIfNeeded();
+  await runConnectivityTests();
   await editor.navigate(connectivityTestPage);
 }
