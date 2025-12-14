@@ -33,24 +33,11 @@ import {
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
-import { defineConfigSchemas } from "./src/config-schema.ts";
 import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
-
-/**
- * Similar to the above function, but meant for the config:loaded event.
- */
-export async function reloadConfig() {
-  try {
-    await defineConfigSchemas();
-  } catch (error) {
-    console.error("Failed to define config schemas:", error);
-  }
-  await initializeOpenAI(true);
-}
 
 /**
  * Prompts the user to select a text/llm model from the configured models.

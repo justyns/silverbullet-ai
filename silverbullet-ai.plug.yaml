@@ -9,11 +9,6 @@ functions:
   queryAI:
     path: sbai.ts:queryAI
 
-  reloadConfigEvent:
-    path: sbai.ts:reloadConfig
-    events:
-      - config:loaded
-
   tagNoteWithAI:
     path: sbai.ts:tagNoteWithAI
     command:
