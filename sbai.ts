@@ -39,7 +39,6 @@ import {
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
-import { installAICoreLibrary } from "./src/libraryInstaller.ts";
 
 /**
  * Similar to the above function, but meant for the config:loaded event.
@@ -51,7 +50,6 @@ export async function reloadConfig() {
     console.error("Failed to define config schemas:", error);
   }
   await initializeOpenAI(true);
-  await installAICoreLibrary();
 }
 
 /**

@@ -14,3 +14,4 @@ cov_profile
 test?space*
 site/
 testspace*/
+dist/
