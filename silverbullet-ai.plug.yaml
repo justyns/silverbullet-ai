@@ -85,30 +85,12 @@ functions:
     path: src/embeddings.ts:searchCombinedEmbeddings
   searchSummaryEmbeddings:
     path: src/embeddings.ts:searchSummaryEmbeddings
-  readPageSearchEmbeddings:
-    path: src/embeddings.ts:readFileEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: readFile
-  writePageSearchEmbeddings:
-    path: src/embeddings.ts:writeFileEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: writeFile
-  getPageMetaSearchEmbeddings:
-    path: src/embeddings.ts:getFileMetaEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: getFileMeta
+  getSearchResults:
+    path: src/embeddings.ts:getSearchResults
   searchCommand:
     path: src/embeddings.ts:searchCommand
     command:
       name: "AI: Search"
-  updateSearchPage:
-    path: src/embeddings.ts:updateSearchPage
-    events:
-      - editor:pageLoaded
-      - editor:pageReloaded
   getConnectivityTestResults:
     path: src/connectivity.ts:getConnectivityTestResults
   connectivityTestCommand:

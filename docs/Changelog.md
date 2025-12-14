@@ -10,6 +10,7 @@ This page is a brief overview of each version.
 - API keys now configured via `config.set("ai.keys.OPENAI_API_KEY", "your-key")`
 - Uses `system.getConfig()` instead of deprecated `system.getSpaceConfig()`
 - Removed all of the server vs client logic and assume we're always in a client now
+- Move embedding search page to new virtualpage api
 
 ### Proxy Configuration
 - Added `useProxy` option to all provider types (text, embedding, image)
