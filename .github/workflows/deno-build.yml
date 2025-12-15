@@ -21,7 +21,7 @@ jobs:
         # uses: denoland/setup-deno@v1
         uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
         with:
-          deno-version: v1.x
+          deno-version: v2.x
 
       - name: Verify formatting
         run: deno fmt --check
@@ -36,7 +36,7 @@ jobs:
       #     run: deno lint
 
       - name: Setup silverbullet
-        run: deno install -f --name silverbullet  --unstable-kv --unstable-worker-options -A https://get.silverbullet.md
+        run: deno install -f --name silverbullet  --unstable-kv --unstable-worker-options -A --global https://get.silverbullet.md
 
       - name: Add Deno bin to PATH
         run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
@@ -55,6 +55,7 @@ jobs:
         run: |
           git config --global user.name 'GitHub Actions'
           git config --global user.email 'actions@github.com'
-          git add silverbullet-ai.plug.js || true
-          git commit -m "Auto update silverbullet-ai.plug.js [skip ci]" || true
-          git push
+          # TODO: Not keeping this in git anymore, probably?  Add to release instead?
+          # git add silverbullet-ai.plug.js || true
+          # git commit -m "Auto update silverbullet-ai.plug.js [skip ci]" || true
+          # git push

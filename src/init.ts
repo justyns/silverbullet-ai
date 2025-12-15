@@ -1,4 +1,3 @@
-import { readSecret } from "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/secrets_page.ts";
 import { clientStore, system } from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
@@ -21,6 +20,7 @@ import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 import { MockImageProvider } from "./mocks/mockproviders.ts";
 import { MockProvider } from "./mocks/mockproviders.ts";
 import { MockEmbeddingProvider } from "./mocks/mockproviders.ts";
+import { defineConfigSchemas } from "./config-schema.ts";
 
 export let apiKey: string;
 export let aiSettings: AISettings;
@@ -45,10 +45,6 @@ export async function initIfNeeded() {
 }
 
 export async function getSelectedTextModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return undefined;
-  }
   try {
     return await clientStore.get("ai.selectedTextModel");
   } catch (_error) {
@@ -59,10 +55,6 @@ export async function getSelectedTextModel() {
 }
 
 export async function getSelectedImageModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return undefined;
-  }
   try {
     return await clientStore.get("ai.selectedImageModel");
   } catch (_error) {
@@ -73,10 +65,6 @@ export async function getSelectedImageModel() {
 }
 
 export async function getSelectedEmbeddingModel() {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
   try {
     return await clientStore.get("ai.selectedEmbeddingModel");
   } catch (_error) {
@@ -87,26 +75,14 @@ export async function getSelectedEmbeddingModel() {
 }
 
 export async function setSelectedImageModel(model: ImageModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
   await clientStore.set("ai.selectedImageModel", model);
 }
 
 export async function setSelectedTextModel(model: ModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
   await clientStore.set("ai.selectedTextModel", model);
 }
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
-  if (await system.getEnv() == "server") {
-    // We can't use clientStore in the server process
-    return;
-  }
   await clientStore.set("ai.selectedEmbeddingModel", model);
 }
 
@@ -139,13 +115,15 @@ async function getAndConfigureEmbeddingModel() {
 
 function setupImageProvider(model: ImageModelConfig) {
   const providerName = model.provider.toLowerCase();
-  log("client", "Provider name", providerName);
+  const useProxy = model.useProxy ?? true;
+  log("Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
       currentImageProvider = new DallEProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.dallEBaseUrl,
+        model.baseUrl || "https://api.openai.com/v1",
+        useProxy,
       );
       break;
     case ImageProvider.Mock:
@@ -163,17 +141,19 @@ function setupImageProvider(model: ImageModelConfig) {
 
 function setupAIProvider(model: ModelConfig) {
   const providerName = model.provider.toLowerCase();
+  const useProxy = model.useProxy ?? true;
   switch (providerName) {
     case Provider.OpenAI:
       currentAIProvider = new OpenAIProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
-        model.requireAuth || aiSettings.requireAuth,
+        model.baseUrl || "https://api.openai.com/v1",
+        model.requireAuth,
+        useProxy,
       );
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName);
+      currentAIProvider = new GeminiProvider(apiKey, model.modelName, useProxy);
       break;
     case Provider.Ollama:
       currentAIProvider = new OllamaProvider(
@@ -181,6 +161,7 @@ function setupAIProvider(model: ModelConfig) {
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
         model.requireAuth,
+        useProxy,
       );
       break;
     case Provider.Mock:
@@ -201,18 +182,24 @@ function setupAIProvider(model: ModelConfig) {
 
 function setupEmbeddingProvider(model: EmbeddingModelConfig) {
   const providerName = model.provider.toLowerCase();
+  const useProxy = model.useProxy ?? true;
   switch (providerName) {
     case EmbeddingProvider.OpenAI:
       currentEmbeddingProvider = new OpenAIEmbeddingProvider(
         apiKey,
         model.modelName,
-        model.baseUrl || aiSettings.openAIBaseUrl,
+        model.baseUrl || "https://api.openai.com/v1",
+        model.requireAuth ?? true,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Gemini:
       currentEmbeddingProvider = new GeminiEmbeddingProvider(
         apiKey,
         model.modelName,
+        undefined,
+        model.requireAuth ?? true,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Ollama:
@@ -220,7 +207,8 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434",
-        model.requireAuth,
+        model.requireAuth ?? false,
+        useProxy,
       );
       break;
     case EmbeddingProvider.Mock:
@@ -238,28 +226,30 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
 }
 
 export async function configureSelectedModel(model: ModelConfig) {
-  log("client", "configureSelectedModel called with:", model);
+  log("configureSelectedModel called with:", model);
+  log("AI Keys:", await system.getConfig(`ai`));
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  model.requireAuth = model.requireAuth ?? aiSettings.requireAuth;
   if (model.requireAuth) {
     try {
-      const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+      const newApiKey = await system.getConfig(
+        `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+      );
       if (newApiKey !== apiKey) {
         apiKey = newApiKey;
-        log("client", "API key updated");
+        log("API key updated");
       }
     } catch (_error) {
       console.error("Error reading secret:", _error);
       throw new Error(
-        "Failed to read the AI API key. Please check the SECRETS page.",
+        "Failed to read the AI API key. Please check your Space Lua config.",
       );
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing. Please set it in the secrets page.",
+      "AI API key is missing. Please set it in your Space Lua config.",
     );
   }
 
@@ -268,20 +258,22 @@ export async function configureSelectedModel(model: ModelConfig) {
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
-  log("client", "configureSelectedImageModel called with:", model);
+  log("configureSelectedImageModel called with:", model);
   if (!model) {
     throw new Error("No image model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    const newApiKey = await system.getConfig(
+      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+    );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      log("client", "API key updated for image model");
+      log("API key updated for image model");
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing for image model. Please set it in the secrets page.",
+      "AI API key is missing for image model. Please set it in your Space Lua config.",
     );
   }
 
@@ -292,20 +284,22 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
 export async function configureSelectedEmbeddingModel(
   model: EmbeddingModelConfig,
 ) {
-  log("client", "configureSelectedEmbeddingModel called with:", model);
+  log("configureSelectedEmbeddingModel called with:", model);
   if (!model) {
     throw new Error("No embedding model provided to configure");
   }
   if (model.requireAuth) {
-    const newApiKey = await readSecret(model.secretName || "OPENAI_API_KEY");
+    const newApiKey = await system.getConfig(
+      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
+    );
     if (newApiKey !== apiKey) {
       apiKey = newApiKey;
-      log("client", "API key updated for embedding model");
+      log("API key updated for embedding model");
     }
   }
   if (model.requireAuth && !apiKey) {
     throw new Error(
-      "AI API key is missing for embedding model. Please set it in the secrets page.",
+      "AI API key is missing for embedding model. Please set it in your Space Lua config.",
     );
   }
 
@@ -315,11 +309,6 @@ export async function configureSelectedEmbeddingModel(
 
 async function loadAndMergeSettings() {
   const defaultSettings = {
-    openAIBaseUrl: "https://api.openai.com/v1",
-    dallEBaseUrl: "https://api.openai.com/v1",
-    requireAuth: true,
-    secretName: "OPENAI_API_KEY",
-    provider: "OpenAI",
     chat: {},
     promptInstructions: {},
     imageModels: [],
@@ -346,7 +335,7 @@ async function loadAndMergeSettings() {
     indexSummaryPrompt: "",
     enhanceFrontMatterPrompt: "",
   };
-  const newSettings = await system.getSpaceConfig("ai", {});
+  const newSettings = await system.getConfig("ai", {});
   const newCombinedSettings = { ...defaultSettings, ...newSettings };
   newCombinedSettings.chat = {
     ...defaultChatSettings,
@@ -361,17 +350,24 @@ async function loadAndMergeSettings() {
 }
 
 export async function initializeOpenAI(configure = true) {
+  // Define config schemas first to enable validation
+  try {
+    await defineConfigSchemas();
+  } catch (error) {
+    console.warn("Failed to define config schemas:", error);
+  }
+
   const newCombinedSettings = await loadAndMergeSettings();
 
   if (
     !aiSettings ||
     JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)
   ) {
-    log("client", "aiSettings updating from", aiSettings);
+    log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
-    log("client", "aiSettings updated to", aiSettings);
+    log("aiSettings updated to", aiSettings);
   } else {
-    log("client", "aiSettings unchanged", aiSettings);
+    log("aiSettings unchanged", aiSettings);
   }
 
   if (aiSettings.textModels.length === 1) {

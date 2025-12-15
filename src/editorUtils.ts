@@ -1,4 +1,9 @@
-import { editor } from "@silverbulletmd/silverbullet/syscalls";
+import { editor, markdown, YAML } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  collectNodesOfType,
+  renderToText,
+} from "@silverbulletmd/silverbullet/lib/tree";
+import type { FrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 
 export async function getSelectedText() {
   const selectedRange = await editor.getSelection();
@@ -14,25 +19,6 @@ export async function getSelectedText() {
     from: selectedRange.from,
     to: selectedRange.to,
     text: selectedText,
-  };
-}
-
-export async function getSelectedTextOrNote() {
-  const selectedTextInfo = await getSelectedText();
-  const pageText = await editor.getText();
-  if (selectedTextInfo.text === "") {
-    return {
-      from: 0,
-      to: pageText.length,
-      text: pageText,
-      isWholeNote: true,
-    };
-  }
-  const isWholeNote = selectedTextInfo.from === 0 &&
-    selectedTextInfo.to === pageText.length;
-  return {
-    ...selectedTextInfo,
-    isWholeNote: isWholeNote,
   };
 }
 
@@ -74,6 +60,31 @@ export function getLineBefore(text: string, pos: number): string {
 export function getLineAfter(text: string, pos: number): string {
   const lineNumber = getLineNumberAtPos(text, pos);
   return getLine(text, lineNumber + 1);
+}
+
+/**
+ * Updates the frontmatter of the current page in the editor.
+ * If no frontmatter exists, it will be created.
+ * @param frontMatter The frontmatter object to set
+ */
+export async function updateFrontmatter(
+  frontMatter: FrontMatter,
+): Promise<void> {
+  const noteText = await editor.getText();
+  const tree = await markdown.parseMarkdown(noteText);
+  const frontmatterNodes = collectNodesOfType(tree, "FrontMatter");
+
+  let updatedText: string;
+  if (frontmatterNodes.length > 0) {
+    const yamlNode = frontmatterNodes[0].children![1].children![0];
+    yamlNode.text = await YAML.stringify(frontMatter);
+    updatedText = renderToText(tree);
+  } else {
+    const yamlText = await YAML.stringify(frontMatter);
+    updatedText = `---\n${yamlText}---\n${noteText}`;
+  }
+
+  await editor.setText(updatedText);
 }
 
 /**

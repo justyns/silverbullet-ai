@@ -1,5 +1,4 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
-import { editor } from "https://deno.land/x/silverbullet@0.10.1/plug-api/syscalls.ts";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 
@@ -7,6 +6,7 @@ import { EmbeddingGenerationOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
+import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type StreamChatOptions = {
   messages: Array<ChatMessage>;
@@ -33,8 +33,9 @@ export class OpenAIProvider extends AbstractProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean,
+    useProxy: boolean = true,
   ) {
-    super("OpenAI", apiKey, baseUrl, modelName);
+    super("OpenAI", apiKey, baseUrl, modelName, useProxy);
     this.requireAuth = requireAuth;
   }
 
@@ -56,8 +57,6 @@ export class OpenAIProvider extends AbstractProvider {
     const { messages, onDataReceived, onResponseComplete } = options;
 
     try {
-      const sseUrl = `${this.baseUrl}/chat/completions`;
-
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
@@ -66,9 +65,15 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
+      // Use SilverBullet's proxy unless disabled
+      const sseUrl = this.useProxy
+        ? buildProxyUrl(`${this.baseUrl}/chat/completions`)
+        : `${this.baseUrl}/chat/completions`;
+      const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
+
       const sseOptions = {
         method: "POST",
-        headers: headers,
+        headers: finalHeaders,
         payload: JSON.stringify({
           model: this.modelName,
           stream: true,
@@ -132,12 +137,9 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await nativeFetch(
+      const response = await this.fetch(
         `${this.baseUrl}/models`,
-        {
-          method: "GET",
-          headers: headers,
-        },
+        { method: "GET", headers: headers },
       );
 
       if (!response.ok) {
@@ -170,13 +172,9 @@ export class OpenAIProvider extends AbstractProvider {
         "Content-Type": "application/json",
       };
 
-      const response = await nativeFetch(
-        this.baseUrl + "/chat/completions",
-        {
-          method: "POST",
-          headers: headers,
-          body: body,
-        },
+      const response = await this.fetch(
+        `${this.baseUrl}/chat/completions`,
+        { method: "POST", headers: headers, body: body },
       );
 
       if (!response.ok) {
@@ -207,8 +205,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     modelName: string,
     baseUrl: string,
     requireAuth: boolean = true,
+    useProxy: boolean = true,
   ) {
-    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth);
+    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth, useProxy);
   }
 
   async _generateEmbeddings(
@@ -228,13 +227,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await this.fetch(
       `${this.baseUrl}/embeddings`,
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
+      { method: "POST", headers: headers, body: body },
     );
 
     if (!response.ok) {

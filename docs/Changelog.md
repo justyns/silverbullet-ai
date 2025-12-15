@@ -2,10 +2,45 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## Unreleased
+## 0.5.0 (Unreleased)
+
+### SilverBullet v2 Support
+- **BREAKING**: Now requires SilverBullet v2.3.0 or later
+- Migrated from SETTINGS/SECRETS pages to Space Lua configuration (`config.set()`)
+- API keys now configured via `config.set("ai.keys.OPENAI_API_KEY", "your-key")`
+- Uses `system.getConfig()` instead of deprecated `system.getSpaceConfig()`
+- Removed all of the server vs client logic and assume we're always in a client now
+- Move embedding search page to new virtualpage api
+
+### Proxy Configuration
+- Added `useProxy` option to all provider types (text, embedding, image)
+- When `useProxy: false`, requests bypass SilverBullet's server proxy and go directly from the browser
+- Useful for local services like Ollama running on the same machine as the browser
+- SSE streaming now properly transforms URLs and headers for the proxy
+
+### Removed deprecated stuff
+- Removed deprecated commands (use [[Templated Prompts]] instead):
+  - `AI: Summarize Note and open summary`
+  - `AI: Insert Summary`
+  - `AI: Call OpenAI with Note as context`
+  - `AI: Stream response with selection or note as prompt`
+- Removed deprecated config settings:
+  - `ai.openAIBaseUrl` - use `baseUrl` in model config instead
+  - `ai.dallEBaseUrl` - use `baseUrl` in model config instead
+  - `ai.requireAuth` - use `requireAuth` in model config instead
+  - `ai.secretName` - use `ai.keys.*` instead
+  - `ai.provider` - use `provider` in model config instead
+
+### Library Changes
+- **BREAKING**: The AICore Library is now merged into the main plug - no separate install needed
+- Converted library scripts from Space Script to Space Lua
+- Convert AIPrompts to examples and add support for defining them using lua
+
+### Other Changes
 - Better logging when SSE events have errors
 - Add support for retrieving list of models from openai and ollama providers
 - Add a Connectivity Test command and page to test whether an api is working
+- Docs site now uses mkdocs only (removed silverbullet-pub dependency)
 
 ---
 ## 0.4.1 (2024-11-15)
@@ -37,10 +72,10 @@ This page is a brief overview of each version.
   - **new-line-below**: Inserts on a new line below the current line.
   - **replace-line**: Replaces the current line with the generated content.
   - **replace-smart**: Intelligently replaces content based on context (selected text, current item, or current paragraph).
-- AICore Library: Add `aiSplitTodo` slash command and [[^Library/AICore/AIPrompt/AI Split Task]] templated prompt to split a task into smaller subtasks.
+- AICore Library: Add `aiSplitTodo` slash command and `AI Split Task` templated prompt to split a task into smaller subtasks.
 - AICore Library: Add template prompts for rewriting text, mostly as a demo for the `replace-smart` insertAt option.
 - Remove need for duplicate `description` frontmatter field for templated prompts.
-- Revamp [docs website](https://ai.silverbullet.md) to use mkdocs (and mkdocs-material) in addition to silverbullet-pub to handle the silverbullet-specific things like templates/queries.
+- Revamp [docs website](https://ai.silverbullet.md) to use mkdocs and mkdocs-material.
 
 ---
 ## 0.3.2

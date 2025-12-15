@@ -1,4 +1,4 @@
-import { ObjectValue } from "@silverbulletmd/silverbullet/types";
+import { ObjectValue } from "@silverbulletmd/silverbullet/type/index";
 
 export type sseEvent = {
   data: string;
@@ -111,14 +111,6 @@ export type AISettings = {
   indexEmbeddingsExcludeStrings: string[];
   indexSummary: boolean;
   indexSummaryModelName: string;
-
-  // These are deprecated and will be removed in a future release
-  openAIBaseUrl: string;
-  dallEBaseUrl: string;
-  requireAuth: boolean;
-  secretName: string;
-  provider: Provider;
-  // Above is left for backwards compatibility
 };
 
 export type ModelConfig = {
@@ -129,6 +121,7 @@ export type ModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  useProxy?: boolean;
 };
 
 export type ImageModelConfig = {
@@ -139,6 +132,7 @@ export type ImageModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  useProxy?: boolean;
 };
 
 export type EmbeddingModelConfig = {
@@ -149,6 +143,7 @@ export type EmbeddingModelConfig = {
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
+  useProxy?: boolean;
 };
 
 export type PostProcessorData = {

@@ -8,11 +8,16 @@ import {
 import { ChatMessage, PostProcessorData, StreamChatOptions } from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";
 
+// nativeFetch is the original fetch before SilverBullet's monkey-patching
+// deno-lint-ignore no-explicit-any
+const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
+
 export interface ProviderInterface {
   name: string;
   apiKey: string;
   baseUrl: string;
   modelName: string;
+  useProxy: boolean;
   chatWithAI: (options: StreamChatOptions) => Promise<any>;
   streamChatIntoEditor: (
     options: StreamChatOptions,
@@ -31,21 +36,28 @@ export abstract class AbstractProvider implements ProviderInterface {
   apiKey: string;
   baseUrl: string;
   modelName: string;
+  useProxy: boolean;
 
   constructor(
     name: string,
     apiKey: string,
     baseUrl: string,
     modelName: string,
+    useProxy: boolean = true,
   ) {
     this.name = name;
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.modelName = modelName;
+    this.useProxy = useProxy;
   }
 
   abstract chatWithAI(options: StreamChatOptions): Promise<any>;
   abstract listModels(): Promise<string[]>;
+
+  protected fetch(url: string, options: RequestInit): Promise<Response> {
+    return this.useProxy ? fetch(url, options) : nativeFetch(url, options);
+  }
 
   async streamChatIntoEditor(
     options: StreamChatOptions,
@@ -111,7 +123,7 @@ export abstract class AbstractProvider implements ProviderInterface {
         };
         for (const processor of postProcessors) {
           console.log("Applying post-processor:", processor);
-          newData = await system.invokeSpaceFunction(
+          newData = await system.invokeFunction(
             processor,
             postProcessorData,
           );

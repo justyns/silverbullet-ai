@@ -3,72 +3,99 @@ tags: sidebar
 navOrder: 20
 ---
 
-> **note:** All built-in prompts may be replaced with templated prompts eventually.
+Template notes make use of all of the template language available to SilverBullet.
 
-As of 0.0.6, you can use template notes to create your own custom prompts to send to the LLM.
-
-Template notes make use of all of the template language available to SilverBullet. 
+## Creating Markdown Templates
 
 To be a templated prompt, the note must have the following frontmatter:
 
-- `tags` must include `template` and `aiPrompt`
+- `tags` must include `meta/template/aiPrompt`
 - `aiprompt` object must exist and have a `description` key
+- Optionally, `aiprompt.slashCommand` to register as a slash command
 - Optionally, `aiprompt.systemPrompt` can be specified to override the system prompt
 - Optionally, `aiprompt.chat` can be specified to treat the template as a multi-turn chat instead of single message
 - Optionally, `aiprompt.enrichMessages` can be set to true to enrich each chat message
-- Optionally, `aiprompt.postProcessors` can be set to a list of space-script function names to manipulate text returned by the llm
+- Optionally, `aiprompt.postProcessors` can be set to a list of Space Lua function names to manipulate text returned by the llm
 
 For example, here is a templated prompt to summarize the current note and insert the summary at the cursor:
 
 ``` markdown
 ---
-tags:
-- template
-- aiPrompt
+tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a summary of the current page."
 ---
 
-Generate a short and concise summary of the note below. 
+Generate a short and concise summary of the note below.
 
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
 With the above note saved as `AI: Generate note summary`, you can run the `AI: Execute AI Prompt from Custom Template` command from the command palette, select the `AI: Generate note summary` template, and the summary will be streamed to the current cursor position.
 
-Another example prompt is to pull in remote pages via federation and ask the llm to generate a space script for you:
+Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
 
 ```
 ---
-tags:
-- template
-- aiPrompt
+tags: meta/template/aiPrompt
 
 aiprompt:
-  description: "Describe the space script functionality you want and generate it"
-  systemPrompt: "You are an expert javascript developer.  Help the user develop new functionality for their personal note taking tool."
-  slashCommand: aiSpaceScript
+  description: "Describe the Space Lua functionality you want and generate it"
+  systemPrompt: "You are an expert Lua developer. Help the user develop new functionality for their personal note taking tool using SilverBullet's Space Lua."
+  slashCommand: aiSpaceLua
 ---
 
-SilverBullet space script documentation:
+SilverBullet Space Lua documentation:
 
-{{readPage([[!silverbullet.md/Space%20Script]])}}
+${readPage([[!silverbullet.md/Space%20Lua]])}
 
 
-Using the above documentation, please create a space-script following the users description in the note below.  Output only valid markdown with a code block using space-script.  No explanations, code in a markdown space-script block only.  Must contain silverbullet.registerFunction or silverbullet.registerCommand.
+Using the above documentation, please create Space Lua code following the user's description in the note below. Output only valid markdown with a code block using space-lua. No explanations, code in a markdown space-lua block only.
 
-title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 ```
 
+## Creating Space Lua Prompts
+
+You can also define AI prompts entirely in Space Lua using `ai.prompt.define`:
+
+```lua
+ai.prompt.define {
+  name = "Quick Summary",
+  description = "Summarize selected text",
+  slashCommand = "aiQuickSummary",  -- Optional: register as slash command
+  systemPrompt = "You are a helpful assistant.",
+  template = "Summarize this:\n\n${@selectedText or @currentPageText}",
+  insertAt = "replace-selection",
+  extraContext = {
+    customVar = "my custom value",
+  }
+}
+```
+
+### ai.prompt.define(spec)
+
+Supported keys in the spec:
+
+* `name`: Display name for the prompt (required)
+* `template`: The prompt template string, supports `${...}` interpolation (required)
+* `description`: Description shown in pickers
+* `slashCommand`: (optional) Register as a slash command with this name
+* `systemPrompt`: (optional) System prompt for the AI
+* `insertAt`: (optional) Where to insert result (default: `cursor`)
+* `chat`: (optional) Set to `true` for multi-turn chat mode
+* `enrichMessages`: (optional) Set to `true` to enable message enrichment
+* `postProcessors`: (optional) Array of function names to post-process output
+* `extraContext`: (optional) Additional variables to merge into template context
 
 ## Template Metadata
 
-As of version 0.4.0, the following global metadata is available for use inside of an aiPrompt template:
+The following global metadata is available for use inside of an aiPrompt template:
 
 *   **`page`**: Metadata about the current page.
 *   **`currentItemBounds`**: Start and end positions of the current item. An item may be a bullet point or task.
@@ -84,8 +111,7 @@ As of version 0.4.0, the following global metadata is available for use inside o
 *   **`smartReplaceType`**: Indicates the type of content being replaced when using the 'replace-smart' option. Can be 'selected-text', 'current-item', or 'current-paragraph'.
 *   **`smartReplaceText`**: The text that will be replaced when using the 'replace-smart' option.
 
-
-All of these can be accessed by prefixing the variable name with `@`, like `@lineEndPos` or `@currentLineNumber`.
+These variables can be accessed inside `${...}` interpolation by prefixing the variable name with `@`, like `${@lineEndPos}` or `${@selectedText}`.
 
 ## Insert At Options
 
@@ -116,15 +142,13 @@ If the objective is to replace all or a portion of the note's content, the `repl
 
 ## Chat-style prompts
 
-As of version 0.3.0, `aiprompt.chat` can be set to true in the template frontmatter to treat the template similar to a page using [[Commands/AI: Chat on current page]].
+`aiprompt.chat` can be set to true in the template frontmatter to treat the template similar to a page using [[Commands/AI: Chat on current page]].
 
 For example, a summarize prompt could look like this:
 
 ```markdown
 ---
-tags:
-- template
-- aiPrompt
+tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a summary of the current page."
@@ -133,60 +157,43 @@ aiprompt:
   chat: true
 ---
 
-**user**: [enrich:false] I’ll provide the note contents, and instructions.
+**user**: [enrich:false] I'll provide the note contents, and instructions.
 **assistant**: What are the note contents?
-**user**: [enrich:true] title: {{@page.name}}
-Everything below is the content of the note: 
-{{readPage(@page.ref)}}
+**user**: [enrich:true] title: ${@page.name}
+Everything below is the content of the note:
+${readPage(@page.ref)}
 **assistant**: What are the instructions?
 **user**: [enrich:false] Generate a short and concise summary of the note.
 ```
 
-These messages will be parsed into multiple chat messages when calling the LLM’s api. Only the response from the LLM will be included in the note where the template is triggered from.
+These messages will be parsed into multiple chat messages when calling the LLM's api. Only the response from the LLM will be included in the note where the template is triggered from.
 
 The `enrich` attribute can also be toggled on or off per message. By default it is either disabled or goes off of the `aiPrompt.enrichMessages` frontmatter attribute. Assistant and system messages are never enriched.
 
 ## Post Processors
 
-As of version 0.4.0, `aiPrompt.postProcessors` can be set to a list of space-script function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
+`aiPrompt.postProcessors` can be set to a list of Space Lua function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
 
-Each function must accept a single data parameter. Currently, the parameter follows this typing:
+Each function must accept a single data parameter containing these fields:
 
-```javascript
-export type PostProcessorData = {
-  // The full response text
-  response: string;
-  // The line before where the response was inserted
-  lineBefore: string;
-  // The line after where the response was inserted
-  lineAfter: string;
-  // The line where the cursor was before the response was inserted
-  lineCurrent: string;
-};
-```
+- `response`: The full response text
+- `lineBefore`: The line before where the response was inserted
+- `lineAfter`: The line after where the response was inserted
+- `lineCurrent`: The line where the cursor was before the response was inserted
 
 A simple post processing function looks like this:
 
-```javascript
-silverbullet.registerFunction({ name: "aiFooBar" }, async (data) => {
-
-  // Extract variables from PostProcessorData
-  const { response, lineBefore, lineCurrent, lineAfter } = data;
-
-  // Put the current response between FOO and BAR and return it
-  const newResponse = `FOO ${response} BAR`;
-  return newResponse
-}
+```lua
+function aiFooBar(data)
+  return "FOO " .. data.response .. " BAR"
+end
 ```
 
 This function could be used in a template prompt like this:
 
 ```yaml
 ---
-tags:
-- template
-- aiPrompt
-- meta
+tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a random pet name."

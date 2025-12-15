@@ -1,43 +1,56 @@
-import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
+  index,
+  lua,
   markdown,
   space,
   system,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { query } from "./utils.ts";
-import { renderTemplate } from "https://deno.land/x/silverbullet@0.10.1/plugs/template/api.ts";
 import type {
   CompleteEvent,
   SlashCompletionOption,
-  SlashCompletions,
-} from "@silverbulletmd/silverbullet/types";
+} from "@silverbulletmd/silverbullet/type/client";
+
+interface AIPromptTemplate {
+  ref: string;
+  description?: string;
+  aiprompt: {
+    slashCommand?: string;
+    description?: string;
+    displayName?: string;
+    systemPrompt?: string;
+    insertAt?: string;
+    chat?: boolean;
+    enrichMessages?: boolean;
+    postProcessors?: string[];
+    order?: number;
+  };
+}
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import {
-  convertPageToMessages,
-  enrichChatMessages,
-  supportsPlugSlashComplete,
-} from "./utils.ts";
+import { convertPageToMessages, enrichChatMessages } from "./utils.ts";
 import { ChatMessage } from "./types.ts";
 
-// This only works in 0.7.2+, see https://github.com/silverbulletmd/silverbullet/issues/742
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
-): Promise<{ options: SlashCompletions[] } | void> {
-  if (!supportsPlugSlashComplete()) {
-    return;
-  }
-  const allTemplates = await query(
-    "template where aiprompt and aiprompt.slashCommand",
+): Promise<{ options: SlashCompletionOption[] } | void> {
+  // Query pages tagged with meta/template/aiPrompt that have a slashCommand defined
+  const allTemplates = await index.queryLuaObjects<AIPromptTemplate>(
+    "page",
+    {
+      objectVariable: "_",
+      where: await lua.parseExpression(
+        "_.itags and table.includes(_.itags, 'meta/template/aiPrompt') and _.aiprompt and _.aiprompt.slashCommand",
+      ),
+    },
   );
   return {
-    options: allTemplates.map((template) => {
+    options: allTemplates.map((template: AIPromptTemplate) => {
       const aiPromptTemplate = template.aiprompt!;
-      // console.log("ai prompt template: ", aiPromptTemplate);
 
       return {
-        label: aiPromptTemplate.slashCommand,
+        label: aiPromptTemplate.slashCommand!, // Query ensures this exists
         detail: aiPromptTemplate.description || template.description,
         order: aiPromptTemplate.order || 0,
         templatePage: template.ref,
@@ -49,20 +62,63 @@ export async function aiPromptSlashComplete(
 }
 
 /**
- * Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
- * Valid templates must have a value for aiprompt.description in the frontmatter.
+ * Options for Space Lua defined prompts
+ */
+interface SpaceLuaPromptOptions {
+  template: string;
+  systemPrompt?: string;
+  insertAt?: string;
+  chat?: boolean;
+  enrichMessages?: boolean;
+  postProcessors?: string[];
+  extraContext?: Record<string, unknown>;
+}
+
+/**
+ * Executes an AI prompt template. Supports two modes:
+ * 1. Page-based: Pass SlashCompletionOption with templatePage to read template from a page
+ * 2. Direct: Pass SpaceLuaPromptOptions with template string directly
  */
 export async function insertAiPromptFromTemplate(
-  SlashCompletions: SlashCompletionOption | undefined,
+  options: SlashCompletionOption | SpaceLuaPromptOptions | undefined,
 ) {
   let selectedTemplate;
+  let directTemplate: string | undefined;
+  let extraContext: Record<string, unknown> | undefined;
 
-  if (!SlashCompletions || !SlashCompletions.templatePage) {
-    const aiPromptTemplates = await query("template where aiprompt");
+  // Check if this is a direct template (Space Lua) vs page-based
+  const isDirectTemplate = options && "template" in options && options.template;
+
+  if (isDirectTemplate) {
+    const luaOptions = options as SpaceLuaPromptOptions;
+    directTemplate = luaOptions.template;
+    extraContext = luaOptions.extraContext;
+    selectedTemplate = {
+      ref: "space-lua-prompt",
+      systemPrompt: luaOptions.systemPrompt ||
+        "You are an AI note assistant. Please follow the prompt instructions.",
+      insertAt: luaOptions.insertAt || "cursor",
+      chat: luaOptions.chat || false,
+      enrichMessages: luaOptions.enrichMessages || false,
+      postProcessors: luaOptions.postProcessors || [],
+    };
+  } else if (
+    !options || !("templatePage" in options) || !options.templatePage
+  ) {
+    // Query pages tagged with meta/template/aiPrompt
+    const aiPromptTemplates = await index.queryLuaObjects<AIPromptTemplate>(
+      "page",
+      {
+        objectVariable: "_",
+        where: await lua.parseExpression(
+          "_.itags and table.includes(_.itags, 'meta/template/aiPrompt') and _.aiprompt",
+        ),
+      },
+    );
 
     selectedTemplate = await editor.filterBox(
       "Prompt Template",
-      aiPromptTemplates.map((templateObj) => {
+      aiPromptTemplates.map((templateObj: AIPromptTemplate) => {
         const niceName = templateObj.ref.split("/").pop()!;
         return {
           ...templateObj,
@@ -79,14 +135,16 @@ export async function insertAiPromptFromTemplate(
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
     );
   } else {
-    console.log("selectedTemplate from slash completion: ", SlashCompletions);
-    const templatePage = await space.readPage(SlashCompletions.templatePage);
-    const tree = await markdown.parseMarkdown(templatePage);
-    const { aiprompt } = await extractFrontmatter(tree);
-    console.log("templatePage from slash completion: ", templatePage);
+    const slashOptions = options as SlashCompletionOption;
+    console.log("selectedTemplate from slash completion: ", slashOptions);
+    const templatePageContent = await space.readPage(slashOptions.templatePage);
+    const tree = await markdown.parseMarkdown(templatePageContent);
+    const { aiprompt } = await extractFrontMatter(tree);
+    console.log("templatePage from slash completion: ", templatePageContent);
     selectedTemplate = {
-      ref: SlashCompletions.templatePage,
-      systemPrompt: aiprompt.systemPrompt || aiprompt.system ||
+      ref: slashOptions.templatePage,
+      systemPrompt: aiprompt.systemPrompt ||
+        aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
       insertAt: aiprompt.insertAt || "cursor",
       chat: aiprompt.chat || false,
@@ -124,7 +182,9 @@ export async function insertAiPromptFromTemplate(
   if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
     console.error(
       `Invalid insertAt value: ${selectedTemplate.insertAt}. It must be one of ${
-        validInsertAtOptions.join(", ")
+        validInsertAtOptions.join(
+          ", ",
+        )
       }`,
     );
     await editor.flashNotification(
@@ -136,9 +196,16 @@ export async function insertAiPromptFromTemplate(
 
   await initIfNeeded();
 
-  let templateText, currentPage, pageMeta;
+  let templateText: string;
+  let currentPage: string;
+  let pageMeta;
   try {
-    templateText = await space.readPage(selectedTemplate.ref);
+    // Use direct template if provided, otherwise read from page
+    if (directTemplate) {
+      templateText = directTemplate;
+    } else {
+      templateText = await space.readPage(selectedTemplate.ref);
+    }
     currentPage = await editor.getCurrentPage();
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
@@ -150,31 +217,32 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
-  let currentPageText: string,
-    currentLineNumber: number,
-    curCursorPos: number,
-    lineStartPos: number,
-    lineEndPos: number,
-    currentItemBounds: { from: number; to: number },
-    currentItemText: string,
-    parentItemBounds: { from: number; to: number },
-    parentItemText: string,
-    currentParagraph: { from: number; to: number; text: string },
-    selectedText: { from: number; to: number; text: string };
-
+  let currentPageText: string = "";
+  let currentLineNumber: number = 0;
+  let curCursorPos: number = 0;
+  let lineStartPos: number = 0;
+  let lineEndPos: number = 0;
+  let currentItemBounds: { from: number; to: number } | undefined;
+  let currentItemText: string | undefined;
+  let parentItemBounds: { from: number; to: number } | undefined;
+  let parentItemText: string | undefined;
+  let currentParagraph: { from: number; to: number; text: string } | undefined;
+  let selectedText: { from: number; to: number; text: string } | undefined;
   let smartReplaceType:
     | "selected-text"
     | "current-paragraph"
-    | "current-item";
-  let smartReplaceText: string;
+    | "current-item"
+    | undefined;
+  let smartReplaceText: string | undefined;
 
   try {
     // This is all to get the current line number and position
     currentPageText = await editor.getText();
     curCursorPos = await editor.getCursor();
     const lines = currentPageText.split("\n");
-    currentLineNumber =
-      currentPageText.substring(0, curCursorPos).split("\n").length;
+    currentLineNumber = currentPageText
+      .substring(0, curCursorPos)
+      .split("\n").length;
     lineStartPos = curCursorPos -
       (currentPageText.substring(0, curCursorPos).split("\n").pop()?.length ||
         0);
@@ -202,10 +270,12 @@ export async function insertAiPromptFromTemplate(
         undefined,
         true,
       );
-      currentItemText = currentPageText.slice(
-        currentItemBounds.from,
-        currentItemBounds.to,
-      );
+      if (currentItemBounds) {
+        currentItemText = currentPageText.slice(
+          currentItemBounds.from,
+          currentItemBounds.to,
+        );
+      }
 
       parentItemBounds = await system.invokeFunction(
         "editor.determineItemBounds",
@@ -214,10 +284,12 @@ export async function insertAiPromptFromTemplate(
         0,
         true,
       );
-      parentItemText = currentPageText.slice(
-        parentItemBounds.from,
-        parentItemBounds.to,
-      );
+      if (parentItemBounds) {
+        parentItemText = currentPageText.slice(
+          parentItemBounds.from,
+          parentItemBounds.to,
+        );
+      }
     }
   } catch (error) {
     console.error("Error fetching current item", error);
@@ -232,10 +304,7 @@ export async function insertAiPromptFromTemplate(
     }
   } catch (error) {
     console.error("Error fetching current paragraph", error);
-    await editor.flashNotification(
-      "Error fetching current paragraph",
-      "error",
-    );
+    await editor.flashNotification("Error fetching current paragraph", "error");
     return;
   }
 
@@ -350,10 +419,10 @@ export async function insertAiPromptFromTemplate(
       cursorPos += 1;
       break;
     case "start-of-item":
-      cursorPos = currentItemBounds.from;
+      cursorPos = currentItemBounds?.from ?? curCursorPos;
       break;
     case "end-of-item":
-      cursorPos = currentItemBounds.to;
+      cursorPos = currentItemBounds?.to ?? curCursorPos;
       break;
     case "cursor":
     default:
@@ -379,16 +448,30 @@ export async function insertAiPromptFromTemplate(
     currentParagraph: currentParagraph?.text,
     smartReplaceType: smartReplaceType,
     smartReplaceText: smartReplaceText,
+    // Merge in any extra context provided by Space Lua prompts
+    ...(extraContext || {}),
   };
 
   if (!selectedTemplate.chat) {
     // non-multi-chat template
-    const renderedTemplate = await renderTemplate(
-      templateText,
-      pageMeta,
-      globalMetadata,
-    );
-    console.log("Rendered template:", renderedTemplate);
+    let renderedTemplate: string;
+    try {
+      const templateContent = templateText;
+      const templateData = globalMetadata;
+      const luaExpression = `spacelua.interpolate(${
+        JSON.stringify(templateContent)
+      }, ${JSON.stringify(templateData)})`;
+      console.log("Evaluating template Lua expression:", luaExpression);
+      renderedTemplate = await lua.evalExpression(luaExpression);
+      console.log("Template rendered successfully:", renderedTemplate);
+    } catch (error) {
+      console.error("Template rendering failed:", error);
+      console.error("Failed template content:", templateText);
+      console.error("Template metadata:", globalMetadata);
+
+      // Fallback to plain text if template rendering fails
+      renderedTemplate = templateText;
+    }
     if (selectedTemplate.systemPrompt) {
       messages.push({
         role: "system",
@@ -397,7 +480,7 @@ export async function insertAiPromptFromTemplate(
     }
     messages.push({
       role: "user",
-      content: renderedTemplate.text,
+      content: renderedTemplate,
     });
   } else {
     // multi-turn-chat template
@@ -414,9 +497,12 @@ export async function insertAiPromptFromTemplate(
   }
 
   console.log("Messages: ", messages);
-  await currentAIProvider.streamChatIntoEditor({
-    messages: messages,
-    stream: true,
-    postProcessors: selectedTemplate.postProcessors,
-  }, cursorPos);
+  await currentAIProvider.streamChatIntoEditor(
+    {
+      messages: messages,
+      stream: true,
+      postProcessors: selectedTemplate.postProcessors,
+    },
+    cursorPos,
+  );
 }

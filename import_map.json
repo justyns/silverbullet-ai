@@ -1,17 +1,18 @@
 {
   "imports": {
-    "@silverbulletmd/silverbullet": "jsr:@silverbulletmd/silverbullet@0.10.1",
-    "@silverbulletmd/silverbullet/lib/frontmatter": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/frontmatter",
-    "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@0.10.1/syscalls",
-    "@silverbulletmd/silverbullet/lib/tree": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/tree",
-    "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/parse_query",
-    "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/attribute",
-    "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@0.10.1/types",
-    "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@0.10.1/lib/yaml_page",
-    "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@0.10.1/type/client",
-
-    "$common/": "https://deno.land/x/silverbullet@0.10.1/common/",
-
+    "@silverbulletmd/silverbullet": "jsr:@silverbulletmd/silverbullet@2.3.0",
+    "@silverbulletmd/silverbullet/lib/frontmatter": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/frontmatter",
+    "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@2.3.0/syscalls",
+    "@silverbulletmd/silverbullet/lib/tree": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/tree",
+    "@silverbulletmd/silverbullet/lib/parse_query": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/parse_query",
+    "@silverbulletmd/silverbullet/lib/attribute": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/attribute",
+    "@silverbulletmd/silverbullet/types": "jsr:@silverbulletmd/silverbullet@2.3.0/types",
+    "@silverbulletmd/silverbullet/lib/yaml_page": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/yaml_page",
+    "@silverbulletmd/silverbullet/type/client": "jsr:@silverbulletmd/silverbullet@2.3.0/type/client",
+    "@silverbulletmd/silverbullet/type/index": "jsr:@silverbulletmd/silverbullet@2.3.0/type/index",
+    "@silverbulletmd/silverbullet/type/datastore": "jsr:@silverbulletmd/silverbullet@2.3.0/type/datastore",
+    "@silverbulletmd/silverbullet/type/event": "jsr:@silverbulletmd/silverbullet@2.3.0/type/event",
+    "$common/": "https://deno.land/x/silverbullet@2.3.0/common/",
     "@lezer/common": "https://esm.sh/@lezer/common@1.2.1&target=es2022",
     "@lezer/lr": "https://esm.sh/@lezer/lr@1.4.0?external=@lezer/common&target=es2022",
     "@lezer/markdown": "https://esm.sh/@lezer/markdown@1.3.0?external=@lezer/common,@codemirror/language,@lezer/highlight,@lezer/lr&target=es2022",
@@ -19,7 +20,6 @@
     "@lezer/highlight": "https://esm.sh/@lezer/highlight@1.2.0?external=@lezer/common,@lezer/lr&target=es2022",
     "@lezer/html": "https://esm.sh/@lezer/html@1.3.9?external=@lezer/common,@lezer/lr,@lezer/highlight&target=es2022",
     "@lezer/css": "https://esm.sh/@lezer/css@1.1.8?external=@lezer/lr,@lezer/highlight",
-
     "@codemirror/state": "https://esm.sh/@codemirror/state@6.4.1&target=es2022",
     "@codemirror/language": "https://esm.sh/@codemirror/language@6.10.1?external=@codemirror/state,@lezer/common,@lezer/lr,@codemirror/view,@lezer/highlight,style-mod&target=es2022",
     "@codemirror/commands": "https://esm.sh/@codemirror/commands@6.5.0?external=@codemirror/state,@codemirror/view,@codemirror/language,@lezer/common&target=es2022",

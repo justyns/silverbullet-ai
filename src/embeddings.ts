@@ -1,8 +1,5 @@
-import type {
-  FileMeta,
-  IndexTreeEvent,
-  MQMessage,
-} from "@silverbulletmd/silverbullet/types";
+import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
+import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
 import type {
   AISummaryObject,
   CombinedEmbeddingResult,
@@ -10,29 +7,26 @@ import type {
   EmbeddingResult,
 } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import {
   currentEmbeddingModel,
   currentEmbeddingProvider,
   initIfNeeded,
 } from "../src/init.ts";
-import {
-  indexObjects,
-  log,
-  queryObjects,
-  supportsServerProxyCall,
-} from "./utils.ts";
+import { log } from "./utils.ts";
 import {
   editor,
+  index,
   markdown,
   mq,
   space,
-  system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
 const searchPrefix = "🤖 ";
+
+// Cache for search results - keyed by query
+let cachedSearchResults: Map<string, string> = new Map();
 
 /**
  * Check whether a page is allowed to be indexed or not.
@@ -56,7 +50,6 @@ export function canIndexPage(pageName: string): boolean {
 }
 
 // Logic for whether or not to index something:
-//  - On server
 //  - With embeddings enabled
 //  - With a valid embedding model and provider
 
@@ -65,8 +58,7 @@ export async function shouldIndexEmbeddings() {
   return aiSettings.indexEmbeddings &&
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0 &&
-    (await system.getEnv()) === "server";
+    aiSettings.embeddingModels.length > 0;
 }
 
 export async function shouldIndexSummaries() {
@@ -75,8 +67,7 @@ export async function shouldIndexSummaries() {
     aiSettings.indexSummary &&
     currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0 &&
-    (await system.getEnv()) === "server";
+    aiSettings.embeddingModels.length > 0;
 }
 
 /**
@@ -142,17 +133,16 @@ export async function indexEmbeddings(page: string) {
       tag: "embedding",
     };
 
-    // log("any", "Indexing embedding object", embeddingObject);
+    // log("Indexing embedding object", embeddingObject);
     objects.push(embeddingObject);
   }
 
-  await indexObjects(page, objects);
+  await index.indexObjects(page, objects);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
 
   log(
-    "any",
     `AI: Indexed ${objects.length} embedding objects for page ${page} in ${duration} seconds`,
   );
 }
@@ -221,14 +211,11 @@ export async function indexSummary(page: string) {
     tag: "aiSummary",
   };
 
-  await indexObjects(page, [summaryObject]);
+  await index.indexObjects(page, [summaryObject]);
 
   const endTime = Date.now();
   const duration = (endTime - startTime) / 1000;
-  log(
-    "any",
-    `AI: Indexed summary for page ${page} in ${duration} seconds`,
-  );
+  log(`AI: Indexed summary for page ${page} in ${duration} seconds`);
 }
 
 // Listen for page:index events and queue up embedding and summary indexing to
@@ -278,29 +265,11 @@ export async function processSummaryQueue(messages: MQMessage[]) {
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
-  if (await supportsServerProxyCall()) {
-    return (await syscall(
-      "system.invokeFunctionOnServer",
-      "index.queryObjects",
-      "embedding",
-      {},
-    ));
-  } else {
-    return (await queryObjects("embedding", {}));
-  }
+  return await index.queryLuaObjects<EmbeddingObject>("embedding", {});
 }
 
 export async function getAllAISummaries(): Promise<AISummaryObject[]> {
-  if (await supportsServerProxyCall()) {
-    return (await syscall(
-      "system.invokeFunctionOnServer",
-      "index.queryObjects",
-      "aiSummary",
-      {},
-    ));
-  } else {
-    return (await queryObjects("aiSummary", {}));
-  }
+  return await index.queryLuaObjects<AISummaryObject>("aiSummary", {});
 }
 
 export async function generateEmbeddings(text: string): Promise<number[]> {
@@ -309,16 +278,6 @@ export async function generateEmbeddings(text: string): Promise<number[]> {
     throw new Error("No embedding provider found");
   }
   return await currentEmbeddingProvider.generateEmbeddings({ text });
-}
-
-export async function generateEmbeddingsOnServer(
-  text: string,
-): Promise<number[]> {
-  return await syscall(
-    "system.invokeFunctionOnServer",
-    "silverbullet-ai.generateEmbeddings",
-    text,
-  );
 }
 
 // Full disclosure, I don't really understand how this part works - thanks chatgpt!
@@ -341,14 +300,10 @@ export async function searchEmbeddings(
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
 
-  if ((await system.getEnv()) === "server") {
-    updateEditorProgress = false;
-  }
-
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
   const queryEmbedding = typeof query === "string"
-    ? await generateEmbeddingsOnServer(query)
+    ? await generateEmbeddings(query)
     : query;
   const endEmbeddingGeneration = Date.now();
   console.log(
@@ -503,7 +458,7 @@ export async function searchSummaryEmbeddings(
   numResults = 10,
 ): Promise<EmbeddingResult[]> {
   await initIfNeeded();
-  const queryEmbedding = await generateEmbeddingsOnServer(query);
+  const queryEmbedding = await generateEmbeddings(query);
   const summaries = await getAllAISummaries();
 
   const results: EmbeddingResult[] = summaries.map((summary) => ({
@@ -590,78 +545,64 @@ export async function searchEmbeddingsForChat(
 }
 
 /**
- * Display an empty "AI: Search" page
+ * Runs the search and caches results. Shows a modal while searching.
  */
-export function readFileEmbeddings(
-  name: string,
-): { data: Uint8Array; meta: FileMeta } {
-  return {
-    data: new TextEncoder().encode(""),
-    meta: {
-      name,
-      contentType: "text/markdown",
-      size: 0,
-      created: 0,
-      lastModified: 0,
-      perm: "ro",
-    },
-  };
-}
+export async function runSearch(phrase: string): Promise<string> {
+  await initIfNeeded();
 
-export function getFileMetaEmbeddings(name: string): FileMeta {
-  return {
-    name,
-    contentType: "text/markdown",
-    size: -1,
-    created: 0,
-    lastModified: 0,
-    perm: "ro",
-  };
-}
+  // Show modal while searching
+  await editor.showPanel(
+    "modal",
+    20,
+    `<style>
+      .ai-modal-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .ai-modal {
+        padding: 24px 32px;
+        text-align: center;
+        background: var(--editor-background-color, var(--root-background-color, Canvas));
+        color: var(--editor-text-color, var(--root-text-color, CanvasText));
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 400px;
+        width: 100%;
+      }
+      .ai-modal h3 { margin-top: 0; }
+      .ai-modal p { margin-bottom: 0; }
+    </style>
+    <div class="ai-modal-wrapper">
+      <div class="ai-modal">
+        <h3>🤖 Searching...</h3>
+        <p>Searching for "${phrase}"</p>
+      </div>
+    </div>`,
+  );
 
-// Just return nothing to prevent saving a file
-export function writeFileEmbeddings(
-  name: string,
-): FileMeta {
-  return getFileMetaEmbeddings(name);
-}
+  const pageHeader = `# Search results for "${phrase}"`;
+  let text = pageHeader + "\n\n";
 
-/**
- * Actual search logic for "AI: Search" page. This gets triggered
- * by the pageLoaded event. Once triggered, the search starts.
- *
- * We are doing it this way instead of in eadFileEmbeddings to have
- * more control over the UI.
- */
-export async function updateSearchPage() {
-  const page = await editor.getCurrentPage();
-  if (page.startsWith(searchPrefix)) {
-    await initIfNeeded();
-    const phrase = page.substring(searchPrefix.length);
-    const pageHeader = `# Search results for "${phrase}"`;
-    let text = pageHeader + "\n\n";
+  try {
     if (!aiSettings.indexEmbeddings) {
       text += "> **warning** Embeddings generation is disabled.\n";
-      text += "> You can enable it in the AI settings.\n\n\n";
-      await editor.setText(text);
-      return;
+      text += "> You can enable it in the AI settings.\n\n";
+      return text;
     }
-    let loadingText = `${pageHeader}\n\nSearching for "${phrase}"...`;
-    loadingText += "\nGenerating query vector embeddings..";
-    await editor.setText(loadingText);
+
     let queryEmbedding: number[] = [];
     try {
-      queryEmbedding = await generateEmbeddingsOnServer(phrase);
+      queryEmbedding = await generateEmbeddings(phrase);
     } catch (error) {
       console.error("Error generating query vector embeddings", error);
-      // deno-fmt-ignore
-      loadingText += "\n\n> **error** ⚠️ Failed to generate query vector embeddings.\n";
-      loadingText += `> ${error}\n\n`;
-      await editor.setText(loadingText);
-      return;
+      text += "> **error** ⚠️ Failed to generate query vector embeddings.\n";
+      text += `> ${error}\n\n`;
+      return text;
     }
-    loadingText += "\nSearching for similar embeddings...";
-    await editor.setText(loadingText);
 
     let results: CombinedEmbeddingResult[] = [];
     try {
@@ -673,41 +614,52 @@ export async function updateSearchPage() {
       );
     } catch (error) {
       console.error("Error searching embeddings", error);
-      // deno-fmt-ignore
-      loadingText += "\n\n> **error** ⚠️ Failed to search through embeddings.\n";
-      loadingText += `> ${error}\n\n`;
-      await editor.setText(loadingText);
-      return;
+      text += "> **error** ⚠️ Failed to search through embeddings.\n";
+      text += `> ${error}\n\n`;
+      return text;
     }
-
-    const pageLength = loadingText.length;
-    text = pageHeader + "\n\n";
 
     if (results.length === 0) {
       text += "No results found.\n\n";
-    }
-
-    for (const r of results) {
-      text += `## [[${r.page}]]\n`;
-      for (const child of r.children) {
-        const childLineNo = child.ref.split("@")[1];
-        const childLineNoPadded = childLineNo.padStart(4, " ");
-        text += `> [[${child.ref}|${childLineNoPadded}]] | ${child.text}\n`;
+    } else {
+      for (const r of results) {
+        text += `## [[${r.page}]]\n`;
+        for (const child of r.children) {
+          const childLineNo = child.ref.split("@")[1];
+          const childLineNoPadded = childLineNo.padStart(4, " ");
+          text += `> [[${child.ref}|${childLineNoPadded}]] | ${child.text}\n`;
+        }
       }
     }
-    // Some reason editor.setText doesn't work again, maybe a race condition
-    await editor.replaceRange(0, pageLength, text);
+
+    return text;
+  } finally {
+    await editor.hidePanel("modal");
   }
 }
 
 /**
- * Ask the user for a search query, and then navigate to the search results page.
+ * Returns cached search results for a query.
+ * Used by the virtual page to display results.
+ */
+export function getSearchResults(query: string): string {
+  const cached = cachedSearchResults.get(query);
+  if (cached) {
+    return cached;
+  }
+  return `# Search results for "${query}"\n\n> ℹ️ No search results available.\n\nUse the **AI: Search** command to search.\n`;
+}
+
+/**
+ * Ask the user for a search query, run the search, and navigate to the results page.
  * Search results are provided by calculating the cosine similarity between the
  * query embedding and each indexed embedding.
  */
 export async function searchCommand() {
   const phrase = await editor.prompt("Search for: ");
   if (phrase) {
-    await editor.navigate({ page: `${searchPrefix}${phrase}` });
+    const results = await runSearch(phrase);
+    cachedSearchResults.set(phrase, results);
+    await editor.navigate(`${searchPrefix}${phrase}`);
   }
 }

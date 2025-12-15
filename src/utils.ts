@@ -4,77 +4,20 @@ import {
   markdown,
   space,
   system,
-  template,
 } from "@silverbulletmd/silverbullet/syscalls";
-import { Query, QueryProviderEvent } from "@silverbulletmd/silverbullet/types";
-import { parseQuery } from "@silverbulletmd/silverbullet/lib/parse_query";
-import { SyscallMeta } from "@silverbulletmd/silverbullet/types";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
-import { extractFrontmatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { aiSettings } from "./init.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
-import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
 }
 
-/**
- * Console logs can get noisy on the server side, this lets us still have
- * useful debug logs on the client by default without polluting the server logs.
- */
-export async function log(env: "client" | "server" | "any", ...args: any[]) {
-  const currentEnv = await system.getEnv();
-  if (currentEnv === env || env === "any") {
-    console.log(...args);
-  }
-}
-
-// TODO: Copied this from the query plug, but it should be exposed, or I should use something else
-export async function query(
-  query: string,
-  variables?: Record<string, any>,
-): Promise<any> {
-  const parsedQuery = await parseQuery(query);
-
-  return queryParsed(parsedQuery, variables);
-}
-
-export async function queryParsed(
-  parsedQuery: Query,
-  variables?: Record<string, any>,
-) {
-  if (!parsedQuery.limit) {
-    parsedQuery.limit = ["number", 1000];
-  }
-
-  const eventName = `query:${parsedQuery.querySource}`;
-  // console.log("Parsed query", parsedQuery);
-  // Let's dispatch an event and see what happens
-  const event: QueryProviderEvent = { query: parsedQuery };
-  if (variables) {
-    event.variables = variables;
-  }
-  const results = await events.dispatchEvent(eventName, event, 30 * 1000);
-  if (results.length === 0) {
-    throw new Error(`Unsupported query source '${parsedQuery.querySource}'`);
-  }
-  return results.flat();
-}
-
-// Proxies to index plug
-// TODO: move to another file
-export async function queryObjects(
-  query: string,
-  variables?: Record<string, any>,
-): Promise<any> {
-  return await system.invokeFunction("index.queryObjects", query, variables);
-}
-
-export async function indexObjects(page: string, objects: any[]): Promise<any> {
-  return await system.invokeFunction("index.indexObjects", page, objects);
+export function log(...args: any[]) {
+  console.log(...args);
 }
 
 /**
@@ -93,8 +36,8 @@ export async function convertPageToMessages(
 
   // Remove frontmatter from page
   const tree = await markdown.parseMarkdown(pageText);
-  await extractFrontmatter(tree, {
-    removeFrontmatterSection: true,
+  await extractFrontMatter(tree, {
+    removeFrontMatterSection: true,
   });
   pageText = renderToText(tree);
 
@@ -116,9 +59,10 @@ export async function convertPageToMessages(
         currentRole !== newRole &&
         contentBuffer.trim() !== ""
       ) {
-        messages.push(
-          { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
-        );
+        messages.push({
+          role: currentRole,
+          content: contentBuffer.trim(),
+        } as ChatMessage);
         contentBuffer = "";
       }
       currentRole = newRole;
@@ -128,46 +72,13 @@ export async function convertPageToMessages(
     }
   });
   if (contentBuffer && currentRole) {
-    messages.push(
-      { role: currentRole, content: contentBuffer.trim() } as ChatMessage,
-    );
+    messages.push({
+      role: currentRole,
+      content: contentBuffer.trim(),
+    } as ChatMessage);
   }
 
   return messages;
-}
-
-// Borrowed from https://github.com/joekrill/silverbullet-treeview/blob/main/compatability.ts
-// TODO: There's probably a library for comparing semver versions, but this works for now (thanks chatgpt)
-export async function supportsPlugSlashComplete(): Promise<boolean> {
-  try {
-    const ver = await syscall("system.getVersion");
-    const [major, minor, patch] = ver.split(".").map(Number);
-    const [reqMajor, reqMinor, reqPatch] = "0.7.2".split(".").map(Number);
-    if (major > reqMajor) return true;
-    if (major === reqMajor && minor > reqMinor) return true;
-    if (major === reqMajor && minor === reqMinor && patch >= reqPatch) {
-      return true;
-    }
-    return false;
-  } catch (_err) {
-    // system.getVersion was added in edge before 0.7.2, so assume this wont' work if the call doesn't succeed
-    return false;
-  }
-}
-
-/**
- * Check whether the invokeFunctionOnServer syscall is availble.
- * It's needed so that we can force certain things to run on the server.
- */
-export async function supportsServerProxyCall(): Promise<boolean> {
-  try {
-    const syscalls = await system.listSyscalls();
-    return syscalls.some((syscall: SyscallMeta) =>
-      syscall.name === "system.invokeFunctionOnServer"
-    );
-  } catch (_err) {
-    return false;
-  }
 }
 
 /**
@@ -175,7 +86,7 @@ export async function supportsServerProxyCall(): Promise<boolean> {
  */
 export async function enrichChatMessages(
   messages: ChatMessage[],
-  globalMetadata?: Record<string, any>,
+  _globalMetadata?: Record<string, any>,
 ): Promise<ChatMessage[]> {
   const enrichedMessages: ChatMessage[] = [];
   let currentPage, pageMeta;
@@ -189,10 +100,7 @@ export async function enrichChatMessages(
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
     console.error("Error fetching page metadata", error);
-    await editor.flashNotification(
-      "Error fetching page metadata",
-      "error",
-    );
+    await editor.flashNotification("Error fetching page metadata", "error");
     return [];
   }
 
@@ -205,14 +113,10 @@ export async function enrichChatMessages(
 
     // Extract attributes from the message
     const messageTree = await markdown.parseMarkdown(message.content);
-    const messageAttributes = await extractAttributes(
-      [],
-      messageTree,
-    );
+    const messageAttributes = await extractAttributes(messageTree);
 
-    // TODO: This or the extractAttributes causes templates to no longer work
-    // message.content = renderToText(messageTree);
-    // Filter out attributes with our friend regex instead
+    // Filter out attributes with regex instead of renderToText(messageTree)
+    // because renderToText breaks template processing
     message.content = message.content.replace(
       /\[enrich:\s*(false|true)\s*\]\s*/g,
       "",
@@ -240,15 +144,21 @@ export async function enrichChatMessages(
     if (message.role === "user") {
       if (pageMeta) {
         console.log("Rendering template", message.content, pageMeta);
-        const templateResult = await template.renderTemplate(
-          message.content,
-          pageMeta,
-          {
-            page: pageMeta,
-            ...globalMetadata,
-          },
-        );
-        enrichedContent = templateResult;
+        try {
+          const tree = await markdown.parseMarkdown(message.content);
+          const expandedTree = await markdown.expandMarkdown(tree);
+          enrichedContent = renderToText(expandedTree).trim();
+          console.log(
+            "Message template expanded successfully via markdown system",
+          );
+        } catch (error) {
+          console.error("Message template expansion failed:", error);
+          console.error("Failed content:", message.content);
+          console.error("Page metadata:", pageMeta);
+
+          // Fallback to original content if template expansion fails
+          enrichedContent = message.content;
+        }
       } else {
         console.log("No page metadata found, skipping template rendering");
       }
@@ -274,11 +184,7 @@ export async function enrichChatMessages(
       // This copies the logic from the share plugin and renders all of the queries/templates
       // TODO: This can be disabled globally, but it might be useful to have a temporary toggle per page
       const tree = await markdown.parseMarkdown(enrichedContent);
-      const rendered = await system.invokeFunction(
-        "markdown.expandCodeWidgets",
-        tree,
-        "",
-      );
+      const rendered = await markdown.expandMarkdown(tree);
       // TODO: Re-add cleanMarkdown
       // enrichedContent = renderToText(cleanMarkdown(rendered)).trim();
       enrichedContent = renderToText(rendered).trim();
@@ -288,18 +194,15 @@ export async function enrichChatMessages(
     // This sends the message content even though the event listener can't directly
     // modify it.  This could still be useful for detecting whether a different function
     // should be added to the list based on regex/etc.
-    const enrichFunctions = await events.dispatchEvent(
-      "ai:enrichMessage",
-      {
-        enrichedContent,
-        message,
-      },
-    );
+    const enrichFunctions = await events.dispatchEvent("ai:enrichMessage", {
+      enrichedContent,
+      message,
+    });
 
     // And also combine with the plug settings
-    const combinedEnrichFunctions = enrichFunctions.flat().concat(
-      aiSettings.chat.customEnrichFunctions,
-    );
+    const combinedEnrichFunctions = enrichFunctions
+      .flat()
+      .concat(aiSettings.chat.customEnrichFunctions);
 
     // then get rid of duplicates
     const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];
@@ -309,7 +212,7 @@ export async function enrichChatMessages(
     );
     for (const func of finalEnrichFunctions) {
       // console.log("Enriching message with function", func);
-      enrichedContent = await system.invokeSpaceFunction(func, enrichedContent);
+      enrichedContent = await system.invokeFunction(func, enrichedContent);
     }
 
     enrichedMessages.push({ ...message, content: enrichedContent });
@@ -360,4 +263,22 @@ async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
   enrichedContent = enrichedContent.replace(wikiLinkRegex, ">>$1<<");
 
   return enrichedContent;
+}
+
+// Copied from silverbullet/client/plugos/syscalls/fetch.ts
+export function buildProxyHeaders(
+  headers?: Record<string, any>,
+): Record<string, any> {
+  const newHeaders: Record<string, any> = { "X-Proxy-Request": "true" };
+  if (!headers) {
+    return newHeaders;
+  }
+  for (const [key, value] of Object.entries(headers)) {
+    newHeaders[`X-Proxy-Header-${key}`] = value;
+  }
+  return newHeaders;
+}
+
+export function buildProxyUrl(url: string): string {
+  return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
 }

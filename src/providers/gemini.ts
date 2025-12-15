@@ -1,10 +1,10 @@
-import "https://deno.land/x/silverbullet@0.10.1/plug-api/lib/native_fetch.ts";
 import { SSE } from "npm:sse.js@2.2.0";
 import { ChatMessage } from "../types.ts";
 import { StreamChatOptions } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { sseEvent } from "../types.ts";
+import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -26,15 +26,16 @@ export class GeminiProvider extends AbstractProvider {
   constructor(
     apiKey: string,
     modelName: string,
+    useProxy: boolean = true,
   ) {
     const baseUrl = "https://generativelanguage.googleapis.com";
-    super("Gemini", apiKey, baseUrl, modelName);
+    super("Gemini", apiKey, baseUrl, modelName, useProxy);
   }
 
   async listModels(): Promise<any> {
     const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
     try {
-      const response = await fetch(apiUrl);
+      const response = await this.fetch(apiUrl, { method: "GET" });
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -93,22 +94,24 @@ export class GeminiProvider extends AbstractProvider {
     const { messages, onDataReceived } = options;
 
     try {
-      const sseUrl =
+      const rawUrl =
         `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
 
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
       };
 
+      // Use SilverBullet's proxy unless disabled
+      const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
+      const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
+
       const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
         messages,
       );
 
-      // console.log("payloadContents", payloadContents);
-
       const sseOptions = {
         method: "POST",
-        headers: headers,
+        headers: finalHeaders,
         payload: JSON.stringify({
           contents: payloadContents,
         }),
@@ -165,13 +168,11 @@ export class GeminiProvider extends AbstractProvider {
       messages,
     );
 
-    const response = await nativeFetch(
+    const response = await this.fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ contents: payloadContents }),
       },
     );
@@ -191,8 +192,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     modelName: string,
     baseUrl: string = "https://generativelanguage.googleapis.com",
     requireAuth: boolean = true,
+    useProxy: boolean = true,
   ) {
-    super(apiKey, baseUrl, "Gemini", modelName, requireAuth);
+    super(apiKey, baseUrl, "Gemini", modelName, requireAuth, useProxy);
   }
 
   async _generateEmbeddings(
@@ -213,13 +215,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await nativeFetch(
+    const response = await this.fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
-      {
-        method: "POST",
-        headers: headers,
-        body: body,
-      },
+      { method: "POST", headers: headers, body: body },
     );
 
     if (!response.ok) {

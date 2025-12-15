@@ -9,28 +9,6 @@ functions:
   queryAI:
     path: sbai.ts:queryAI
 
-  reloadSettingsPageEvent:
-    path: sbai.ts:reloadSettingsPage
-    events:
-      - page:saved
-
-  reloadConfigEvent:
-    path: sbai.ts:reloadConfig
-    events:
-      - config:loaded
-
-  summarizeNote:
-    path: sbai.ts:openSummaryPanel
-    command:
-      name: "AI: Summarize Note and open summary"
-  insertSummary:
-    path: sbai.ts:insertSummary
-    command:
-      name: "AI: Insert Summary"
-  callOpenAI:
-    path: sbai.ts:callOpenAIwithNote
-    command:
-      name: "AI: Call OpenAI with Note as context"
   tagNoteWithAI:
     path: sbai.ts:tagNoteWithAI
     command:
@@ -39,10 +17,6 @@ functions:
     path: sbai.ts:promptAndGenerateImage
     command:
       name: "AI: Generate and insert image using DallE"
-  streamOpenAIWithSelectionAsPrompt:
-    path: sbai.ts:streamOpenAIWithSelectionAsPrompt
-    command:
-      name: "AI: Stream response with selection or note as prompt"
   streamChatOnPage:
     path: sbai.ts:streamChatOnPage
     command:
@@ -83,13 +57,10 @@ functions:
       name: "AI: Test Embedding Generation"
   getAllEmbeddings:
     path: src/embeddings.ts:getAllEmbeddings
-    env: server
   searchEmbeddings:
     path: src/embeddings.ts:searchEmbeddings
-    env: server
   queueEmbeddingGeneration:
     path: src/embeddings.ts:queueEmbeddingGeneration
-    env: server
     events:
       - page:index
   processEmbeddingsQueue:
@@ -108,59 +79,21 @@ functions:
         pollInterval: 600000
   generateEmbeddings:
     path: src/embeddings.ts:generateEmbeddings
-  generateEmbeddingsOnServer:
-    path: src/embeddings.ts:generateEmbeddingsOnServer
   searchEmbeddingsForChat:
     path: src/embeddings.ts:searchEmbeddingsForChat
   searchCombinedEmbeddings:
     path: src/embeddings.ts:searchCombinedEmbeddings
   searchSummaryEmbeddings:
     path: src/embeddings.ts:searchSummaryEmbeddings
-  readPageSearchEmbeddings:
-    path: src/embeddings.ts:readFileEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: readFile
-  writePageSearchEmbeddings:
-    path: src/embeddings.ts:writeFileEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: writeFile
-  getPageMetaSearchEmbeddings:
-    path: src/embeddings.ts:getFileMetaEmbeddings
-    pageNamespace:
-      pattern: "🤖 .+"
-      operation: getFileMeta
+  getSearchResults:
+    path: src/embeddings.ts:getSearchResults
   searchCommand:
     path: src/embeddings.ts:searchCommand
     command:
       name: "AI: Search"
-  updateSearchPage:
-    path: src/embeddings.ts:updateSearchPage
-    events:
-      - editor:pageLoaded
-      - editor:pageReloaded
-  readPageConnectivityTest:
-    path: src/connectivity.ts:readFileConnectivityTest
-    pageNamespace:
-      pattern: "🛰️ AI Connectivity Test"
-      operation: readFile
-  writePageConnectivityTest:
-    path: src/connectivity.ts:writeFileConnectivityTest
-    pageNamespace:
-      pattern: "🛰️ AI Connectivity Test"
-      operation: writeFile
-  getPageMetaConnectivityTest:
-    path: src/connectivity.ts:getFileMetaConnectivityTest
-    pageNamespace:
-      pattern: "🛰️ AI Connectivity Test"
-      operation: getFileMeta
+  getConnectivityTestResults:
+    path: src/connectivity.ts:getConnectivityTestResults
   connectivityTestCommand:
     path: src/connectivity.ts:connectivityTestCommand
     command:
       name: "AI: Connectivity Test"
-  updateConnectivityTestPage:
-    path: src/connectivity.ts:updateConnectivityTestPage
-    events:
-      - editor:pageLoaded
-      - editor:pageReloaded
