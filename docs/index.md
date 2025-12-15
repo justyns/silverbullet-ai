@@ -36,4 +36,4 @@ If you're new here, we recommend starting with the [[Quick Start]] guide.
 
 ### Available commands
 
-{{ include_file("Commands) }}
+{{ include_file("Commands") }}
