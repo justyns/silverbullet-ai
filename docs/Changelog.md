@@ -34,6 +34,7 @@ This page is a brief overview of each version.
 ### Library Changes
 - **BREAKING**: The AICore Library is now merged into the main plug - no separate install needed
 - Converted library scripts from Space Script to Space Lua
+- Convert AIPrompts to examples and add support for defining them using lua
 
 ### Other Changes
 - Better logging when SSE events have errors
