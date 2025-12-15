@@ -10,7 +10,6 @@ import {
 import type {
   CompleteEvent,
   SlashCompletionOption,
-  SlashCompletions,
 } from "@silverbulletmd/silverbullet/type/client";
 
 interface AIPromptTemplate {
@@ -35,23 +34,23 @@ import { ChatMessage } from "./types.ts";
 
 export async function aiPromptSlashComplete(
   completeEvent: CompleteEvent,
-): Promise<{ options: SlashCompletions[] } | void> {
+): Promise<{ options: SlashCompletionOption[] } | void> {
+  // Query pages tagged with meta/template/aiPrompt that have a slashCommand defined
   const allTemplates = await index.queryLuaObjects<AIPromptTemplate>(
-    "template",
+    "page",
     {
       objectVariable: "_",
       where: await lua.parseExpression(
-        "_.aiprompt and _.aiprompt.slashCommand",
+        "_.itags and table.includes(_.itags, 'meta/template/aiPrompt') and _.aiprompt and _.aiprompt.slashCommand",
       ),
     },
   );
   return {
-    options: allTemplates.map((template) => {
+    options: allTemplates.map((template: AIPromptTemplate) => {
       const aiPromptTemplate = template.aiprompt!;
-      // console.log("ai prompt template: ", aiPromptTemplate);
 
       return {
-        label: aiPromptTemplate.slashCommand,
+        label: aiPromptTemplate.slashCommand!, // Query ensures this exists
         detail: aiPromptTemplate.description || template.description,
         order: aiPromptTemplate.order || 0,
         templatePage: template.ref,
@@ -63,26 +62,63 @@ export async function aiPromptSlashComplete(
 }
 
 /**
- * Prompts the user to select a template, renders that template, sends it to the LLM, and then inserts the result into the page.
- * Valid templates must have a value for aiprompt.description in the frontmatter.
+ * Options for Space Lua defined prompts
+ */
+interface SpaceLuaPromptOptions {
+  template: string;
+  systemPrompt?: string;
+  insertAt?: string;
+  chat?: boolean;
+  enrichMessages?: boolean;
+  postProcessors?: string[];
+  extraContext?: Record<string, unknown>;
+}
+
+/**
+ * Executes an AI prompt template. Supports two modes:
+ * 1. Page-based: Pass SlashCompletionOption with templatePage to read template from a page
+ * 2. Direct: Pass SpaceLuaPromptOptions with template string directly
  */
 export async function insertAiPromptFromTemplate(
-  SlashCompletions: SlashCompletionOption | undefined,
+  options: SlashCompletionOption | SpaceLuaPromptOptions | undefined,
 ) {
   let selectedTemplate;
+  let directTemplate: string | undefined;
+  let extraContext: Record<string, unknown> | undefined;
 
-  if (!SlashCompletions || !SlashCompletions.templatePage) {
+  // Check if this is a direct template (Space Lua) vs page-based
+  const isDirectTemplate = options && "template" in options && options.template;
+
+  if (isDirectTemplate) {
+    const luaOptions = options as SpaceLuaPromptOptions;
+    directTemplate = luaOptions.template;
+    extraContext = luaOptions.extraContext;
+    selectedTemplate = {
+      ref: "space-lua-prompt",
+      systemPrompt: luaOptions.systemPrompt ||
+        "You are an AI note assistant. Please follow the prompt instructions.",
+      insertAt: luaOptions.insertAt || "cursor",
+      chat: luaOptions.chat || false,
+      enrichMessages: luaOptions.enrichMessages || false,
+      postProcessors: luaOptions.postProcessors || [],
+    };
+  } else if (
+    !options || !("templatePage" in options) || !options.templatePage
+  ) {
+    // Query pages tagged with meta/template/aiPrompt
     const aiPromptTemplates = await index.queryLuaObjects<AIPromptTemplate>(
-      "template",
+      "page",
       {
         objectVariable: "_",
-        where: await lua.parseExpression("_.aiprompt"),
+        where: await lua.parseExpression(
+          "_.itags and table.includes(_.itags, 'meta/template/aiPrompt') and _.aiprompt",
+        ),
       },
     );
 
     selectedTemplate = await editor.filterBox(
       "Prompt Template",
-      aiPromptTemplates.map((templateObj) => {
+      aiPromptTemplates.map((templateObj: AIPromptTemplate) => {
         const niceName = templateObj.ref.split("/").pop()!;
         return {
           ...templateObj,
@@ -99,13 +135,14 @@ export async function insertAiPromptFromTemplate(
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
     );
   } else {
-    console.log("selectedTemplate from slash completion: ", SlashCompletions);
-    const templatePage = await space.readPage(SlashCompletions.templatePage);
-    const tree = await markdown.parseMarkdown(templatePage);
+    const slashOptions = options as SlashCompletionOption;
+    console.log("selectedTemplate from slash completion: ", slashOptions);
+    const templatePageContent = await space.readPage(slashOptions.templatePage);
+    const tree = await markdown.parseMarkdown(templatePageContent);
     const { aiprompt } = await extractFrontMatter(tree);
-    console.log("templatePage from slash completion: ", templatePage);
+    console.log("templatePage from slash completion: ", templatePageContent);
     selectedTemplate = {
-      ref: SlashCompletions.templatePage,
+      ref: slashOptions.templatePage,
       systemPrompt: aiprompt.systemPrompt ||
         aiprompt.system ||
         "You are an AI note assistant. Please follow the prompt instructions.",
@@ -159,9 +196,16 @@ export async function insertAiPromptFromTemplate(
 
   await initIfNeeded();
 
-  let templateText, currentPage, pageMeta;
+  let templateText: string;
+  let currentPage: string;
+  let pageMeta;
   try {
-    templateText = await space.readPage(selectedTemplate.ref);
+    // Use direct template if provided, otherwise read from page
+    if (directTemplate) {
+      templateText = directTemplate;
+    } else {
+      templateText = await space.readPage(selectedTemplate.ref);
+    }
     currentPage = await editor.getCurrentPage();
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
@@ -404,6 +448,8 @@ export async function insertAiPromptFromTemplate(
     currentParagraph: currentParagraph?.text,
     smartReplaceType: smartReplaceType,
     smartReplaceText: smartReplaceText,
+    // Merge in any extra context provided by Space Lua prompts
+    ...(extraContext || {}),
   };
 
   if (!selectedTemplate.chat) {

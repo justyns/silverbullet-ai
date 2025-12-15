@@ -3,11 +3,9 @@ description: Virtual pages for AI features
 tags: meta/ai
 ---
 
-# AI Virtual Pages
-
 These define virtual pages that display cached results from AI operations.
 
-## Connectivity Test Page
+### Connectivity Test Page
 
 ```space-lua
 virtualPage.define {
@@ -18,7 +16,7 @@ virtualPage.define {
 }
 ```
 
-## Search Results Page
+### Search Results Page
 
 ```space-lua
 virtualPage.define {

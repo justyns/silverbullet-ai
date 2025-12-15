@@ -5,7 +5,7 @@ tags: meta
 
 This page defines the JSON Schema for all silverbullet-ai configuration settings. You can override them in your CONFIG page.
 
-# AI Configuration Schema
+### Configuration Schema
 
 ```space-lua
 -- priority: 50

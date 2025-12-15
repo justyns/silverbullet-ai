@@ -5,21 +5,7 @@ author: justyns
 website: https://github.com/justyns/silverbullet-ai
 files:
 - silverbullet-ai.plug.js
-- silverbullet-ai/Space Lua/AI Config.md
-- silverbullet-ai/Space Lua/AI Query LLM.md
-- silverbullet-ai/Space Lua/AI Search Embeddings.md
-- silverbullet-ai/Space Lua/Remove Duplicate Start.md
-- silverbullet-ai/Space Lua/Convert to bullets.md
-- silverbullet-ai/Space Lua/Convert to task list.md
-- silverbullet-ai/Space Lua/Indent lines.md
-- silverbullet-ai/Widget/AI Chat On Page.md
-- silverbullet-ai/AIPrompt/AI Rewrite - Professional.md
-- silverbullet-ai/AIPrompt/AI Rewrite - Grammar.md
-- silverbullet-ai/AIPrompt/AI Split Task.md
-- silverbullet-ai/AIPrompt/AI Summarize Note.md
-- silverbullet-ai/AIPrompt/AI Summarize Note - Chat.md
-- silverbullet-ai/AIPrompt/AI Create Space Lua.md
-- silverbullet-ai/New Page/AI New Chat.md
+- silverbullet-ai-library.md
 ---
 # SilverBullet AI Plug
 
