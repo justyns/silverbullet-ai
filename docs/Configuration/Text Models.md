@@ -22,7 +22,8 @@ config.set {
 }
 ```
 
-Options:
+**Options:**
+
 - **name**: Name to use inside of silverbullet for this model. This is used to identify different versions of the same model in one config, or just to give your own custom names to them.
 - **provider**: Currently **openai**, **gemini**, or **ollama** are supported.
 - **modelName**: Name of the model to send to the provider api. This should be the actual model name.

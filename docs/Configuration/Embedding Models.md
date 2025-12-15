@@ -21,7 +21,8 @@ config.set {
 }
 ```
 
-Options:
+**Options:**
+
 - **name**: Name to use inside of silverbullet for this model. This is used to identify different versions of the same model in one config, or just to give your own custom names to them.
 - **provider**: Currently supported: OpenAI, Gemini, or Ollama.
 - **modelName**: Name of the model to send to the provider api. This should be the actual model name.
@@ -61,7 +62,8 @@ config.set {
 }
 ```
 
-Options:
+**Options:**
+
 - **indexEmbeddings**: true to enable this feature.
 - **indexEmbeddingsExcludePages**: List of exact page names to exclude from indexing. By default, pages starting with _ are never indexed.
 - **indexEmbeddingsExcludeStrings**: List of exact strings to exclude from indexing. If a paragraph or line contains only one of these strings, it won't be indexed. This helps from polluting search results in some cases.
@@ -98,7 +100,8 @@ config.set {
 }
 ```
 
-Options:
+**Options:**
+
 - **indexSummary**: Off by default. Set to true to start generating page summaries and indexing their embeddings.
 - **indexSummaryModelName**: Which [[Configuration/Text Models|text model]] to use for generating summaries. It's recommended to use a locally hosted model since every note in your space will be sent to it.
 

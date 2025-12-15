@@ -68,37 +68,40 @@ After installing the plug, you can access its features through the command palet
 SilverBullet v2 uses Space Lua for configuration. Add a `space-lua` block to your `CONFIG` page:
 
 ```lua
--- Set your API keys
-config.set("OPENAI_API_KEY", "your-openai-key-here")
+config.set {
+  ai = {
+    -- API keys
+    keys = {
+      OPENAI_API_KEY = "your-openai-key-here"
+    },
 
--- Configure AI models
-config.set("ai", {
-  -- Configure one or more image models
-  imageModels = {
-    {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
-    {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
-  },
+    -- Configure one or more image models
+    imageModels = {
+      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
+      {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+    },
 
-  -- Configure one or more text models
-  -- Provider may be openai or gemini. Most local or self-hosted LLMs offer an openai compatible api.
-  textModels = {
-    {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-turbo"},
-    {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo"},
-    {
-      name = "ollama-llama3",
-      modelName = "llama3",
-      provider = "openai",
-      baseUrl = "http://localhost:11434/v1",
-      requireAuth = false
+    -- Configure one or more text models
+    -- Provider may be openai or gemini. Most local or self-hosted LLMs offer an openai compatible api.
+    textModels = {
+      {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-turbo"},
+      {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo"},
+      {
+        name = "ollama-llama3",
+        modelName = "llama3",
+        provider = "openai",
+        baseUrl = "http://localhost:11434/v1",
+        requireAuth = false
+      }
+    },
+
+    -- Chat section is optional, but may help provide better results
+    chat = {
+      userInformation = "I'm a software developer who likes taking notes.",
+      userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
     }
-  },
-
-  -- Chat section is optional, but may help provide better results
-  chat = {
-    userInformation = "I'm a software developer who likes taking notes.",
-    userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
   }
-})
+}
 ```
 
 #### Ollama
@@ -106,17 +109,19 @@ config.set("ai", {
 To use Ollama locally, make sure you have it running first and the desired models downloaded:
 
 ```lua
-config.set("ai", {
-  textModels = {
-    {
-      name = "ollama-llama3",
-      modelName = "llama3",  -- Run `ollama list` to see available models
-      provider = "openai",
-      baseUrl = "http://localhost:11434/v1",
-      requireAuth = false
+config.set {
+  ai = {
+    textModels = {
+      {
+        name = "ollama-llama3",
+        modelName = "llama3",  -- Run `ollama list` to see available models
+        provider = "openai",
+        baseUrl = "http://localhost:11434/v1",
+        requireAuth = false
+      }
     }
   }
-})
+}
 ```
 
 **requireAuth**: When using Ollama and Chrome, requireAuth needs to be set to false so that the Authorization header isn't set. Otherwise you will get a CORS error.
@@ -126,19 +131,22 @@ config.set("ai", {
 Mistral.ai is a hosted service that offers an openai-compatible api:
 
 ```lua
-config.set("MISTRAL_API_KEY", "your-mistral-key-here")
-
-config.set("ai", {
-  textModels = {
-    {
-      name = "mistral-medium",
-      modelName = "mistral-medium",
-      provider = "openai",
-      baseUrl = "https://api.mistral.ai/v1",
-      secretName = "MISTRAL_API_KEY"
+config.set {
+  ai = {
+    keys = {
+      MISTRAL_API_KEY = "your-mistral-key-here"
+    },
+    textModels = {
+      {
+        name = "mistral-medium",
+        modelName = "mistral-medium",
+        provider = "openai",
+        baseUrl = "https://api.mistral.ai/v1",
+        secretName = "MISTRAL_API_KEY"
+      }
     }
   }
-})
+}
 ```
 
 #### Perplexity.ai
@@ -146,18 +154,22 @@ config.set("ai", {
 Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards):
 
 ```lua
-config.set("OPENAI_API_KEY", "your-perplexity-key-here")
-
-config.set("ai", {
-  textModels = {
-    {
-      name = "sonar-medium-online",
-      modelName = "sonar-medium-online",
-      provider = "openai",
-      baseUrl = "https://api.perplexity.ai"
+config.set {
+  ai = {
+    keys = {
+      PERPLEXITY_API_KEY = "your-perplexity-key-here"
+    },
+    textModels = {
+      {
+        name = "sonar-medium-online",
+        modelName = "sonar-medium-online",
+        provider = "openai",
+        baseUrl = "https://api.perplexity.ai",
+        secretName = "PERPLEXITY_API_KEY"
+      }
     }
   }
-})
+}
 ```
 
 #### Google Gemini (Experimental)
@@ -165,18 +177,21 @@ config.set("ai", {
 Google does not offer an openai-compatible api, so consider the support for Gemini to be experimental:
 
 ```lua
-config.set("GOOGLE_AI_STUDIO_KEY", "your-google-ai-studio-key-here")
-
-config.set("ai", {
-  textModels = {
-    {
-      name = "gemini-pro",
-      modelName = "gemini-pro",
-      provider = "gemini",
-      secretName = "GOOGLE_AI_STUDIO_KEY"
+config.set {
+  ai = {
+    keys = {
+      GOOGLE_AI_STUDIO_KEY = "your-google-ai-studio-key-here"
+    },
+    textModels = {
+      {
+        name = "gemini-pro",
+        modelName = "gemini-pro",
+        provider = "gemini",
+        secretName = "GOOGLE_AI_STUDIO_KEY"
+      }
     }
   }
-})
+}
 ```
 
 **Note**: AI Studio is not the same as the Gemini App (previously Bard). You need access to https://aistudio.google.com/app specifically.
@@ -186,14 +201,17 @@ config.set("ai", {
 Dall-E can be configured for generating images:
 
 ```lua
-config.set("OPENAI_API_KEY", "your-openai-key-here")
-
-config.set("ai", {
-  imageModels = {
-    {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
-    {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+config.set {
+  ai = {
+    keys = {
+      OPENAI_API_KEY = "your-openai-key-here"
+    },
+    imageModels = {
+      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
+      {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+    }
   }
-})
+}
 ```
 
 #### Chat Custom Instructions
@@ -273,19 +291,6 @@ ${readPage(@page.ref)}
 ```
 
 
-## Cost (OpenAI)
-
-While this plugin is free to use, OpenAI does charge for their API usage.  Please see their [pricing page](https://openai.com/pricing) for cost of the various apis.
-
-As of 2024-02, here's a rough idea of what to expect:
-
-- Dall-E image generation, HD 1024x1024; $0.080 per image
-- GPT-4-turbo; $0.01 per 1k input tokens, $0.03 per 1k output tokens
-- GPT-3.5-turbo; $0.0005 per 1k input tokens, $0.0015 per 1k output tokens
-- Per the above pricing page, a rough estimate is that 1000 tokens is about 750 words
-
-<!-- TODO: Add pricing for mistral.ai -->
-
 ## Build
 To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
 
@@ -309,22 +314,24 @@ SilverBullet will automatically sync and load the new version of the plug (or sp
 
 ## Installation
 
-### Method 1: Library Manager (v2.3.0+)
+### Library Manager (Recommended)
+
+Requires SilverBullet v2.3.0+
 
 1. Run `Library: Install` command
-2. Enter: `https://github.com/justyns/silverbullet-ai/blob/main/PLUG.md`
+2. Enter one of the following:
 
-### Method 2: Space Lua Config
-
-Add to your Space Lua configuration:
-
-```lua
-config.set("plugs", {
-  "github:justyns/silverbullet-ai/silverbullet-ai.plug.js"
-})
+**Latest release:**
+```
+ghr:justyns/silverbullet-ai/PLUG.md
 ```
 
-Then run `Plugs: Update`.
+**Specific release:**
+```
+ghr:justyns/silverbullet-ai@0.5.0/PLUG.md
+```
+
+See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
 
 **Upgrading?** If you have an old version in `_plug/`, delete it before reinstalling via Library Manager.
 

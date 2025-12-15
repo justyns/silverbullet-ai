@@ -2,21 +2,23 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.5.0 (Unreleased)
+## 0.5.0 (2025-12-15)
 
 ### SilverBullet v2 Support
 - **BREAKING**: Now requires SilverBullet v2.3.0 or later
-- Migrated from SETTINGS/SECRETS pages to Space Lua configuration (`config.set()`)
-- API keys now configured via `config.set("ai.keys.OPENAI_API_KEY", "your-key")`
+- Migrated from SETTINGS/SECRETS pages to Space Lua configuration (`config.set {}`)
+- API keys now configured via `ai.keys` in config (e.g., `ai.keys.OPENAI_API_KEY`)
 - Uses `system.getConfig()` instead of deprecated `system.getSpaceConfig()`
-- Removed all of the server vs client logic and assume we're always in a client now
-- Move embedding search page to new virtualpage api
+- Removed all server vs client logic - everything runs in the browser now
+- Moved embedding search and connectivity test pages to new virtual page API
+- See [[SilverBullet v2 Migration Guide]] for upgrade instructions
 
 ### Proxy Configuration
 - Added `useProxy` option to all provider types (text, embedding, image)
 - When `useProxy: false`, requests bypass SilverBullet's server proxy and go directly from the browser
 - Useful for local services like Ollama running on the same machine as the browser
 - SSE streaming now properly transforms URLs and headers for the proxy
+- **Note**: `useProxy: true` requires Silverbullet >= 2.3.1 or Edge as of 2025-12-11 for [PR #1721](https://github.com/silverbulletmd/silverbullet/pull/1721)
 
 ### Removed deprecated stuff
 - Removed deprecated commands (use [[Templated Prompts]] instead):
@@ -34,13 +36,14 @@ This page is a brief overview of each version.
 ### Library Changes
 - **BREAKING**: The AICore Library is now merged into the main plug - no separate install needed
 - Converted library scripts from Space Script to Space Lua
-- Convert AIPrompts to examples and add support for defining them using lua
+- Convert AIPrompts to examples and add support for defining them using Lua
 
 ### Other Changes
 - Better logging when SSE events have errors
-- Add support for retrieving list of models from openai and ollama providers
-- Add a Connectivity Test command and page to test whether an api is working
-- Docs site now uses mkdocs only (removed silverbullet-pub dependency)
+- Add support for retrieving list of models from OpenAI and Ollama providers
+- Add a Connectivity Test command and page to test whether an API is working
+- Docs site now uses mkdocs only (removed deprecated silverbullet-pub :( )
+- Plug now distributed via GitHub Releases (`ghr:` prefix in Library Manager) only, the compiled .js file will no longer be in git and neither will the compiled lua library.
 
 ---
 ## 0.4.1 (2024-11-15)

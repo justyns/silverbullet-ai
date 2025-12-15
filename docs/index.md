@@ -17,7 +17,7 @@ LLMs, or Large Language Models, are advanced AI systems trained on vast amounts 
 
 ## Development Status
 
-SilverBullet AI is currently in early development. It may not work as expected. We encourage users to:
+SilverBullet AI is in active development. We encourage users to:
 
 - Report any issues encountered
 - Share feature ideas
@@ -36,20 +36,4 @@ If you're new here, we recommend starting with the [[Quick Start]] guide.
 
 ### Available commands
 
-The list below are the commands available in this plugin.
-
-* [[Commands/AI: Chat on current page]]
-* [[Commands/AI: Connectivity Test]]
-* [[Commands/AI: Enhance Note]]
-* [[Commands/AI: Execute AI Prompt from Custom Template]]
-* [[Commands/AI: Generate and insert image using DallE]]
-* [[Commands/AI: Generate Note FrontMatter]]
-* [[Commands/AI: Generate tags for note]]
-* [[Commands/AI: Search]]
-* [[Commands/AI: Select Embedding Model from Config]]
-* [[Commands/AI: Select Image Model from Config]]
-* [[Commands/AI: Select Text Model from Config]]
-* [[Commands/AI: Suggest Page Name]]
-* [[Commands/AI: Test Embedding Generation]]
-
-
+{{ include_file("Commands) }}

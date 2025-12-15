@@ -1,6 +1,13 @@
+---
+tags: sidebar
+navOrder: 10
+---
+
 # SilverBullet v2 Migration Guide
 
-This guide covers migrating from SilverBullet v1 to v2. The main change is moving from SETTINGS/SECRETS pages to Space Lua configuration.
+This guide covers migrating silverbullet-ai from SilverBullet v1 to v2. The main change is moving from SETTINGS/SECRETS pages to Space Lua configuration.
+
+For general SilverBullet v2 migration steps, see the official [Migrate from v1](https://silverbullet.md/Migrate%20from%20v1) guide.
 
 ## Quick Steps
 
@@ -22,11 +29,6 @@ ghr:justyns/silverbullet-ai/PLUG.md
 **Specific release:**
 ```
 ghr:justyns/silverbullet-ai@0.5.0/PLUG.md
-```
-
-**Latest dev version:**
-```
-github:justyns/silverbullet-ai/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
