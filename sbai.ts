@@ -39,6 +39,16 @@ import {
   folderName,
 } from "./src/utils.ts";
 
+// Re-export chat panel functions for plug yaml
+export {
+  closeAIAssistant,
+  exportPanelChat,
+  getPanelChatChunk,
+  openAIAssistant,
+  startPanelChat,
+  toggleAIAssistant,
+} from "./src/chat-panel.ts";
+
 /**
  * Prompts the user to select a text/llm model from the configured models.
  */

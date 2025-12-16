@@ -1,6 +1,8 @@
 name: silverbullet-ai
 requiredPermissions:
   - fetch
+assets:
+  - "assets/*"
 functions:
   aiPromptSlashCommplete:
     path: src/prompts.ts:aiPromptSlashComplete
@@ -97,3 +99,23 @@ functions:
     path: src/connectivity.ts:connectivityTestCommand
     command:
       name: "AI: Connectivity Test"
+
+  # AI Assistant Panel
+  openAIAssistant:
+    path: sbai.ts:openAIAssistant
+    command:
+      name: "AI: Open Assistant"
+      key: "Ctrl-Shift-a"
+      mac: "Cmd-Shift-a"
+  closeAIAssistant:
+    path: sbai.ts:closeAIAssistant
+  toggleAIAssistant:
+    path: sbai.ts:toggleAIAssistant
+    command:
+      name: "AI: Toggle Assistant Panel"
+  startPanelChat:
+    path: sbai.ts:startPanelChat
+  getPanelChatChunk:
+    path: sbai.ts:getPanelChatChunk
+  exportPanelChat:
+    path: sbai.ts:exportPanelChat
