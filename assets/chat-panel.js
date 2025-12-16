@@ -18,7 +18,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       const history = await syscall("clientStore.get", CHAT_HISTORY_KEY);
       if (history && Array.isArray(history)) {
         chatHistory = history;
-        renderAllMessages();
+        await renderAllMessages();
       }
     } catch (e) {
       console.error("Failed to load chat history:", e);
@@ -33,16 +33,28 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     }
   }
 
-  function renderMessage(role, content, streaming = false) {
+  async function renderMessage(role, content, streaming = false) {
     const msgEl = document.createElement("div");
     msgEl.className = "message " + role + (streaming ? " streaming" : "");
-    msgEl.textContent = content;
+
+    if (role === "assistant" && !streaming && content) {
+      try {
+        const html = await syscall("markdown.markdownToHtml", content);
+        msgEl.innerHTML = html;
+      } catch (e) {
+        console.error("Failed to render markdown:", e);
+        msgEl.textContent = content;
+      }
+    } else {
+      msgEl.textContent = content;
+    }
+
     messagesContainer.appendChild(msgEl);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
     return msgEl;
   }
 
-  function renderAllMessages() {
+  async function renderAllMessages() {
     messagesContainer.innerHTML = "";
 
     if (chatHistory.length === 0) {
@@ -55,11 +67,11 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       return;
     }
 
-    chatHistory.forEach((msg) => {
+    for (const msg of chatHistory) {
       if (msg.role !== "system") {
-        renderMessage(msg.role, msg.content);
+        await renderMessage(msg.role, msg.content);
       }
-    });
+    }
   }
 
   async function pollForChunks(streamId, messageEl) {
@@ -81,6 +93,13 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           isStreaming = false;
           messageEl.classList.remove("streaming");
           const fullResponse = messageEl.textContent;
+          // Re-render as markdown now that streaming is complete
+          try {
+            const html = await syscall("markdown.markdownToHtml", fullResponse);
+            messageEl.innerHTML = html;
+          } catch (e) {
+            console.error("Failed to render markdown:", e);
+          }
           chatHistory.push({ role: "assistant", content: fullResponse });
           await saveHistory();
           break;
@@ -113,7 +132,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     if (!content || isStreaming) return;
 
     chatHistory.push({ role: "user", content });
-    renderAllMessages();
+    await renderAllMessages();
 
     userInput.value = "";
     userInput.style.height = "auto";
@@ -121,7 +140,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     sendBtn.disabled = true;
     userInput.disabled = true;
 
-    const assistantEl = renderMessage("assistant", "", true);
+    const assistantEl = await renderMessage("assistant", "", true);
 
     try {
       const result = await syscall(
@@ -154,7 +173,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   async function newChat() {
     chatHistory = [];
     await saveHistory();
-    renderAllMessages();
+    await renderAllMessages();
     userInput.focus();
   }
 

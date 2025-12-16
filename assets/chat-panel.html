@@ -103,8 +103,105 @@
     padding: 8px 12px;
     border-radius: 8px;
     line-height: 1.4;
-    white-space: pre-wrap;
     word-wrap: break-word;
+  }
+
+  /* Markdown rendering styles for assistant messages */
+  .message.assistant p {
+    margin: 0 0 8px 0;
+  }
+
+  .message.assistant p:last-child {
+    margin-bottom: 0;
+  }
+
+  .message.assistant code {
+    background: rgba(0, 0, 0, 0.1);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: "SF Mono", Monaco, "Cascadia Code", monospace;
+    font-size: 0.9em;
+  }
+
+  [data-theme="dark"] .message.assistant code {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .message.assistant pre {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+
+  [data-theme="dark"] .message.assistant pre {
+    background: rgba(0, 0, 0, 0.3);
+  }
+
+  .message.assistant pre code {
+    background: none;
+    padding: 0;
+  }
+
+  .message.assistant ul,
+  .message.assistant ol {
+    margin: 8px 0;
+    padding-left: 20px;
+  }
+
+  .message.assistant li {
+    margin: 4px 0;
+  }
+
+  .message.assistant blockquote {
+    border-left: 3px solid var(--accent);
+    margin: 8px 0;
+    padding-left: 12px;
+    color: var(--subtle);
+  }
+
+  .message.assistant a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .message.assistant a:hover {
+    text-decoration: underline;
+  }
+
+  .message.assistant h1,
+  .message.assistant h2,
+  .message.assistant h3,
+  .message.assistant h4 {
+    margin: 12px 0 8px 0;
+    font-weight: 600;
+  }
+
+  .message.assistant h1 { font-size: 1.3em; }
+  .message.assistant h2 { font-size: 1.2em; }
+  .message.assistant h3 { font-size: 1.1em; }
+  .message.assistant h4 { font-size: 1em; }
+
+  .message.assistant table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    width: 100%;
+  }
+
+  .message.assistant th,
+  .message.assistant td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+  }
+
+  .message.assistant th {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  [data-theme="dark"] .message.assistant th {
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .message.user {
@@ -112,12 +209,17 @@
     background: var(--accent);
     color: var(--accent-text);
     border-bottom-right-radius: 2px;
+    white-space: pre-wrap;
   }
 
   .message.assistant {
     align-self: flex-start;
     background: var(--msg-assistant-bg);
     border-bottom-left-radius: 2px;
+  }
+
+  .message.assistant.streaming {
+    white-space: pre-wrap;
   }
 
   .message.streaming::after {
