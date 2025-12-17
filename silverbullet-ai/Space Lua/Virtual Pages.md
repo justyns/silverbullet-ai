@@ -1,6 +1,6 @@
 ---
 description: Virtual pages for AI features
-tags: meta/ai
+tags: space-lua
 ---
 
 These define virtual pages that display cached results from AI operations.

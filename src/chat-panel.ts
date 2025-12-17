@@ -4,9 +4,14 @@ import {
   editor,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
-import type { ChatMessage } from "./types.ts";
+import type { ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
 import { chatSystemPrompt, currentAIProvider, initIfNeeded } from "./init.ts";
 import { enrichChatMessages } from "./utils.ts";
+import {
+  convertToOpenAITools,
+  discoverTools,
+  runAgenticChat,
+} from "./tools.ts";
 
 let isPanelOpen = false;
 interface StreamBuffer {
@@ -59,7 +64,7 @@ export async function toggleAIAssistant() {
 }
 
 /**
- * Starts a panel chat session with streaming.
+ * Starts a panel chat session with streaming and tool support.
  * Called from the panel iframe.
  * This is called each time a new message is sent, not just the first one.
  */
@@ -76,6 +81,11 @@ export async function startPanelChat(
       chunks: [],
       status: "streaming",
     });
+
+    // Discover tools from Space Lua
+    const luaTools = await discoverTools();
+    const tools = convertToOpenAITools(luaTools);
+    console.log(`Panel chat: discovered ${tools.length} tools`);
 
     let contextInfo = "";
     // TODO: Allow this to be customized
@@ -101,39 +111,82 @@ export async function startPanelChat(
       role: "system",
       content: chatSystemPrompt.content + contextInfo,
     };
-    const fullMessages = [systemMessage, ...messages];
-    const enrichedMessages = await enrichChatMessages(fullMessages);
+    const fullMessages: ChatMessage[] = [systemMessage, ...messages];
+    let workingMessages = await enrichChatMessages(fullMessages);
 
-    // Start streaming in the background, using our normal chatWithAI() and "stream" it to a buffer
-    // so that we can retrieve it in chunks in the panel
-    currentAIProvider.chatWithAI({
-      messages: enrichedMessages,
-      stream: true,
-      onDataReceived: (chunk: string) => {
+    // Run the tool loop in the background
+    runToolLoop(streamId, workingMessages, tools, luaTools).catch(
+      (error: Error) => {
         const buffer = streamBuffers.get(streamId);
         if (buffer) {
-          buffer.chunks.push(chunk);
+          buffer.status = "error";
+          buffer.error = error.message;
         }
       },
-      onResponseComplete: (_response: string) => {
-        const buffer = streamBuffers.get(streamId);
-        if (buffer) {
-          buffer.status = "complete";
-        }
-      },
-    }).catch((error: Error) => {
-      const buffer = streamBuffers.get(streamId);
-      if (buffer) {
-        buffer.status = "error";
-        buffer.error = error.message;
-      }
-    });
+    );
 
     return { streamId };
   } catch (error) {
     console.error("Error starting panel chat:", error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
+}
+
+/**
+ * Runs the tool loop: execute tool calls until we get a final response,
+ * then stream that response to the buffer.
+ */
+async function runToolLoop(
+  streamId: string,
+  messages: ChatMessage[],
+  tools: Tool[],
+  luaTools: Map<string, LuaToolDefinition>,
+): Promise<void> {
+  const buffer = streamBuffers.get(streamId);
+  if (!buffer) return;
+
+  // If no tools available, skip the tool loop and just stream
+  if (tools.length === 0) {
+    await streamFinalResponse(streamId, messages);
+    return;
+  }
+
+  const result = await runAgenticChat({
+    messages,
+    tools,
+    luaTools,
+    chatFunction: (msgs, t) => currentAIProvider.chat(msgs, t),
+    onToolCall: (_toolName, _args, _result) => {
+      // Tool calls are already formatted in toolCallsText and used below
+    },
+  });
+
+  if (result.toolCallsText) {
+    buffer.chunks.push(result.toolCallsText);
+  }
+  buffer.chunks.push(result.finalResponse);
+  buffer.status = "complete";
+}
+
+/**
+ * Stream the final response without tools (fallback when no tools are defined)
+ */
+async function streamFinalResponse(
+  streamId: string,
+  messages: ChatMessage[],
+): Promise<void> {
+  const buffer = streamBuffers.get(streamId);
+  if (!buffer) return;
+
+  await currentAIProvider.streamChat({
+    messages,
+    onChunk: (chunk: string) => {
+      buffer.chunks.push(chunk);
+    },
+    onComplete: (_response) => {
+      buffer.status = "complete";
+    },
+  });
 }
 
 /**

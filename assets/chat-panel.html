@@ -155,10 +155,17 @@
   }
 
   .message.assistant blockquote {
-    border-left: 3px solid var(--accent);
+    border-left: 3px solid var(--subtle);
     margin: 8px 0;
-    padding-left: 12px;
+    padding: 4px 12px;
     color: var(--subtle);
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9em;
+  }
+
+  [data-theme="dark"] .message.assistant blockquote {
+    background: rgba(255, 255, 255, 0.03);
   }
 
   .message.assistant a {
@@ -178,10 +185,18 @@
     font-weight: 600;
   }
 
-  .message.assistant h1 { font-size: 1.3em; }
-  .message.assistant h2 { font-size: 1.2em; }
-  .message.assistant h3 { font-size: 1.1em; }
-  .message.assistant h4 { font-size: 1em; }
+  .message.assistant h1 {
+    font-size: 1.3em;
+  }
+  .message.assistant h2 {
+    font-size: 1.2em;
+  }
+  .message.assistant h3 {
+    font-size: 1.1em;
+  }
+  .message.assistant h4 {
+    font-size: 1em;
+  }
 
   .message.assistant table {
     border-collapse: collapse;

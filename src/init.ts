@@ -327,6 +327,7 @@ async function loadAndMergeSettings() {
     bakeMessages: true,
     customEnrichFunctions: [],
     searchEmbeddings: false,
+    enableTools: true,
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameSystem: "",

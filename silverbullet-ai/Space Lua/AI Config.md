@@ -12,6 +12,7 @@ This page defines the JSON Schema for all silverbullet-ai configuration settings
 
 -- Namespace where the helper functions and stuff will go
 ai = {}
+ai.tools = {}
 
 -- Schema for API keys
 config.define("ai.keys", {

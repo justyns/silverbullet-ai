@@ -1,4 +1,10 @@
-import { EmbeddingGenerationOptions, StreamChatOptions } from "../types.ts";
+import type {
+  ChatMessage,
+  ChatResponse,
+  EmbeddingGenerationOptions,
+  StreamChatOptions,
+  Tool,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
@@ -32,15 +38,15 @@ export class OllamaProvider extends AbstractProvider {
     );
   }
 
-  async chatWithAI(
-    { messages, stream, onDataReceived, onResponseComplete }: StreamChatOptions,
-  ): Promise<any> {
-    return await this.openaiProvider.chatWithAI({
-      messages,
-      stream,
-      onDataReceived,
-      onResponseComplete,
-    });
+  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+    return await this.openaiProvider.streamChat(options);
+  }
+
+  async chat(
+    messages: ChatMessage[],
+    tools?: Tool[],
+  ): Promise<ChatResponse> {
+    return await this.openaiProvider.chat(messages, tools);
   }
 
   async listModels(): Promise<string[]> {

@@ -5,7 +5,13 @@ import {
   getLineOfPos,
   getPageLength,
 } from "../editorUtils.ts";
-import { ChatMessage, PostProcessorData, StreamChatOptions } from "../types.ts";
+import type {
+  ChatMessage,
+  ChatResponse,
+  PostProcessorData,
+  StreamChatOptions,
+  Tool,
+} from "../types.ts";
 import { enrichChatMessages } from "../utils.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
@@ -18,17 +24,18 @@ export interface ProviderInterface {
   baseUrl: string;
   modelName: string;
   useProxy: boolean;
-  chatWithAI: (options: StreamChatOptions) => Promise<any>;
-  streamChatIntoEditor: (
-    options: StreamChatOptions,
-    cursorStart: number,
-  ) => Promise<void>;
+  streamChat: (options: StreamChatOptions) => Promise<ChatResponse>;
+  chat: (messages: ChatMessage[], tools?: Tool[]) => Promise<ChatResponse>;
+  listModels: () => Promise<string[]>;
   singleMessageChat: (
     userMessage: string,
     systemPrompt?: string,
     enrichMessages?: boolean,
   ) => Promise<string>;
-  listModels: () => Promise<string[]>;
+  streamChatIntoEditor: (
+    options: StreamChatOptions,
+    cursorStart: number,
+  ) => Promise<void>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -52,7 +59,8 @@ export abstract class AbstractProvider implements ProviderInterface {
     this.useProxy = useProxy;
   }
 
-  abstract chatWithAI(options: StreamChatOptions): Promise<any>;
+  abstract streamChat(options: StreamChatOptions): Promise<ChatResponse>;
+  abstract chat(messages: ChatMessage[], tools?: Tool[]): Promise<ChatResponse>;
   abstract listModels(): Promise<string[]>;
 
   protected fetch(url: string, options: RequestInit): Promise<Response> {
@@ -63,25 +71,24 @@ export abstract class AbstractProvider implements ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ): Promise<void> {
-    const { onDataReceived, onResponseComplete, postProcessors } = options;
+    const { onChunk, onComplete, postProcessors } = options;
     const loadingMessage = "🤔 Thinking … ";
     let cursorPos = cursorStart ?? await getPageLength();
     await editor.insertAtPos(loadingMessage, cursorPos);
     let stillLoading = true;
+    let fullResponse = "";
 
     const startOfResponse = cursorPos;
 
-    const onData = (data: string) => {
+    const handleChunk = (data: string) => {
       try {
         if (!data) {
           console.log("No data received from LLM");
           return;
         }
+        fullResponse += data;
         if (stillLoading) {
           if (["`", "-", "*"].includes(data.charAt(0))) {
-            // Sometimes we get a response that is _only_ a code block, or a markdown list/etc
-            // To let SB parse them better, we just add a new line before rendering it
-            // console.log("First character of response is:", data.charAt(0));
             data = "\n" + data;
           }
           editor.replaceRange(
@@ -94,7 +101,7 @@ export abstract class AbstractProvider implements ProviderInterface {
           editor.insertAtPos(data, cursorPos);
         }
         cursorPos += data.length;
-        if (onDataReceived) onDataReceived(data);
+        if (onChunk) onChunk(data);
       } catch (error) {
         console.error("Error handling chat stream data:", error);
         editor.flashNotification(
@@ -104,19 +111,20 @@ export abstract class AbstractProvider implements ProviderInterface {
       }
     };
 
-    const onDataComplete = async (data: string) => {
+    const handleComplete = async (response: ChatResponse) => {
+      const data = response.content || "";
       console.log("Response complete:", data);
-      const endOfResponse = startOfResponse + data.length;
+      const endOfResponse = startOfResponse + fullResponse.length;
       console.log("Start of response:", startOfResponse);
       console.log("End of response:", endOfResponse);
-      console.log("Full response:", data);
+      console.log("Full response:", fullResponse);
       console.log("Post-processors:", postProcessors);
-      let newData = data;
+      let newData = fullResponse;
 
       if (postProcessors) {
         const pageText = await editor.getText();
         const postProcessorData: PostProcessorData = {
-          response: data,
+          response: fullResponse,
           lineBefore: getLineBefore(pageText, startOfResponse),
           lineCurrent: getLineOfPos(pageText, startOfResponse),
           lineAfter: getLineAfter(pageText, endOfResponse),
@@ -128,20 +136,17 @@ export abstract class AbstractProvider implements ProviderInterface {
             postProcessorData,
           );
         }
-        // if (newData !== data) {
-        // console.log("New data:", newData);
         console.log("Data changed by post-processors, updating editor");
         editor.replaceRange(startOfResponse, endOfResponse, newData);
-        // }
       }
 
-      if (onResponseComplete) onResponseComplete(data);
+      if (onComplete) onComplete(response);
     };
 
-    await this.chatWithAI({
+    await this.streamChat({
       ...options,
-      onDataReceived: onData,
-      onResponseComplete: onDataComplete,
+      onChunk: handleChunk,
+      onComplete: handleComplete,
     });
   }
 
@@ -168,9 +173,7 @@ export abstract class AbstractProvider implements ProviderInterface {
       messages = await enrichChatMessages(messages);
     }
 
-    return await this.chatWithAI({
-      messages,
-      stream: false,
-    });
+    const response = await this.chat(messages);
+    return response.content || "";
   }
 }

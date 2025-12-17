@@ -38,6 +38,12 @@ import {
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
+import {
+  convertToOpenAITools,
+  discoverTools,
+  runAgenticChat,
+  runStreamingAgenticChat,
+} from "./src/tools.ts";
 
 // Re-export chat panel functions for plug yaml
 export {
@@ -361,6 +367,27 @@ export async function enhanceNoteWithAI() {
 }
 
 /**
+ * Checks if AI tools are enabled for the current page.
+ * Tools can be disabled globally via config or per-page via frontmatter.
+ */
+async function areToolsEnabled(): Promise<boolean> {
+  // Check global config
+  if (aiSettings.chat?.enableTools === false) return false;
+
+  // Check page frontmatter
+  try {
+    const pageText = await editor.getText();
+    const tree = await markdown.parseMarkdown(pageText);
+    const frontmatter = await extractFrontMatter(tree);
+    if (frontmatter.aiTools === false) return false;
+  } catch (_e) {
+    // If we can't get frontmatter, assume tools are enabled
+  }
+
+  return true;
+}
+
+/**
  * Streams a conversation with the LLM, but uses the current page as a sort of chat history.
  * New responses are always appended to the end of the page.
  */
@@ -386,6 +413,77 @@ export async function streamChatOnPage() {
   await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
 
   try {
+    // Check if tools are enabled and available
+    const toolsEnabled = await areToolsEnabled();
+    const luaTools = toolsEnabled ? await discoverTools() : new Map();
+    const tools = convertToOpenAITools(luaTools);
+
+    if (tools.length > 0) {
+      console.log(`Chat on page: using ${tools.length} tools with streaming`);
+
+      // Queue to serialize async insertions (SSE events fire faster than editor can insert)
+      let insertQueue = Promise.resolve();
+      const loadingMessage = "🤔 Thinking … ";
+      let stillLoading = true;
+
+      // Insert loading indicator
+      await editor.insertAtPos(loadingMessage, cursorPos);
+
+      // Use streaming with tool support
+      await runStreamingAgenticChat({
+        messages: enrichedMessages,
+        tools,
+        luaTools,
+        streamFunction: (options) => currentAIProvider.streamChat(options),
+        onChunk: (chunk) => {
+          if (stillLoading) {
+            // Replace loading message with first chunk
+            stillLoading = false;
+            const pos = cursorPos;
+            cursorPos += chunk.length;
+            insertQueue = insertQueue.then(() =>
+              editor.replaceRange(pos, pos + loadingMessage.length, chunk)
+            );
+          } else {
+            const pos = cursorPos;
+            cursorPos += chunk.length;
+            insertQueue = insertQueue.then(() =>
+              editor.insertAtPos(chunk, pos)
+            );
+          }
+        },
+        onToolCall: (name, args, result) => {
+          // Insert tool indicator immediately when tool is called
+          const argsDisplay = Object.entries(args)
+            .map(([k, v]) => `${k}: "${v}"`)
+            .join(", ");
+          const status = result.success ? "✓" : "✗";
+          const toolLine = `\n> 🔧 ${name}(${argsDisplay}) → ${status}\n\n`;
+
+          if (stillLoading) {
+            // Replace loading message with tool indicator
+            stillLoading = false;
+            const pos = cursorPos;
+            cursorPos += toolLine.length;
+            insertQueue = insertQueue.then(() =>
+              editor.replaceRange(pos, pos + loadingMessage.length, toolLine)
+            );
+          } else {
+            const pos = cursorPos;
+            cursorPos += toolLine.length;
+            insertQueue = insertQueue.then(() =>
+              editor.insertAtPos(toolLine, pos)
+            );
+          }
+        },
+      });
+
+      // Wait for all pending insertions to complete
+      await insertQueue;
+      return;
+    }
+
+    // No tools available - use simple streaming
     await currentAIProvider.streamChatIntoEditor({
       messages: enrichedMessages,
       stream: true,
@@ -477,6 +575,104 @@ export async function queryAI(
     return response;
   } catch (error) {
     console.error("Error querying OpenAI:", error);
+    throw error;
+  }
+}
+
+/**
+ * Options for the chat function callable from Space Lua
+ */
+export type ChatOptions = {
+  messages: Array<{ role: string; content: string }>;
+  systemPrompt?: string;
+  useTools?: boolean;
+};
+
+/**
+ * Result from the chat function
+ */
+export type ChatResult = {
+  response: string;
+  toolCalls?: string;
+};
+
+/**
+ * Lua-callable chat function with optional tool support.
+ * This allows Space Lua code to make LLM calls that can use AI tools.
+ *
+ * @example From Space Lua:
+ * ```lua
+ * -- Simple chat without tools
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "What is 2+2?"}
+ *   }
+ * })
+ * print(result.response)
+ *
+ * -- Chat with tools enabled
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "Read the page 'My Notes' and summarize it"}
+ *   },
+ *   useTools = true
+ * })
+ * print(result.response)
+ * print(result.toolCalls) -- Shows which tools were called
+ *
+ * -- With custom system prompt
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "Translate to French: Hello"}
+ *   },
+ *   systemPrompt = "You are a helpful translator."
+ * })
+ * ```
+ */
+export async function chat(options: ChatOptions): Promise<ChatResult> {
+  try {
+    await initIfNeeded();
+
+    const messages = options.messages.map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content,
+    }));
+
+    // Add system prompt if provided
+    if (options.systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: options.systemPrompt,
+      });
+    }
+
+    // If tools are enabled, use the agentic chat
+    if (options.useTools) {
+      const luaTools = await discoverTools();
+      const tools = convertToOpenAITools(luaTools);
+
+      if (tools.length > 0) {
+        const result = await runAgenticChat({
+          messages,
+          tools,
+          luaTools,
+          chatFunction: (msgs, t) => currentAIProvider.chat(msgs, t),
+        });
+
+        return {
+          response: result.finalResponse,
+          toolCalls: result.toolCallsText || undefined,
+        };
+      }
+    }
+
+    // No tools - use simple non-streaming chat
+    const response = await currentAIProvider.chat(messages);
+    return {
+      response: response.content || "",
+    };
+  } catch (error) {
+    console.error("Error in chat function:", error);
     throw error;
   }
 }

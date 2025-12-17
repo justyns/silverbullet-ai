@@ -178,6 +178,11 @@ export async function defineConfigSchemas(): Promise<void> {
         },
         description: "Custom functions to enrich chat context",
       },
+      enableTools: {
+        type: "boolean",
+        description:
+          "Enable AI tools for chat on page. When enabled, uses non-streaming responses. Set to false for streaming. (default: true)",
+      },
     },
     additionalProperties: false,
     description: "Chat behavior settings",

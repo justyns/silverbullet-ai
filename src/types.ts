@@ -6,10 +6,16 @@ export type sseEvent = {
 
 export type StreamChatOptions = {
   messages: Array<ChatMessage>;
-  stream: boolean;
-  onDataReceived?: (data: any) => void;
-  onResponseComplete?: (data: any) => void;
+  tools?: Tool[];
+  onChunk?: (chunk: string) => void;
+  onComplete?: (response: ChatResponse) => void;
   postProcessors?: string[];
+};
+
+export type ChatResponse = {
+  content: string | null;
+  tool_calls?: ToolCall[];
+  finish_reason?: "stop" | "tool_calls" | "length";
 };
 
 export type ImageGenerationOptions = {
@@ -56,9 +62,57 @@ export type CombinedEmbeddingResult = {
   children: EmbeddingResult[];
 };
 
+// Tool definition in OpenAI format
+export type Tool = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, {
+        type: string;
+        description?: string;
+        enum?: string[];
+      }>;
+      required?: string[];
+    };
+  };
+};
+
+// Tool call from AI response
+export type ToolCall = {
+  id: string;
+  type: "function";
+  function: {
+    name: string;
+    arguments: string;
+  };
+};
+
+// Base chat message
 export type ChatMessage = {
   content: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
+  tool_calls?: ToolCall[];
+  tool_call_id?: string;
+  name?: string;
+};
+
+// Space Lua tool definition format
+export type LuaToolDefinition = {
+  description: string;
+  parameters: {
+    type: "object";
+    properties: Record<string, {
+      type: string;
+      description?: string;
+      enum?: string[];
+    }>;
+    required?: string[];
+  };
+  handler: string; // Lua function reference
+  requiresApproval?: boolean;
 };
 
 export enum Provider {
@@ -90,6 +144,7 @@ export type ChatSettings = {
   bakeMessages: boolean;
   searchEmbeddings: boolean;
   customEnrichFunctions: string[];
+  enableTools: boolean;
 };
 
 export type PromptInstructions = {

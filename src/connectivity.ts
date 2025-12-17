@@ -182,19 +182,18 @@ Use these commands to select your models:
               const chunks: string[] = [];
               const streamingResult = await new Promise<string>(
                 (resolve, reject) => {
-                  provider.chatWithAI({
+                  provider.streamChat({
                     messages: [{
                       role: "user",
                       content:
                         "This is a streaming connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).",
                     }],
-                    stream: true,
-                    onDataReceived: (chunk) => {
+                    onChunk: (chunk) => {
                       console.log("Streaming chunk received:", chunk);
                       chunks.push(chunk);
                     },
-                    onResponseComplete: (finalResponse) => {
-                      resolve(finalResponse);
+                    onComplete: (response) => {
+                      resolve(response.content || "");
                     },
                   }).catch(reject);
                 },

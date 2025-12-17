@@ -1,9 +1,13 @@
 import { SSE } from "npm:sse.js@2.2.0";
-import { ChatMessage } from "../types.ts";
-import { StreamChatOptions } from "../types.ts";
+import type {
+  ChatMessage,
+  ChatResponse,
+  sseEvent,
+  StreamChatOptions,
+  Tool,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
-import { sseEvent } from "../types.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type HttpHeaders = {
@@ -47,17 +51,6 @@ export class GeminiProvider extends AbstractProvider {
     }
   }
 
-  async chatWithAI(
-    { messages, stream, onDataReceived }: StreamChatOptions,
-  ): Promise<any> {
-    // console.log("Starting chat with Gemini: ", messages);
-    if (stream) {
-      return await this.streamChat({ messages, stream, onDataReceived });
-    } else {
-      return await this.nonStreamingChat(messages);
-    }
-  }
-
   private mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
     const payloadContents: GeminiChatContent[] = [];
     let previousRole = "";
@@ -90,80 +83,97 @@ export class GeminiProvider extends AbstractProvider {
     return payloadContents;
   }
 
-  streamChat(options: StreamChatOptions) {
-    const { messages, onDataReceived } = options;
+  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+    const { messages, onChunk, onComplete } = options;
 
-    try {
-      const rawUrl =
-        `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+    return new Promise((resolve, reject) => {
+      try {
+        const rawUrl =
+          `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
 
-      const headers: HttpHeaders = {
-        "Content-Type": "application/json",
-      };
+        const headers: HttpHeaders = {
+          "Content-Type": "application/json",
+        };
 
-      // Use SilverBullet's proxy unless disabled
-      const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
-      const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
+        const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
+        const finalHeaders = this.useProxy
+          ? buildProxyHeaders(headers)
+          : headers;
 
-      const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
-        messages,
-      );
+        const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
+          messages,
+        );
 
-      const sseOptions = {
-        method: "POST",
-        headers: finalHeaders,
-        payload: JSON.stringify({
-          contents: payloadContents,
-        }),
-        withCredentials: false,
-      };
+        const sseOptions = {
+          method: "POST",
+          headers: finalHeaders,
+          payload: JSON.stringify({
+            contents: payloadContents,
+          }),
+          withCredentials: false,
+        };
 
-      // console.log("Starting gemini api call to ", sseUrl);
-      // console.log("sseOptions", sseOptions);
+        const source = new SSE(sseUrl, sseOptions);
+        let fullContent = "";
 
-      const source = new SSE(sseUrl, sseOptions);
-      let fullMsg = "";
-
-      source.addEventListener("message", (e: sseEvent) => {
-        try {
-          // console.log("Received message from Gemini: ", e.data);
-          if (e.data == "[DONE]") {
-            source.close();
-            return fullMsg;
-          } else if (!e.data) {
-            console.error("Received empty message from Gemini");
-            console.log("source: ", source);
-          } else {
-            const data = JSON.parse(e.data);
-            const msg = data.candidates[0].content.parts[0].text || data.text ||
-              "";
-            fullMsg += msg;
-            if (onDataReceived) onDataReceived(msg);
+        source.addEventListener("message", (e: sseEvent) => {
+          try {
+            if (e.data === "[DONE]") {
+              source.close();
+              const response: ChatResponse = {
+                content: fullContent,
+                tool_calls: undefined,
+                finish_reason: "stop",
+              };
+              if (onComplete) onComplete(response);
+              resolve(response);
+              return;
+            } else if (!e.data) {
+              console.error("Received empty message from Gemini");
+            } else {
+              const data = JSON.parse(e.data);
+              const msg = data.candidates[0].content.parts[0].text ||
+                data.text ||
+                "";
+              fullContent += msg;
+              if (onChunk) onChunk(msg);
+            }
+          } catch (error) {
+            console.error("Error processing message event:", error, e.data);
           }
-        } catch (error) {
-          console.error("Error processing message event:", error, e.data);
-        }
-      });
+        });
 
-      source.addEventListener("end", () => {
-        source.close();
-        return fullMsg;
-      });
+        source.addEventListener("end", () => {
+          source.close();
+          const response: ChatResponse = {
+            content: fullContent,
+            tool_calls: undefined,
+            finish_reason: "stop",
+          };
+          if (onComplete) onComplete(response);
+          resolve(response);
+        });
 
-      source.addEventListener("error", (e: sseEvent) => {
-        console.error("SSE error:", e);
-        source.close();
-      });
+        source.addEventListener("error", (e: sseEvent) => {
+          console.error("SSE error:", e);
+          source.close();
+          reject(new Error(`SSE error: ${e.data}`));
+        });
 
-      source.stream();
-      // console.log("source.stream started");
-    } catch (error) {
-      console.error("Error streaming from Gemini chat endpoint:", error);
-      throw error;
-    }
+        source.stream();
+      } catch (error) {
+        console.error("Error streaming from Gemini chat endpoint:", error);
+        reject(error);
+      }
+    });
   }
 
-  async nonStreamingChat(messages: Array<ChatMessage>): Promise<string> {
+  async chat(
+    messages: Array<ChatMessage>,
+    _tools?: Tool[],
+  ): Promise<ChatResponse> {
+    // Note: Gemini tool support would require different API format
+    // For now, we just return content without tool_calls
     const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
       messages,
     );
@@ -182,7 +192,10 @@ export class GeminiProvider extends AbstractProvider {
     }
 
     const responseData = await response.json();
-    return responseData.candidates[0].content.parts[0].text;
+    return {
+      content: responseData.candidates[0].content.parts[0].text,
+      tool_calls: undefined,
+    };
   }
 }
 

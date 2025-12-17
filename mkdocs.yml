@@ -86,6 +86,8 @@ nav:
       - Configuration.md
       - Configuration
   - Templated Prompts.md
+  - AI Tools.md
+  - Space Lua.md
   - Commands:
       - Commands
   - Providers:

@@ -10,6 +10,8 @@ functions:
       - slash:complete
   queryAI:
     path: sbai.ts:queryAI
+  chat:
+    path: sbai.ts:chat
 
   tagNoteWithAI:
     path: sbai.ts:tagNoteWithAI
