@@ -20,6 +20,12 @@ export function log(...args: any[]) {
   console.log(...args);
 }
 
+const TOOL_CALL_PATTERN = /<!-- TOOL_CALL -->[\s\S]*?<!-- \/TOOL_CALL -->\n*/g;
+
+export function stripToolCallDisplay(content: string): string {
+  return content.replace(TOOL_CALL_PATTERN, "").trim();
+}
+
 /**
  * Converts the current page into a list of messages for the LLM.
  * Each message is a line of text, with the role being the bolded word at the beginning of the line.

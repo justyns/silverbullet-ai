@@ -222,6 +222,7 @@ async function requestToolApproval(
 /**
  * Formats a tool call for display
  */
+// TODO: Makae this prettier, expandable block with results/args,etc.
 function formatToolCallDisplay(
   toolName: string,
   args: Record<string, unknown>,
@@ -231,7 +232,9 @@ function formatToolCallDisplay(
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join(", ");
   const status = success ? "✓" : "✗";
-  return `\n> 🔧 ${toolName}(${argsDisplay}) → ${status}\n\n`;
+  // TODO: Temporary hack to use regex and get rid of tool calls in chat history sent to the api.
+  //       Ideally this should render nicer in the SB ui too though.
+  return `\n<!-- TOOL_CALL -->\n> 🔧 ${toolName}(${argsDisplay}) → ${status}\n<!-- /TOOL_CALL -->\n\n`;
 }
 
 function parseToolCallArguments(

@@ -37,6 +37,7 @@ import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
+  stripToolCallDisplay,
 } from "./src/utils.ts";
 import {
   convertToOpenAITools,
@@ -400,8 +401,13 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  messages.unshift(chatSystemPrompt);
-  const enrichedMessages = await enrichChatMessages(messages);
+  const cleanedMessages = messages.map((msg) =>
+    msg.role === "assistant"
+      ? { ...msg, content: stripToolCallDisplay(msg.content) }
+      : msg
+  );
+  cleanedMessages.unshift(chatSystemPrompt);
+  const enrichedMessages = await enrichChatMessages(cleanedMessages);
   console.log("enrichedMessages", enrichedMessages);
 
   let cursorPos = await getPageLength();
