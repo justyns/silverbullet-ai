@@ -27,6 +27,7 @@ The plug includes built-in tools in `silverbullet-ai/Space Lua/AI Tools.md`:
 | `search_replace` | Find and replace text (first, all, or Nth occurrence) | Yes |
 | `create_note` | Create a new page (fails if exists) | Yes |
 | `navigate` | Navigate to a page or position | No |
+| `eval_lua` | Execute a Lua expression and return the result | Yes |
 
 These are provided as core built-in tools and can be expanded on.
 

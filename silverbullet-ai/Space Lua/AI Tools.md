@@ -461,4 +461,28 @@ ai.tools.navigate = {
     return "Navigated to: " .. args.ref
   end
 }
+
+ai.tools.eval_lua = {
+  description = "Execute a Lua expression and return the result. Use for calculations, data transformations, or accessing SilverBullet APIs not covered by other tools. Available globals include: space, editor, sync, system, markdown, template, and standard Lua functions.",
+  requiresApproval = true,
+  parameters = {
+    type = "object",
+    properties = {
+      expression = {type = "string", description = "The Lua expression to evaluate. Can be a simple expression or a function body wrapped in (function() ... end)() for multiple statements."},
+      env = {type = "object", description = "Optional environment variables to make available to the expression"}
+    },
+    required = {"expression"}
+  },
+  handler = function(args)
+    local parsed = spacelua.parseExpression(args.expression)
+    local result = spacelua.evalExpression(parsed, args.env)
+    if result == nil then
+      return "nil"
+    end
+    if type(result) == "table" then
+      return js.stringify(result)
+    end
+    return tostring(result)
+  end
+}
 ```
