@@ -1,7 +1,12 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import "./mocks/syscalls.ts";
-import { convertPageToMessages } from "./utils.ts";
-import { folderName } from "./utils.ts";
+import {
+  cleanMessagesForApi,
+  convertPageToMessages,
+  folderName,
+  parseToolCallsFromContent,
+  postProcessToolCallHtml,
+} from "./utils.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";
 
@@ -148,4 +153,129 @@ Bar
     );
     throw error;
   }
+});
+
+Deno.test("parseToolCallsFromContent should extract tool calls from content", () => {
+  const toolCallJson = JSON.stringify({
+    id: "tool_123",
+    name: "read_note",
+    args: { page: "TestPage" },
+    result: "Page content here",
+    success: true,
+  });
+  const content =
+    `Here is some text\n\`\`\`toolcall\n${toolCallJson}\n\`\`\`\nMore text`;
+
+  const result = parseToolCallsFromContent(content);
+
+  assertEquals(result.strippedContent, "Here is some text\n\nMore text");
+  assertEquals(result.toolCalls.length, 1);
+  assertEquals(result.toolCalls[0].id, "tool_123");
+  assertEquals(result.toolCalls[0].function.name, "read_note");
+  assertEquals(result.toolMessages.length, 1);
+  assertEquals(result.toolMessages[0].role, "tool");
+  assertEquals(result.toolMessages[0].tool_call_id, "tool_123");
+});
+
+Deno.test("parseToolCallsFromContent should handle content without tool calls", () => {
+  const content = "Just some regular text without any tool calls";
+
+  const result = parseToolCallsFromContent(content);
+
+  assertEquals(result.strippedContent, content);
+  assertEquals(result.toolCalls.length, 0);
+  assertEquals(result.toolMessages.length, 0);
+});
+
+Deno.test("parseToolCallsFromContent should handle multiple tool calls", () => {
+  const toolCall1 = JSON.stringify({
+    id: "tool_1",
+    name: "read_note",
+    args: { page: "Page1" },
+    result: "Content 1",
+    success: true,
+  });
+  const toolCall2 = JSON.stringify({
+    id: "tool_2",
+    name: "list_pages",
+    args: {},
+    result: "Page list",
+    success: true,
+  });
+  const content =
+    `\`\`\`toolcall\n${toolCall1}\n\`\`\`\nSome text\n\`\`\`toolcall\n${toolCall2}\n\`\`\``;
+
+  const result = parseToolCallsFromContent(content);
+
+  assertEquals(result.toolCalls.length, 2);
+  assertEquals(result.toolMessages.length, 2);
+  assertEquals(result.toolCalls[0].function.name, "read_note");
+  assertEquals(result.toolCalls[1].function.name, "list_pages");
+});
+
+Deno.test("cleanMessagesForApi should process assistant messages with tool calls", () => {
+  const toolCallJson = JSON.stringify({
+    id: "tool_123",
+    name: "read_note",
+    args: { page: "Test" },
+    result: "Result",
+    success: true,
+  });
+  const messages: ChatMessage[] = [
+    { role: "user", content: "Read the test page" },
+    {
+      role: "assistant",
+      content: `\`\`\`toolcall\n${toolCallJson}\n\`\`\`\nHere is the content.`,
+    },
+  ];
+
+  const result = cleanMessagesForApi(messages);
+
+  assertEquals(result.length, 3);
+  assertEquals(result[0].role, "user");
+  assertEquals(result[1].role, "assistant");
+  assertEquals(result[1].tool_calls?.length, 1);
+  assertEquals(result[2].role, "tool");
+  assertEquals(result[2].tool_call_id, "tool_123");
+});
+
+Deno.test("cleanMessagesForApi should pass through messages without tool calls", () => {
+  const messages: ChatMessage[] = [
+    { role: "user", content: "Hello" },
+    { role: "assistant", content: "Hi there!" },
+  ];
+
+  const result = cleanMessagesForApi(messages);
+
+  assertEquals(result.length, 2);
+  assertEquals(result[0].content, "Hello");
+  assertEquals(result[1].content, "Hi there!");
+});
+
+Deno.test("postProcessToolCallHtml should convert tool-call code blocks to HTML", () => {
+  const toolData = JSON.stringify({
+    id: "tool_1",
+    name: "read_note",
+    args: { page: "Test" },
+    result: "Content",
+    success: true,
+  });
+  const html =
+    `<p>Some text</p><pre data-lang="toolcall">${toolData}</pre><p>More text</p>`;
+
+  const result = postProcessToolCallHtml(html);
+
+  assertEquals(result.includes("read_note"), true);
+  assertEquals(result.includes("<details"), true);
+  assertEquals(result.includes('class="tool-call'), true);
+  // Styles are now in Space Style, not injected inline
+  assertEquals(result.includes("<style>"), false);
+});
+
+Deno.test("postProcessToolCallHtml should pass through HTML without tool calls", () => {
+  const html = "<p>Regular HTML content</p>";
+
+  const result = postProcessToolCallHtml(html);
+
+  assertEquals(result, html);
 });

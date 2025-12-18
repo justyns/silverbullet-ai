@@ -220,21 +220,40 @@ async function requestToolApproval(
 }
 
 /**
- * Formats a tool call for display
+ * Formats a tool call for display as a fenced code block.
+ * Uses ```tool-call syntax which triggers the code widget for rendering.
  */
-// TODO: Makae this prettier, expandable block with results/args,etc.
 function formatToolCallDisplay(
+  toolCallId: string,
   toolName: string,
   args: Record<string, unknown>,
   success: boolean,
+  result: string,
 ): string {
-  const argsDisplay = Object.entries(args)
-    .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
-    .join(", ");
-  const status = success ? "✓" : "✗";
-  // TODO: Temporary hack to use regex and get rid of tool calls in chat history sent to the api.
-  //       Ideally this should render nicer in the SB ui too though.
-  return `\n<!-- TOOL_CALL -->\n> 🔧 ${toolName}(${argsDisplay}) → ${status}\n<!-- /TOOL_CALL -->\n\n`;
+  const data = { id: toolCallId, name: toolName, args, result, success };
+  const json = JSON.stringify(data);
+  return `\n\`\`\`toolcall\n${json}\n\`\`\`\n`;
+}
+
+/**
+ * Creates a tool call widget string for display in pages.
+ * Uses fenced code block syntax which triggers the code widget for rendering.
+ */
+export function createToolCallWidget(
+  toolName: string,
+  args: Record<string, unknown>,
+  success: boolean,
+  result?: string,
+): string {
+  const data = {
+    id: `tool_${Date.now()}`,
+    name: toolName,
+    args,
+    result: result || "",
+    success,
+  };
+  const json = JSON.stringify(data);
+  return `\`\`\`toolcall\n${json}\n\`\`\``;
 }
 
 function parseToolCallArguments(
@@ -290,7 +309,14 @@ async function processToolCalls(
         success: false,
         error: `Invalid tool arguments: ${parsedArgs.error}`,
       };
-      toolCallsText += formatToolCallDisplay(toolName, args, false);
+      const errorContent = `Error: ${parseErrorResult.error}`;
+      toolCallsText += formatToolCallDisplay(
+        toolCall.id,
+        toolName,
+        args,
+        false,
+        errorContent,
+      );
       emitToolCall(toolName, args, parseErrorResult);
       toolMessages.push({
         role: "tool",
@@ -310,7 +336,14 @@ async function processToolCalls(
           success: false,
           result: "Rejected by user",
         };
-        toolCallsText += formatToolCallDisplay(toolName, args, false);
+        const rejectedContent = "Tool execution was rejected by user.";
+        toolCallsText += formatToolCallDisplay(
+          toolCall.id,
+          toolName,
+          args,
+          false,
+          rejectedContent,
+        );
         emitToolCall(toolName, args, rejectedResult);
         toolMessages.push({
           role: "tool",
@@ -323,8 +356,17 @@ async function processToolCalls(
     }
 
     const result = await executeTool(toolName, args, luaTools);
+    const resultContent = result.success
+      ? (result.result || "")
+      : `Error: ${result.error}`;
 
-    toolCallsText += formatToolCallDisplay(toolName, args, result.success);
+    toolCallsText += formatToolCallDisplay(
+      toolCall.id,
+      toolName,
+      args,
+      result.success,
+      resultContent,
+    );
 
     emitToolCall(toolName, args, result);
 
@@ -332,9 +374,7 @@ async function processToolCalls(
       role: "tool",
       tool_call_id: toolCall.id,
       name: toolName,
-      content: result.success
-        ? (result.result || "")
-        : `Error: ${result.error}`,
+      content: resultContent,
     });
   }
 

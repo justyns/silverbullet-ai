@@ -119,5 +119,10 @@ functions:
     path: sbai.ts:startPanelChat
   getPanelChatChunk:
     path: sbai.ts:getPanelChatChunk
+  postProcessToolCallHtml:
+    path: sbai.ts:postProcessToolCallHtml
+  renderToolCallWidget:
+    path: sbai.ts:renderToolCallWidget
+    codeWidget: toolcall
   exportPanelChat:
     path: sbai.ts:exportPanelChat

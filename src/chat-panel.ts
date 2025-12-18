@@ -6,7 +6,7 @@ import {
 } from "@silverbulletmd/silverbullet/syscalls";
 import type { ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
 import { chatSystemPrompt, currentAIProvider, initIfNeeded } from "./init.ts";
-import { enrichChatMessages, stripToolCallDisplay } from "./utils.ts";
+import { cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
 import {
   convertToOpenAITools,
   discoverTools,
@@ -111,11 +111,7 @@ export async function startPanelChat(
       role: "system",
       content: chatSystemPrompt.content + contextInfo,
     };
-    const cleanedMessages = messages.map((msg) =>
-      msg.role === "assistant"
-        ? { ...msg, content: stripToolCallDisplay(msg.content) }
-        : msg
-    );
+    const cleanedMessages = cleanMessagesForApi(messages);
     const fullMessages: ChatMessage[] = [systemMessage, ...cleanedMessages];
     let workingMessages = await enrichChatMessages(fullMessages);
 

@@ -13,6 +13,132 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   let currentStreamId = null;
   let isStreaming = false;
 
+  let autocompleteVisible = false;
+  let autocompleteItems = [];
+  let selectedIndex = -1;
+  let triggerStartPos = -1;
+
+  async function queryPages(searchTerm) {
+    try {
+      const currentPage = await syscall("editor.getCurrentPage");
+      const completeEvent = {
+        pageName: currentPage,
+        linePrefix: "[[" + searchTerm,
+        pos: searchTerm.length + 2,
+      };
+      const results = await syscall(
+        "event.dispatch",
+        "editor:complete",
+        completeEvent,
+      );
+
+      const allOptions = [];
+      for (const result of results) {
+        if (result && result.options) {
+          allOptions.push(...result.options);
+        }
+      }
+
+      const seen = new Set();
+      return allOptions
+        .filter((opt) => {
+          if (seen.has(opt.label)) return false;
+          seen.add(opt.label);
+          return true;
+        })
+        .sort((a, b) => (b.boost || 0) - (a.boost || 0))
+        .slice(0, 15);
+    } catch (e) {
+      console.error("Failed to query pages:", e);
+      return [];
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  async function renderMarkdownToElement(content, element) {
+    const html = await syscall("markdown.markdownToHtml", content);
+    const finalHtml = await syscall(
+      "system.invokeFunction",
+      "silverbullet-ai.postProcessToolCallHtml",
+      html,
+    );
+    element.innerHTML = finalHtml;
+  }
+
+  function showAutocomplete(items) {
+    const dropdown = document.getElementById("autocomplete-dropdown");
+    autocompleteItems = items;
+    selectedIndex = items.length > 0 ? 0 : -1;
+
+    if (items.length === 0) {
+      hideAutocomplete();
+      return;
+    }
+
+    dropdown.innerHTML = items
+      .map((item, i) => {
+        const label = escapeHtml(item.displayLabel || item.label);
+        const detail = item.detail
+          ? `<span class="detail">${escapeHtml(item.detail)}</span>`
+          : "";
+        const cssClass = item.cssClass || "";
+        return `<div class="autocomplete-item ${i === 0 ? "selected" : ""
+          } ${cssClass}" data-index="${i}">
+          <span class="page-name">${label}</span>${detail}
+        </div>`;
+      })
+      .join("");
+
+    dropdown.classList.remove("hidden");
+    autocompleteVisible = true;
+  }
+
+  function hideAutocomplete() {
+    document.getElementById("autocomplete-dropdown").classList.add("hidden");
+    autocompleteVisible = false;
+    autocompleteItems = [];
+    selectedIndex = -1;
+    triggerStartPos = -1;
+  }
+
+  function selectAutocompleteItem(index) {
+    if (index < 0 || index >= autocompleteItems.length) return;
+
+    const item = autocompleteItems[index];
+    const text = userInput.value;
+    const cursorPos = userInput.selectionStart;
+
+    const before = text.slice(0, triggerStartPos);
+    const after = text.slice(cursorPos);
+
+    const insertText = item.apply || item.label;
+    const newText = before + "[[" + insertText + "]]" + after;
+    const newCursorPos = triggerStartPos + insertText.length + 4;
+
+    userInput.value = newText;
+    userInput.setSelectionRange(newCursorPos, newCursorPos);
+
+    hideAutocomplete();
+    userInput.focus();
+  }
+
+  function updateSelection(newIndex) {
+    if (newIndex < 0) newIndex = autocompleteItems.length - 1;
+    if (newIndex >= autocompleteItems.length) newIndex = 0;
+
+    const items = document.querySelectorAll(".autocomplete-item");
+    items.forEach((item, i) => {
+      item.classList.toggle("selected", i === newIndex);
+    });
+    selectedIndex = newIndex;
+    items[newIndex]?.scrollIntoView({ block: "nearest" });
+  }
+
   async function loadHistory() {
     try {
       const history = await syscall("clientStore.get", CHAT_HISTORY_KEY);
@@ -39,8 +165,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
     if (role === "assistant" && !streaming && content) {
       try {
-        const html = await syscall("markdown.markdownToHtml", content);
-        msgEl.innerHTML = html;
+        await renderMarkdownToElement(content, msgEl);
       } catch (e) {
         console.error("Failed to render markdown:", e);
         msgEl.textContent = content;
@@ -93,10 +218,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           isStreaming = false;
           messageEl.classList.remove("streaming");
           const fullResponse = messageEl.textContent;
-          // Re-render as markdown now that streaming is complete
           try {
-            const html = await syscall("markdown.markdownToHtml", fullResponse);
-            messageEl.innerHTML = html;
+            await renderMarkdownToElement(fullResponse, messageEl);
           } catch (e) {
             console.error("Failed to render markdown:", e);
           }
@@ -193,12 +316,61 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     syscall("system.invokeFunction", "silverbullet-ai.closeAIAssistant");
   }
 
-  userInput.addEventListener("input", function () {
+  userInput.addEventListener("input", async function () {
     this.style.height = "auto";
     this.style.height = Math.min(this.scrollHeight, 120) + "px";
+
+    const text = this.value;
+    const cursorPos = this.selectionStart;
+    const textBeforeCursor = text.slice(0, cursorPos);
+
+    // Check for [[ pattern first (wiki-link style)
+    const bracketMatch = textBeforeCursor.match(/\[\[([\w\-/\s]*)$/);
+    // and also @filename 
+    const atMatch = textBeforeCursor.match(/(?:^|[^\w])@([\w\-/]*)$/);
+
+    if (bracketMatch) {
+      triggerStartPos = cursorPos - bracketMatch[1].length - 2; // -2 for [[
+      const pages = await queryPages(bracketMatch[1]);
+      showAutocomplete(pages);
+    } else if (atMatch) {
+      triggerStartPos = cursorPos - atMatch[1].length - 1; // -1 for @
+      const pages = await queryPages(atMatch[1]);
+      showAutocomplete(pages);
+    } else {
+      hideAutocomplete();
+    }
   });
 
   userInput.addEventListener("keydown", function (e) {
+    if (autocompleteVisible) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        updateSelection(selectedIndex + 1);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        updateSelection(selectedIndex - 1);
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        selectAutocompleteItem(selectedIndex);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        hideAutocomplete();
+        return;
+      }
+      if (e.key === "Tab") {
+        e.preventDefault();
+        selectAutocompleteItem(selectedIndex);
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
@@ -209,6 +381,19 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   newChatBtn.addEventListener("click", newChat);
   exportBtn.addEventListener("click", exportChat);
   closeBtn.addEventListener("click", closePanel);
+
+  document
+    .getElementById("autocomplete-dropdown")
+    .addEventListener("click", function (e) {
+      const item = e.target.closest(".autocomplete-item");
+      if (item) {
+        selectAutocompleteItem(parseInt(item.dataset.index));
+      }
+    });
+
+  userInput.addEventListener("blur", function () {
+    setTimeout(hideAutocomplete, 150);
+  });
 
   loadHistory();
   userInput.focus();

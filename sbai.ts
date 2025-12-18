@@ -18,6 +18,14 @@ import type {
   ImageModelConfig,
   ModelConfig,
 } from "./src/types.ts";
+
+type CodeWidgetContent = {
+  html?: string;
+  script?: string;
+  width?: number;
+  height?: number;
+  url?: string;
+};
 import {
   aiSettings,
   chatSystemPrompt,
@@ -34,13 +42,14 @@ import {
   setSelectedTextModel,
 } from "./src/init.ts";
 import {
+  cleanMessagesForApi,
   convertPageToMessages,
   enrichChatMessages,
   folderName,
-  stripToolCallDisplay,
 } from "./src/utils.ts";
 import {
   convertToOpenAITools,
+  createToolCallWidget,
   discoverTools,
   runAgenticChat,
   runStreamingAgenticChat,
@@ -55,6 +64,80 @@ export {
   startPanelChat,
   toggleAIAssistant,
 } from "./src/chat-panel.ts";
+
+export { postProcessToolCallHtml } from "./src/utils.ts";
+
+/**
+ * Renders a tool-call fenced code block as an HTML widget.
+ * Called by SilverBullet when it encounters ```tool-call blocks.
+ */
+export function renderToolCallWidget(
+  bodyText: string,
+  _pageName: string,
+): CodeWidgetContent | null {
+  try {
+    const data = JSON.parse(bodyText);
+    const { name, args, result, success } = data;
+
+    const status = success ? "✓" : "✗";
+    const statusClass = success ? "success" : "error";
+    const argsStr = Object.keys(args || {}).length > 0
+      ? JSON.stringify(args, null, 2)
+      : "";
+
+    const escapedResult = (result || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const escapedArgs = argsStr
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    const html = `
+      <style>
+        .tool-call { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; }
+        @media (prefers-color-scheme: dark) { .tool-call { background: #2d2d2d; color: #d4d4d4; } }
+        .tool-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .tool-name { font-weight: 600; }
+        .tool-status { font-size: 14px; }
+        .tool-status.success { color: #22c55e; }
+        .tool-status.error { color: #ef4444; }
+        .tool-details { display: none; margin-top: 8px; font-size: 12px; }
+        .tool-details.open { display: block; }
+        .tool-section { margin: 4px 0; }
+        .tool-section-title { font-weight: 500; color: #666; }
+        @media (prefers-color-scheme: dark) { .tool-section-title { color: #888; } }
+        .tool-section pre { margin: 2px 0; padding: 4px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+        @media (prefers-color-scheme: dark) { .tool-section pre { background: rgba(255,255,255,0.05); } }
+      </style>
+      <div class="tool-call">
+        <div class="tool-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
+          <span>🔧</span>
+          <span class="tool-name">${name}</span>
+          <span class="tool-status ${statusClass}">${status}</span>
+        </div>
+        <div class="tool-details">
+          ${
+      escapedArgs
+        ? `<div class="tool-section"><div class="tool-section-title">Arguments</div><pre>${escapedArgs}</pre></div>`
+        : ""
+    }
+          ${
+      escapedResult
+        ? `<div class="tool-section"><div class="tool-section-title">Result</div><pre>${escapedResult}</pre></div>`
+        : ""
+    }
+        </div>
+      </div>
+    `;
+
+    return { html };
+  } catch (e) {
+    console.error("Error rendering tool call widget:", e);
+    return null;
+  }
+}
 
 /**
  * Prompts the user to select a text/llm model from the configured models.
@@ -401,11 +484,7 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  const cleanedMessages = messages.map((msg) =>
-    msg.role === "assistant"
-      ? { ...msg, content: stripToolCallDisplay(msg.content) }
-      : msg
-  );
+  const cleanedMessages = cleanMessagesForApi(messages);
   cleanedMessages.unshift(chatSystemPrompt);
   const enrichedMessages = await enrichChatMessages(cleanedMessages);
   console.log("enrichedMessages", enrichedMessages);
@@ -459,12 +538,14 @@ export async function streamChatOnPage() {
           }
         },
         onToolCall: (name, args, result) => {
-          // Insert tool indicator immediately when tool is called
-          const argsDisplay = Object.entries(args)
-            .map(([k, v]) => `${k}: "${v}"`)
-            .join(", ");
-          const status = result.success ? "✓" : "✗";
-          const toolLine = `\n> 🔧 ${name}(${argsDisplay}) → ${status}\n\n`;
+          // Insert tool widget when tool is called
+          const toolWidget = createToolCallWidget(
+            name,
+            args,
+            result.success,
+            result.success ? result.result : result.error,
+          );
+          const toolLine = `\n${toolWidget}\n\n`;
 
           if (stillLoading) {
             // Replace loading message with tool indicator
@@ -492,7 +573,6 @@ export async function streamChatOnPage() {
     // No tools available - use simple streaming
     await currentAIProvider.streamChatIntoEditor({
       messages: enrichedMessages,
-      stream: true,
     }, cursorPos);
   } catch (error) {
     console.error("Error streaming chat on page:", error);

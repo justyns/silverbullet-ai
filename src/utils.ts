@@ -20,10 +20,155 @@ export function log(...args: any[]) {
   console.log(...args);
 }
 
-const TOOL_CALL_PATTERN = /<!-- TOOL_CALL -->[\s\S]*?<!-- \/TOOL_CALL -->\n*/g;
+// Pattern to match ```toolcall\n{json}\n``` fenced code blocks
+const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
 
-export function stripToolCallDisplay(content: string): string {
-  return content.replace(TOOL_CALL_PATTERN, "").trim();
+export type ToolCallData = {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  result: string;
+  success: boolean;
+};
+
+/**
+ * Renders a tool call as HTML with collapsible details
+ * Shared between code widget and chat panel rendering
+ */
+export function renderToolCallHtml(data: ToolCallData): string {
+  const status = data.success ? "✓" : "✗";
+  const statusClass = data.success ? "success" : "error";
+  const argsDisplay = Object.entries(data.args || {})
+    .map(([k, v]) => `<span class="arg-name">${k}:</span> ${JSON.stringify(v)}`)
+    .join(", ");
+
+  // Escape HTML in result to prevent XSS
+  const escapedResult = (data.result || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  return `<details class="tool-call ${statusClass}">
+  <summary>🔧 <strong>${data.name}</strong>(${argsDisplay}) → <span class="status">${status}</span></summary>
+  <div class="tool-result"><pre>${escapedResult}</pre></div>
+</details>`;
+}
+
+
+/**
+ * Parses JSON tool call data from fenced code block content
+ */
+function parseToolCallJson(json: string): ToolCallData | null {
+  try {
+    return JSON.parse(json) as ToolCallData;
+  } catch {
+    return null;
+  }
+}
+
+export function parseToolCallsFromContent(content: string): {
+  strippedContent: string;
+  toolMessages: ChatMessage[];
+  toolCalls: Array<
+    {
+      id: string;
+      type: "function";
+      function: { name: string; arguments: string };
+    }
+  >;
+} {
+  const toolMessages: ChatMessage[] = [];
+  const toolCalls: Array<
+    {
+      id: string;
+      type: "function";
+      function: { name: string; arguments: string };
+    }
+  > = [];
+  let match;
+  const pattern = new RegExp(TOOL_CALL_WIDGET_PATTERN.source, "g");
+
+  while ((match = pattern.exec(content)) !== null) {
+    try {
+      const escapedJson = match[1];
+      const data = parseToolCallJson(escapedJson);
+      if (data && data.id && data.name) {
+        // Add tool_call for the assistant message
+        toolCalls.push({
+          id: data.id,
+          type: "function",
+          function: {
+            name: data.name,
+            arguments: JSON.stringify(data.args || {}),
+          },
+        });
+        // Add tool response message
+        toolMessages.push({
+          role: "tool",
+          tool_call_id: data.id,
+          name: data.name,
+          content: data.result || "",
+        });
+      }
+    } catch {
+      // Skip malformed tool call data
+    }
+  }
+
+  const strippedContent = content.replace(TOOL_CALL_WIDGET_PATTERN, "").trim();
+  return { strippedContent, toolMessages, toolCalls };
+}
+
+/**
+ * Cleans messages for API submission by parsing tool call blocks from assistant messages.
+ * The API requires tool messages to follow assistant messages with tool_calls.
+ */
+export function cleanMessagesForApi(messages: ChatMessage[]): ChatMessage[] {
+  const cleanedMessages: ChatMessage[] = [];
+  for (const msg of messages) {
+    if (msg.role === "assistant") {
+      const { strippedContent, toolMessages, toolCalls } =
+        parseToolCallsFromContent(msg.content);
+      if (toolCalls.length > 0) {
+        cleanedMessages.push({
+          ...msg,
+          content: strippedContent,
+          tool_calls: toolCalls,
+        });
+        cleanedMessages.push(...toolMessages);
+      } else {
+        cleanedMessages.push({ ...msg, content: strippedContent });
+      }
+    } else {
+      cleanedMessages.push(msg);
+    }
+  }
+  return cleanedMessages;
+}
+
+/**
+ * Post-processes HTML to replace tool-call code blocks with rendered HTML widgets.
+ * Styles are provided via Space Style (silverbullet-ai/Space Style/AI Tool Calls.md).
+ */
+export function postProcessToolCallHtml(html: string): string {
+  const pattern = /<pre data-lang="toolcall">([\s\S]*?)<\/pre>/g;
+
+  return html.replace(pattern, (_match, jsonContent) => {
+    try {
+      const decoded = jsonContent
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">");
+      const data = parseToolCallJson(decoded);
+      if (data) {
+        return renderToolCallHtml(data);
+      }
+      return _match;
+    } catch {
+      return _match;
+    }
+  });
 }
 
 /**
