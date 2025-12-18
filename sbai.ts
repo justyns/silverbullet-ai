@@ -254,7 +254,7 @@ export async function tagNoteWithAI() {
 
     The following tags are currently being used by other notes:
     ${allTags.join(", ")}
-    
+
     Always follow the below rules, if any, given by the user:
     ${aiSettings.promptInstructions.tagRules}`;
   const userPrompt = `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`;
@@ -465,7 +465,7 @@ async function areToolsEnabled(): Promise<boolean> {
     const frontmatter = await extractFrontMatter(tree);
     if (frontmatter.aiTools === false) return false;
   } catch (_e) {
-    // If we can't get frontmatter, assume tools are enabled
+    // If we can't get frontmatter, enable tools by default
   }
 
   return true;

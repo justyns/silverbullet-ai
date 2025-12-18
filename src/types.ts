@@ -140,6 +140,7 @@ export enum EmbeddingProvider {
 export type ChatSettings = {
   userInformation: string;
   userInstructions: string;
+  customContext: string;
   parseWikiLinks: boolean;
   bakeMessages: boolean;
   searchEmbeddings: boolean;

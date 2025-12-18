@@ -172,6 +172,10 @@ config.define("ai.chat", {
       type = "string",
       description = "Custom instructions for the AI assistant",
     },
+    customContext = {
+      type = "string",
+      description = "Lua expression evaluated at chat time to add dynamic context (e.g., current date)",
+    },
     parseWikiLinks = {
       type = "boolean",
       description = "Whether to parse and resolve wiki-style links",
@@ -188,6 +192,10 @@ config.define("ai.chat", {
       type = "array",
       items = { type = "string" },
       description = "Custom Space Lua functions to enrich chat context",
+    },
+    enableTools = {
+      type = "boolean",
+      description = "Whether to enable AI tools in the chat panel",
     },
   },
   additionalProperties = false,

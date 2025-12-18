@@ -321,6 +321,7 @@ async function loadAndMergeSettings() {
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
     userInstructions: "",
+    customContext: "",
     parseWikiLinks: true,
     bakeMessages: true,
     customEnrichFunctions: [],
@@ -394,6 +395,10 @@ export async function initializeOpenAI(configure = true) {
     content:
       `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet.`,
   };
+  if (aiSettings.chat.enableTools) {
+    chatSystemPrompt.content +=
+      `\nYou have access to tools that can help you assist the user. Use them proactively when they would be helpful - for example, reading notes, searching, or performing actions the user requests.`;
+  }
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
       `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;

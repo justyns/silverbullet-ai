@@ -2,10 +2,16 @@ import {
   asset,
   clientStore,
   editor,
+  lua,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
 import type { ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
-import { chatSystemPrompt, currentAIProvider, initIfNeeded } from "./init.ts";
+import {
+  aiSettings,
+  chatSystemPrompt,
+  currentAIProvider,
+  initIfNeeded,
+} from "./init.ts";
 import { cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
 import {
   convertToOpenAITools,
@@ -64,7 +70,7 @@ export async function toggleAIAssistant() {
 }
 
 /**
- * Starts a panel chat session with streaming and tool support.
+ * Starts a panel chat session with tool support.
  * Called from the panel iframe.
  * This is called each time a new message is sent, not just the first one.
  */
@@ -82,36 +88,62 @@ export async function startPanelChat(
       status: "streaming",
     });
 
-    // Discover tools from Space Lua
     const luaTools = await discoverTools();
     const tools = convertToOpenAITools(luaTools);
     console.log(`Panel chat: discovered ${tools.length} tools`);
 
-    let contextInfo = "";
-    // TODO: Allow this to be customized
+    let contextBlock = "";
     try {
       const currentPage = await editor.getCurrentPage();
       const pageContent = await editor.getText();
       const selection = await editor.getSelection();
 
-      contextInfo = `\nCurrent page: ${currentPage}`;
+      contextBlock = `Current page: ${currentPage}`;
+      contextBlock += `\nCurrent date and time: ${new Date().toISOString()}`;
       if (selection && selection.text) {
-        contextInfo += `\nSelected text: "${selection.text}"`;
+        contextBlock += `\nSelected text: "${selection.text}"`;
       }
-      // Truncate page content
       const truncatedContent = pageContent.length > 4000
         ? pageContent.substring(0, 4000) + "\n...(truncated)"
         : pageContent;
-      contextInfo += `\n\nPage content for reference:\n${truncatedContent}`;
+      contextBlock += `\n\nPage content:\n${truncatedContent}`;
     } catch (e) {
       console.log("Could not get page context:", e);
     }
 
+    if (aiSettings.chat.customContext) {
+      try {
+        const customResult = await lua.evalExpression(
+          aiSettings.chat.customContext,
+        );
+        if (customResult) {
+          contextBlock += `\n\n${customResult}`;
+        }
+      } catch (e) {
+        console.error("Failed to evaluate customContext:", e);
+      }
+    }
+
     const systemMessage: ChatMessage = {
       role: "system",
-      content: chatSystemPrompt.content + contextInfo,
+      content: chatSystemPrompt.content,
     };
+
+    // Prepend context to the last user message, this should help with caching
     const cleanedMessages = cleanMessagesForApi(messages);
+    if (contextBlock) {
+      const lastUserIdx = cleanedMessages.findLastIndex((m) =>
+        m.role === "user"
+      );
+      if (lastUserIdx !== -1) {
+        cleanedMessages[lastUserIdx] = {
+          ...cleanedMessages[lastUserIdx],
+          content:
+            `<context>\n${contextBlock}\n</context>\n\n${cleanedMessages[lastUserIdx].content}`,
+        };
+      }
+    }
+
     const fullMessages: ChatMessage[] = [systemMessage, ...cleanedMessages];
     let workingMessages = await enrichChatMessages(fullMessages);
 
