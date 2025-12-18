@@ -36,6 +36,8 @@ The **customContext** option allows you to add dynamic context to each chat mess
 
 The result is prepended to your message in the Chat Panel, wrapped in `<context>` tags along with the current page content and selection.
 
+**Note:** This context is sent with the latest message only, it is not persisted.
+
 **Example - Add current date:**
 ```lua
 config.set {

@@ -18,12 +18,17 @@ config.set("ai", {
 
 The plug includes built-in tools in `silverbullet-ai/Space Lua/AI Tools.md`:
 
-- `read_note` - Read the content of a page
-- `update_note` - Overwrites an entire page, requires approval
-- `list_pages` - List pages in the space
-- `get_page_info` - Get page metadata (tags, size, modified date)
+| Tool | Description | Approval |
+|------|-------------|----------|
+| `read_note` | Read page content, optionally a specific section | No |
+| `list_pages` | List pages with path filtering and recursion options | No |
+| `get_page_info` | Get page metadata (tags, size, modified date, subpages) | No |
+| `update_note` | Update page content (replace, append, prepend; supports sections) | Yes |
+| `search_replace` | Find and replace text (first, all, or Nth occurrence) | Yes |
+| `create_note` | Create a new page (fails if exists) | Yes |
+| `navigate` | Navigate to a page or position | No |
 
-These are provided as a start to core built-in tools aand can be expanded on.
+These are provided as core built-in tools and can be expanded on.
 
 ## Defining Custom Tools
 

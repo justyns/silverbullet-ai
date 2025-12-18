@@ -326,6 +326,105 @@ ai.tools.update_note = {
   end
 }
 
+ai.tools.search_replace = {
+  description = "Find and replace text in a note. Use for targeted edits when you know the exact text to change.",
+  requiresApproval = true,
+  parameters = {
+    type = "object",
+    properties = {
+      page = {type = "string", description = "The page name to edit"},
+      search = {type = "string", description = "The exact text to find"},
+      replace = {type = "string", description = "The text to replace it with"},
+      occurrence = {type = "string", description = "Which occurrences: 'first' (default), 'all', or a number like '2' for second occurrence only"}
+    },
+    required = {"page", "search", "replace"}
+  },
+  handler = function(args)
+    if not space.pageExists(args.page) then
+      return "Error: Page not found: " .. args.page
+    end
+
+    local content = space.readPage(args.page)
+    local search = args.search
+    local replace = args.replace
+    local occurrence = args.occurrence or "first"
+
+    -- Count total occurrences
+    local count = 0
+    local pos = 1
+    while true do
+      local found = string.find(content, search, pos, true)
+      if not found then break end
+      count = count + 1
+      pos = found + 1
+    end
+
+    if count == 0 then
+      return "Error: Text not found in " .. args.page .. ": " .. string.sub(search, 1, 50) .. (string.len(search) > 50 and "..." or "")
+    end
+
+    local newContent
+    local replaced = 0
+
+    if occurrence == "all" then
+      -- Replace all occurrences using plain string replacement
+      newContent = ""
+      pos = 1
+      while true do
+        local found = string.find(content, search, pos, true)
+        if not found then
+          newContent = newContent .. string.sub(content, pos)
+          break
+        end
+        newContent = newContent .. string.sub(content, pos, found - 1) .. replace
+        replaced = replaced + 1
+        pos = found + string.len(search)
+      end
+    else
+      -- Replace specific occurrence(s)
+      local targetOccurrence = 1
+      if occurrence ~= "first" then
+        targetOccurrence = tonumber(occurrence) or 1
+      end
+
+      if targetOccurrence > count then
+        return "Error: Only " .. count .. " occurrence(s) found, cannot replace occurrence " .. targetOccurrence
+      end
+
+      newContent = ""
+      pos = 1
+      local currentOccurrence = 0
+      while true do
+        local found = string.find(content, search, pos, true)
+        if not found then
+          newContent = newContent .. string.sub(content, pos)
+          break
+        end
+        currentOccurrence = currentOccurrence + 1
+        if currentOccurrence == targetOccurrence then
+          newContent = newContent .. string.sub(content, pos, found - 1) .. replace
+          replaced = 1
+          pos = found + string.len(search)
+          -- Add the rest unchanged
+          newContent = newContent .. string.sub(content, pos)
+          break
+        else
+          newContent = newContent .. string.sub(content, pos, found + string.len(search) - 1)
+          pos = found + string.len(search)
+        end
+      end
+    end
+
+    space.writePage(args.page, newContent)
+
+    if replaced == 1 then
+      return "Replaced 1 occurrence in " .. args.page
+    else
+      return "Replaced " .. replaced .. " occurrences in " .. args.page
+    end
+  end
+}
+
 ai.tools.create_note = {
   description = "Create a new note. Fails if the page already exists.",
   requiresApproval = true,
