@@ -69,7 +69,23 @@ local function listSections(content)
   return sections
 end
 
--- TODO: We need a way to not store the full results and maybe store a truncated version or summary
+ai.writePage = function(page, content)
+  local result = system.invokeFunction("silverbullet-ai.requestWriteApproval", page, content)
+  if not result.success then
+    error(result.error or "Write rejected")
+  end
+  return result
+end
+
+-- Helper to count lines in a string
+local function countLines(str)
+  local lines = 0
+  for _ in string.gmatch(str .. "\n", "[^\n]*\n") do
+    lines = lines + 1
+  end
+  return lines
+end
+
 ai.tools.read_note = {
   description = "Read the content of a note. Optionally read only a specific section.",
   parameters = {
@@ -93,11 +109,15 @@ ai.tools.read_note = {
       if #sections == 0 then
         return "No sections found in " .. args.page
       end
-      local result = {"Sections in " .. args.page .. ":"}
+      local resultLines = {"Sections in " .. args.page .. ":"}
       for _, s in ipairs(sections) do
-        table.insert(result, string.rep("  ", s.level - 1) .. "- " .. s.title)
+        table.insert(resultLines, string.rep("  ", s.level - 1) .. "- " .. s.title)
       end
-      return table.concat(result, "\n")
+      local resultStr = table.concat(resultLines, "\n")
+      return {
+        result = resultStr,
+        summary = "Listed " .. #sections .. " sections in '" .. args.page .. "'"
+      }
     end
 
     if args.section then
@@ -113,14 +133,20 @@ ai.tools.read_note = {
       for i = startLine, endLine do
         table.insert(sectionLines, lines[i])
       end
-      local result = table.concat(sectionLines, "\n")
+      local resultStr = table.concat(sectionLines, "\n")
       if matchCount > 1 then
-        result = result .. "\n\n(Note: " .. matchCount .. " sections named '" .. args.section .. "' exist. Use occurrence parameter to select others.)"
+        resultStr = resultStr .. "\n\n(Note: " .. matchCount .. " sections named '" .. args.section .. "' exist. Use occurrence parameter to select others.)"
       end
-      return result
+      return {
+        result = resultStr,
+        summary = "Read section '" .. args.section .. "' from '" .. args.page .. "' (" .. #resultStr .. " bytes, " .. (endLine - startLine + 1) .. " lines)"
+      }
     end
 
-    return content
+    return {
+      result = content,
+      summary = "Read note '" .. args.page .. "' (" .. #content .. " bytes, " .. countLines(content) .. " lines)"
+    }
   end
 }
 
@@ -245,7 +271,6 @@ ai.tools.get_page_info = {
 
 ai.tools.update_note = {
   description = "Update a note's content. Can update the whole page, a specific section, or append/prepend to a section.",
-  requiresApproval = true,
   parameters = {
     type = "object",
     properties = {
@@ -304,7 +329,7 @@ ai.tools.update_note = {
         newContent = newContent .. "\n" .. table.concat(after, "\n")
       end
 
-      space.writePage(args.page, newContent)
+      ai.writePage(args.page, newContent)
       local result = "Updated section '" .. args.section .. "' in " .. args.page
       if matchCount > 1 then
         result = result .. " (occurrence " .. occurrence .. " of " .. matchCount .. ")"
@@ -320,7 +345,7 @@ ai.tools.update_note = {
         newContent = args.content
       end
 
-      space.writePage(args.page, newContent)
+      ai.writePage(args.page, newContent)
       return "Updated: " .. args.page
     end
   end
@@ -328,7 +353,6 @@ ai.tools.update_note = {
 
 ai.tools.search_replace = {
   description = "Find and replace text in a note. Use for targeted edits when you know the exact text to change.",
-  requiresApproval = true,
   parameters = {
     type = "object",
     properties = {
@@ -415,7 +439,7 @@ ai.tools.search_replace = {
       end
     end
 
-    space.writePage(args.page, newContent)
+    ai.writePage(args.page, newContent)
 
     if replaced == 1 then
       return "Replaced 1 occurrence in " .. args.page
@@ -427,7 +451,6 @@ ai.tools.search_replace = {
 
 ai.tools.create_note = {
   description = "Create a new note. Fails if the page already exists.",
-  requiresApproval = true,
   parameters = {
     type = "object",
     properties = {
@@ -440,7 +463,7 @@ ai.tools.create_note = {
     if space.pageExists(args.page) then
       return "Error: Page already exists: " .. args.page .. ". Use update_note to modify it."
     end
-    space.writePage(args.page, args.content)
+    ai.writePage(args.page, args.content)
     return "Created: " .. args.page
   end
 }
@@ -483,6 +506,100 @@ ai.tools.eval_lua = {
       return js.stringify(result)
     end
     return tostring(result)
+  end
+}
+
+ai.tools.update_frontmatter = {
+  description = "Update frontmatter (YAML metadata) on a page. Can set or delete individual keys without affecting the rest of the page content.",
+  requiresApproval = true,
+  parameters = {
+    type = "object",
+    properties = {
+      page = {type = "string", description = "The page name to update"},
+      set = {type = "object", description = "Key-value pairs to set or update in frontmatter (e.g., {status: 'done', priority: 1, tags: ['work', 'urgent']})"},
+      delete = {type = "array", items = {type = "string"}, description = "Keys to remove from frontmatter"}
+    },
+    required = {"page"}
+  },
+  handler = function(args)
+    if not space.pageExists(args.page) then
+      return "Error: Page not found: " .. args.page
+    end
+
+    local patches = {}
+    local setKeys = {}
+    local reservedKeys = {page = true, set = true, delete = true}
+
+    -- Handle explicit 'set' parameter
+    if args.set then
+      for key, value in pairs(args.set) do
+        table.insert(patches, {op = "set-key", path = key, value = value})
+        table.insert(setKeys, key)
+      end
+    end
+
+    -- Also accept keys passed directly (LLMs often flatten the structure)
+    for key, value in pairs(args) do
+      if not reservedKeys[key] then
+        table.insert(patches, {op = "set-key", path = key, value = value})
+        table.insert(setKeys, key)
+      end
+    end
+
+    if args.delete then
+      for _, key in ipairs(args.delete) do
+        table.insert(patches, {op = "delete-key", path = key})
+      end
+    end
+
+    if #patches == 0 then
+      return "Error: No changes specified. Provide 'set' and/or 'delete' parameters."
+    end
+
+    local content = space.readPage(args.page)
+    local newContent = index.patchFrontmatter(content, patches)
+
+    ai.writePage(args.page, newContent)
+
+    local changes = {}
+    if #setKeys > 0 then
+      table.insert(changes, "set: " .. table.concat(setKeys, ", "))
+    end
+    if args.delete and #args.delete > 0 then
+      table.insert(changes, "deleted: " .. table.concat(args.delete, ", "))
+    end
+
+    return "Updated frontmatter on " .. args.page .. " (" .. table.concat(changes, "; ") .. ")"
+  end
+}
+
+ai.tools.rename_note = {
+  description = "Rename a page to a new name. This also updates all backlinks across the space to point to the new name.",
+  requiresApproval = true,
+  parameters = {
+    type = "object",
+    properties = {
+      oldPage = {type = "string", description = "The current page name to rename"},
+      newPage = {type = "string", description = "The new name for the page"}
+    },
+    required = {"oldPage", "newPage"}
+  },
+  handler = function(args)
+    if not space.pageExists(args.oldPage) then
+      return "Error: Page not found: " .. args.oldPage
+    end
+
+    if space.pageExists(args.newPage) then
+      return "Error: Target page already exists: " .. args.newPage
+    end
+
+    local success = system.invokeFunction("silverbullet-ai.renamePage", args.oldPage, args.newPage)
+
+    if success then
+      return "Renamed '" .. args.oldPage .. "' to '" .. args.newPage .. "' (backlinks updated)"
+    else
+      return "Error: Rename failed or was cancelled"
+    end
   end
 }
 ```
