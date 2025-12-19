@@ -31,9 +31,14 @@ This page is a brief overview of each version.
 - Updated default system prompt to include instructions for tools when enabled
 
 ### Misc
-- Update system prompt to include basic SB formatting hints and docs links.
-- Add support for structured responses using json schema
-- Refactor several commands to space lua instead of typescript
+- Update system prompt to include basic SB formatting hints and docs links
+- Add support for structured output
+- Connectivity test now includes structured output tests
+- Migrated commands to Space Lua
+    - AI: Suggest Page Name
+    - AI: Generate tags for note
+    - AI: Generate Note FrontMatter
+    - AI: Enhance Note
 
 ---
 ## 0.5.0 (2025-12-15)

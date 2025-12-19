@@ -3,14 +3,11 @@ import {
 } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import {
   editor,
-  index,
-  lua,
   markdown,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-import { getPageLength, updateFrontmatter } from "./src/editorUtils.ts";
+import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
   ImageGenerationOptions,
@@ -243,133 +240,6 @@ export async function selectEmbeddingModelFromConfig() {
     `Selected embedding model: ${selectedEmbeddingModelName}`,
   );
   console.log(`Selected embedding model:`, selectedEmbeddingModel);
-}
-
-/**
- * Asks the LLM to generate tags for the current note.
- * Generated tags are added to the note's frontmatter.
- */
-export async function tagNoteWithAI() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-  const tagResults = await index.queryLuaObjects<{ name: string }>("tag", {
-    objectVariable: "_",
-    where: await lua.parseExpression(`_.parent == "page"`),
-  });
-  const allTags = tagResults.map((t: { name: string }) => t.name);
-  console.log("All tags:", allTags);
-  const systemPrompt =
-    `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
-    - Only return tags and no other content.
-    - Tags must be one word only and in lowercase.
-    - Use existing tags as a starting point.
-    - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
-
-    The following tags are currently being used by other notes:
-    ${allTags.join(", ")}
-
-    Always follow the below rules, if any, given by the user:
-    ${aiSettings.promptInstructions.tagRules}`;
-  const userPrompt = `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`;
-  const response = await currentAIProvider.singleMessageChat(
-    userPrompt,
-    systemPrompt,
-  );
-  const tags = response.trim().replace(/,/g, "").split(/\s+/);
-
-  // Extract current frontmatter from the note
-  const tree = await markdown.parseMarkdown(noteContent);
-  const frontMatter = await extractFrontMatter(tree);
-
-  // Add new tags to the existing ones in the frontmatter
-  const updatedTags = [...new Set([...(frontMatter.tags || []), ...tags])];
-  frontMatter.tags = updatedTags;
-
-  await updateFrontmatter(frontMatter);
-  await editor.flashNotification("Note tagged successfully.");
-}
-/**
- * Extracts important information from the current note and converts it
- * to frontmatter attributes.
- */
-export async function enhanceNoteFrontMatter() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-  const blacklistedAttrs = ["title", "tags"];
-
-  const systemPrompt =
-    `You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
-      - Only return valid YAML frontmatter.
-      - Do not use any markdown or any other formatting in your response.
-      - Do not include --- in your response.
-      - Do not include any content from the note in your response.
-      - Extract useful facts from the note and add them to the frontmatter, such as a person's name, age, a location, etc.
-      - Do not return any tags.
-      - Do not return a new note title.
-      - Do not use special characters in key names.  Only ASCII.
-      - Only return important information that would be useful when searching or filtering notes.
-      `;
-
-  const response = await currentAIProvider.singleMessageChat(
-    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    `${systemPrompt}
-
-Always follow the below rules, if any, given by the user:
-${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
-    true,
-  );
-
-  console.log("frontmatter returned by enhanceNoteFrontMatter", response);
-  try {
-    const newFrontMatter = parseYAML(response);
-    if (
-      typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) ||
-      !newFrontMatter
-    ) {
-      throw new Error("Invalid YAML: Not an object");
-    }
-
-    // Delete any blacklisted attributes from the response
-    blacklistedAttrs.forEach((attr) => {
-      delete (newFrontMatter as Record<string, any>)[attr];
-    });
-
-    // Extract current frontmatter from the note
-    const tree = await markdown.parseMarkdown(noteContent);
-    const frontMatter = await extractFrontMatter(tree);
-
-    // Merge old and new frontmatter
-    const updatedFrontmatter = {
-      ...frontMatter,
-      ...newFrontMatter,
-    };
-
-    await updateFrontmatter(updatedFrontmatter);
-  } catch (e) {
-    console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
-    await editor.flashNotification(
-      "Error: Invalid Frontmatter YAML returned.",
-      "error",
-    );
-    return;
-  }
-
-  await editor.flashNotification(
-    "Frontmatter enhanced successfully.",
-    "info",
-  );
-}
-
-/**
- * Enhances the current note by running the commands to generate tags for a note,
- * generate new frontmatter attributes, and a new note name.
- */
-export async function enhanceNoteWithAI() {
-  await tagNoteWithAI();
-  await enhanceNoteFrontMatter();
-  await editor.invokeCommand("AI: Suggest Page Name");
 }
 
 /**
