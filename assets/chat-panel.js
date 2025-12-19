@@ -10,8 +10,13 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const closeBtn = document.getElementById("close-btn");
 
   let chatHistory = [];
+  let chatData = { id: null, messages: [] };
   let currentStreamId = null;
   let isStreaming = false;
+
+  function generateChatId() {
+    return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
+  }
 
   let autocompleteVisible = false;
   let autocompleteItems = [];
@@ -141,10 +146,13 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   async function loadHistory() {
     try {
-      const history = await syscall("clientStore.get", CHAT_HISTORY_KEY);
-      if (history && Array.isArray(history)) {
-        chatHistory = history;
+      const stored = await syscall("clientStore.get", CHAT_HISTORY_KEY);
+      if (stored && stored.messages) {
+        chatData = stored;
+        chatHistory = chatData.messages;
         await renderAllMessages();
+      } else {
+        chatData = { id: generateChatId(), messages: [] };
       }
     } catch (e) {
       console.error("Failed to load chat history:", e);
@@ -153,7 +161,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   async function saveHistory() {
     try {
-      await syscall("clientStore.set", CHAT_HISTORY_KEY, chatHistory);
+      chatData.messages = chatHistory;
+      await syscall("clientStore.set", CHAT_HISTORY_KEY, chatData);
     } catch (e) {
       console.error("Failed to save chat history:", e);
     }
@@ -294,6 +303,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   }
 
   async function newChat() {
+    chatData = { id: generateChatId(), messages: [] };
     chatHistory = [];
     await saveHistory();
     await renderAllMessages();

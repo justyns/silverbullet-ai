@@ -2,6 +2,7 @@ import {
   asset,
   clientStore,
   editor,
+  index,
   lua,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
@@ -255,23 +256,44 @@ export function getPanelChatChunk(
 
 /**
  * Exports the current panel chat to a markdown page.
+ * If a page with the same chatId exists, updates it instead of creating new.
  * TODO: Allow user to specify folder to save these to
  */
 export async function exportPanelChat(): Promise<void> {
   try {
-    const history = await clientStore.get(CHAT_HISTORY_KEY);
+    const stored = await clientStore.get(CHAT_HISTORY_KEY);
 
-    if (!history || !Array.isArray(history) || history.length === 0) {
+    if (!stored || !stored.messages || stored.messages.length === 0) {
       await editor.flashNotification("No chat history to export", "error");
       return;
     }
 
-    // basic frontmatter for now, but we could extend this later to have
-    // an auto generated title, tags, etc.
+    const chatId = stored.id;
+    const history = stored.messages;
+
+    const existingPages = await index.queryLuaObjects<{ name: string }>(
+      "page",
+      {
+        objectVariable: "_",
+        where: await lua.parseExpression(
+          `_.chatId == "${chatId}" and _.tags and table.includes(_.tags, "aichat")`,
+        ),
+      },
+    );
+
     const timestamp = new Date().toISOString().split("T")[0];
-    const pageName = `AI Chat ${timestamp} ${Date.now()}`;
+    let pageName: string;
+
+    if (existingPages.length > 0) {
+      pageName = existingPages[0].name;
+    } else {
+      pageName = `AI Chat ${timestamp} ${Date.now()}`;
+    }
+
     let content = `---
 dateCreated: "${timestamp}"
+dateUpdated: "${timestamp}"
+chatId: "${chatId}"
 tags: aichat
 ---
 
@@ -286,7 +308,9 @@ tags: aichat
 
     await space.writePage(pageName, content);
     await editor.navigate(pageName);
-    await editor.flashNotification(`Chat exported to "${pageName}"`);
+
+    const action = existingPages.length > 0 ? "updated" : "exported to";
+    await editor.flashNotification(`Chat ${action} "${pageName}"`);
   } catch (error) {
     console.error("Error exporting chat:", error);
     await editor.flashNotification("Failed to export chat", "error");
