@@ -25,7 +25,11 @@ export interface ProviderInterface {
   modelName: string;
   useProxy: boolean;
   streamChat: (options: StreamChatOptions) => Promise<ChatResponse>;
-  chat: (messages: ChatMessage[], tools?: Tool[]) => Promise<ChatResponse>;
+  chat: (
+    messages: ChatMessage[],
+    tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
+  ) => Promise<ChatResponse>;
   listModels: () => Promise<string[]>;
   singleMessageChat: (
     userMessage: string,
@@ -60,7 +64,11 @@ export abstract class AbstractProvider implements ProviderInterface {
   }
 
   abstract streamChat(options: StreamChatOptions): Promise<ChatResponse>;
-  abstract chat(messages: ChatMessage[], tools?: Tool[]): Promise<ChatResponse>;
+  abstract chat(
+    messages: ChatMessage[],
+    tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
+  ): Promise<ChatResponse>;
   abstract listModels(): Promise<string[]>;
 
   protected fetch(url: string, options: RequestInit): Promise<Response> {

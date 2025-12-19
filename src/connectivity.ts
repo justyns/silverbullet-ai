@@ -225,6 +225,113 @@ Use these commands to select your models:
               text += "* Verify your provider supports streaming\n";
               text += "* Ensure there isn't a proxy affecting streaming\n\n";
             }
+
+            // Test structured output (JSON mode)
+            text += "#### 📡 Structured Output Test\n\n";
+            try {
+              const structuredResponse = await provider.chat(
+                [{
+                  role: "user",
+                  content:
+                    'Return a JSON object with a single key "status" and value "CONNECTED". No other text.',
+                }],
+                undefined,
+                { type: "json_object" },
+              );
+
+              if (structuredResponse.content) {
+                try {
+                  const parsed = JSON.parse(structuredResponse.content.trim());
+                  if (parsed.status === "CONNECTED") {
+                    text +=
+                      "> ✅ Successfully received structured JSON response\n\n";
+                  } else {
+                    text +=
+                      "> ⚠️ Received valid JSON but unexpected content\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  }
+                } catch {
+                  text +=
+                    "> ⚠️ Response was not valid JSON (provider may not support structured output)\n\n";
+                  text += "```\n";
+                  text += structuredResponse.content + "\n";
+                  text += "```\n\n";
+                }
+              } else {
+                text += "> ⚠️ Received empty response\n\n";
+              }
+            } catch (structuredError) {
+              text +=
+                `> ❌ Failed to test structured output: ${structuredError}\n\n`;
+              text +=
+                "_Note: Some providers may not support structured output._\n\n";
+            }
+
+            // Test structured output with JSON schema
+            text += "#### 📡 Structured Output Test (JSON Schema)\n\n";
+            try {
+              const schemaResponse = await provider.chat(
+                [{
+                  role: "user",
+                  content:
+                    "Generate a test response with status CONNECTED and version 1.",
+                }],
+                undefined,
+                {
+                  type: "json_schema",
+                  json_schema: {
+                    name: "connectivity_test",
+                    schema: {
+                      type: "object",
+                      properties: {
+                        status: { type: "string", enum: ["CONNECTED"] },
+                        version: { type: "number" },
+                      },
+                      required: ["status", "version"],
+                      additionalProperties: false,
+                    },
+                    strict: true,
+                  },
+                },
+              );
+
+              if (schemaResponse.content) {
+                try {
+                  const parsed = JSON.parse(schemaResponse.content.trim());
+                  if (
+                    parsed.status === "CONNECTED" &&
+                    typeof parsed.version === "number"
+                  ) {
+                    text +=
+                      "> ✅ Successfully received schema-validated JSON response\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  } else {
+                    text +=
+                      "> ⚠️ Received JSON but schema validation would fail\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  }
+                } catch {
+                  text +=
+                    "> ⚠️ Response was not valid JSON (provider may not support json_schema)\n\n";
+                  text += "```\n";
+                  text += schemaResponse.content + "\n";
+                  text += "```\n\n";
+                }
+              } else {
+                text += "> ⚠️ Received empty response\n\n";
+              }
+            } catch (schemaError) {
+              text +=
+                `> ❌ Failed to test JSON schema output: ${schemaError}\n\n`;
+              text +=
+                "_Note: JSON schema mode may not be supported by all providers._\n\n";
+            }
           } catch (error) {
             text += `> ❌ Failed to connect to API: ${error}\n\n`;
             text += "**Troubleshooting Tips:**\n\n";

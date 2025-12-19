@@ -45,8 +45,9 @@ export class OllamaProvider extends AbstractProvider {
   async chat(
     messages: ChatMessage[],
     tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
-    return await this.openaiProvider.chat(messages, tools);
+    return await this.openaiProvider.chat(messages, tools, response_format);
   }
 
   async listModels(): Promise<string[]> {

@@ -18,3 +18,4 @@ testspace*/
 dist/
 silverbullet
 *.diff
+sb-tui/

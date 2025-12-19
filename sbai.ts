@@ -7,7 +7,6 @@ import {
   lua,
   markdown,
   space,
-  system,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
@@ -17,6 +16,7 @@ import type {
   ImageGenerationOptions,
   ImageModelConfig,
   ModelConfig,
+  ResponseFormat,
 } from "./src/types.ts";
 
 type CodeWidgetContent = {
@@ -289,98 +289,6 @@ export async function tagNoteWithAI() {
   await updateFrontmatter(frontMatter);
   await editor.flashNotification("Note tagged successfully.");
 }
-
-/**
- * Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
- */
-export async function suggestPageName() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-
-  // Replacing this with the loading filterbox below instead
-  // await editor.flashNotification("Generating suggestions...");
-
-  // Open up a filterbox that acts as a "loading" modal until the real one is opened
-  const loadingOption = [{
-    name: "Generating suggestions...",
-    description: "",
-  }];
-  const filterBoxPromise = editor.filterBox(
-    "Loading...",
-    loadingOption,
-    "Retrieving suggestions from LLM provider.",
-  );
-
-  // Handle the initial filter box promise (if needed)
-  filterBoxPromise.then((selectedOption) => {
-    // Handle the selected option (if the user selects "loading...")
-    console.log("Selected option (initial):", selectedOption);
-  });
-
-  // Allow overriding the default system prompt entirely
-  let systemPrompt = "";
-  if (aiSettings.promptInstructions.pageRenameSystem) {
-    systemPrompt = aiSettings.promptInstructions.pageRenameSystem;
-  } else {
-    systemPrompt =
-      `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
-    - Provide each name on a new line.
-    - Use only spaces, forward slashes (as folder separators), and hyphens as special characters.
-    - Ensure the names are concise, descriptive, and relevant to the content.
-    - Avoid suggesting the same name as the current note.
-    - Include as much detail as possible within 3 to 10 words.
-    - Start names with ASCII characters only.
-    - Do not use markdown or any other formatting in your response.`;
-  }
-
-  const response = await currentAIProvider.singleMessageChat(
-    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    `${systemPrompt}
-
-Always follow the below rules, if any, given by the user:
-${aiSettings.promptInstructions.pageRenameRules}`,
-    true,
-  );
-
-  let suggestions = response.trim().split("\n").filter((line: string) =>
-    line.trim() !== ""
-  ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
-
-  // Always include the note's current name in the suggestions
-  suggestions.push(noteName);
-
-  // Remove duplicates
-  suggestions = [...new Set(suggestions)];
-
-  if (suggestions.length === 0) {
-    await editor.flashNotification("No suggestions available.");
-  }
-
-  const selectedSuggestion = await editor.filterBox(
-    "New page name",
-    suggestions.map((suggestion: string) => ({
-      name: suggestion,
-    })),
-    "Select a new page name from one of the suggestions below.",
-  );
-
-  if (!selectedSuggestion) {
-    await editor.flashNotification("No page name selected.", "error");
-    return;
-  }
-
-  console.log("selectedSuggestion", selectedSuggestion);
-  const renamedPage = await system.invokeFunction("index.renamePageCommand", {
-    oldPage: noteName,
-    page: selectedSuggestion.name,
-  });
-  console.log("renamedPage", renamedPage);
-  if (!renamedPage) {
-    await editor.flashNotification("Error renaming page.", "error");
-  }
-}
-
 /**
  * Extracts important information from the current note and converts it
  * to frontmatter attributes.
@@ -461,7 +369,7 @@ ${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
 export async function enhanceNoteWithAI() {
   await tagNoteWithAI();
   await enhanceNoteFrontMatter();
-  await suggestPageName();
+  await editor.invokeCommand("AI: Suggest Page Name");
 }
 
 /**
@@ -685,6 +593,7 @@ export type ChatOptions = {
   messages: Array<{ role: string; content: string }>;
   systemPrompt?: string;
   useTools?: boolean;
+  response_format?: ResponseFormat;
 };
 
 /**
@@ -766,7 +675,11 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     }
 
     // No tools - use simple non-streaming chat
-    const response = await currentAIProvider.chat(messages);
+    const response = await currentAIProvider.chat(
+      messages,
+      undefined,
+      options.response_format,
+    );
     return {
       response: response.content || "",
     };

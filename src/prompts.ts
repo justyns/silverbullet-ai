@@ -500,7 +500,6 @@ export async function insertAiPromptFromTemplate(
   await currentAIProvider.streamChatIntoEditor(
     {
       messages: messages,
-      stream: true,
       postProcessors: selectedTemplate.postProcessors,
     },
     cursorPos,

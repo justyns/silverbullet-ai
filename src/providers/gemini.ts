@@ -84,7 +84,7 @@ export class GeminiProvider extends AbstractProvider {
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const { messages, onChunk, onComplete } = options;
+    const { messages, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {
       try {
@@ -104,12 +104,26 @@ export class GeminiProvider extends AbstractProvider {
           messages,
         );
 
+        const requestBody: Record<string, unknown> = {
+          contents: payloadContents,
+        };
+
+        if (
+          response_format?.type === "json_object" ||
+          response_format?.type === "json_schema"
+        ) {
+          requestBody.generationConfig = {
+            responseMimeType: "application/json",
+            ...(response_format.type === "json_schema" && {
+              responseSchema: response_format.json_schema.schema,
+            }),
+          };
+        }
+
         const sseOptions = {
           method: "POST",
           headers: finalHeaders,
-          payload: JSON.stringify({
-            contents: payloadContents,
-          }),
+          payload: JSON.stringify(requestBody),
           withCredentials: false,
         };
 
@@ -171,19 +185,34 @@ export class GeminiProvider extends AbstractProvider {
   async chat(
     messages: Array<ChatMessage>,
     _tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
-    // Note: Gemini tool support would require different API format
-    // For now, we just return content without tool_calls
     const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
       messages,
     );
+
+    const requestBody: Record<string, unknown> = {
+      contents: payloadContents,
+    };
+
+    if (
+      response_format?.type === "json_object" ||
+      response_format?.type === "json_schema"
+    ) {
+      requestBody.generationConfig = {
+        responseMimeType: "application/json",
+        ...(response_format.type === "json_schema" && {
+          responseSchema: response_format.json_schema.schema,
+        }),
+      };
+    }
 
     const response = await this.fetch(
       `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ contents: payloadContents }),
+        body: JSON.stringify(requestBody),
       },
     );
 

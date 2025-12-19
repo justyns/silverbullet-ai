@@ -34,7 +34,7 @@ export class OpenAIProvider extends AbstractProvider {
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const { messages, tools, onChunk, onComplete } = options;
+    const { messages, tools, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {
       try {
@@ -62,6 +62,10 @@ export class OpenAIProvider extends AbstractProvider {
         if (tools && tools.length > 0) {
           requestBody.tools = tools;
           requestBody.tool_choice = "auto";
+        }
+
+        if (response_format) {
+          requestBody.response_format = response_format;
         }
 
         const sseOptions = {
@@ -195,6 +199,7 @@ export class OpenAIProvider extends AbstractProvider {
   async chat(
     messages: Array<ChatMessage>,
     tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
     try {
       const requestBody: Record<string, unknown> = {
@@ -205,6 +210,10 @@ export class OpenAIProvider extends AbstractProvider {
       if (tools && tools.length > 0) {
         requestBody.tools = tools;
         requestBody.tool_choice = "auto";
+      }
+
+      if (response_format) {
+        requestBody.response_format = response_format;
       }
 
       const headers = {

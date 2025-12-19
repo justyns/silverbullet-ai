@@ -4,9 +4,18 @@ export type sseEvent = {
   data: string;
 };
 
+export type ResponseFormat =
+  | { type: "text" }
+  | { type: "json_object" }
+  | {
+    type: "json_schema";
+    json_schema: { name: string; schema: Record<string, unknown>; strict?: boolean };
+  };
+
 export type StreamChatOptions = {
   messages: Array<ChatMessage>;
   tools?: Tool[];
+  response_format?: ResponseFormat;
   onChunk?: (chunk: string) => void;
   onComplete?: (response: ChatResponse) => void;
   postProcessors?: string[];
