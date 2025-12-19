@@ -1,4 +1,12 @@
-import { editor, lua } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  asset,
+  clientStore,
+  editor,
+  lua,
+  space,
+  system,
+} from "@silverbulletmd/silverbullet/syscalls";
+import { computeSimpleDiff, type DiffLine } from "./utils.ts";
 import type {
   ChatMessage,
   ChatResponse,
@@ -9,11 +17,64 @@ import type {
 
 const MAX_TOOL_ITERATIONS = 10;
 
+type ApprovalResult = {
+  approved: boolean;
+  feedback?: string | null;
+};
+
+type PendingApproval = {
+  resolve: (result: ApprovalResult) => void;
+  toolName: string;
+  args: Record<string, unknown>;
+};
+
+const pendingApprovals = new Map<string, PendingApproval>();
+
+type PendingWrite = {
+  resolve: (result: ApprovalResult) => void;
+  page: string;
+  newContent: string;
+  currentContent: string;
+  diff: DiffLine[];
+};
+
+const pendingWrites = new Map<string, PendingWrite>();
+
 export type ToolExecutionResult = {
   success: boolean;
   result?: string;
+  summary?: string;
   error?: string;
 };
+
+const TOOL_RESULT_CACHE_PREFIX = "ai.toolResults.";
+
+export async function cacheToolResult(
+  id: string,
+  result: string,
+): Promise<void> {
+  await clientStore.set(`${TOOL_RESULT_CACHE_PREFIX}${id}`, result);
+}
+
+export async function getCachedToolResult(
+  id: string,
+): Promise<string | null> {
+  return await clientStore.get(`${TOOL_RESULT_CACHE_PREFIX}${id}`);
+}
+
+export function generateDefaultSummary(
+  toolName: string,
+  args: Record<string, unknown>,
+  result: string,
+): string {
+  const bytes = new TextEncoder().encode(result).length;
+  const lines = result.split("\n").length;
+  const preview = result.slice(0, 100).replace(/\n/g, " ").trim();
+  const argsStr = Object.entries(args)
+    .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+    .join(", ");
+  return `${toolName}(${argsStr}) returned ${bytes} bytes, ${lines} lines. Preview: ${preview}${result.length > 100 ? "..." : ""}`;
+}
 
 function toLuaStringLiteral(value: string): string {
   // Lua string in double quotes with basic escapes
@@ -184,11 +245,28 @@ export async function executeTool(
   try {
     const luaArgs = toLuaLiteral(args);
     const toolNameLiteral = toLuaStringLiteral(toolName);
-    // Call the handler function with the args
     const result = await lua.evalExpression(
       `ai.tools[${toolNameLiteral}].handler(${luaArgs})`,
     );
 
+    // Check if tool returned structured {result, summary}
+    if (
+      typeof result === "object" &&
+      result !== null &&
+      "result" in result &&
+      "summary" in result
+    ) {
+      const resultStr = typeof result.result === "string"
+        ? result.result
+        : JSON.stringify(result.result, null, 2);
+      return {
+        success: true,
+        result: resultStr,
+        summary: String(result.summary),
+      };
+    }
+
+    // Plain return - backward compatible
     const resultStr = typeof result === "string"
       ? result
       : JSON.stringify(result, null, 2);
@@ -207,49 +285,192 @@ export async function executeTool(
 }
 
 /**
- * Requests user approval before executing a tool
+ * Requests user approval before executing a tool using a custom modal.
+ * Note: For tools that write pages, use ai.writePage() in Lua which shows a diff preview.
  */
 async function requestToolApproval(
   toolName: string,
   args: Record<string, unknown>,
-): Promise<boolean> {
-  const argsPreview = JSON.stringify(args, null, 2);
-  const message =
-    `Allow AI to call "${toolName}"?\n\nArguments:\n${argsPreview}`;
-  return await editor.confirm(message);
+): Promise<ApprovalResult> {
+  const approvalId = `approval_${Date.now()}_${
+    Math.random().toString(36).slice(2, 11)
+  }`;
+
+  return new Promise(async (resolve) => {
+    pendingApprovals.set(approvalId, { resolve, toolName, args });
+
+    const html = await asset.readAsset(
+      "silverbullet-ai",
+      "assets/tool-approval-modal.html",
+    );
+    const script = await asset.readAsset(
+      "silverbullet-ai",
+      "assets/tool-approval-modal.js",
+    );
+
+    const initScript = `
+      window.toolApprovalData = ${
+      JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })
+    };
+      ${script}
+    `;
+
+    await editor.showPanel("modal", 20, html, initScript);
+  });
+}
+
+/**
+ * Called from the modal JS when user approves or rejects
+ */
+export function submitToolApproval(
+  approvalId: string,
+  approved: boolean,
+  feedback?: string | null,
+): void {
+  const pending = pendingApprovals.get(approvalId);
+  if (pending) {
+    pendingApprovals.delete(approvalId);
+    editor.hidePanel("modal");
+    pending.resolve({ approved, feedback });
+  }
+}
+
+/**
+ * Called from Lua's ai.writePage() to request approval before writing.
+ * Shows a modal with the actual diff of what will be written.
+ */
+export async function requestWriteApproval(
+  page: string,
+  newContent: string,
+): Promise<{ success: boolean; error?: string }> {
+  const writeId = `write_${Date.now()}_${
+    Math.random().toString(36).slice(2, 11)
+  }`;
+
+  // Read current content and compute diff
+  let currentContent = "";
+  let isNewPage = false;
+  try {
+    currentContent = await space.readPage(page);
+  } catch {
+    isNewPage = true;
+  }
+
+  const diff = computeSimpleDiff(currentContent, newContent);
+
+  return new Promise(async (resolve) => {
+    pendingWrites.set(writeId, {
+      resolve: (result) => {
+        if (result.approved) {
+          resolve({ success: true });
+        } else {
+          resolve({
+            success: false,
+            error: result.feedback
+              ? `Write rejected: ${result.feedback}`
+              : "Write rejected by user",
+          });
+        }
+      },
+      page,
+      newContent,
+      currentContent,
+      diff,
+    });
+
+    const html = await asset.readAsset(
+      "silverbullet-ai",
+      "assets/tool-approval-modal.html",
+    );
+    const script = await asset.readAsset(
+      "silverbullet-ai",
+      "assets/tool-approval-modal.js",
+    );
+
+    const initScript = `
+      window.toolApprovalData = ${
+      JSON.stringify({
+        approvalId: writeId,
+        toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
+        args: { page, contentLength: newContent.length },
+        hasDiffSupport: true,
+        isWriteApproval: true,
+      })
+    };
+      ${script}
+    `;
+
+    await editor.showPanel("modal", 20, html, initScript);
+  });
+}
+
+/**
+ * Called from modal JS when user approves or rejects a write operation.
+ */
+export async function submitWriteApproval(
+  writeId: string,
+  approved: boolean,
+  feedback?: string | null,
+): Promise<void> {
+  const pending = pendingWrites.get(writeId);
+  if (pending) {
+    pendingWrites.delete(writeId);
+    editor.hidePanel("modal");
+
+    if (approved) {
+      await space.writePage(pending.page, pending.newContent);
+    }
+
+    pending.resolve({ approved, feedback });
+  }
+}
+
+/**
+ * Called from modal JS to get diff data for a write operation.
+ */
+export function getWriteDiff(
+  writeId: string,
+): { diff?: DiffLine[]; error?: string } {
+  const pending = pendingWrites.get(writeId);
+  if (!pending) {
+    return { error: "Write approval not found" };
+  }
+  return { diff: pending.diff };
 }
 
 /**
  * Formats a tool call for display as a fenced code block.
  * Uses ```tool-call syntax which triggers the code widget for rendering.
+ * Stores summary (not full result) to keep markdown compact.
  */
 function formatToolCallDisplay(
   toolCallId: string,
   toolName: string,
   args: Record<string, unknown>,
   success: boolean,
-  result: string,
+  summary: string,
 ): string {
-  const data = { id: toolCallId, name: toolName, args, result, success };
+  const data = { id: toolCallId, name: toolName, args, summary, success };
   const json = JSON.stringify(data);
-  return `\n\`\`\`toolcall\n${json}\n\`\`\`\n`;
+  return `\`\`\`toolcall\n${json}\n\`\`\`\n`;
 }
 
 /**
  * Creates a tool call widget string for display in pages.
  * Uses fenced code block syntax which triggers the code widget for rendering.
+ * Stores summary (not full result) to keep markdown compact.
  */
 export function createToolCallWidget(
   toolName: string,
   args: Record<string, unknown>,
   success: boolean,
-  result?: string,
+  summary?: string,
 ): string {
   const data = {
     id: `tool_${Date.now()}`,
     name: toolName,
     args,
-    result: result || "",
+    summary: summary || "",
     success,
   };
   const json = JSON.stringify(data);
@@ -327,16 +548,22 @@ async function processToolCalls(
       continue;
     }
 
-    // Check if tool requires approval
     const toolDef = luaTools.get(toolName);
     if (toolDef?.requiresApproval) {
-      const approved = await requestToolApproval(toolName, args);
-      if (!approved) {
+      const approvalResult = await requestToolApproval(
+        toolName,
+        args,
+      );
+      if (!approvalResult.approved) {
+        const feedbackMsg = approvalResult.feedback
+          ? `User feedback: ${approvalResult.feedback}`
+          : "Please ask what to do differently.";
+        const rejectedContent =
+          `Tool execution was rejected by user. ${feedbackMsg}`;
         const rejectedResult: ToolExecutionResult = {
           success: false,
-          result: "Rejected by user",
+          result: rejectedContent,
         };
-        const rejectedContent = "Tool execution was rejected by user.";
         toolCallsText += formatToolCallDisplay(
           toolCall.id,
           toolName,
@@ -349,32 +576,47 @@ async function processToolCalls(
           role: "tool",
           tool_call_id: toolCall.id,
           name: toolName,
-          content: "Tool execution was rejected by user.",
+          content: rejectedContent,
         });
         continue;
       }
     }
 
     const result = await executeTool(toolName, args, luaTools);
-    const resultContent = result.success
+    const fullResult = result.success
       ? (result.result || "")
       : `Error: ${result.error}`;
 
+    // Cache full result for later retrieval
+    if (result.success && fullResult) {
+      await cacheToolResult(toolCall.id, fullResult);
+    }
+
+    // Use tool-provided summary or generate default
+    const summary = result.success
+      ? (result.summary ?? generateDefaultSummary(toolName, args, fullResult))
+      : `Error: ${result.error}`;
+
+    // Ensure result object has the summary for callbacks
+    result.summary = summary;
+
+    // Display uses summary (stored in markdown)
     toolCallsText += formatToolCallDisplay(
       toolCall.id,
       toolName,
       args,
       result.success,
-      resultContent,
+      summary,
     );
 
     emitToolCall(toolName, args, result);
 
+    // LLM message uses full result
     toolMessages.push({
       role: "tool",
       tool_call_id: toolCall.id,
       name: toolName,
-      content: resultContent,
+      content: fullResult,
     });
   }
 
@@ -575,4 +817,19 @@ export async function runStreamingAgenticChat(
       "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
   };
+}
+
+/**
+ * Wrapper to call the index plugin's rename command from Lua.
+ * Accepts individual string arguments to avoid Lua table serialization issues.
+ * TODO: Figure out why the regular command won't work
+ */
+export async function renamePage(
+  oldPage: string,
+  newPage: string,
+): Promise<boolean> {
+  return await system.invokeFunction("index.renamePageCommand", {
+    oldPage,
+    page: newPage,
+  });
 }

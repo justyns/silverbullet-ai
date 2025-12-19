@@ -130,7 +130,7 @@ export async function startPanelChat(
     };
 
     // Prepend context to the last user message, this should help with caching
-    const cleanedMessages = cleanMessagesForApi(messages);
+    const cleanedMessages = await cleanMessagesForApi(messages);
     if (contextBlock) {
       const lastUserIdx = cleanedMessages.findLastIndex((m) =>
         m.role === "user"

@@ -56,22 +56,30 @@ Styles for AI tool call widgets displayed in the chat panel and on pages.
   color: #ef4444;
 }
 
-.tool-call .arg-name {
-  color: var(--subtle, #888);
-}
-
-.tool-call .tool-result {
+.tool-call .tool-details {
   padding: 8px 12px;
   background: var(--bg, #fff);
   border-radius: 0 0 6px 6px;
 }
 
-.tool-call .tool-result pre {
-  margin: 0;
+.tool-call .tool-args,
+.tool-call .tool-result {
+  margin-bottom: 8px;
+}
+
+.tool-call .tool-result:last-child {
+  margin-bottom: 0;
+}
+
+.tool-call .tool-details pre {
+  margin: 4px 0 0 0;
   white-space: pre-wrap;
   word-break: break-word;
   font-size: 12px;
   color: var(--text, #333);
+  background: rgba(0, 0, 0, 0.05);
+  padding: 6px 8px;
+  border-radius: 4px;
 }
 
 /* Dark theme overrides */
@@ -88,11 +96,12 @@ Styles for AI tool call widgets displayed in the chat panel and on pages.
   background: rgba(255, 255, 255, 0.08);
 }
 
-[data-theme="dark"] .tool-call .tool-result {
+[data-theme="dark"] .tool-call .tool-details {
   background: var(--bg, #1e1e1e);
 }
 
-[data-theme="dark"] .tool-call .tool-result pre {
+[data-theme="dark"] .tool-call .tool-details pre {
   color: var(--text, #d4d4d4);
+  background: rgba(255, 255, 255, 0.05);
 }
 ```

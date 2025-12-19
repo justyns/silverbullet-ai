@@ -155,7 +155,7 @@ Bar
   }
 });
 
-Deno.test("parseToolCallsFromContent should extract tool calls from content", () => {
+Deno.test("parseToolCallsFromContent should extract tool calls from content", async () => {
   const toolCallJson = JSON.stringify({
     id: "tool_123",
     name: "read_note",
@@ -166,7 +166,7 @@ Deno.test("parseToolCallsFromContent should extract tool calls from content", ()
   const content =
     `Here is some text\n\`\`\`toolcall\n${toolCallJson}\n\`\`\`\nMore text`;
 
-  const result = parseToolCallsFromContent(content);
+  const result = await parseToolCallsFromContent(content);
 
   assertEquals(result.strippedContent, "Here is some text\n\nMore text");
   assertEquals(result.toolCalls.length, 1);
@@ -177,17 +177,17 @@ Deno.test("parseToolCallsFromContent should extract tool calls from content", ()
   assertEquals(result.toolMessages[0].tool_call_id, "tool_123");
 });
 
-Deno.test("parseToolCallsFromContent should handle content without tool calls", () => {
+Deno.test("parseToolCallsFromContent should handle content without tool calls", async () => {
   const content = "Just some regular text without any tool calls";
 
-  const result = parseToolCallsFromContent(content);
+  const result = await parseToolCallsFromContent(content);
 
   assertEquals(result.strippedContent, content);
   assertEquals(result.toolCalls.length, 0);
   assertEquals(result.toolMessages.length, 0);
 });
 
-Deno.test("parseToolCallsFromContent should handle multiple tool calls", () => {
+Deno.test("parseToolCallsFromContent should handle multiple tool calls", async () => {
   const toolCall1 = JSON.stringify({
     id: "tool_1",
     name: "read_note",
@@ -205,7 +205,7 @@ Deno.test("parseToolCallsFromContent should handle multiple tool calls", () => {
   const content =
     `\`\`\`toolcall\n${toolCall1}\n\`\`\`\nSome text\n\`\`\`toolcall\n${toolCall2}\n\`\`\``;
 
-  const result = parseToolCallsFromContent(content);
+  const result = await parseToolCallsFromContent(content);
 
   assertEquals(result.toolCalls.length, 2);
   assertEquals(result.toolMessages.length, 2);
@@ -213,7 +213,7 @@ Deno.test("parseToolCallsFromContent should handle multiple tool calls", () => {
   assertEquals(result.toolCalls[1].function.name, "list_pages");
 });
 
-Deno.test("cleanMessagesForApi should process assistant messages with tool calls", () => {
+Deno.test("cleanMessagesForApi should process assistant messages with tool calls", async () => {
   const toolCallJson = JSON.stringify({
     id: "tool_123",
     name: "read_note",
@@ -229,7 +229,7 @@ Deno.test("cleanMessagesForApi should process assistant messages with tool calls
     },
   ];
 
-  const result = cleanMessagesForApi(messages);
+  const result = await cleanMessagesForApi(messages);
 
   assertEquals(result.length, 3);
   assertEquals(result[0].role, "user");
@@ -239,13 +239,13 @@ Deno.test("cleanMessagesForApi should process assistant messages with tool calls
   assertEquals(result[2].tool_call_id, "tool_123");
 });
 
-Deno.test("cleanMessagesForApi should pass through messages without tool calls", () => {
+Deno.test("cleanMessagesForApi should pass through messages without tool calls", async () => {
   const messages: ChatMessage[] = [
     { role: "user", content: "Hello" },
     { role: "assistant", content: "Hi there!" },
   ];
 
-  const result = cleanMessagesForApi(messages);
+  const result = await cleanMessagesForApi(messages);
 
   assertEquals(result.length, 2);
   assertEquals(result[0].content, "Hello");

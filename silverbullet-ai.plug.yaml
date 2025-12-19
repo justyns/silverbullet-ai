@@ -119,6 +119,16 @@ functions:
     path: sbai.ts:startPanelChat
   getPanelChatChunk:
     path: sbai.ts:getPanelChatChunk
+  submitToolApproval:
+    path: sbai.ts:submitToolApproval
+  requestWriteApproval:
+    path: sbai.ts:requestWriteApproval
+  submitWriteApproval:
+    path: sbai.ts:submitWriteApproval
+  getWriteDiff:
+    path: sbai.ts:getWriteDiff
+  renamePage:
+    path: sbai.ts:renamePage
   postProcessToolCallHtml:
     path: sbai.ts:postProcessToolCallHtml
   renderToolCallWidget:

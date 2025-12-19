@@ -16,3 +16,5 @@ test?space*
 site/
 testspace*/
 dist/
+silverbullet
+*.diff

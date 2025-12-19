@@ -11,6 +11,7 @@ import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter
 import { aiSettings } from "./init.ts";
 import type { ChatMessage } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
+import { getCachedToolResult } from "./tools.ts";
 
 export function folderName(path: string) {
   return path.split("/").slice(0, -1).join("/");
@@ -27,7 +28,8 @@ export type ToolCallData = {
   id: string;
   name: string;
   args: Record<string, unknown>;
-  result: string;
+  result?: string; // Legacy field (full result)
+  summary?: string; // New field (compact summary)
   success: boolean;
 };
 
@@ -38,19 +40,33 @@ export type ToolCallData = {
 export function renderToolCallHtml(data: ToolCallData): string {
   const status = data.success ? "✓" : "✗";
   const statusClass = data.success ? "success" : "error";
-  const argsDisplay = Object.entries(data.args || {})
-    .map(([k, v]) => `<span class="arg-name">${k}:</span> ${JSON.stringify(v)}`)
-    .join(", ");
 
-  // Escape HTML in result to prevent XSS
-  const escapedResult = (data.result || "")
+  // Build arguments section for details
+  const args = data.args || {};
+  const argEntries = Object.entries(args);
+  const argsHtml = argEntries.length > 0
+    ? `<div class="tool-args"><strong>Arguments:</strong><pre>${
+      argEntries
+        .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
+        .join("\n")
+    }</pre></div>`
+    : "";
+
+  // Use summary (new format) with fallback to result (legacy format)
+  const displayText = data.summary ?? data.result ?? "";
+
+  // Escape HTML in display text to prevent XSS
+  const escapedDisplay = displayText
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;");
 
   return `<details class="tool-call ${statusClass}">
-  <summary>🔧 <strong>${data.name}</strong>(${argsDisplay}) → <span class="status">${status}</span></summary>
-  <div class="tool-result"><pre>${escapedResult}</pre></div>
+  <summary>🔧 <strong>${data.name}</strong> → <span class="status">${status}</span></summary>
+  <div class="tool-details">
+    ${argsHtml}
+    <div class="tool-result"><strong>Result:</strong><pre>${escapedDisplay}</pre></div>
+  </div>
 </details>`;
 }
 
@@ -66,7 +82,7 @@ function parseToolCallJson(json: string): ToolCallData | null {
   }
 }
 
-export function parseToolCallsFromContent(content: string): {
+export async function parseToolCallsFromContent(content: string): Promise<{
   strippedContent: string;
   toolMessages: ChatMessage[];
   toolCalls: Array<
@@ -76,7 +92,7 @@ export function parseToolCallsFromContent(content: string): {
       function: { name: string; arguments: string };
     }
   >;
-} {
+}> {
   const toolMessages: ChatMessage[] = [];
   const toolCalls: Array<
     {
@@ -102,12 +118,23 @@ export function parseToolCallsFromContent(content: string): {
             arguments: JSON.stringify(data.args || {}),
           },
         });
+
+        // Try to get full result from cache, fall back to summary/legacy result
+        let resultContent: string;
+        const cachedResult = await getCachedToolResult(data.id);
+        if (cachedResult) {
+          resultContent = cachedResult;
+        } else {
+          // Fall back to summary (new format) or result (legacy format)
+          resultContent = data.summary ?? data.result ?? "";
+        }
+
         // Add tool response message
         toolMessages.push({
           role: "tool",
           tool_call_id: data.id,
           name: data.name,
-          content: data.result || "",
+          content: resultContent,
         });
       }
     } catch {
@@ -122,13 +149,16 @@ export function parseToolCallsFromContent(content: string): {
 /**
  * Cleans messages for API submission by parsing tool call blocks from assistant messages.
  * The API requires tool messages to follow assistant messages with tool_calls.
+ * Fetches full tool results from cache when available.
  */
-export function cleanMessagesForApi(messages: ChatMessage[]): ChatMessage[] {
+export async function cleanMessagesForApi(
+  messages: ChatMessage[],
+): Promise<ChatMessage[]> {
   const cleanedMessages: ChatMessage[] = [];
   for (const msg of messages) {
     if (msg.role === "assistant") {
       const { strippedContent, toolMessages, toolCalls } =
-        parseToolCallsFromContent(msg.content);
+        await parseToolCallsFromContent(msg.content);
       if (toolCalls.length > 0) {
         cleanedMessages.push({
           ...msg,
@@ -432,4 +462,53 @@ export function buildProxyHeaders(
 
 export function buildProxyUrl(url: string): string {
   return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
+}
+
+export type DiffLine = {
+  type: "same" | "add" | "remove";
+  line: string;
+};
+
+/**
+ * Computes a simple line-by-line diff between two strings.
+ * Returns an array of diff lines with type indicators.
+ */
+export function computeSimpleDiff(before: string, after: string): DiffLine[] {
+  const beforeLines = before.split("\n");
+  const afterLines = after.split("\n");
+  const result: DiffLine[] = [];
+
+  const beforeSet = new Set(beforeLines);
+  const afterSet = new Set(afterLines);
+
+  let bi = 0;
+  let ai = 0;
+
+  while (bi < beforeLines.length || ai < afterLines.length) {
+    const beforeLine = beforeLines[bi];
+    const afterLine = afterLines[ai];
+
+    if (bi >= beforeLines.length) {
+      result.push({ type: "add", line: afterLine });
+      ai++;
+    } else if (ai >= afterLines.length) {
+      result.push({ type: "remove", line: beforeLine });
+      bi++;
+    } else if (beforeLine === afterLine) {
+      result.push({ type: "same", line: beforeLine });
+      bi++;
+      ai++;
+    } else if (!afterSet.has(beforeLine)) {
+      result.push({ type: "remove", line: beforeLine });
+      bi++;
+    } else if (!beforeSet.has(afterLine)) {
+      result.push({ type: "add", line: afterLine });
+      ai++;
+    } else {
+      result.push({ type: "remove", line: beforeLine });
+      bi++;
+    }
+  }
+
+  return result;
 }

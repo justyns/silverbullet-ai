@@ -51,8 +51,13 @@ import {
   convertToOpenAITools,
   createToolCallWidget,
   discoverTools,
+  getWriteDiff,
+  renamePage,
+  requestWriteApproval,
   runAgenticChat,
   runStreamingAgenticChat,
+  submitToolApproval,
+  submitWriteApproval,
 } from "./src/tools.ts";
 
 // Re-export chat panel functions for plug yaml
@@ -66,6 +71,15 @@ export {
 } from "./src/chat-panel.ts";
 
 export { postProcessToolCallHtml } from "./src/utils.ts";
+
+// Re-export tool/write approval modal functions for plug yaml
+export {
+  getWriteDiff,
+  renamePage,
+  requestWriteApproval,
+  submitToolApproval,
+  submitWriteApproval,
+};
 
 /**
  * Renders a tool-call fenced code block as an HTML widget.
@@ -484,7 +498,7 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  const cleanedMessages = cleanMessagesForApi(messages);
+  const cleanedMessages = await cleanMessagesForApi(messages);
   cleanedMessages.unshift(chatSystemPrompt);
   const enrichedMessages = await enrichChatMessages(cleanedMessages);
   console.log("enrichedMessages", enrichedMessages);
@@ -538,12 +552,11 @@ export async function streamChatOnPage() {
           }
         },
         onToolCall: (name, args, result) => {
-          // Insert tool widget when tool is called
           const toolWidget = createToolCallWidget(
             name,
             args,
             result.success,
-            result.success ? result.result : result.error,
+            result.success ? result.summary : result.error,
           );
           const toolLine = `\n${toolWidget}\n\n`;
 
