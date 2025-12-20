@@ -4,7 +4,6 @@ import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
-  folderName,
   luaLongString,
   parseToolCallsFromContent,
   postProcessToolCallHtml,
@@ -12,55 +11,6 @@ import {
 import { Attachment, MessageWithAttachments } from "./types.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";
-
-Deno.test("folderName should return the correct folder path", () => {
-  try {
-    assertEquals(
-      folderName("/sub1/foo"),
-      "/sub1",
-      "folderName did not return the expected path",
-    );
-    assertEquals(
-      folderName("/sub1/sub2/foo"),
-      "/sub1/sub2",
-      "folderName did not return the expected path",
-    );
-    // TODO: Fix trailing slashes on folderName function
-    // assertEquals(folderName("/sub1/foo/"), "/sub1", "folderName did not return the expected path");
-  } catch (error) {
-    console.error(
-      "Error in test 'folderName should return the correct folder path':",
-      error,
-    );
-    throw error;
-  }
-});
-
-Deno.test("folderName should return an empty string for root files", () => {
-  try {
-    assertEquals(
-      folderName("/fileone"),
-      "",
-      "folderName did not return an empty string for a root file",
-    );
-    assertEquals(
-      folderName("/file one"),
-      "",
-      "folderName did not return an empty string for a root file",
-    );
-    assertEquals(
-      folderName("filethree"),
-      "",
-      "folderName did not return an empty string for a root file",
-    );
-  } catch (error) {
-    console.error(
-      "Error in test 'folderName should return an empty string for root files':",
-      error,
-    );
-    throw error;
-  }
-});
 
 Deno.test("convertPageToMessages should convert page text to chat messages", async () => {
   try {

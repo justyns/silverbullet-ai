@@ -19,15 +19,3 @@ export function removeCache(key: string) {
 export function hasCache(key: string): boolean {
   return Object.prototype.hasOwnProperty.call(cache, key);
 }
-
-// https://stackoverflow.com/questions/59777670/how-can-i-hash-a-string-with-sha256
-export async function hashStrings(...inputs: string[]): Promise<string> {
-  const concatenatedInput = inputs.join("");
-  const textAsBuffer = new TextEncoder().encode(concatenatedInput);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", textAsBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hash = hashArray
-    .map((item) => item.toString(16).padStart(2, "0"))
-    .join("");
-  return hash;
-}

@@ -7,9 +7,7 @@ import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments 
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
 
-export function folderName(path: string) {
-  return path.split("/").slice(0, -1).join("/");
-}
+export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
 export function log(...args: any[]) {
   console.log(...args);

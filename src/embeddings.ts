@@ -2,6 +2,7 @@ import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
 import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
 import type { AISummaryObject, CombinedEmbeddingResult, EmbeddingObject, EmbeddingResult } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
 import { editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
@@ -167,10 +168,8 @@ export async function indexSummary(page: string) {
       "Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:\n";
   }
 
-  const cacheKey = await cache.hashStrings(
-    summaryModel.name,
-    pageText,
-    summaryPrompt,
+  const cacheKey = await hashSHA256(
+    [summaryModel.name, pageText, summaryPrompt].join(""),
   );
   let summary = cache.getCache(cacheKey);
   if (!summary) {
