@@ -93,6 +93,12 @@ functions:
     path: src/connectivity.ts:connectivityTestCommand
     command:
       name: "AI: Connectivity Test"
+  getBenchmarkResults:
+    path: src/benchmark.ts:getBenchmarkResults
+  benchmarkCommand:
+    path: src/benchmark.ts:benchmarkCommand
+    command:
+      name: "AI: Run Benchmark"
 
   # AI Assistant Panel
   openAIAssistant:

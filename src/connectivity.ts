@@ -9,6 +9,7 @@ import {
   getSelectedTextModel,
   initIfNeeded,
 } from "./init.ts";
+import type { Tool } from "./types.ts";
 
 const connectivityTestPage = "🛰️ AI Connectivity Test";
 
@@ -311,6 +312,65 @@ Use these commands to select your models:
             } catch (schemaError) {
               text += `> ❌ Failed to test JSON schema output: ${schemaError}\n\n`;
               text += "_Note: JSON schema mode may not be supported by all providers._\n\n";
+            }
+
+            // Test tool/function calling
+            text += "#### 🔧 Tool Calling Test\n\n";
+            try {
+              const testTools: Tool[] = [{
+                type: "function",
+                function: {
+                  name: "get_current_time",
+                  description: "Get the current time in a specific timezone",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      timezone: {
+                        type: "string",
+                        description: "The timezone (e.g., 'UTC', 'America/New_York')",
+                      },
+                    },
+                    required: ["timezone"],
+                  },
+                },
+              }];
+
+              const toolResponse = await provider.chat(
+                [{
+                  role: "user",
+                  content: "What time is it in UTC? Use the get_current_time tool.",
+                }],
+                testTools,
+              );
+
+              if (toolResponse.tool_calls && toolResponse.tool_calls.length > 0) {
+                const toolCall = toolResponse.tool_calls[0];
+                if (toolCall.function.name === "get_current_time") {
+                  text += "> ✅ Model correctly generated a tool call\n\n";
+                  text += "```json\n";
+                  text += JSON.stringify(
+                    {
+                      name: toolCall.function.name,
+                      arguments: JSON.parse(toolCall.function.arguments),
+                    },
+                    null,
+                    2,
+                  ) + "\n";
+                  text += "```\n\n";
+                } else {
+                  text += "> ⚠️ Model called unexpected tool: " +
+                    toolCall.function.name + "\n\n";
+                }
+              } else {
+                text += "> ⚠️ Model did not generate a tool call (may not support function calling)\n\n";
+                if (toolResponse.content) {
+                  text += "Response: " + toolResponse.content.slice(0, 200) +
+                    "\n\n";
+                }
+              }
+            } catch (toolError) {
+              text += `> ❌ Failed to test tool calling: ${toolError}\n\n`;
+              text += "_Note: Some providers may not support function/tool calling._\n\n";
             }
           } catch (error) {
             text += `> ❌ Failed to connect to API: ${error}\n\n`;

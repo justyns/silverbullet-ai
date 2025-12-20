@@ -16,6 +16,17 @@ virtualPage.define {
 }
 ```
 
+### Benchmark Results Page
+
+```space-lua
+virtualPage.define {
+  pattern = "🧪 AI Benchmark",
+  run = function()
+    return system.invokeFunction("silverbullet-ai.getBenchmarkResults")
+  end
+}
+```
+
 ### Search Results Page
 
 ```space-lua

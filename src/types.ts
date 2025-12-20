@@ -185,6 +185,7 @@ export type ChatSettings = {
   searchEmbeddings: boolean;
   customEnrichFunctions: string[];
   enableTools: boolean;
+  skipToolApproval: boolean;
   defaultAgent?: string;
 };
 

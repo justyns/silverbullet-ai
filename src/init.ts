@@ -327,6 +327,7 @@ async function loadAndMergeSettings() {
     customEnrichFunctions: [],
     searchEmbeddings: false,
     enableTools: true,
+    skipToolApproval: false,
     defaultAgent: "",
   };
   const defaultPromptInstructions: PromptInstructions = {

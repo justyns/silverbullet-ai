@@ -1,6 +1,7 @@
 import { asset, clientStore, editor, lua, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import { computeSimpleDiff, type DiffLine } from "./utils.ts";
 import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool } from "./types.ts";
+import { aiSettings } from "./init.ts";
 
 const MAX_TOOL_ITERATIONS = 10;
 
@@ -326,6 +327,12 @@ export async function requestWriteApproval(
   page: string,
   newContent: string,
 ): Promise<{ success: boolean; error?: string }> {
+  // Skip approval if configured - write directly
+  if (aiSettings.chat.skipToolApproval) {
+    await space.writePage(page, newContent);
+    return { success: true };
+  }
+
   const writeId = `write_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   // Read current content and compute diff
@@ -530,7 +537,7 @@ async function processToolCalls(
     }
 
     const toolDef = luaTools.get(toolName);
-    if (toolDef?.requiresApproval) {
+    if (toolDef?.requiresApproval && !aiSettings.chat.skipToolApproval) {
       const approvalResult = await requestToolApproval(
         toolName,
         args,

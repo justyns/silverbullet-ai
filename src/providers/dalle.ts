@@ -37,7 +37,10 @@ export class DallEProvider extends AbstractImageProvider {
       );
 
       if (!response.ok) {
-        throw new Error(`HTTP error, status: ${response.status}`);
+        const errorBody = await response.json();
+        console.error("HTTP response body: ", errorBody);
+        const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+        throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
 
       const data = await response.json();

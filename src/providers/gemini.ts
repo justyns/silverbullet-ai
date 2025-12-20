@@ -35,7 +35,10 @@ export class GeminiProvider extends AbstractProvider {
     try {
       const response = await this.fetch(apiUrl, { method: "GET" });
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorBody = await response.json();
+        console.error("HTTP response body: ", errorBody);
+        const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+        throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
       const data = await response.json();
       return data.models || [];
@@ -209,7 +212,10 @@ export class GeminiProvider extends AbstractProvider {
     );
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      const errorBody = await response.json();
+      console.error("HTTP response body: ", errorBody);
+      const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+      throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }
 
     const responseData = await response.json();
@@ -256,8 +262,10 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
 
     if (!response.ok) {
       console.error("HTTP response: ", response);
-      console.error("HTTP response body: ", await response.json());
-      throw new Error(`HTTP error, status: ${response.status}`);
+      const errorBody = await response.json();
+      console.error("HTTP response body: ", errorBody);
+      const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+      throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }
 
     const data = await response.json();

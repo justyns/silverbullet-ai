@@ -92,6 +92,7 @@ nav:
       - Commands
   - Providers:
       - Providers
+  - Recommended Models.md
   - SilverBullet v2 Migration Guide.md
   - Changelog.md
   - Development.md
