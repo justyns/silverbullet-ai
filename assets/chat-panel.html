@@ -445,6 +445,45 @@
     padding: 6px 8px;
     border-radius: 4px;
   }
+
+  /* Agent indicator */
+  .agent-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--overlay-light);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .agent-indicator.hidden {
+    display: none;
+  }
+
+  .agent-indicator .agent-icon {
+    font-size: 14px;
+  }
+
+  .agent-indicator .agent-name {
+    flex: 1;
+    font-weight: 500;
+  }
+
+  .agent-indicator .clear-agent-btn {
+    background: none;
+    border: none;
+    color: var(--subtle);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .agent-indicator .clear-agent-btn:hover {
+    background: var(--overlay-medium);
+    color: var(--text);
+  }
 </style>
 
 <div class="ai-chat-panel">
@@ -455,6 +494,11 @@
       <button id="export-btn" title="Export to markdown">Export</button>
       <button id="close-btn" class="close-btn" title="Close panel">×</button>
     </div>
+  </div>
+  <div id="agent-indicator" class="agent-indicator hidden">
+    <span class="agent-icon">🤖</span>
+    <span id="agent-name" class="agent-name"></span>
+    <button id="clear-agent-btn" class="clear-agent-btn" title="Clear agent">✕</button>
   </div>
   <div class="ai-chat-messages" id="messages">
     <div class="empty-state" id="empty-state">

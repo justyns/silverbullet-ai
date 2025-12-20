@@ -6,21 +6,28 @@ import {
   lua,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
-import type { ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
+import type { AIAgentTemplate, Attachment, ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
 import {
   aiSettings,
   chatSystemPrompt,
   currentAIProvider,
   initIfNeeded,
 } from "./init.ts";
-import { cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
+import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
 import {
   convertToOpenAITools,
   discoverTools,
   runAgenticChat,
 } from "./tools.ts";
+import {
+  buildAgentSystemPrompt,
+  discoverAgents,
+  filterToolsForAgent,
+} from "./agents.ts";
 
 let isPanelOpen = false;
+let currentChatAgent: AIAgentTemplate | null = null;
+
 interface StreamBuffer {
   chunks: string[];
   status: "streaming" | "complete" | "error";
@@ -28,6 +35,32 @@ interface StreamBuffer {
 }
 const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
+
+export function setCurrentChatAgent(agent: AIAgentTemplate | null): void {
+  currentChatAgent = agent;
+}
+
+export function getCurrentChatAgent(): AIAgentTemplate | null {
+  return currentChatAgent;
+}
+
+export function clearCurrentChatAgent(): void {
+  currentChatAgent = null;
+}
+
+async function initChatAgent(): Promise<void> {
+  if (currentChatAgent) return;
+
+  const agents = await discoverAgents();
+  const configuredRef = aiSettings.chat.defaultAgent;
+
+  // Try configured default first, then fall back to lua:default
+  const refToFind = configuredRef || "lua:default";
+  const defaultAgent = agents.find((a) => a.ref === refToFind);
+  if (defaultAgent) {
+    currentChatAgent = defaultAgent;
+  }
+}
 
 /**
  * Opens the AI Assistant panel
@@ -80,6 +113,8 @@ export async function startPanelChat(
 ): Promise<{ streamId?: string; error?: string }> {
   try {
     await initIfNeeded();
+    await initChatAgent();
+
     const streamId = `stream_${Date.now()}_${
       Math.random().toString(36).slice(2, 11)
     }`;
@@ -89,9 +124,12 @@ export async function startPanelChat(
       status: "streaming",
     });
 
-    const luaTools = await discoverTools();
+    let luaTools = await discoverTools();
+    if (currentChatAgent) {
+      luaTools = filterToolsForAgent(luaTools, currentChatAgent);
+    }
     const tools = convertToOpenAITools(luaTools);
-    console.log(`Panel chat: discovered ${tools.length} tools`);
+    console.log(`Panel chat: discovered ${tools.length} tools${currentChatAgent ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})` : ""}`);
 
     let contextBlock = "";
     try {
@@ -101,6 +139,10 @@ export async function startPanelChat(
 
       contextBlock = `Current page: ${currentPage}`;
       contextBlock += `\nCurrent date and time: ${new Date().toISOString()}`;
+      if (currentChatAgent) {
+        const agentName = currentChatAgent.aiagent.name || currentChatAgent.ref;
+        contextBlock += `\nActive agent: ${agentName}`;
+      }
       if (selection && selection.text) {
         contextBlock += `\nSelected text: "${selection.text}"`;
       }
@@ -125,9 +167,20 @@ export async function startPanelChat(
       }
     }
 
+    let systemContent: string;
+    let agentAttachments: Attachment[] = [];
+    if (currentChatAgent) {
+      // Use agent prompt if we have one
+      const agentResult = await buildAgentSystemPrompt(currentChatAgent);
+      systemContent = agentResult.systemPrompt;
+      agentAttachments = agentResult.attachments;
+    } else {
+      systemContent = chatSystemPrompt.content;
+    }
+
     const systemMessage: ChatMessage = {
       role: "system",
-      content: chatSystemPrompt.content,
+      content: systemContent,
     };
 
     // Prepend context to the last user message, this should help with caching
@@ -145,8 +198,9 @@ export async function startPanelChat(
       }
     }
 
-    const fullMessages: ChatMessage[] = [systemMessage, ...cleanedMessages];
-    let workingMessages = await enrichChatMessages(fullMessages);
+    // enrichChatMessages can return attachments related to the messaages
+    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+    const workingMessages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments, agentAttachments);
 
     // Run the tool loop in the background
     runToolLoop(streamId, workingMessages, tools, luaTools).catch(
@@ -290,11 +344,13 @@ export async function exportPanelChat(): Promise<void> {
       pageName = `AI Chat ${timestamp} ${Date.now()}`;
     }
 
+    const agentRef = currentChatAgent?.ref || null;
+
     let content = `---
 dateCreated: "${timestamp}"
 dateUpdated: "${timestamp}"
 chatId: "${chatId}"
-tags: aichat
+tags: aichat${agentRef ? `\nagent: "${agentRef}"` : ""}
 ---
 
 # AI Assistant Chat
@@ -303,7 +359,8 @@ tags: aichat
 
     for (const msg of history) {
       if (msg.role === "system") continue;
-      content += `**${msg.role}**: ${msg.content}\n\n`;
+      const needsNewline = msg.content.startsWith("```");
+      content += `**${msg.role}**:${needsNewline ? "\n" : " "}${msg.content}\n\n`;
     }
 
     await space.writePage(pageName, content);

@@ -39,6 +39,7 @@ import {
   setSelectedTextModel,
 } from "./src/init.ts";
 import {
+  assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
   enrichChatMessages,
@@ -56,16 +57,27 @@ import {
   submitToolApproval,
   submitWriteApproval,
 } from "./src/tools.ts";
+import {
+  clearCurrentChatAgent,
+  setCurrentChatAgent,
+} from "./src/chat-panel.ts";
+import { selectAgent } from "./src/agents.ts";
 
 // Re-export chat panel functions for plug yaml
 export {
+  clearCurrentChatAgent,
   closeAIAssistant,
   exportPanelChat,
+  getCurrentChatAgent,
   getPanelChatChunk,
   openAIAssistant,
+  setCurrentChatAgent,
   startPanelChat,
   toggleAIAssistant,
 } from "./src/chat-panel.ts";
+
+// Re-export agent functions for plug yaml
+export { selectAgent } from "./src/agents.ts";
 
 export { postProcessToolCallHtml } from "./src/utils.ts";
 
@@ -242,6 +254,19 @@ export async function selectEmbeddingModelFromConfig() {
   console.log(`Selected embedding model:`, selectedEmbeddingModel);
 }
 
+export async function selectAgentCommand() {
+  const agent = await selectAgent();
+  if (agent) {
+    setCurrentChatAgent(agent);
+    await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
+  }
+}
+
+export async function clearAgentCommand() {
+  clearCurrentChatAgent();
+  await editor.flashNotification("Agent cleared");
+}
+
 /**
  * Checks if AI tools are enabled for the current page.
  * Tools can be disabled globally via config or per-page via frontmatter.
@@ -277,8 +302,8 @@ export async function streamChatOnPage() {
     return;
   }
   const cleanedMessages = await cleanMessagesForApi(messages);
-  cleanedMessages.unshift(chatSystemPrompt);
-  const enrichedMessages = await enrichChatMessages(cleanedMessages);
+  const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+  const enrichedMessages = assembleMessagesWithAttachments(chatSystemPrompt, messagesWithAttachments);
   console.log("enrichedMessages", enrichedMessages);
 
   let cursorPos = await getPageLength();

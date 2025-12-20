@@ -327,6 +327,7 @@ async function loadAndMergeSettings() {
     customEnrichFunctions: [],
     searchEmbeddings: false,
     enableTools: true,
+    defaultAgent: "",
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameSystem: "",

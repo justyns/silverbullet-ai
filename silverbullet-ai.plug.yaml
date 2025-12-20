@@ -39,6 +39,14 @@ functions:
     path: sbai.ts:selectEmbeddingModelFromConfig
     command:
       name: "AI: Select Embedding Model from Config"
+  selectAgent:
+    path: sbai.ts:selectAgentCommand
+    command:
+      name: "AI: Select Agent"
+  clearAgent:
+    path: sbai.ts:clearAgentCommand
+    command:
+      name: "AI: Clear Agent"
   testEmbeddingGeneration:
     path: sbai.ts:testEmbeddingGeneration
     command:
@@ -103,6 +111,10 @@ functions:
     path: sbai.ts:startPanelChat
   getPanelChatChunk:
     path: sbai.ts:getPanelChatChunk
+  getCurrentChatAgent:
+    path: sbai.ts:getCurrentChatAgent
+  clearCurrentChatAgent:
+    path: sbai.ts:clearCurrentChatAgent
   submitToolApproval:
     path: sbai.ts:submitToolApproval
   requestWriteApproval:

@@ -8,6 +8,9 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const newChatBtn = document.getElementById("new-chat-btn");
   const exportBtn = document.getElementById("export-btn");
   const closeBtn = document.getElementById("close-btn");
+  const agentIndicator = document.getElementById("agent-indicator");
+  const agentNameEl = document.getElementById("agent-name");
+  const clearAgentBtn = document.getElementById("clear-agent-btn");
 
   let chatHistory = [];
   let chatData = { id: null, messages: [] };
@@ -26,6 +29,9 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   async function queryPages(searchTerm) {
     try {
       const currentPage = await syscall("editor.getCurrentPage");
+      if (!currentPage) {
+        return [];
+      }
       const completeEvent = {
         pageName: currentPage,
         linePrefix: "[[" + searchTerm,
@@ -326,6 +332,39 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     syscall("system.invokeFunction", "silverbullet-ai.closeAIAssistant");
   }
 
+  function updateAgentIndicator(agent) {
+    if (agent && agent.aiagent) {
+      agentNameEl.textContent = agent.aiagent.name || agent.ref.split("/").pop() || agent.ref;
+      agentIndicator.classList.remove("hidden");
+    } else {
+      agentIndicator.classList.add("hidden");
+    }
+  }
+
+  async function loadCurrentAgent() {
+    try {
+      const agent = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.getCurrentChatAgent",
+      );
+      updateAgentIndicator(agent);
+    } catch (e) {
+      console.error("Failed to load current agent:", e);
+    }
+  }
+
+  async function clearAgent() {
+    try {
+      await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.clearCurrentChatAgent",
+      );
+      updateAgentIndicator(null);
+    } catch (e) {
+      console.error("Failed to clear agent:", e);
+    }
+  }
+
   userInput.addEventListener("input", async function () {
     this.style.height = "auto";
     this.style.height = Math.min(this.scrollHeight, 120) + "px";
@@ -391,6 +430,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   newChatBtn.addEventListener("click", newChat);
   exportBtn.addEventListener("click", exportChat);
   closeBtn.addEventListener("click", closePanel);
+  clearAgentBtn.addEventListener("click", clearAgent);
 
   document
     .getElementById("autocomplete-dropdown")
@@ -406,5 +446,6 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   });
 
   loadHistory();
+  loadCurrentAgent();
   userInput.focus();
 })();

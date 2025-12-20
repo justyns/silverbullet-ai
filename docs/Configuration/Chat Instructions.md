@@ -65,3 +65,46 @@ config.set {
 ```
 
 This is useful for time-sensitive queries where you want the AI to know the current date without having to type it manually.
+
+**Example - Include a profile page:**
+
+Create a `Profile` page with your personal information:
+
+```markdown
+---
+tags: meta
+---
+# Profile
+Location: San Francisco, CA
+Timezone: America/Los_Angeles
+Preferred language: English
+```
+
+Then configure customContext to read it:
+
+```lua
+config.set {
+  ai = {
+    chat = {
+      customContext = [[space.readPage("Profile") or ""]]
+    }
+  }
+}
+```
+
+Now the assistant will know your location for weather queries, timezone for scheduling, etc.
+
+**Example - Combine profile with date:**
+
+```lua
+config.set {
+  ai = {
+    chat = {
+      customContext = [[table.concat({
+        "Date: " .. os.date("%Y-%m-%d %H:%M"),
+        space.readPage("Profile") or ""
+      }, "\n\n")]]
+    }
+  }
+}
+```

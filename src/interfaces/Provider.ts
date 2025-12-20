@@ -12,7 +12,7 @@ import type {
   StreamChatOptions,
   Tool,
 } from "../types.ts";
-import { enrichChatMessages } from "../utils.ts";
+import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
 // deno-lint-ignore no-explicit-any
@@ -170,15 +170,16 @@ export abstract class AbstractProvider implements ProviderInterface {
       },
     ];
 
-    if (systemPrompt) {
-      messages.unshift({
-        role: "system",
-        content: systemPrompt,
-      });
-    }
+    const systemMessage: ChatMessage = {
+      role: "system",
+      content: systemPrompt || "",
+    };
 
     if (enrichMessages) {
-      messages = await enrichChatMessages(messages);
+      const { messagesWithAttachments } = await enrichChatMessages(messages);
+      messages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+    } else if (systemPrompt) {
+      messages.unshift(systemMessage);
     }
 
     const response = await this.chat(messages);

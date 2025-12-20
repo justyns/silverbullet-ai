@@ -1,6 +1,7 @@
 import {
   editor,
   events,
+  lua,
   markdown,
   space,
   system,
@@ -9,7 +10,7 @@ import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { aiSettings } from "./init.ts";
-import type { ChatMessage } from "./types.ts";
+import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
 
@@ -264,17 +265,15 @@ export async function convertPageToMessages(
 
 /**
  * Parses an array of ChatMessages and enriches them with additional content.
+ * Returns messages paired with their attachments for cache-optimized assembly.
  */
 export async function enrichChatMessages(
   messages: ChatMessage[],
   _globalMetadata?: Record<string, any>,
-): Promise<ChatMessage[]> {
-  const enrichedMessages: ChatMessage[] = [];
+): Promise<{ messagesWithAttachments: MessageWithAttachments[] }> {
+  const result: MessageWithAttachments[] = [];
   let currentPage, pageMeta;
-
-  // TODO: I'm thinking of changing how the enrich process works and splitting it up so that each function can
-  // return a string that will replace the original message, or a new message that will be prepended to the
-  // message.
+  let wikiLinkSeenNames: Record<string, boolean> = {};
 
   try {
     currentPage = await editor.getCurrentPage();
@@ -282,13 +281,13 @@ export async function enrichChatMessages(
   } catch (error) {
     console.error("Error fetching page metadata", error);
     await editor.flashNotification("Error fetching page metadata", "error");
-    return [];
+    return { messagesWithAttachments: [] };
   }
 
   for (const message of messages) {
     if (message.role === "assistant" || message.role === "system") {
       // Don't enrich assistant or system messages
-      enrichedMessages.push(message);
+      result.push({ message, attachments: [] });
       continue;
     }
 
@@ -315,11 +314,12 @@ export async function enrichChatMessages(
         "Skipping message enrichment due to enrich=false attribute",
         messageAttributes,
       );
-      enrichedMessages.push(message);
+      result.push({ message, attachments: [] });
       continue;
     }
 
     let enrichedContent = message.content;
+    let messageAttachments: Attachment[] = [];
 
     // Render message as a template if it's a user message
     if (message.role === "user") {
@@ -347,7 +347,6 @@ export async function enrichChatMessages(
 
     if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
       // Search local vector embeddings for relevant context
-      // TODO: It could be better to turn this into its own message?
       const searchResultsText = await searchEmbeddingsForChat(enrichedContent);
       if (searchResultsText !== "No relevant pages found.") {
         enrichedContent +=
@@ -357,8 +356,11 @@ export async function enrichChatMessages(
     }
 
     if (aiSettings.chat.parseWikiLinks) {
-      // Parse wiki links and provide them as context
-      enrichedContent = await enrichMesssageWithWikiLinks(enrichedContent);
+      // Parse wiki links and collect as attachments for THIS message
+      const wikiResult = await enrichMessageWithWikiLinks(enrichedContent, wikiLinkSeenNames);
+      enrichedContent = wikiResult.content;
+      wikiLinkSeenNames = wikiResult.seenNames || {};
+      messageAttachments.push(...wikiResult.attachments);
     }
 
     if (aiSettings.chat.bakeMessages) {
@@ -396,54 +398,105 @@ export async function enrichChatMessages(
       enrichedContent = await system.invokeFunction(func, enrichedContent);
     }
 
-    enrichedMessages.push({ ...message, content: enrichedContent });
+    result.push({
+      message: { ...message, content: enrichedContent },
+      attachments: messageAttachments,
+    });
   }
 
-  return enrichedMessages;
+  return { messagesWithAttachments: result };
 }
 
 /**
- * Enriches content by finding wiki links and appending related page content.
+ * Assembles the final message array with attachments interleaved for LLM prompt caching.
+ * Each message's attachments are inserted right before that message.
+ * Agent attachments go right after the system message (stable per session).
+ * Message order: [system, agent-attachments, msg1-attachments, msg1, msg2-attachments, msg2, ...]
  */
-async function enrichMesssageWithWikiLinks(content: string): Promise<string> {
-  const seenPages: string[] = [];
-  let enrichedContent = content;
-  // Regular expression to find wiki links in the format [[PageName]]
-  const wikiLinkRegex = /\[\[([^\]]+)\]\]/g;
-  let match;
-  let hasMatch = false;
+export function assembleMessagesWithAttachments(
+  systemMessage: ChatMessage,
+  messagesWithAttachments: MessageWithAttachments[],
+  agentAttachments: Attachment[] = [],
+): ChatMessage[] {
+  const result: ChatMessage[] = [systemMessage];
 
-  while ((match = wikiLinkRegex.exec(content)) !== null) {
-    const pageName = match[1];
-    if (seenPages.includes(pageName)) {
-      // Only include _new_ page contexts
-      continue;
-    }
-    if (!hasMatch) {
-      enrichedContent += `\n\n${
-        "Base your answer on the content of the following referenced pages " +
-        "(referenced above using the >>page name<< format). In these listings ~~~ " +
-        "is used to mark the page's content start and end. If context is missing, " +
-        "always ask me to link directly to a page mentioned in the context."
-      }`;
-      hasMatch = true;
-    }
-    try {
-      // Attempt to pull the page with the name specified in the wiki link
-      const pageContent = await space.readPage(pageName);
-      seenPages.push(pageName);
-      enrichedContent +=
-        `\n\nContent of the [[${pageName}]] page:\n~~~\n${pageContent}\n~~~\n`;
-    } catch (error) {
-      console.error(`Error fetching page '${pageName}':`, error);
-    }
+  // Agent attachments go right after system message (stable per session)
+  for (const a of agentAttachments) {
+    result.push({
+      role: "user" as const,
+      content: `<context type="${a.type}" name="${a.name}">\n${a.content}\n</context>`,
+    });
   }
 
-  // Replace wiki links with >>page name<< format to avoid rendering the wiki links as real urls
-  // later when the whole message is rendered to markdown.
-  enrichedContent = enrichedContent.replace(wikiLinkRegex, ">>$1<<");
+  // Insert each message's attachments right before that message
+  for (const { message, attachments } of messagesWithAttachments) {
+    for (const a of attachments) {
+      result.push({
+        role: "user" as const,
+        content: `<context type="${a.type}" name="${a.name}">\n${a.content}\n</context>`,
+      });
+    }
+    result.push(message);
+  }
 
-  return enrichedContent;
+  return result;
+}
+
+/**
+ * Escapes a string for use in Lua long string syntax [=[...]=].
+ * Finds the minimum number of equals signs needed to avoid conflicts.
+ */
+export function luaLongString(s: string): string {
+  let level = 0;
+  // Find the minimum level needed so ]=*] doesn't appear in content
+  while (s.includes(`]${"=".repeat(level)}]`)) {
+    level++;
+  }
+  const eq = "=".repeat(level);
+  return `[${eq}[${s}]${eq}]`;
+}
+
+/**
+ * Converts a JS object to Lua table literal.
+ */
+function jsObjectToLuaTable(obj: Record<string, boolean>): string {
+  const entries = Object.entries(obj)
+    .map(([k, v]) => `[${luaLongString(k)}] = ${v}`)
+    .join(", ");
+  return `{${entries}}`;
+}
+
+/**
+ * Enriches content by finding wiki links and returning attachments for referenced pages.
+ * Uses the Space Lua ai.enrichWithWikiLinks function.
+ * Accepts seenNames to deduplicate across multiple messages.
+ */
+async function enrichMessageWithWikiLinks(
+  content: string,
+  seenNames: Record<string, boolean> = {},
+): Promise<EnrichmentResult> {
+  try {
+    const luaContent = luaLongString(content);
+    const luaSeenNames = jsObjectToLuaTable(seenNames);
+    const result = await lua.evalExpression(
+      `ai.enrichWithWikiLinks(${luaContent}, ${luaSeenNames})`,
+    );
+    const attachments: Attachment[] = (result.attachments || []).map(
+      (a: { name: string; content: string; type?: string }) => ({
+        name: a.name,
+        content: a.content,
+        type: (a.type as Attachment["type"]) || "note",
+      }),
+    );
+    return {
+      content: result.content || content,
+      attachments,
+      seenNames: result.seenPages || seenNames,
+    };
+  } catch (error) {
+    console.error("Failed to enrich with wiki links:", error);
+    return { content, attachments: [], seenNames };
+  }
 }
 
 // Copied from silverbullet/client/plugos/syscalls/fetch.ts

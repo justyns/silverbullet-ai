@@ -89,7 +89,6 @@ export type Tool = {
   };
 };
 
-// Tool call from AI response
 export type ToolCall = {
   id: string;
   type: "function";
@@ -99,13 +98,29 @@ export type ToolCall = {
   };
 };
 
-// Base chat message
 export type ChatMessage = {
   content: string;
   role: "user" | "assistant" | "system" | "tool";
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
+};
+
+export type Attachment = {
+  name: string;
+  content: string;
+  type: "note" | "url" | "embedding" | "custom";
+};
+
+export type EnrichmentResult = {
+  content: string;
+  attachments: Attachment[];
+  seenNames?: Record<string, boolean>;
+};
+
+export type MessageWithAttachments = {
+  message: ChatMessage;
+  attachments: Attachment[];
 };
 
 // Space Lua tool definition format
@@ -122,6 +137,17 @@ export type LuaToolDefinition = {
   };
   handler: string; // Lua function reference
   requiresApproval?: boolean;
+};
+
+export type AIAgentTemplate = {
+  ref: string;
+  aiagent: {
+    name?: string;
+    description?: string;
+    systemPrompt?: string;
+    tools?: string[];
+    toolsExclude?: string[];
+  };
 };
 
 export enum Provider {
@@ -155,6 +181,7 @@ export type ChatSettings = {
   searchEmbeddings: boolean;
   customEnrichFunctions: string[];
   enableTools: boolean;
+  defaultAgent?: string;
 };
 
 export type PromptInstructions = {

@@ -29,7 +29,7 @@ interface AIPromptTemplate {
 }
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import { convertPageToMessages, enrichChatMessages } from "./utils.ts";
+import { assembleMessagesWithAttachments, convertPageToMessages, enrichChatMessages } from "./utils.ts";
 import { ChatMessage } from "./types.ts";
 
 export async function aiPromptSlashComplete(
@@ -485,14 +485,15 @@ export async function insertAiPromptFromTemplate(
   } else {
     // multi-turn-chat template
     messages = await convertPageToMessages(templateText);
-    if (selectedTemplate.systemPrompt) {
-      messages.unshift({
-        role: "system",
-        content: selectedTemplate.systemPrompt,
-      });
-    }
+    const systemMessage: ChatMessage = {
+      role: "system",
+      content: selectedTemplate.systemPrompt || "",
+    };
     if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
-      messages = await enrichChatMessages(messages, globalMetadata);
+      const { messagesWithAttachments } = await enrichChatMessages(messages, globalMetadata);
+      messages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+    } else if (selectedTemplate.systemPrompt) {
+      messages.unshift(systemMessage);
     }
   }
 

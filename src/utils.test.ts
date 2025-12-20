@@ -1,12 +1,15 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import "./mocks/syscalls.ts";
 import {
+  assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
   folderName,
+  luaLongString,
   parseToolCallsFromContent,
   postProcessToolCallHtml,
 } from "./utils.ts";
+import { Attachment, MessageWithAttachments } from "./types.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";
 
@@ -278,4 +281,120 @@ Deno.test("postProcessToolCallHtml should pass through HTML without tool calls",
   const result = postProcessToolCallHtml(html);
 
   assertEquals(result, html);
+});
+
+// Tests for assembleMessagesWithAttachments
+
+Deno.test("assembleMessagesWithAttachments should assemble messages without attachments", () => {
+  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    { message: { role: "user", content: "Hello" }, attachments: [] },
+    { message: { role: "assistant", content: "Hi there!" }, attachments: [] },
+  ];
+
+  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+
+  assertEquals(result.length, 3);
+  assertEquals(result[0].role, "system");
+  assertEquals(result[1].role, "user");
+  assertEquals(result[1].content, "Hello");
+  assertEquals(result[2].role, "assistant");
+});
+
+Deno.test("assembleMessagesWithAttachments should insert attachments before their source message", () => {
+  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
+  const attachment: Attachment = { name: "PageA", content: "Page A content", type: "note" };
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    { message: { role: "user", content: "Check [[PageA]]" }, attachments: [attachment] },
+  ];
+
+  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+
+  assertEquals(result.length, 3);
+  assertEquals(result[0].role, "system");
+  assertEquals(result[1].role, "user");
+  assertEquals(result[1].content.includes("PageA"), true);
+  assertEquals(result[1].content.includes("<context"), true);
+  assertEquals(result[2].role, "user");
+  assertEquals(result[2].content, "Check [[PageA]]");
+});
+
+Deno.test("assembleMessagesWithAttachments should place agent attachments after system message", () => {
+  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
+  const agentAttachment: Attachment = { name: "AgentContext", content: "Agent instructions", type: "note" };
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    { message: { role: "user", content: "Hello" }, attachments: [] },
+  ];
+
+  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments, [agentAttachment]);
+
+  assertEquals(result.length, 3);
+  assertEquals(result[0].role, "system");
+  assertEquals(result[1].role, "user");
+  assertEquals(result[1].content.includes("AgentContext"), true);
+  assertEquals(result[2].role, "user");
+  assertEquals(result[2].content, "Hello");
+});
+
+Deno.test("assembleMessagesWithAttachments should preserve cache-friendly ordering", () => {
+  // Simulates Turn 2: user1 referenced PageA, user2 references PageB
+  // Expected order: [system, A-context, user1, assistant1, B-context, user2]
+  const systemMessage: ChatMessage = { role: "system", content: "System" };
+  const attachmentA: Attachment = { name: "PageA", content: "Content A", type: "note" };
+  const attachmentB: Attachment = { name: "PageB", content: "Content B", type: "note" };
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    { message: { role: "user", content: "Check [[PageA]]" }, attachments: [attachmentA] },
+    { message: { role: "assistant", content: "Here is PageA info" }, attachments: [] },
+    { message: { role: "user", content: "Now check [[PageB]]" }, attachments: [attachmentB] },
+  ];
+
+  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+
+  // Verify order: system, A-context, user1, assistant1, B-context, user2
+  assertEquals(result.length, 6);
+  assertEquals(result[0].role, "system");
+  assertEquals(result[1].content.includes("PageA"), true); // A-context
+  assertEquals(result[2].content, "Check [[PageA]]"); // user1
+  assertEquals(result[3].content, "Here is PageA info"); // assistant1
+  assertEquals(result[4].content.includes("PageB"), true); // B-context
+  assertEquals(result[5].content, "Now check [[PageB]]"); // user2
+});
+
+Deno.test("assembleMessagesWithAttachments should handle multiple attachments per message", () => {
+  const systemMessage: ChatMessage = { role: "system", content: "System" };
+  const attachments: Attachment[] = [
+    { name: "Page1", content: "Content 1", type: "note" },
+    { name: "Page2", content: "Content 2", type: "note" },
+  ];
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    { message: { role: "user", content: "Check [[Page1]] and [[Page2]]" }, attachments },
+  ];
+
+  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+
+  assertEquals(result.length, 4);
+  assertEquals(result[0].role, "system");
+  assertEquals(result[1].content.includes("Page1"), true);
+  assertEquals(result[2].content.includes("Page2"), true);
+  assertEquals(result[3].content, "Check [[Page1]] and [[Page2]]");
+});
+
+Deno.test("luaLongString should escape simple strings", () => {
+  assertEquals(luaLongString("hello"), "[[hello]]");
+});
+
+Deno.test("luaLongString should handle strings with wiki-links", () => {
+  // Wiki-links contain ]] so we need level 1
+  const result = luaLongString("Check [[PageName]] here");
+  assertEquals(result, "[=[Check [[PageName]] here]=]");
+});
+
+Deno.test("luaLongString should increase level when content contains ]]", () => {
+  const result = luaLongString("text with ]] inside");
+  assertEquals(result, "[=[text with ]] inside]=]");
+});
+
+Deno.test("luaLongString should handle nested levels", () => {
+  const result = luaLongString("has ]] and ]=] both");
+  assertEquals(result, "[==[has ]] and ]=] both]==]");
 });

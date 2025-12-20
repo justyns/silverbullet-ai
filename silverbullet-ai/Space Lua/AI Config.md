@@ -197,6 +197,10 @@ config.define("ai.chat", {
       type = "boolean",
       description = "Whether to enable AI tools in the chat panel",
     },
+    defaultAgent = {
+      type = "string",
+      description = "Default agent to use (e.g., 'lua:general' for built-in, or page ref like 'Library/Agents/MyAgent')",
+    },
   },
   additionalProperties = false,
 })
