@@ -1,4 +1,4 @@
-import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
+import { parse as parseYAML } from "@std/yaml";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { parser } from "@lezer/markdown";
 
@@ -40,7 +40,7 @@ const pages: { [key: string]: string } = {};
 const clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
 
-let _spaceConfig = {};
+const _spaceConfig = {};
 (globalThis as any).spaceConfig;
 
 const systemConfig: { [key: string]: any } = {};
@@ -109,7 +109,7 @@ function setNestedValue(obj: any, path: string, value: any): void {
       break;
     case "mock.getConfig":
       return getNestedValue(systemConfig, args[0], args[1]);
-    case "system.getConfig":
+    case "system.getConfig": {
       const value = getNestedValue(systemConfig, args[0], args[1]);
       // If looking for ai.keys.* and the value is undefined (and no default provided),
       // throw an error to simulate missing config
@@ -120,6 +120,7 @@ function setNestedValue(obj: any, path: string, value: any): void {
         throw new Error(`Config key ${args[0]} not found`);
       }
       return value;
+    }
 
     // Pass through to the real functions
     case "markdown.parseMarkdown":

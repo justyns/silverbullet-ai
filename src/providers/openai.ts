@@ -1,5 +1,5 @@
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
-import { SSE } from "npm:sse.js@2.2.0";
+import { SSE } from "sse.js";
 import type {
   ChatMessage,
   ChatResponse,
@@ -33,7 +33,7 @@ export class OpenAIProvider extends AbstractProvider {
     this.requireAuth = requireAuth;
   }
 
-  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+  streamChat(options: StreamChatOptions): Promise<ChatResponse> {
     const { messages, tools, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {

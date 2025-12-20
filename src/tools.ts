@@ -273,30 +273,32 @@ export async function executeTool(
  * Requests user approval before executing a tool using a custom modal.
  * Note: For tools that write pages, use ai.writePage() in Lua which shows a diff preview.
  */
-async function requestToolApproval(
+function requestToolApproval(
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<ApprovalResult> {
   const approvalId = `approval_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     pendingApprovals.set(approvalId, { resolve, toolName, args });
 
-    const html = await asset.readAsset(
-      "silverbullet-ai",
-      "assets/tool-approval-modal.html",
-    );
-    const script = await asset.readAsset(
-      "silverbullet-ai",
-      "assets/tool-approval-modal.js",
-    );
+    (async () => {
+      const html = await asset.readAsset(
+        "silverbullet-ai",
+        "assets/tool-approval-modal.html",
+      );
+      const script = await asset.readAsset(
+        "silverbullet-ai",
+        "assets/tool-approval-modal.js",
+      );
 
-    const initScript = `
-      window.toolApprovalData = ${JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })};
-      ${script}
-    `;
+      const initScript = `
+        globalThis.toolApprovalData = ${JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })};
+        ${script}
+      `;
 
-    await editor.showPanel("modal", 20, html, initScript);
+      await editor.showPanel("modal", 20, html, initScript);
+    })();
   });
 }
 
@@ -337,7 +339,7 @@ export async function requestWriteApproval(
 
   const diff = computeSimpleDiff(currentContent, newContent);
 
-  return new Promise(async (resolve) => {
+  return new Promise((resolve) => {
     pendingWrites.set(writeId, {
       resolve: (result) => {
         if (result.approved) {
@@ -355,29 +357,31 @@ export async function requestWriteApproval(
       diff,
     });
 
-    const html = await asset.readAsset(
-      "silverbullet-ai",
-      "assets/tool-approval-modal.html",
-    );
-    const script = await asset.readAsset(
-      "silverbullet-ai",
-      "assets/tool-approval-modal.js",
-    );
+    (async () => {
+      const html = await asset.readAsset(
+        "silverbullet-ai",
+        "assets/tool-approval-modal.html",
+      );
+      const script = await asset.readAsset(
+        "silverbullet-ai",
+        "assets/tool-approval-modal.js",
+      );
 
-    const initScript = `
-      window.toolApprovalData = ${
-      JSON.stringify({
-        approvalId: writeId,
-        toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
-        args: { page, contentLength: newContent.length },
-        hasDiffSupport: true,
-        isWriteApproval: true,
-      })
-    };
-      ${script}
-    `;
+      const initScript = `
+        globalThis.toolApprovalData = ${
+        JSON.stringify({
+          approvalId: writeId,
+          toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
+          args: { page, contentLength: newContent.length },
+          hasDiffSupport: true,
+          isWriteApproval: true,
+        })
+      };
+        ${script}
+      `;
 
-    await editor.showPanel("modal", 20, html, initScript);
+      await editor.showPanel("modal", 20, html, initScript);
+    })();
   });
 }
 

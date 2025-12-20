@@ -1,5 +1,14 @@
 {
   "imports": {
+    "@std/assert": "https://deno.land/std@0.224.0/assert/mod.ts",
+    "@std/yaml": "https://deno.land/std@0.224.0/yaml/mod.ts",
+    "sse.js": "npm:sse.js@2.2.0",
+    "@std/encoding/base64": "https://deno.land/std@0.224.0/encoding/base64.ts",
+    "@std/fs/walk": "jsr:@std/fs@1/walk",
+    "@std/fs/empty-dir": "jsr:@std/fs@1/empty-dir",
+    "@std/path": "jsr:@std/path@1",
+    "yaml": "https://esm.sh/yaml@2.3.4",
+    "@structured-types/api": "https://esm.sh/@structured-types/api",
     "@silverbulletmd/silverbullet": "jsr:@silverbulletmd/silverbullet@2.3.0",
     "@silverbulletmd/silverbullet/lib/frontmatter": "jsr:@silverbulletmd/silverbullet@2.3.0/lib/frontmatter",
     "@silverbulletmd/silverbullet/syscalls": "jsr:@silverbulletmd/silverbullet@2.3.0/syscalls",

@@ -1,6 +1,6 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
-import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
+import { decodeBase64 } from "@std/encoding/base64";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,

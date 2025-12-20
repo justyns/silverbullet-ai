@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals } from "@std/assert";
 import "./mocks/syscalls.ts";
 import { aiSettings, getAndConfigureModel, initializeOpenAI } from "./init.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";

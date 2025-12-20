@@ -11,7 +11,7 @@ import * as cache from "./cache.ts";
 const searchPrefix = "🤖 ";
 
 // Cache for search results - keyed by query
-let cachedSearchResults: Map<string, string> = new Map();
+const cachedSearchResults: Map<string, string> = new Map();
 
 /**
  * Check whether a page is allowed to be indexed or not.

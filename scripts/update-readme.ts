@@ -1,5 +1,5 @@
-import * as yaml from "https://esm.sh/yaml@2.3.4";
-import { parseFiles } from "https://esm.sh/@structured-types/api";
+import * as yaml from "yaml";
+import { parseFiles } from "@structured-types/api";
 
 const tag = Deno.args[0];
 

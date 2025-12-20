@@ -310,7 +310,7 @@ export async function enrichChatMessages(
     }
 
     let enrichedContent = message.content;
-    let messageAttachments: Attachment[] = [];
+    const messageAttachments: Attachment[] = [];
 
     // Render message as a template if it's a user message
     if (message.role === "user") {

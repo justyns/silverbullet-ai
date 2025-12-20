@@ -1,4 +1,4 @@
-import { SSE } from "npm:sse.js@2.2.0";
+import { SSE } from "sse.js";
 import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
@@ -77,7 +77,7 @@ export class GeminiProvider extends AbstractProvider {
     return payloadContents;
   }
 
-  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+  streamChat(options: StreamChatOptions): Promise<ChatResponse> {
     const { messages, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {

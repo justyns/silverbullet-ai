@@ -84,7 +84,7 @@
 
     diffSectionEl.style.display = "block";
 
-    if (window.innerWidth > 600) {
+    if (globalThis.innerWidth > 600) {
       diffSectionEl.setAttribute("open", "");
     }
 
@@ -166,7 +166,7 @@
     }
   });
 
-  if (window.toolApprovalData) {
-    init(window.toolApprovalData);
+  if (globalThis.toolApprovalData) {
+    init(globalThis.toolApprovalData);
   }
 })();

@@ -41,12 +41,12 @@ export class MockProvider extends AbstractProvider {
     return response;
   }
 
-  async chat(_messages: ChatMessage[]): Promise<ChatResponse> {
-    return {
+  chat(_messages: ChatMessage[]): Promise<ChatResponse> {
+    return Promise.resolve({
       content: "This is a mock response from the AI.",
       tool_calls: undefined,
       finish_reason: "stop",
-    };
+    });
   }
 
   listModels(): Promise<string[]> {
