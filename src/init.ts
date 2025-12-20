@@ -407,8 +407,7 @@ SilverBullet formatting:
   if (aiSettings.chat.enableTools) {
     chatSystemPrompt.content +=
       `\nYou have access to tools that can help you assist the user. Use them proactively when they would be helpful - for example, reading notes, searching, or performing actions the user requests.`;
-    chatSystemPrompt.content +=
-      `\n\nTool selection guidelines:
+    chatSystemPrompt.content += `\n\nTool selection guidelines:
 - Use update_frontmatter (not update_note) when only changing page metadata like tags, status, or other YAML frontmatter fields
 - Use rename_note to move or rename pages - it automatically updates all backlinks
 - Use update_note for changes to the actual page content (body text, sections)

@@ -1,25 +1,10 @@
 import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
 import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
-import type {
-  AISummaryObject,
-  CombinedEmbeddingResult,
-  EmbeddingObject,
-  EmbeddingResult,
-} from "./types.ts";
+import type { AISummaryObject, CombinedEmbeddingResult, EmbeddingObject, EmbeddingResult } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import {
-  currentEmbeddingModel,
-  currentEmbeddingProvider,
-  initIfNeeded,
-} from "../src/init.ts";
+import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
-import {
-  editor,
-  index,
-  markdown,
-  mq,
-  space,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 import * as cache from "./cache.ts";
 
@@ -109,9 +94,7 @@ export async function indexEmbeddings(page: string) {
     }
 
     if (
-      aiSettings.indexEmbeddingsExcludeStrings.some((s) =>
-        paragraphText.includes(s)
-      )
+      aiSettings.indexEmbeddingsExcludeStrings.some((s) => paragraphText.includes(s))
     ) {
       // Some strings might appear in a ton of notes but aren't helpful for searching.
       // This only excludes strings that are an exact match for a paragraph.
@@ -168,9 +151,7 @@ export async function indexSummary(page: string) {
 
   const startTime = Date.now();
   const pageText = renderToText(tree);
-  const summaryModel = aiSettings.textModels.find((model) =>
-    model.name === aiSettings.indexSummaryModelName
-  );
+  const summaryModel = aiSettings.textModels.find((model) => model.name === aiSettings.indexSummaryModelName);
   if (!summaryModel) {
     throw new Error(
       `Could not find summary model ${aiSettings.indexSummaryModelName}`,
@@ -302,14 +283,10 @@ export async function searchEmbeddings(
 
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
-  const queryEmbedding = typeof query === "string"
-    ? await generateEmbeddings(query)
-    : query;
+  const queryEmbedding = typeof query === "string" ? await generateEmbeddings(query) : query;
   const endEmbeddingGeneration = Date.now();
   console.log(
-    `searchEmbeddings: Query embedding generation took ${
-      endEmbeddingGeneration - startEmbeddingGeneration
-    } ms`,
+    `searchEmbeddings: Query embedding generation took ${endEmbeddingGeneration - startEmbeddingGeneration} ms`,
   );
 
   const startRetrievingEmbeddings = Date.now();
@@ -317,9 +294,7 @@ export async function searchEmbeddings(
   const endRetrievingEmbeddings = Date.now();
 
   console.log(
-    `Retrieved ${embeddings.length} embeddings in ${
-      endRetrievingEmbeddings - startRetrievingEmbeddings
-    } ms`,
+    `Retrieved ${embeddings.length} embeddings in ${endRetrievingEmbeddings - startRetrievingEmbeddings} ms`,
   );
 
   let progressText = "";
@@ -357,9 +332,7 @@ export async function searchEmbeddings(
       (i % 100 === 0 || Date.now() - lastUpdateTime >= 100)
     ) {
       const pageLength = progressStartPos + progressText.length;
-      progressText = `\n\nProcessed ${
-        i + 1
-      } of ${embeddings.length} embeddings...\n\n`;
+      progressText = `\n\nProcessed ${i + 1} of ${embeddings.length} embeddings...\n\n`;
       await editor.replaceRange(progressStartPos, pageLength, progressText);
       lastUpdateTime = Date.now();
     }
@@ -371,9 +344,7 @@ export async function searchEmbeddings(
   }
 
   console.log(
-    `Finished searching embeddings in ${
-      Date.now() - startRetrievingEmbeddings
-    } ms`,
+    `Finished searching embeddings in ${Date.now() - startRetrievingEmbeddings} ms`,
   );
 
   if (aiSettings.indexSummary) {
@@ -382,9 +353,7 @@ export async function searchEmbeddings(
     const endRetrievingSummaries = Date.now();
 
     console.log(
-      `Retrieved ${summaries.length} summaries in ${
-        endRetrievingSummaries - startRetrievingSummaries
-      } ms`,
+      `Retrieved ${summaries.length} summaries in ${endRetrievingSummaries - startRetrievingSummaries} ms`,
     );
 
     let progressText = "";
@@ -422,9 +391,7 @@ export async function searchEmbeddings(
         (i % 100 === 0 || Date.now() - lastUpdateTime >= 100)
       ) {
         const pageLength = progressStartPos + progressText.length;
-        progressText = `\n\nProcessed ${
-          i + 1
-        } of ${summaries.length} summaries...\n\n`;
+        progressText = `\n\nProcessed ${i + 1} of ${summaries.length} summaries...\n\n`;
         await editor.replaceRange(progressStartPos, pageLength, progressText);
         lastUpdateTime = Date.now();
       }
@@ -436,9 +403,7 @@ export async function searchEmbeddings(
     }
 
     console.log(
-      `Finished searching summaries in ${
-        Date.now() - startRetrievingSummaries
-      } ms`,
+      `Finished searching summaries in ${Date.now() - startRetrievingSummaries} ms`,
     );
 
     results.push(...summaryResults);

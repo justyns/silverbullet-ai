@@ -1,11 +1,4 @@
-import {
-  editor,
-  events,
-  lua,
-  markdown,
-  space,
-  system,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
@@ -70,7 +63,6 @@ export function renderToolCallHtml(data: ToolCallData): string {
   </div>
 </details>`;
 }
-
 
 /**
  * Parses JSON tool call data from fenced code block content
@@ -158,8 +150,7 @@ export async function cleanMessagesForApi(
   const cleanedMessages: ChatMessage[] = [];
   for (const msg of messages) {
     if (msg.role === "assistant") {
-      const { strippedContent, toolMessages, toolCalls } =
-        await parseToolCallsFromContent(msg.content);
+      const { strippedContent, toolMessages, toolCalls } = await parseToolCallsFromContent(msg.content);
       if (toolCalls.length > 0) {
         cleanedMessages.push({
           ...msg,
@@ -357,7 +348,10 @@ export async function enrichChatMessages(
 
     if (aiSettings.chat.parseWikiLinks) {
       // Parse wiki links and collect as attachments for THIS message
-      const wikiResult = await enrichMessageWithWikiLinks(enrichedContent, wikiLinkSeenNames);
+      const wikiResult = await enrichMessageWithWikiLinks(
+        enrichedContent,
+        wikiLinkSeenNames,
+      );
       enrichedContent = wikiResult.content;
       wikiLinkSeenNames = wikiResult.seenNames || {};
       messageAttachments.push(...wikiResult.attachments);

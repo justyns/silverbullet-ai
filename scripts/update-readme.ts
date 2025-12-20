@@ -78,8 +78,7 @@ commandSummary: "${sanitizedDocs}"
   // This "dynamic" part of the readme will be enclosed with comments to make it replaceable
   const startCommandsMarker = "<!-- start-commands-and-functions -->";
   const endCommandsMarker = "<!-- end-commands-and-functions -->";
-  const commandsInsertionSection =
-    `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
+  const commandsInsertionSection = `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
 
   // Replace or insert the commands and functions section in the README
   if (
@@ -101,8 +100,7 @@ commandSummary: "${sanitizedDocs}"
   // Update the features section in the README
   const startFeaturesMarker = "<!-- start-features -->";
   const endFeaturesMarker = "<!-- end-features -->";
-  const featuresInsertionSection =
-    `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
+  const featuresInsertionSection = `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
 
   if (
     readmeContent.includes(startFeaturesMarker) &&

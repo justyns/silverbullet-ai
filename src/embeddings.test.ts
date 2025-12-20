@@ -2,11 +2,7 @@ import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import "./mocks/syscalls.ts";
 import { syscall } from "./mocks/syscalls.ts";
 import { aiSettings, initializeOpenAI } from "./init.ts";
-import {
-  canIndexPage,
-  shouldIndexEmbeddings,
-  shouldIndexSummaries,
-} from "./embeddings.ts";
+import { canIndexPage, shouldIndexEmbeddings, shouldIndexSummaries } from "./embeddings.ts";
 
 const aiConfigSample = {
   indexEmbeddings: true,

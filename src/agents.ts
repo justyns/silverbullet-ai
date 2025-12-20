@@ -1,9 +1,4 @@
-import {
-  editor,
-  index,
-  lua,
-  space,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, LuaToolDefinition } from "./types.ts";
 import { luaLongString } from "./utils.ts";
 
@@ -17,13 +12,16 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
 
   // Discover Lua-registered agents from ai.agents table
   try {
-    const luaAgents = await lua.evalExpression("ai.agents or {}") as Record<string, {
-      name?: string;
-      description?: string;
-      systemPrompt?: string;
-      tools?: string[];
-      toolsExclude?: string[];
-    }>;
+    const luaAgents = await lua.evalExpression("ai.agents or {}") as Record<
+      string,
+      {
+        name?: string;
+        description?: string;
+        systemPrompt?: string;
+        tools?: string[];
+        toolsExclude?: string[];
+      }
+    >;
 
     for (const [key, agent] of Object.entries(luaAgents)) {
       if (agent && typeof agent === "object") {
@@ -65,7 +63,10 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
 export async function selectAgent(): Promise<AIAgentTemplate | null> {
   const agents = await discoverAgents();
   if (agents.length === 0) {
-    await editor.flashNotification("No agents found. Define agents in ai.agents table or create pages tagged meta/template/aiAgent", "info");
+    await editor.flashNotification(
+      "No agents found. Define agents in ai.agents table or create pages tagged meta/template/aiAgent",
+      "info",
+    );
     return null;
   }
 
@@ -103,7 +104,9 @@ export function filterToolsForAgent(
   }
 
   if (toolsExclude && toolsExclude.length > 0) {
-    return new Map([...luaTools].filter(([name]) => !toolsExclude.includes(name)));
+    return new Map(
+      [...luaTools].filter(([name]) => !toolsExclude.includes(name)),
+    );
   }
 
   return luaTools;

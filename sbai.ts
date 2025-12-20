@@ -1,11 +1,5 @@
-import {
-  extractFrontMatter,
-} from "@silverbulletmd/silverbullet/lib/frontmatter";
-import {
-  editor,
-  markdown,
-  space,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
@@ -57,10 +51,7 @@ import {
   submitToolApproval,
   submitWriteApproval,
 } from "./src/tools.ts";
-import {
-  clearCurrentChatAgent,
-  setCurrentChatAgent,
-} from "./src/chat-panel.ts";
+import { clearCurrentChatAgent, setCurrentChatAgent } from "./src/chat-panel.ts";
 import { selectAgent } from "./src/agents.ts";
 
 // Re-export chat panel functions for plug yaml
@@ -82,13 +73,7 @@ export { selectAgent } from "./src/agents.ts";
 export { postProcessToolCallHtml } from "./src/utils.ts";
 
 // Re-export tool/write approval modal functions for plug yaml
-export {
-  getWriteDiff,
-  renamePage,
-  requestWriteApproval,
-  submitToolApproval,
-  submitWriteApproval,
-};
+export { getWriteDiff, renamePage, requestWriteApproval, submitToolApproval, submitWriteApproval };
 
 /**
  * Renders a tool-call fenced code block as an HTML widget.
@@ -104,9 +89,7 @@ export function renderToolCallWidget(
 
     const status = success ? "✓" : "✗";
     const statusClass = success ? "success" : "error";
-    const argsStr = Object.keys(args || {}).length > 0
-      ? JSON.stringify(args, null, 2)
-      : "";
+    const argsStr = Object.keys(args || {}).length > 0 ? JSON.stringify(args, null, 2) : "";
 
     const escapedResult = (result || "")
       .replace(/&/g, "&amp;")
@@ -303,7 +286,10 @@ export async function streamChatOnPage() {
   }
   const cleanedMessages = await cleanMessagesForApi(messages);
   const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
-  const enrichedMessages = assembleMessagesWithAttachments(chatSystemPrompt, messagesWithAttachments);
+  const enrichedMessages = assembleMessagesWithAttachments(
+    chatSystemPrompt,
+    messagesWithAttachments,
+  );
   console.log("enrichedMessages", enrichedMessages);
 
   let cursorPos = await getPageLength();
@@ -343,15 +329,11 @@ export async function streamChatOnPage() {
             stillLoading = false;
             const pos = cursorPos;
             cursorPos += chunk.length;
-            insertQueue = insertQueue.then(() =>
-              editor.replaceRange(pos, pos + loadingMessage.length, chunk)
-            );
+            insertQueue = insertQueue.then(() => editor.replaceRange(pos, pos + loadingMessage.length, chunk));
           } else {
             const pos = cursorPos;
             cursorPos += chunk.length;
-            insertQueue = insertQueue.then(() =>
-              editor.insertAtPos(chunk, pos)
-            );
+            insertQueue = insertQueue.then(() => editor.insertAtPos(chunk, pos));
           }
         },
         onToolCall: (name, args, result) => {
@@ -368,15 +350,11 @@ export async function streamChatOnPage() {
             stillLoading = false;
             const pos = cursorPos;
             cursorPos += toolLine.length;
-            insertQueue = insertQueue.then(() =>
-              editor.replaceRange(pos, pos + loadingMessage.length, toolLine)
-            );
+            insertQueue = insertQueue.then(() => editor.replaceRange(pos, pos + loadingMessage.length, toolLine));
           } else {
             const pos = cursorPos;
             cursorPos += toolLine.length;
-            insertQueue = insertQueue.then(() =>
-              editor.insertAtPos(toolLine, pos)
-            );
+            insertQueue = insertQueue.then(() => editor.insertAtPos(toolLine, pos));
           }
         },
       });
@@ -443,8 +421,7 @@ export async function promptAndGenerateImage() {
 
       // And then insert it with the prompt dall-e rewrote for us
       // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long. I'd like to let the user provide a template for how this looks.
-      const markdownImg =
-        `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
+      const markdownImg = `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",

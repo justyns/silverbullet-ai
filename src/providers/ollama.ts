@@ -1,10 +1,4 @@
-import type {
-  ChatMessage,
-  ChatResponse,
-  EmbeddingGenerationOptions,
-  StreamChatOptions,
-  Tool,
-} from "../types.ts";
+import type { ChatMessage, ChatResponse, EmbeddingGenerationOptions, StreamChatOptions, Tool } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";

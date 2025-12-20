@@ -166,8 +166,7 @@ Deno.test("parseToolCallsFromContent should extract tool calls from content", as
     result: "Page content here",
     success: true,
   });
-  const content =
-    `Here is some text\n\`\`\`toolcall\n${toolCallJson}\n\`\`\`\nMore text`;
+  const content = `Here is some text\n\`\`\`toolcall\n${toolCallJson}\n\`\`\`\nMore text`;
 
   const result = await parseToolCallsFromContent(content);
 
@@ -205,8 +204,7 @@ Deno.test("parseToolCallsFromContent should handle multiple tool calls", async (
     result: "Page list",
     success: true,
   });
-  const content =
-    `\`\`\`toolcall\n${toolCall1}\n\`\`\`\nSome text\n\`\`\`toolcall\n${toolCall2}\n\`\`\``;
+  const content = `\`\`\`toolcall\n${toolCall1}\n\`\`\`\nSome text\n\`\`\`toolcall\n${toolCall2}\n\`\`\``;
 
   const result = await parseToolCallsFromContent(content);
 
@@ -263,8 +261,7 @@ Deno.test("postProcessToolCallHtml should convert tool-call code blocks to HTML"
     result: "Content",
     success: true,
   });
-  const html =
-    `<p>Some text</p><pre data-lang="toolcall">${toolData}</pre><p>More text</p>`;
+  const html = `<p>Some text</p><pre data-lang="toolcall">${toolData}</pre><p>More text</p>`;
 
   const result = postProcessToolCallHtml(html);
 
@@ -286,13 +283,19 @@ Deno.test("postProcessToolCallHtml should pass through HTML without tool calls",
 // Tests for assembleMessagesWithAttachments
 
 Deno.test("assembleMessagesWithAttachments should assemble messages without attachments", () => {
-  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
+  const systemMessage: ChatMessage = {
+    role: "system",
+    content: "You are helpful.",
+  };
   const messagesWithAttachments: MessageWithAttachments[] = [
     { message: { role: "user", content: "Hello" }, attachments: [] },
     { message: { role: "assistant", content: "Hi there!" }, attachments: [] },
   ];
 
-  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+  );
 
   assertEquals(result.length, 3);
   assertEquals(result[0].role, "system");
@@ -302,13 +305,26 @@ Deno.test("assembleMessagesWithAttachments should assemble messages without atta
 });
 
 Deno.test("assembleMessagesWithAttachments should insert attachments before their source message", () => {
-  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
-  const attachment: Attachment = { name: "PageA", content: "Page A content", type: "note" };
+  const systemMessage: ChatMessage = {
+    role: "system",
+    content: "You are helpful.",
+  };
+  const attachment: Attachment = {
+    name: "PageA",
+    content: "Page A content",
+    type: "note",
+  };
   const messagesWithAttachments: MessageWithAttachments[] = [
-    { message: { role: "user", content: "Check [[PageA]]" }, attachments: [attachment] },
+    {
+      message: { role: "user", content: "Check [[PageA]]" },
+      attachments: [attachment],
+    },
   ];
 
-  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+  );
 
   assertEquals(result.length, 3);
   assertEquals(result[0].role, "system");
@@ -320,13 +336,24 @@ Deno.test("assembleMessagesWithAttachments should insert attachments before thei
 });
 
 Deno.test("assembleMessagesWithAttachments should place agent attachments after system message", () => {
-  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
-  const agentAttachment: Attachment = { name: "AgentContext", content: "Agent instructions", type: "note" };
+  const systemMessage: ChatMessage = {
+    role: "system",
+    content: "You are helpful.",
+  };
+  const agentAttachment: Attachment = {
+    name: "AgentContext",
+    content: "Agent instructions",
+    type: "note",
+  };
   const messagesWithAttachments: MessageWithAttachments[] = [
     { message: { role: "user", content: "Hello" }, attachments: [] },
   ];
 
-  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments, [agentAttachment]);
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+    [agentAttachment],
+  );
 
   assertEquals(result.length, 3);
   assertEquals(result[0].role, "system");
@@ -340,15 +367,35 @@ Deno.test("assembleMessagesWithAttachments should preserve cache-friendly orderi
   // Simulates Turn 2: user1 referenced PageA, user2 references PageB
   // Expected order: [system, A-context, user1, assistant1, B-context, user2]
   const systemMessage: ChatMessage = { role: "system", content: "System" };
-  const attachmentA: Attachment = { name: "PageA", content: "Content A", type: "note" };
-  const attachmentB: Attachment = { name: "PageB", content: "Content B", type: "note" };
+  const attachmentA: Attachment = {
+    name: "PageA",
+    content: "Content A",
+    type: "note",
+  };
+  const attachmentB: Attachment = {
+    name: "PageB",
+    content: "Content B",
+    type: "note",
+  };
   const messagesWithAttachments: MessageWithAttachments[] = [
-    { message: { role: "user", content: "Check [[PageA]]" }, attachments: [attachmentA] },
-    { message: { role: "assistant", content: "Here is PageA info" }, attachments: [] },
-    { message: { role: "user", content: "Now check [[PageB]]" }, attachments: [attachmentB] },
+    {
+      message: { role: "user", content: "Check [[PageA]]" },
+      attachments: [attachmentA],
+    },
+    {
+      message: { role: "assistant", content: "Here is PageA info" },
+      attachments: [],
+    },
+    {
+      message: { role: "user", content: "Now check [[PageB]]" },
+      attachments: [attachmentB],
+    },
   ];
 
-  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+  );
 
   // Verify order: system, A-context, user1, assistant1, B-context, user2
   assertEquals(result.length, 6);
@@ -367,10 +414,16 @@ Deno.test("assembleMessagesWithAttachments should handle multiple attachments pe
     { name: "Page2", content: "Content 2", type: "note" },
   ];
   const messagesWithAttachments: MessageWithAttachments[] = [
-    { message: { role: "user", content: "Check [[Page1]] and [[Page2]]" }, attachments },
+    {
+      message: { role: "user", content: "Check [[Page1]] and [[Page2]]" },
+      attachments,
+    },
   ];
 
-  const result = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+  );
 
   assertEquals(result.length, 4);
   assertEquals(result[0].role, "system");

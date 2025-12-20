@@ -1,29 +1,9 @@
-import {
-  asset,
-  clientStore,
-  editor,
-  index,
-  lua,
-  space,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { asset, clientStore, editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
-import {
-  aiSettings,
-  chatSystemPrompt,
-  currentAIProvider,
-  initIfNeeded,
-} from "./init.ts";
+import { aiSettings, chatSystemPrompt, currentAIProvider, initIfNeeded } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
-import {
-  convertToOpenAITools,
-  discoverTools,
-  runAgenticChat,
-} from "./tools.ts";
-import {
-  buildAgentSystemPrompt,
-  discoverAgents,
-  filterToolsForAgent,
-} from "./agents.ts";
+import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
+import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
 
 let isPanelOpen = false;
 let currentChatAgent: AIAgentTemplate | null = null;
@@ -115,9 +95,7 @@ export async function startPanelChat(
     await initIfNeeded();
     await initChatAgent();
 
-    const streamId = `stream_${Date.now()}_${
-      Math.random().toString(36).slice(2, 11)
-    }`;
+    const streamId = `stream_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
     streamBuffers.set(streamId, {
       chunks: [],
@@ -129,7 +107,11 @@ export async function startPanelChat(
       luaTools = filterToolsForAgent(luaTools, currentChatAgent);
     }
     const tools = convertToOpenAITools(luaTools);
-    console.log(`Panel chat: discovered ${tools.length} tools${currentChatAgent ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})` : ""}`);
+    console.log(
+      `Panel chat: discovered ${tools.length} tools${
+        currentChatAgent ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})` : ""
+      }`,
+    );
 
     let contextBlock = "";
     try {
@@ -186,21 +168,24 @@ export async function startPanelChat(
     // Prepend context to the last user message, this should help with caching
     const cleanedMessages = await cleanMessagesForApi(messages);
     if (contextBlock) {
-      const lastUserIdx = cleanedMessages.findLastIndex((m) =>
-        m.role === "user"
-      );
+      const lastUserIdx = cleanedMessages.findLastIndex((m) => m.role === "user");
       if (lastUserIdx !== -1) {
         cleanedMessages[lastUserIdx] = {
           ...cleanedMessages[lastUserIdx],
-          content:
-            `<context>\n${contextBlock}\n</context>\n\n${cleanedMessages[lastUserIdx].content}`,
+          content: `<context>\n${contextBlock}\n</context>\n\n${cleanedMessages[lastUserIdx].content}`,
         };
       }
     }
 
     // enrichChatMessages can return attachments related to the messaages
-    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
-    const workingMessages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments, agentAttachments);
+    const { messagesWithAttachments } = await enrichChatMessages(
+      cleanedMessages,
+    );
+    const workingMessages = assembleMessagesWithAttachments(
+      systemMessage,
+      messagesWithAttachments,
+      agentAttachments,
+    );
 
     // Run the tool loop in the background
     runToolLoop(streamId, workingMessages, tools, luaTools).catch(

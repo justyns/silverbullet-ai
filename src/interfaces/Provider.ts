@@ -1,17 +1,6 @@
 import { editor, system } from "@silverbulletmd/silverbullet/syscalls";
-import {
-  getLineAfter,
-  getLineBefore,
-  getLineOfPos,
-  getPageLength,
-} from "../editorUtils.ts";
-import type {
-  ChatMessage,
-  ChatResponse,
-  PostProcessorData,
-  StreamChatOptions,
-  Tool,
-} from "../types.ts";
+import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
+import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
 import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
@@ -177,7 +166,10 @@ export abstract class AbstractProvider implements ProviderInterface {
 
     if (enrichMessages) {
       const { messagesWithAttachments } = await enrichChatMessages(messages);
-      messages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+      messages = assembleMessagesWithAttachments(
+        systemMessage,
+        messagesWithAttachments,
+      );
     } else if (systemPrompt) {
       messages.unshift(systemMessage);
     }

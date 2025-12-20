@@ -62,8 +62,7 @@
     diffViewEl.innerHTML = "";
 
     if (!diffLines || diffLines.length === 0) {
-      diffViewEl.innerHTML =
-        '<div class="diff-empty">No changes to preview</div>';
+      diffViewEl.innerHTML = '<div class="diff-empty">No changes to preview</div>';
       return;
     }
 
@@ -71,11 +70,7 @@
       const lineEl = document.createElement("div");
       lineEl.className = "diff-line " + line.type;
 
-      const prefix = line.type === "add"
-        ? "+ "
-        : line.type === "remove"
-        ? "- "
-        : "  ";
+      const prefix = line.type === "add" ? "+ " : line.type === "remove" ? "- " : "  ";
       lineEl.textContent = prefix + line.line;
 
       diffViewEl.appendChild(lineEl);
@@ -94,9 +89,7 @@
     }
 
     // Use appropriate diff function based on approval type
-    const diffFunction = isWriteApproval
-      ? "silverbullet-ai.getWriteDiff"
-      : "silverbullet-ai.getToolDiff";
+    const diffFunction = isWriteApproval ? "silverbullet-ai.getWriteDiff" : "silverbullet-ai.getToolDiff";
 
     try {
       const result = await syscall(
@@ -111,13 +104,11 @@
         diffViewEl.innerHTML = '<div class="diff-empty">' +
           escapeHtml(result.error) + "</div>";
       } else {
-        diffViewEl.innerHTML =
-          '<div class="diff-empty">No diff available</div>';
+        diffViewEl.innerHTML = '<div class="diff-empty">No diff available</div>';
       }
     } catch (e) {
       console.error("Failed to load diff:", e);
-      diffViewEl.innerHTML =
-        '<div class="diff-empty">Failed to load diff</div>';
+      diffViewEl.innerHTML = '<div class="diff-empty">Failed to load diff</div>';
     }
   }
 

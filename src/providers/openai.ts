@@ -49,9 +49,7 @@ export class OpenAIProvider extends AbstractProvider {
         const sseUrl = this.useProxy
           ? buildProxyUrl(`${this.baseUrl}/chat/completions`)
           : `${this.baseUrl}/chat/completions`;
-        const finalHeaders = this.useProxy
-          ? buildProxyHeaders(headers)
-          : headers;
+        const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
 
         const requestBody: Record<string, unknown> = {
           model: this.modelName,

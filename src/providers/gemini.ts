@@ -1,11 +1,5 @@
 import { SSE } from "npm:sse.js@2.2.0";
-import type {
-  ChatMessage,
-  ChatResponse,
-  sseEvent,
-  StreamChatOptions,
-  Tool,
-} from "../types.ts";
+import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
@@ -96,9 +90,7 @@ export class GeminiProvider extends AbstractProvider {
         };
 
         const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
-        const finalHeaders = this.useProxy
-          ? buildProxyHeaders(headers)
-          : headers;
+        const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
 
         const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
           messages,

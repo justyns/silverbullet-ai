@@ -1,16 +1,6 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
-import {
-  editor,
-  index,
-  lua,
-  markdown,
-  space,
-  system,
-} from "@silverbulletmd/silverbullet/syscalls";
-import type {
-  CompleteEvent,
-  SlashCompletionOption,
-} from "@silverbulletmd/silverbullet/type/client";
+import { editor, index, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
+import type { CompleteEvent, SlashCompletionOption } from "@silverbulletmd/silverbullet/type/client";
 
 interface AIPromptTemplate {
   ref: string;
@@ -458,9 +448,7 @@ export async function insertAiPromptFromTemplate(
     try {
       const templateContent = templateText;
       const templateData = globalMetadata;
-      const luaExpression = `spacelua.interpolate(${
-        JSON.stringify(templateContent)
-      }, ${JSON.stringify(templateData)})`;
+      const luaExpression = `spacelua.interpolate(${JSON.stringify(templateContent)}, ${JSON.stringify(templateData)})`;
       console.log("Evaluating template Lua expression:", luaExpression);
       renderedTemplate = await lua.evalExpression(luaExpression);
       console.log("Template rendered successfully:", renderedTemplate);
@@ -490,8 +478,14 @@ export async function insertAiPromptFromTemplate(
       content: selectedTemplate.systemPrompt || "",
     };
     if (selectedTemplate.chat && selectedTemplate.enrichMessages) {
-      const { messagesWithAttachments } = await enrichChatMessages(messages, globalMetadata);
-      messages = assembleMessagesWithAttachments(systemMessage, messagesWithAttachments);
+      const { messagesWithAttachments } = await enrichChatMessages(
+        messages,
+        globalMetadata,
+      );
+      messages = assembleMessagesWithAttachments(
+        systemMessage,
+        messagesWithAttachments,
+      );
     } else if (selectedTemplate.systemPrompt) {
       messages.unshift(systemMessage);
     }

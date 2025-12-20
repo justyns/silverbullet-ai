@@ -1,19 +1,6 @@
-import {
-  asset,
-  clientStore,
-  editor,
-  lua,
-  space,
-  system,
-} from "@silverbulletmd/silverbullet/syscalls";
+import { asset, clientStore, editor, lua, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import { computeSimpleDiff, type DiffLine } from "./utils.ts";
-import type {
-  ChatMessage,
-  ChatResponse,
-  LuaToolDefinition,
-  StreamChatOptions,
-  Tool,
-} from "./types.ts";
+import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool } from "./types.ts";
 
 const MAX_TOOL_ITERATIONS = 10;
 
@@ -73,7 +60,9 @@ export function generateDefaultSummary(
   const argsStr = Object.entries(args)
     .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
     .join(", ");
-  return `${toolName}(${argsStr}) returned ${bytes} bytes, ${lines} lines. Preview: ${preview}${result.length > 100 ? "..." : ""}`;
+  return `${toolName}(${argsStr}) returned ${bytes} bytes, ${lines} lines. Preview: ${preview}${
+    result.length > 100 ? "..." : ""
+  }`;
 }
 
 function toLuaStringLiteral(value: string): string {
@@ -256,9 +245,7 @@ export async function executeTool(
       "result" in result &&
       "summary" in result
     ) {
-      const resultStr = typeof result.result === "string"
-        ? result.result
-        : JSON.stringify(result.result, null, 2);
+      const resultStr = typeof result.result === "string" ? result.result : JSON.stringify(result.result, null, 2);
       return {
         success: true,
         result: resultStr,
@@ -267,9 +254,7 @@ export async function executeTool(
     }
 
     // Plain return - backward compatible
-    const resultStr = typeof result === "string"
-      ? result
-      : JSON.stringify(result, null, 2);
+    const resultStr = typeof result === "string" ? result : JSON.stringify(result, null, 2);
 
     return {
       success: true,
@@ -292,9 +277,7 @@ async function requestToolApproval(
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<ApprovalResult> {
-  const approvalId = `approval_${Date.now()}_${
-    Math.random().toString(36).slice(2, 11)
-  }`;
+  const approvalId = `approval_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   return new Promise(async (resolve) => {
     pendingApprovals.set(approvalId, { resolve, toolName, args });
@@ -309,9 +292,7 @@ async function requestToolApproval(
     );
 
     const initScript = `
-      window.toolApprovalData = ${
-      JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })
-    };
+      window.toolApprovalData = ${JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })};
       ${script}
     `;
 
@@ -343,9 +324,7 @@ export async function requestWriteApproval(
   page: string,
   newContent: string,
 ): Promise<{ success: boolean; error?: string }> {
-  const writeId = `write_${Date.now()}_${
-    Math.random().toString(36).slice(2, 11)
-  }`;
+  const writeId = `write_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
   // Read current content and compute diff
   let currentContent = "";
@@ -366,9 +345,7 @@ export async function requestWriteApproval(
         } else {
           resolve({
             success: false,
-            error: result.feedback
-              ? `Write rejected: ${result.feedback}`
-              : "Write rejected by user",
+            error: result.feedback ? `Write rejected: ${result.feedback}` : "Write rejected by user",
           });
         }
       },
@@ -558,8 +535,7 @@ async function processToolCalls(
         const feedbackMsg = approvalResult.feedback
           ? `User feedback: ${approvalResult.feedback}`
           : "Please ask what to do differently.";
-        const rejectedContent =
-          `Tool execution was rejected by user. ${feedbackMsg}`;
+        const rejectedContent = `Tool execution was rejected by user. ${feedbackMsg}`;
         const rejectedResult: ToolExecutionResult = {
           success: false,
           result: rejectedContent,
@@ -583,9 +559,7 @@ async function processToolCalls(
     }
 
     const result = await executeTool(toolName, args, luaTools);
-    const fullResult = result.success
-      ? (result.result || "")
-      : `Error: ${result.error}`;
+    const fullResult = result.success ? (result.result || "") : `Error: ${result.error}`;
 
     // Cache full result for later retrieval
     if (result.success && fullResult) {
@@ -714,8 +688,7 @@ export async function runAgenticChat(
   // Hit max iterations
   return {
     messages: workingMessages,
-    finalResponse:
-      "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
+    finalResponse: "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
   };
 }

@@ -20,8 +20,7 @@ export interface EmbeddingProviderInterface {
   ) => Promise<Array<number>>;
 }
 
-export abstract class AbstractEmbeddingProvider
-  implements EmbeddingProviderInterface {
+export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInterface {
   apiKey: string;
   baseUrl: string;
   name: string;

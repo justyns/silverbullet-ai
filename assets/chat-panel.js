@@ -94,12 +94,9 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     dropdown.innerHTML = items
       .map((item, i) => {
         const label = escapeHtml(item.displayLabel || item.label);
-        const detail = item.detail
-          ? `<span class="detail">${escapeHtml(item.detail)}</span>`
-          : "";
+        const detail = item.detail ? `<span class="detail">${escapeHtml(item.detail)}</span>` : "";
         const cssClass = item.cssClass || "";
-        return `<div class="autocomplete-item ${i === 0 ? "selected" : ""
-          } ${cssClass}" data-index="${i}">
+        return `<div class="autocomplete-item ${i === 0 ? "selected" : ""} ${cssClass}" data-index="${i}">
           <span class="page-name">${label}</span>${detail}
         </div>`;
       })
@@ -334,7 +331,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   function updateAgentIndicator(agent) {
     if (agent && agent.aiagent) {
-      agentNameEl.textContent = agent.aiagent.name || agent.ref.split("/").pop() || agent.ref;
+      agentNameEl.textContent = agent.aiagent.name ||
+        agent.ref.split("/").pop() || agent.ref;
       agentIndicator.classList.remove("hidden");
     } else {
       agentIndicator.classList.add("hidden");
@@ -375,7 +373,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
     // Check for [[ pattern first (wiki-link style)
     const bracketMatch = textBeforeCursor.match(/\[\[([\w\-/\s]*)$/);
-    // and also @filename 
+    // and also @filename
     const atMatch = textBeforeCursor.match(/(?:^|[^\w])@([\w\-/]*)$/);
 
     if (bracketMatch) {

@@ -131,7 +131,6 @@
   }
 
   @keyframes blink {
-
     0%,
     50% {
       opacity: 1;
@@ -498,7 +497,9 @@
   <div id="agent-indicator" class="agent-indicator hidden">
     <span class="agent-icon">🤖</span>
     <span id="agent-name" class="agent-name"></span>
-    <button id="clear-agent-btn" class="clear-agent-btn" title="Clear agent">✕</button>
+    <button id="clear-agent-btn" class="clear-agent-btn" title="Clear agent">
+      ✕
+    </button>
   </div>
   <div class="ai-chat-messages" id="messages">
     <div class="empty-state" id="empty-state">
@@ -508,9 +509,12 @@
   </div>
   <div class="ai-chat-input">
     <div class="input-wrapper">
-      <textarea id="user-input" placeholder="Type a message... (@ or [[ for pages)" rows="1"></textarea>
-      <div id="autocomplete-dropdown" class="autocomplete-dropdown hidden">
-      </div>
+      <textarea
+        id="user-input"
+        placeholder="Type a message... (@ or [[ for pages)"
+        rows="1"
+      ></textarea>
+      <div id="autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
     </div>
     <button id="send-btn">Send</button>
   </div>
