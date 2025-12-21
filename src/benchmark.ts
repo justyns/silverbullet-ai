@@ -382,11 +382,23 @@ async function runModelBenchmark(
   const results = new Map<string, TestResult>();
   let passed = 0;
 
+  // Check if model advertises tool support
+  const capabilities = await provider.getModelCapabilities();
+  const toolsSupported = capabilities === null || capabilities.includes("tools");
+  const capabilitiesInfo = capabilities ? capabilities.join(", ") : "unknown";
+
   for (const test of allTests) {
     try {
       let result: TestResult;
 
-      if (test.category === "capability") {
+      const requiresTools = test.id === "tools" || test.category === "execution";
+      if (requiresTools && !toolsSupported) {
+        result = {
+          status: "warning",
+          notes: "No tools support",
+          details: `Model capabilities: ${capabilitiesInfo}`,
+        };
+      } else if (test.category === "capability") {
         result = await test.run(provider);
       } else {
         // Reset test page for modification tests

@@ -44,6 +44,42 @@ export class OllamaProvider extends AbstractProvider {
     return await this.openaiProvider.chat(messages, tools, response_format);
   }
 
+  /**
+   * Get model capabilities from Ollama's /api/show endpoint.
+   * Returns capabilities array (e.g., ["completion", "tools", "vision"]) or null if unavailable.
+   */
+  override async getModelCapabilities(modelName?: string): Promise<string[] | null> {
+    try {
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await this.fetch(
+        `${this.baseUrl.replace(/\/v1\/?/, "")}/api/show`,
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ model: modelName || this.modelName }),
+        },
+      );
+
+      if (!response.ok) {
+        console.error("Failed to get model capabilities:", response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      return data.capabilities || null;
+    } catch (error) {
+      console.error("Error fetching model capabilities:", error);
+      return null;
+    }
+  }
+
   async listModels(): Promise<string[]> {
     try {
       const headers: HttpHeaders = {

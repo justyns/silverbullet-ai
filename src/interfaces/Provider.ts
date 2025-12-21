@@ -29,6 +29,8 @@ export interface ProviderInterface {
     options: StreamChatOptions,
     cursorStart: number,
   ) => Promise<void>;
+  getModelCapabilities: (modelName?: string) => Promise<string[] | null>;
+  supportsCapability: (capability: string, modelName?: string) => Promise<boolean>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -59,6 +61,24 @@ export abstract class AbstractProvider implements ProviderInterface {
     response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse>;
   abstract listModels(): Promise<string[]>;
+
+  /**
+   * Get model capabilities. Override in provider subclasses that support capability detection.
+   * Returns null by default (capabilities unknown).
+   * TODO: we might need to use a 3rd party source for this info since openai and gemini do not provide it in the api
+   */
+  getModelCapabilities(_modelName?: string): Promise<string[] | null> {
+    return Promise.resolve(null);
+  }
+
+  /**
+   * Check if the model supports a specific capability (e.g., "tools", "vision").
+   * Returns false if capabilities are unknown.
+   */
+  async supportsCapability(capability: string, modelName?: string): Promise<boolean> {
+    const capabilities = await this.getModelCapabilities(modelName);
+    return capabilities?.includes(capability) ?? false;
+  }
 
   protected fetch(url: string, options: RequestInit): Promise<Response> {
     return this.useProxy ? fetch(url, options) : nativeFetch(url, options);
