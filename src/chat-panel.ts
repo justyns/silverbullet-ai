@@ -42,7 +42,7 @@ async function initChatAgent(): Promise<void> {
 
   const agents = await discoverAgents();
   const configuredRef = aiSettings.chat.defaultAgent;
-  const refToFind = configuredRef || "lua:default";
+  const refToFind = configuredRef || "default";
   const defaultAgent = agents.find((a) => a.ref === refToFind);
   if (defaultAgent) {
     currentChatAgent = defaultAgent;

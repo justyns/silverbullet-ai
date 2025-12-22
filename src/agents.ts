@@ -26,7 +26,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
     for (const [key, agent] of Object.entries(luaAgents)) {
       if (agent && typeof agent === "object") {
         agents.push({
-          ref: `lua:${key}`,
+          ref: key,
           aiagent: {
             name: agent.name || key,
             description: agent.description,
@@ -49,7 +49,13 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
         "_.itags and table.includes(_.itags, 'meta/template/aiAgent') and _.aiagent",
       ),
     });
-    agents.push(...pageAgents);
+    for (const pageAgent of pageAgents) {
+      agents.push({
+        ref: pageAgent.aiagent.name || pageAgent.ref,
+        _pagePath: pageAgent.ref,
+        aiagent: pageAgent.aiagent,
+      });
+    }
   } catch (error) {
     console.error("Failed to discover page agents:", error);
   }
@@ -115,7 +121,7 @@ export function filterToolsForAgent(
 /**
  * Builds the system prompt for an agent.
  * For page-based agents: combines frontmatter systemPrompt with page body content.
- * For Lua-registered agents (ref starts with "lua:"): uses systemPrompt directly.
+ * For Lua-registered agents: uses systemPrompt directly.
  * Wiki-links in body content are extracted as attachments.
  */
 export async function buildAgentSystemPrompt(
@@ -123,8 +129,8 @@ export async function buildAgentSystemPrompt(
 ): Promise<{ systemPrompt: string; attachments: Attachment[] }> {
   const prompt = agent.aiagent.systemPrompt || "";
 
-  // Lua-registered agents don't have page content
-  if (agent.ref.startsWith("lua:")) {
+  // Lua-registered agents don't have page content (no _pagePath)
+  if (!agent._pagePath) {
     return { systemPrompt: prompt, attachments: [] };
   }
 
@@ -133,7 +139,7 @@ export async function buildAgentSystemPrompt(
   let fullPrompt = prompt;
 
   try {
-    const pageContent = await space.readPage(agent.ref);
+    const pageContent = await space.readPage(agent._pagePath);
     const bodyContent = extractBodyContent(pageContent);
 
     if (bodyContent.trim()) {

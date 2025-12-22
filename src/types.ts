@@ -145,6 +145,7 @@ export type LuaToolDefinition = {
 
 export type AIAgentTemplate = {
   ref: string;
+  _pagePath?: string;
   aiagent: {
     name?: string;
     description?: string;
