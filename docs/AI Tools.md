@@ -136,12 +136,6 @@ The `ai.writePage` function:
 3. Shows the approval modal with the diff preview
 4. Only writes if the user approves
 
-The diff preview shows:
-
-- **Red lines** - Content being removed
-- **Green lines** - Content being added
-- **Gray lines** - Unchanged context
-
 All built-in editing tools (`update_note`, `update_frontmatter`, `create_note`, etc.) use `ai.writePage` internally to provide diff previews.
 
 There's nothing stopping you from bypassing this, so please be careful when making custom tools.

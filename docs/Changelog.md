@@ -2,7 +2,7 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## Unreleased
+## 0.6.0 (Unreleased)
 
 ### New Chat Assistant Panel
 - Added a side-panel for AI chat (`AI: Open Chat Panel` command)
@@ -10,7 +10,15 @@ This page is a brief overview of each version.
 - Tool calls rendered as expandable blocks
 - Strip tool calls from chat history to reduce context size (but they are stored in local storage temporarily)
 - Default context including current page name and content
-- Customizable chat context via Space Lua
+- Customizable chat context via Space Lua (e.g. current date or other dynamic values)
+- Button to export current chat to a note
+
+### Agents
+- New agent system for customizable personas with specific context and tools (e.g. "silverbullet lua expert")
+- Create custom agents via Space Lua (`ai.agents.myagent = {...}`)
+- Create page-based agents with `meta/template/aiAgent` tag
+- Tool filtering with whitelist (`tools`) or blacklist (`toolsExclude`)
+- `AI: Select Agent` and `AI: Clear Agent` commands
 
 ### Tool and function calling support
 - New tool system allowing interactions with your space
@@ -33,12 +41,13 @@ This page is a brief overview of each version.
 ### Misc
 - Update system prompt to include basic SB formatting hints and docs links
 - Add support for structured output
-- Connectivity test now includes structured output tests
+- Connectivity test now includes structured output and tool usage tests
 - Migrated commands to Space Lua
     - AI: Suggest Page Name
     - AI: Generate tags for note
     - AI: Generate Note FrontMatter
     - AI: Enhance Note
+- Created an initial version of a benchmark system to verify if specific models can correctly use tools for sbai
 
 ---
 ## 0.5.0 (2025-12-15)

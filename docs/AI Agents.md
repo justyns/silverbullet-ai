@@ -1,37 +1,19 @@
 # AI Agents
 
-AI Agents are customizable personas that configure how the AI Assistant behaves. Each agent has its own system prompt and can optionally restrict which tools are available.
+AI Agents are customizable personas that configure how the AI Assistant behaves. Each agent has its own system prompt and can optionally restrict which tools are available.  You can also optionally provide additional context to the agent, such as providing links to other notes in the space or http urls for documentation/etc.
 
-## Built-in Agents
-
-The plug includes three built-in Lua agents:
-
-| Agent | Ref | Description |
-|-------|-----|-------------|
-| General Assistant | `lua:general` | Default helpful assistant |
-| Research Assistant | `lua:research` | Read-only (no write tools) |
-| Writing Assistant | `lua:writer` | Prose improvement |
+Currently, Agents are only used in the Assistant chat panel.
 
 ## Configuration
 
 ### Setting a Default Agent
 
-Set a default agent in your Space Lua config:
+Set a default agent in your Space Lua config using the agent's key (for Lua agents) or `name` field (for page agents):
 
 ```lua
 config.set("ai", {
   chat = {
-    defaultAgent = "lua:general"  -- or "lua:research", "lua:writer"
-  }
-})
-```
-
-For page-based custom agents:
-
-```lua
-config.set("ai", {
-  chat = {
-    defaultAgent = "Library/Agents/Task Manager"
+    defaultAgent = "myCustomAgent"
   }
 })
 ```
@@ -53,13 +35,13 @@ ai.agents.myagent = {
 
 ### Method 2: Page-Based Agents
 
-Create a page with the `meta/template/aiAgent` tag:
+Create a page with the `meta/template/aiAgent` tag. The `aiagent.name` field is used for both display and as a short lookup key in config:
 
 ```yaml
 ---
 tags: meta/template/aiAgent
 aiagent:
-  name: "Task Manager"
+  name: "tasks"
   description: "Helps manage tasks and todos"
   systemPrompt: |
     You are a task management assistant for SilverBullet.
@@ -72,6 +54,8 @@ aiagent:
     - read_note
 ---
 ```
+
+With the above, you can set `defaultAgent = "tasks"` in your config.
 
 ## Example Agents
 
@@ -83,7 +67,7 @@ A focused agent for managing tasks and todos:
 ---
 tags: meta/template/aiAgent
 aiagent:
-  name: "Task Manager"
+  name: "tasks"
   description: "Helps manage tasks and todos"
   systemPrompt: |
     You are a task management assistant for SilverBullet.
@@ -96,6 +80,8 @@ aiagent:
     - read_note
 ---
 ```
+
+`list_tasks` is not a built-in tool, but you could easily create a space-lua tool with custom lua queries to search your space for incomplete tasks and return them.  Or a task plug/library could create similar tools.
 
 ### Research Assistant (Read-Only)
 
@@ -111,13 +97,10 @@ aiagent:
     You help research and find information in the user's notes.
     You cannot modify any pages - only read and search.
     Provide detailed answers with references to relevant pages.
-  toolsExclude:
-    - update_note
-    - create_note
-    - rename_note
-    - update_frontmatter
-    - search_replace
-    - eval_lua
+  tools:
+    - read_note
+    - search_notes
+    - list_notes
 ---
 ```
 
@@ -145,7 +128,7 @@ And follow these formatting conventions:
 [[Formatting Rules]]
 ```
 
-Note: Wiki-links in the page body will be resolved and their content included in the system prompt.
+**Note**: Wiki-links in the page body will be resolved and their content included as context.
 
 ### Personalized Agent with Profile
 
@@ -194,7 +177,7 @@ aiagent:
 
 | Property | Type | Description |
 |----------|------|-------------|
-| `name` | string | Display name for the agent |
+| `name` | string | Display name and lookup key for the agent. Use this in `defaultAgent` config. |
 | `description` | string | Brief description shown in picker |
 | `systemPrompt` | string | The system prompt for the AI |
 | `tools` | string[] | Whitelist - only these tools available |
@@ -204,4 +187,3 @@ aiagent:
 
 1. **Select Agent**: Run `AI: Select Agent` command
 2. **Clear Agent**: Run `AI: Clear Agent` command
-3. **Indicator**: The chat panel shows which agent is active
