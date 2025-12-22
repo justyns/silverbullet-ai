@@ -43,37 +43,11 @@ import {
   convertToOpenAITools,
   createToolCallWidget,
   discoverTools,
-  getWriteDiff,
-  renamePage,
-  requestWriteApproval,
   runAgenticChat,
   runStreamingAgenticChat,
-  submitToolApproval,
-  submitWriteApproval,
 } from "./src/tools.ts";
-import { clearCurrentChatAgent, setCurrentChatAgent } from "./src/chat-panel.ts";
+import { chatAgentState } from "./src/chat-panel.ts";
 import { selectAgent } from "./src/agents.ts";
-
-// Re-export chat panel functions for plug yaml
-export {
-  clearCurrentChatAgent,
-  closeAIAssistant,
-  exportPanelChat,
-  getCurrentChatAgent,
-  getPanelChatChunk,
-  openAIAssistant,
-  setCurrentChatAgent,
-  startPanelChat,
-  toggleAIAssistant,
-} from "./src/chat-panel.ts";
-
-// Re-export agent functions for plug yaml
-export { selectAgent } from "./src/agents.ts";
-
-export { postProcessToolCallHtml } from "./src/utils.ts";
-
-// Re-export tool/write approval modal functions for plug yaml
-export { getWriteDiff, renamePage, requestWriteApproval, submitToolApproval, submitWriteApproval };
 
 /**
  * Renders a tool-call fenced code block as an HTML widget.
@@ -240,13 +214,13 @@ export async function selectEmbeddingModelFromConfig() {
 export async function selectAgentCommand() {
   const agent = await selectAgent();
   if (agent) {
-    setCurrentChatAgent(agent);
+    chatAgentState("set", agent);
     await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
   }
 }
 
 export async function clearAgentCommand() {
-  clearCurrentChatAgent();
+  chatAgentState("clear");
   await editor.flashNotification("Agent cleared");
 }
 

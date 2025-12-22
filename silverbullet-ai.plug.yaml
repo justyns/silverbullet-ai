@@ -98,39 +98,33 @@ functions:
 
   # AI Assistant Panel
   openAIAssistant:
-    path: sbai.ts:openAIAssistant
+    path: src/chat-panel.ts:openAIAssistant
     command:
       name: "AI: Open Assistant"
       key: "Ctrl-Shift-a"
       mac: "Cmd-Shift-a"
   closeAIAssistant:
-    path: sbai.ts:closeAIAssistant
+    path: src/chat-panel.ts:closeAIAssistant
   toggleAIAssistant:
-    path: sbai.ts:toggleAIAssistant
+    path: src/chat-panel.ts:toggleAIAssistant
     command:
       name: "AI: Toggle Assistant Panel"
   startPanelChat:
-    path: sbai.ts:startPanelChat
+    path: src/chat-panel.ts:startPanelChat
   getPanelChatChunk:
-    path: sbai.ts:getPanelChatChunk
-  getCurrentChatAgent:
-    path: sbai.ts:getCurrentChatAgent
-  clearCurrentChatAgent:
-    path: sbai.ts:clearCurrentChatAgent
-  submitToolApproval:
-    path: sbai.ts:submitToolApproval
+    path: src/chat-panel.ts:getPanelChatChunk
+  chatAgentState:
+    path: src/chat-panel.ts:chatAgentState
+  exportPanelChat:
+    path: src/chat-panel.ts:exportPanelChat
+  submitApproval:
+    path: src/tools.ts:submitApproval
   requestWriteApproval:
-    path: sbai.ts:requestWriteApproval
-  submitWriteApproval:
-    path: sbai.ts:submitWriteApproval
+    path: src/tools.ts:requestWriteApproval
   getWriteDiff:
-    path: sbai.ts:getWriteDiff
-  renamePage:
-    path: sbai.ts:renamePage
+    path: src/tools.ts:getWriteDiff
   postProcessToolCallHtml:
-    path: sbai.ts:postProcessToolCallHtml
+    path: src/utils.ts:postProcessToolCallHtml
   renderToolCallWidget:
     path: sbai.ts:renderToolCallWidget
     codeWidget: toolcall
-  exportPanelChat:
-    path: sbai.ts:exportPanelChat

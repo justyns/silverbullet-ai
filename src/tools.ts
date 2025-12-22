@@ -1,4 +1,4 @@
-import { asset, clientStore, editor, lua, space, system } from "@silverbulletmd/silverbullet/syscalls";
+import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import { computeSimpleDiff, type DiffLine } from "./utils.ts";
 import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool } from "./types.ts";
 import { aiSettings } from "./init.ts";
@@ -304,18 +304,32 @@ function requestToolApproval(
 }
 
 /**
- * Called from the modal JS when user approves or rejects
+ * Unified approval submission handler for both tool and write approvals.
+ * Called from the modal JS when user approves or rejects.
  */
-export function submitToolApproval(
-  approvalId: string,
+export async function submitApproval(
+  type: "tool" | "write",
+  id: string,
   approved: boolean,
   feedback?: string | null,
-): void {
-  const pending = pendingApprovals.get(approvalId);
-  if (pending) {
-    pendingApprovals.delete(approvalId);
-    editor.hidePanel("modal");
-    pending.resolve({ approved, feedback });
+): Promise<void> {
+  if (type === "tool") {
+    const pending = pendingApprovals.get(id);
+    if (pending) {
+      pendingApprovals.delete(id);
+      editor.hidePanel("modal");
+      pending.resolve({ approved, feedback });
+    }
+  } else {
+    const pending = pendingWrites.get(id);
+    if (pending) {
+      pendingWrites.delete(id);
+      editor.hidePanel("modal");
+      if (approved) {
+        await space.writePage(pending.page, pending.newContent);
+      }
+      pending.resolve({ approved, feedback });
+    }
   }
 }
 
@@ -390,27 +404,6 @@ export async function requestWriteApproval(
       await editor.showPanel("modal", 20, html, initScript);
     })();
   });
-}
-
-/**
- * Called from modal JS when user approves or rejects a write operation.
- */
-export async function submitWriteApproval(
-  writeId: string,
-  approved: boolean,
-  feedback?: string | null,
-): Promise<void> {
-  const pending = pendingWrites.get(writeId);
-  if (pending) {
-    pendingWrites.delete(writeId);
-    editor.hidePanel("modal");
-
-    if (approved) {
-      await space.writePage(pending.page, pending.newContent);
-    }
-
-    pending.resolve({ approved, feedback });
-  }
 }
 
 /**
@@ -801,19 +794,4 @@ export async function runStreamingAgenticChat(
       "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
   };
-}
-
-/**
- * Wrapper to call the index plugin's rename command from Lua.
- * Accepts individual string arguments to avoid Lua table serialization issues.
- * TODO: Figure out why the regular command won't work
- */
-export async function renamePage(
-  oldPage: string,
-  newPage: string,
-): Promise<boolean> {
-  return await system.invokeFunction("index.renamePageCommand", {
-    oldPage,
-    page: newPage,
-  });
 }

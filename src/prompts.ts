@@ -19,9 +19,14 @@ interface AIPromptTemplate {
 }
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import { assembleMessagesWithAttachments, convertPageToMessages, enrichChatMessages, jsToLuaLiteral, luaLongString } from "./utils.ts";
+import {
+  assembleMessagesWithAttachments,
+  convertPageToMessages,
+  enrichChatMessages,
+  jsToLuaLiteral,
+  luaLongString,
+} from "./utils.ts";
 import { ChatMessage } from "./types.ts";
-
 
 /**
  * Options for Space Lua defined prompts

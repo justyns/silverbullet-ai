@@ -593,7 +593,7 @@ ai.tools.rename_note = {
       return "Error: Target page already exists: " .. args.newPage
     end
 
-    local success = system.invokeFunction("silverbullet-ai.renamePage", args.oldPage, args.newPage)
+    local success = system.invokeFunction("index.renamePageCommand", { oldPage = args.oldPage, page = args.newPage })
 
     if success then
       return "Renamed '" .. args.oldPage .. "' to '" .. args.newPage .. "' (backlinks updated)"

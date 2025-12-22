@@ -16,16 +16,25 @@ interface StreamBuffer {
 const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
-export function setCurrentChatAgent(agent: AIAgentTemplate | null): void {
-  currentChatAgent = agent;
-}
-
-export function getCurrentChatAgent(): AIAgentTemplate | null {
-  return currentChatAgent;
-}
-
-export function clearCurrentChatAgent(): void {
-  currentChatAgent = null;
+/**
+ * Helper to avoid exporting get/set/clear separately in the plug yaml
+ * @param action - "get" returns current agent, "set" sets agent, "clear" clears agent
+ * @param agent - Agent to set (only used with "set" action)
+ */
+export function chatAgentState(
+  action: "get" | "set" | "clear",
+  agent?: AIAgentTemplate | null,
+): AIAgentTemplate | null | void {
+  switch (action) {
+    case "get":
+      return currentChatAgent;
+    case "set":
+      currentChatAgent = agent ?? null;
+      break;
+    case "clear":
+      currentChatAgent = null;
+      break;
+  }
 }
 
 async function initChatAgent(): Promise<void> {
@@ -33,8 +42,6 @@ async function initChatAgent(): Promise<void> {
 
   const agents = await discoverAgents();
   const configuredRef = aiSettings.chat.defaultAgent;
-
-  // Try configured default first, then fall back to lua:default
   const refToFind = configuredRef || "lua:default";
   const defaultAgent = agents.find((a) => a.ref === refToFind);
   if (defaultAgent) {

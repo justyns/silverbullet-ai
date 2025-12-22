@@ -343,7 +343,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     try {
       const agent = await syscall(
         "system.invokeFunction",
-        "silverbullet-ai.getCurrentChatAgent",
+        "silverbullet-ai.chatAgentState",
+        "get",
       );
       updateAgentIndicator(agent);
     } catch (e) {
@@ -355,7 +356,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     try {
       await syscall(
         "system.invokeFunction",
-        "silverbullet-ai.clearCurrentChatAgent",
+        "silverbullet-ai.chatAgentState",
+        "clear",
       );
       updateAgentIndicator(null);
     } catch (e) {

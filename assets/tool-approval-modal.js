@@ -117,16 +117,13 @@
     responded = true;
 
     const feedback = approved ? null : (feedbackInput.value.trim() || null);
-
-    // Use appropriate submit function based on approval type
-    const submitFunction = isWriteApproval
-      ? "silverbullet-ai.submitWriteApproval"
-      : "silverbullet-ai.submitToolApproval";
+    const type = isWriteApproval ? "write" : "tool";
 
     try {
       await syscall(
         "system.invokeFunction",
-        submitFunction,
+        "silverbullet-ai.submitApproval",
+        type,
         approvalId,
         approved,
         feedback,
