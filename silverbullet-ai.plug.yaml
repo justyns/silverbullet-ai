@@ -4,10 +4,6 @@ requiredPermissions:
 assets:
   - "assets/*"
 functions:
-  aiPromptSlashCommplete:
-    path: src/prompts.ts:aiPromptSlashComplete
-    events:
-      - slash:complete
   queryAI:
     path: sbai.ts:queryAI
   chat:

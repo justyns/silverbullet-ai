@@ -38,7 +38,7 @@ With the above note saved as `AI: Generate note summary`, you can run the `AI: E
 
 Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
 
-```
+``` markdown
 ---
 tags: meta/template/aiPrompt
 
@@ -68,7 +68,7 @@ You can also define AI prompts entirely in Space Lua using `ai.prompt.define`:
 ai.prompt.define {
   name = "Quick Summary",
   description = "Summarize selected text",
-  slashCommand = "aiQuickSummary",  -- Optional: register as slash command
+  slashCommand = "aiQuickSummary",
   systemPrompt = "You are a helpful assistant.",
   template = "Summarize this:\n\n${@selectedText or @currentPageText}",
   insertAt = "replace-selection",

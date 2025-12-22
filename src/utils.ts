@@ -449,13 +449,35 @@ export function luaLongString(s: string): string {
 }
 
 /**
- * Converts a JS object to Lua table literal.
+ * Converts a JavaScript value to a Lua literal string.
+ * Produces hopefully valid Lua syntax that can be embedded in Lua expressions.
+ * TODO: There's probably something that is or could be exported from SB for this
  */
-function jsObjectToLuaTable(obj: Record<string, boolean>): string {
-  const entries = Object.entries(obj)
-    .map(([k, v]) => `[${luaLongString(k)}] = ${v}`)
-    .join(", ");
-  return `{${entries}}`;
+export function jsToLuaLiteral(value: unknown): string {
+  if (value === null || value === undefined) return "nil";
+  if (typeof value === "boolean") return value ? "true" : "false";
+  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "nil";
+  if (typeof value === "string") {
+    const escaped = value
+      .replace(/\\/g, "\\\\")
+      .replace(/"/g, '\\"')
+      .replace(/\n/g, "\\n")
+      .replace(/\r/g, "\\r")
+      .replace(/\t/g, "\\t");
+    return `"${escaped}"`;
+  }
+  if (Array.isArray(value)) {
+    return `{${value.map(jsToLuaLiteral).join(", ")}}`;
+  }
+  if (typeof value === "object") {
+    const entries = Object.entries(value).map(([k, v]) => {
+      const isValidIdentifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k);
+      const key = isValidIdentifier ? k : `["${k.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+      return `${key}=${jsToLuaLiteral(v)}`;
+    });
+    return `{${entries.join(", ")}}`;
+  }
+  return "nil";
 }
 
 /**
@@ -469,7 +491,7 @@ async function enrichMessageWithWikiLinks(
 ): Promise<EnrichmentResult> {
   try {
     const luaContent = luaLongString(content);
-    const luaSeenNames = jsObjectToLuaTable(seenNames);
+    const luaSeenNames = jsToLuaLiteral(seenNames);
     const result = await lua.evalExpression(
       `ai.enrichWithWikiLinks(${luaContent}, ${luaSeenNames})`,
     );

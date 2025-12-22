@@ -4,6 +4,7 @@ import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
+  jsToLuaLiteral,
   luaLongString,
   parseToolCallsFromContent,
   postProcessToolCallHtml,
@@ -400,4 +401,88 @@ Deno.test("luaLongString should increase level when content contains ]]", () => 
 Deno.test("luaLongString should handle nested levels", () => {
   const result = luaLongString("has ]] and ]=] both");
   assertEquals(result, "[==[has ]] and ]=] both]==]");
+});
+
+// Tests for jsToLuaLiteral
+
+Deno.test("jsToLuaLiteral should convert null and undefined to nil", () => {
+  assertEquals(jsToLuaLiteral(null), "nil");
+  assertEquals(jsToLuaLiteral(undefined), "nil");
+});
+
+Deno.test("jsToLuaLiteral should convert booleans", () => {
+  assertEquals(jsToLuaLiteral(true), "true");
+  assertEquals(jsToLuaLiteral(false), "false");
+});
+
+Deno.test("jsToLuaLiteral should convert numbers", () => {
+  assertEquals(jsToLuaLiteral(42), "42");
+  assertEquals(jsToLuaLiteral(3.14), "3.14");
+  assertEquals(jsToLuaLiteral(-100), "-100");
+  assertEquals(jsToLuaLiteral(0), "0");
+});
+
+Deno.test("jsToLuaLiteral should convert Infinity and NaN to nil", () => {
+  assertEquals(jsToLuaLiteral(Infinity), "nil");
+  assertEquals(jsToLuaLiteral(-Infinity), "nil");
+  assertEquals(jsToLuaLiteral(NaN), "nil");
+});
+
+Deno.test("jsToLuaLiteral should convert simple strings", () => {
+  assertEquals(jsToLuaLiteral("hello"), '"hello"');
+  assertEquals(jsToLuaLiteral(""), '""');
+});
+
+Deno.test("jsToLuaLiteral should escape special characters in strings", () => {
+  assertEquals(jsToLuaLiteral('say "hi"'), '"say \\"hi\\""');
+  assertEquals(jsToLuaLiteral("line1\nline2"), '"line1\\nline2"');
+  assertEquals(jsToLuaLiteral("tab\there"), '"tab\\there"');
+  assertEquals(jsToLuaLiteral("back\\slash"), '"back\\\\slash"');
+  assertEquals(jsToLuaLiteral("return\rhere"), '"return\\rhere"');
+});
+
+Deno.test("jsToLuaLiteral should convert arrays", () => {
+  assertEquals(jsToLuaLiteral([]), "{}");
+  assertEquals(jsToLuaLiteral([1, 2, 3]), "{1, 2, 3}");
+  assertEquals(jsToLuaLiteral(["a", "b"]), '{"a", "b"}');
+});
+
+Deno.test("jsToLuaLiteral should convert nested arrays", () => {
+  assertEquals(jsToLuaLiteral([[1, 2], [3, 4]]), "{{1, 2}, {3, 4}}");
+});
+
+Deno.test("jsToLuaLiteral should convert objects with valid identifier keys", () => {
+  assertEquals(jsToLuaLiteral({ name: "Pete" }), '{name="Pete"}');
+  assertEquals(jsToLuaLiteral({ a: 1, b: 2 }), "{a=1, b=2}");
+  assertEquals(jsToLuaLiteral({ _private: true }), "{_private=true}");
+});
+
+Deno.test("jsToLuaLiteral should use bracket notation for non-identifier keys", () => {
+  assertEquals(jsToLuaLiteral({ "my-key": 1 }), '{["my-key"]=1}');
+  assertEquals(jsToLuaLiteral({ "123": "num" }), '{["123"]="num"}');
+  assertEquals(jsToLuaLiteral({ "has space": true }), '{["has space"]=true}');
+});
+
+Deno.test("jsToLuaLiteral should handle nested objects", () => {
+  assertEquals(jsToLuaLiteral({ a: { b: 1 } }), "{a={b=1}}");
+  assertEquals(jsToLuaLiteral({ page: { name: "Test", ref: "Test" } }), '{page={name="Test", ref="Test"}}');
+});
+
+Deno.test("jsToLuaLiteral should handle mixed arrays and objects", () => {
+  assertEquals(jsToLuaLiteral({ items: [1, 2] }), "{items={1, 2}}");
+  assertEquals(jsToLuaLiteral([{ a: 1 }, { b: 2 }]), "{{a=1}, {b=2}}");
+});
+
+Deno.test("jsToLuaLiteral should handle empty objects", () => {
+  assertEquals(jsToLuaLiteral({}), "{}");
+});
+
+Deno.test("jsToLuaLiteral should handle complex nested structures", () => {
+  const complex = {
+    page: { name: "work/AICompany", size: 117 },
+    currentLineNumber: 7,
+    selectedText: null,
+  };
+  const result = jsToLuaLiteral(complex);
+  assertEquals(result, '{page={name="work/AICompany", size=117}, currentLineNumber=7, selectedText=nil}');
 });

@@ -1,6 +1,6 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { editor, index, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
-import type { CompleteEvent, SlashCompletionOption } from "@silverbulletmd/silverbullet/type/client";
+import type { SlashCompletionOption } from "@silverbulletmd/silverbullet/type/client";
 
 interface AIPromptTemplate {
   ref: string;
@@ -19,37 +19,9 @@ interface AIPromptTemplate {
 }
 import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
-import { assembleMessagesWithAttachments, convertPageToMessages, enrichChatMessages } from "./utils.ts";
+import { assembleMessagesWithAttachments, convertPageToMessages, enrichChatMessages, jsToLuaLiteral, luaLongString } from "./utils.ts";
 import { ChatMessage } from "./types.ts";
 
-export async function aiPromptSlashComplete(
-  completeEvent: CompleteEvent,
-): Promise<{ options: SlashCompletionOption[] } | void> {
-  // Query pages tagged with meta/template/aiPrompt that have a slashCommand defined
-  const allTemplates = await index.queryLuaObjects<AIPromptTemplate>(
-    "page",
-    {
-      objectVariable: "_",
-      where: await lua.parseExpression(
-        "_.itags and table.includes(_.itags, 'meta/template/aiPrompt') and _.aiprompt and _.aiprompt.slashCommand",
-      ),
-    },
-  );
-  return {
-    options: allTemplates.map((template: AIPromptTemplate) => {
-      const aiPromptTemplate = template.aiprompt!;
-
-      return {
-        label: aiPromptTemplate.slashCommand!, // Query ensures this exists
-        detail: aiPromptTemplate.description || template.description,
-        order: aiPromptTemplate.order || 0,
-        templatePage: template.ref,
-        pageName: completeEvent.pageName,
-        invoke: "silverbullet-ai.insertAiPromptFromTemplate",
-      };
-    }),
-  };
-}
 
 /**
  * Options for Space Lua defined prompts
@@ -194,7 +166,10 @@ export async function insertAiPromptFromTemplate(
     if (directTemplate) {
       templateText = directTemplate;
     } else {
-      templateText = await space.readPage(selectedTemplate.ref);
+      const pageContent = await space.readPage(selectedTemplate.ref);
+      // Strip frontmatter from template page
+      const frontmatterMatch = pageContent.match(/^---\n[\s\S]*?\n---\n?([\s\S]*)$/);
+      templateText = frontmatterMatch ? frontmatterMatch[1].trim() : pageContent;
     }
     currentPage = await editor.getCurrentPage();
     pageMeta = await space.getPageMeta(currentPage);
@@ -326,9 +301,6 @@ export async function insertAiPromptFromTemplate(
     case "modal":
       // TODO: How do we handle modals?
       break;
-    case "replace":
-      // TODO: Replace selection
-      break;
     case "replace-line":
       cursorPos = lineStartPos;
       await editor.replaceRange(lineStartPos, lineEndPos, "");
@@ -446,9 +418,12 @@ export async function insertAiPromptFromTemplate(
     // non-multi-chat template
     let renderedTemplate: string;
     try {
-      const templateContent = templateText;
+      // Convert ${@varname} to ${varname} for backward compatibility
+      // The @ prefix was what we used previously, but isn't really needed now
+      // TODO: Update the docs/examples too ^^
+      const templateContent = templateText.replace(/\$\{@/g, "${");
       const templateData = globalMetadata;
-      const luaExpression = `spacelua.interpolate(${JSON.stringify(templateContent)}, ${JSON.stringify(templateData)})`;
+      const luaExpression = `spacelua.interpolate(${luaLongString(templateContent)}, ${jsToLuaLiteral(templateData)})`;
       console.log("Evaluating template Lua expression:", luaExpression);
       renderedTemplate = await lua.evalExpression(luaExpression);
       console.log("Template rendered successfully:", renderedTemplate);
