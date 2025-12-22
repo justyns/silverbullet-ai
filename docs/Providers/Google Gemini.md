@@ -6,9 +6,7 @@ apiProvider: gemini
 embeddingProvider: true
 ---
 
-Google does not offer an openai-compatible api, so consider the support for Gemini to be very experimental for now.
-
-To configure it, you can use this configuration:
+Google Gemini is supported as a text provider and for embeddings. Note that Gemini uses a different API format than OpenAI, so some features may behave slightly differently.
 
 ```lua
 config.set {
@@ -18,10 +16,23 @@ config.set {
     },
     textModels = {
       {
-        name = "gemini-pro",
-        modelName = "gemini-pro",
+        name = "gemini-2.0-flash",
+        modelName = "gemini-2.0-flash",
         provider = "gemini",
-        baseUrl = "https://api.gemini.ai/v1",
+        secretName = "GOOGLE_AI_STUDIO_KEY"
+      },
+      {
+        name = "gemini-1.5-pro",
+        modelName = "gemini-1.5-pro",
+        provider = "gemini",
+        secretName = "GOOGLE_AI_STUDIO_KEY"
+      }
+    },
+    embeddingModels = {
+      {
+        name = "text-embedding-004",
+        modelName = "text-embedding-004",
+        provider = "gemini",
         secretName = "GOOGLE_AI_STUDIO_KEY"
       }
     }
@@ -29,6 +40,8 @@ config.set {
 }
 ```
 
-**Note**: The secretName defined means you need to set the api key from [google ai studio](https://aistudio.google.com/app/apikey) in `ai.keys.GOOGLE_AI_STUDIO_KEY`.
+See [Google AI models](https://ai.google.dev/gemini-api/docs/models) for available model names.
 
-**Note 2**: AI Studio is not the same as the Gemini App (previously Bard). You may have access to https://gemini.google.com/app but it does not offer an api key needed for integrating 3rd party tools. Instead, you need access to https://aistudio.google.com/app specifically.
+**Note**: Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey). The `secretName` must match the key name in `ai.keys`.
+
+**Note 2**: AI Studio is not the same as the Gemini App (previously Bard). You may have access to https://gemini.google.com/app but it does not offer an API key needed for integrating 3rd party tools. You need access to https://aistudio.google.com/app specifically.

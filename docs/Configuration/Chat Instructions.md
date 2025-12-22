@@ -1,12 +1,40 @@
-The Chat section is optional, but may help provide better results when using the [[Commands/AI: Chat on current page]] command and the Chat Panel.
+The Chat section configures behavior for the [[Commands/AI: Chat on current page]] command and the Assistant Panel.
+
+## All Chat Options
 
 ```lua
 config.set {
   ai = {
     chat = {
+      -- Enable AI tools (read/write notes, search, etc.)
+      enableTools = true,
+
+      -- Parse [[wiki-links]] and include their content as context
+      parseWikiLinks = true,
+
+      -- Search embeddings for relevant context (requires indexEmbeddings)
+      searchEmbeddings = false,
+
+      -- Render SilverBullet templates/queries before sending
+      bakeMessages = true,
+
+      -- Default agent to use (by name)
+      defaultAgent = nil,
+
+      -- User info included in system prompt
       userInformation = "I'm a software developer who likes taking notes.",
-      userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise.",
-      customContext = [["Today is " .. os.date("%Y-%m-%d") .. " (" .. os.date("%A") .. ")"]]
+
+      -- Instructions included in system prompt
+      userInstructions = "Please give short and concise responses.",
+
+      -- Dynamic context (Lua expression evaluated at chat time)
+      customContext = [["Today is " .. os.date("%Y-%m-%d")]],
+
+      -- Custom enrichment functions to run on messages
+      customEnrichFunctions = {},
+
+      -- Skip tool approval prompts (useful for benchmarks/automation)
+      skipToolApproval = false
     }
   }
 }

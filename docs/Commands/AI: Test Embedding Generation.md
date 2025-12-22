@@ -1,7 +1,15 @@
 ---
 tags: commands
 commandName: "AI: Test Embedding Generation"
-description: "Function to test generating embeddings. Just puts the result in the current note, but isn't too helpful for most cases."
+commandSummary: "Utility command to test embedding generation."
 ---
 
-${_CTX.currentPage.description}
+A developer utility command that:
+
+1. Prompts you to enter some text
+2. Generates an embedding vector for that text
+3. Displays the resulting embedding in the current note
+
+This is primarily useful for verifying your embedding model is configured correctly. For normal usage, embeddings are generated automatically when indexing pages.
+
+See [[Configuration/Embedding Models]] for embedding configuration.

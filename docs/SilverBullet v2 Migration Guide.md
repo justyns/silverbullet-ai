@@ -93,7 +93,7 @@ config.set {
       {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
       {
         name = "ollama-llama",
-        provider = "openai",
+        provider = "ollama",
         modelName = "llama3",
         baseUrl = "http://localhost:11434/v1",
         requireAuth = false,

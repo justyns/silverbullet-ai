@@ -152,7 +152,7 @@ tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a summary of the current page."
-  system: You are an AI Note Summary bot.  Help the user create useful and accurate summaries.
+  systemPrompt: You are an AI Note Summary bot. Help the user create useful and accurate summaries.
   slashCommand: aisummarychat
   chat: true
 ---

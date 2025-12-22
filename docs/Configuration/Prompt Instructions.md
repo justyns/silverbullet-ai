@@ -37,7 +37,7 @@ config.set {
     promptInstructions = {
       pageRenameRules = [[
 Retain ALL date and time information from the original note title.
-If there is a date or time at the beginning, ensure a hyphen seperates the timestamp from the actual note title. For example, try to name quick notes like this: "YYYY-MM-DD HH:MM:SS - A short title about the note"
+If there is a date or time at the beginning, ensure a hyphen separates the timestamp from the actual note title. For example, try to name quick notes like this: "YYYY-MM-DD HH:MM:SS - A short title about the note"
 If tags include #receipt or otherwise looks like a receipt, move it to "Receipts/YYYY/MM-MMMM/" using the date from the note metadata.
 ]],
       tagRules = "Tag notes that contain confirmations or receipts with #receipt."

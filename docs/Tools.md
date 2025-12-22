@@ -1,12 +1,10 @@
-# AI Tools
+# Tools
 
-AI Tools allow the AI Assistant to interact with your space. When enabled, the AI can read pages, list notes, and use any custom tools you define.
+Tools allow the Assistant to interact with your space - reading, writing, and updating notes, or searching notes and the web.
 
-Tools allow the chat assistant to take actions in your space, e.g. reading, writing, and updating notes, or searching notes or online.
+This enables a much more natural chat interface where you can ask the LLM to do something like "Update my grocery todo list and mark the milk and eggs as complete".
 
-It allows for a much more natural chat interface as you can ask the llm to do something like "Update my grocery todo list and mark the milk and egg as complete".
-
-Custom tools offer even more extensibility by letting you interact with external systems intstead of being limited to built-in tools that interact with SilverBullet.
+Custom tools offer even more extensibility by letting you interact with external systems instead of being limited to built-in tools that interact with SilverBullet.
 
 ## Enabling Tools
 

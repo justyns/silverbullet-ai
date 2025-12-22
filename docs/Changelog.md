@@ -5,7 +5,7 @@ This page is a brief overview of each version.
 ## 0.6.0 (Unreleased)
 
 ### New Chat Assistant Panel
-- Added a side-panel for AI chat (`AI: Open Chat Panel` command)
+- Added a side-panel for AI chat (`AI: Open Assistant` command)
 - Markdown rendering in chat messages
 - Tool calls rendered as expandable blocks
 - Strip tool calls from chat history to reduce context size (but they are stored in local storage temporarily)
@@ -151,7 +151,7 @@ This page is a brief overview of each version.
 - Fix bug when embeddingModels is undefined
 ---
 ## 0.2.0
-* Vector search and embeddings generation [[embe]] by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
+* Vector search and embeddings generation by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
 * Enrich chat messages with RAG by searching our local embeddings by [@justyns](https://github.com/justyns) in [#38](https://github.com/justyns/silverbullet-ai/pull/38)
 * Refactor: Re-organize providers, interfaces, and types by [@justyns](https://github.com/justyns) in [#39](https://github.com/justyns/silverbullet-ai/pull/39)
 * Add try/catch to tests by [@justyns](https://github.com/justyns) in [#40](https://github.com/justyns/silverbullet-ai/pull/40)

@@ -1,15 +1,64 @@
+## Chat & Conversation
 
-- **Summarize Note**: Summarizes the content of a note or selected text.
-- **Replace with Summary**: Replaces the selected text with its summary.
-- **Insert Summary**: Inserts a summary of the selected text or note at the cursor position.
-- **Call OpenAI with Note Context**: Sends the note or selected text to OpenAI based on a user-defined prompt.
-- **Interactive Chat**:  Have an interactive chat, utilizing the current note as the chat interface.
-  - **RAG (**R**etrieval **A**ugmented Generation)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
-- **Templated Prompts**: Define custom notes as a templated prompt that can be rendered, sent to llm, and then inserted into the page.
-- **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
-- **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
-- **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
-- **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
-- **Similarity search**: Allows doing a similarity search based on indexed embeddings.
-- **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
-- **FrontMatter generation**: **Experimental** extracts useful information from a note’s context and generates frontmatter attributes for it.
+- **Interactive Chat**: Multi-turn conversations using the current note as the chat interface
+- **AI Assistant Panel**: Right-side chat panel for persistent conversations across pages
+- **RAG (Retrieval Augmented Generation)**: Automatic vector embedding search for relevant context
+- **Context Enrichment**: Wiki-link parsing, template expansion, and custom enrichment functions
+
+## AI Agents
+
+- **Custom Agents**: Create specialized AI personas with custom system prompts
+- **Tool Filtering**: Restrict which tools agents can access
+- **Page-Based Agents**: Define agents as pages with embedded context via wiki-links
+- **Lua-Defined Agents**: Define agents directly in Space Lua
+
+## AI Tools
+
+- **Built-in Tools**: Read, create, update notes; search, navigate; execute Lua
+- **Custom Tools**: Define your own tools in Space Lua
+- **Approval Gates**: Require user confirmation before tools execute
+- **Diff Previews**: See proposed changes before writing to pages
+
+## Templated Prompts
+
+- **Custom Templates**: Define AI prompts as pages with `meta/template/aiPrompt` tag
+- **Space Lua Prompts**: Define prompts directly in Lua
+- **Multiple Insertion Modes**: Insert at cursor, page start/end, replace selection, etc.
+- **Post-Processing**: Transform LLM responses with custom functions
+
+## Embeddings & Search
+
+- **Vector Embeddings**: Chunk-based embeddings stored in SilverBullet's datastore
+- **Similarity Search**: Semantic search across indexed pages
+- **Note Summaries**: *Experimental* - Generate and index page summaries
+
+## Bundled Prompts
+
+Pre-built AI prompt templates that ship with the plug:
+
+- **Generate Tags**: Suggests tags based on note content
+- **Suggest Page Name**: Recommends titles for notes
+- **Generate FrontMatter**: *Experimental* - Extracts metadata from content
+- **Enhance Note**: Runs all three above in sequence
+
+## Image Generation
+
+- **DALL-E Integration**: Generate images from text prompts
+- **Auto-Upload**: Generated images are uploaded to your space
+- **Caption Insertion**: Images inserted with descriptive captions
+
+## Provider Support
+
+- OpenAI (GPT-4, GPT-3.5, etc.)
+- Google Gemini
+- Ollama (local)
+- Mistral AI
+- Perplexity AI
+- OpenRouter
+- Any OpenAI-compatible API
+
+## Utilities
+
+- **Model Selection**: Switch between configured models on the fly
+- **Connectivity Testing**: Verify API endpoints and model access
+- **Benchmarking**: Test model performance and capabilities

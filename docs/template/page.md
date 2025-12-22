@@ -45,7 +45,7 @@
         {{/if}}
         {{body}}
     </div>
-    <!-- TODO: Get syntax hilighting to work -->
+    <!-- TODO: Get syntax highlighting to work -->
     <!-- <script src=" https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js "></script>
     <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/plugins/autoloader/prism-autoloader.min.js"></script> -->
 </body>

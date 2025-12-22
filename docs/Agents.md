@@ -1,6 +1,6 @@
-# AI Agents
+# Agents
 
-AI Agents are customizable personas that configure how the AI Assistant behaves. Each agent has its own system prompt and can optionally restrict which tools are available.  You can also optionally provide additional context to the agent, such as providing links to other notes in the space or http urls for documentation/etc.
+Agents are customizable personas that configure how the Assistant behaves. Each agent has its own system prompt and can optionally restrict which tools are available.  You can also optionally provide additional context to the agent, such as providing links to other notes in the space or http urls for documentation/etc.
 
 Currently, Agents are only used in the Assistant chat panel.
 
@@ -49,9 +49,9 @@ aiagent:
     Use wiki-links [[like this]] when referencing pages.
     Be concise and action-oriented.
   tools:
-    - list_tasks
-    - search_notes
     - read_note
+    - update_note
+    - list_pages
 ---
 ```
 
@@ -61,7 +61,7 @@ With the above, you can set `defaultAgent = "tasks"` in your config.
 
 ### Task Manager Agent
 
-A focused agent for managing tasks and todos:
+A focused agent for managing tasks and todos. This example shows using a custom `list_tasks` tool alongside built-in tools:
 
 ```yaml
 ---
@@ -76,12 +76,12 @@ aiagent:
     Be concise and action-oriented.
   tools:
     - list_tasks
-    - search_notes
     - read_note
+    - update_note
 ---
 ```
 
-`list_tasks` is not a built-in tool, but you could easily create a space-lua tool with custom lua queries to search your space for incomplete tasks and return them.  Or a task plug/library could create similar tools.
+`list_tasks` is not a built-in tool, but you can create custom tools in Space Lua. See [[Tools#Defining Custom Tools]] for how to create your own tools.
 
 ### Research Assistant (Read-Only)
 
@@ -99,10 +99,13 @@ aiagent:
     Provide detailed answers with references to relevant pages.
   tools:
     - read_note
-    - search_notes
-    - list_notes
+    - list_pages
+    - get_page_info
+    - navigate
 ---
 ```
+
+This agent restricts tools to only the built-in read-only tools, preventing any page modifications.
 
 ### Writing Assistant with Context
 
@@ -180,8 +183,16 @@ aiagent:
 | `name` | string | Display name and lookup key for the agent. Use this in `defaultAgent` config. |
 | `description` | string | Brief description shown in picker |
 | `systemPrompt` | string | The system prompt for the AI |
-| `tools` | string[] | Whitelist - only these tools available |
-| `toolsExclude` | string[] | Blacklist - these tools removed (ignored if `tools` is set) |
+| `tools` | string[] | Whitelist - only these tools are available |
+| `toolsExclude` | string[] | Blacklist - these tools are removed |
+
+### Tool Filtering Precedence
+
+- If `tools` is set, **only** those tools are available (whitelist mode)
+- If `toolsExclude` is set (and `tools` is not), those tools are removed from all available tools (blacklist mode)
+- If both are set, `tools` takes precedence and `toolsExclude` is ignored
+
+**Tip:** Use `tools` (whitelist) for restrictive agents that should only have specific capabilities. Use `toolsExclude` (blacklist) when you want most tools but need to block a few dangerous ones like `eval_lua`.
 
 ## Usage
 

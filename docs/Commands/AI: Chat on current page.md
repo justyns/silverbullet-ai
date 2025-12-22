@@ -25,6 +25,6 @@ Another helpful chat feature is the ability to specify [[Configuration/Chat Inst
 
 If [[Configuration|bakeMessages]] is set to true (it is by default), any [Live Queries](https://silverbullet.md/Live%20Queries) or [Live Templates](https://silverbullet.md/Live%20Templates) are rendered before being sent to the llm.
 
-As of version 0.2.0, if `aiSettings.indexEmbeddings` and `aiSettings.chat.searchEmbeddings` are both enabled and [[Configuration/Embedding Models|an embedding model]] is properly configured, your existing notes will automatically be searched for relevant content (based on a semantic/similarity search using vector embeddings) and sent to the LLM for context.
+If `ai.indexEmbeddings` and `ai.chat.searchEmbeddings` are both enabled and [[Configuration/Embedding Models|an embedding model]] is properly configured, your existing notes will automatically be searched for relevant content (based on a semantic/similarity search using vector embeddings) and sent to the LLM for context.
 
 In some cases, this removes the need to link directly to another note as the search will do it for you.  Do keep in mind that this increases the amount of information sent to the llm api and also reduces your control over what information is sent.

@@ -86,7 +86,10 @@ nav:
       - Configuration.md
       - Configuration
   - Templated Prompts.md
-  - AI Tools.md
+  - Bundled Prompts.md
+  - Agents.md
+  - Tools.md
+  - Context Enrichment.md
   - Space Lua.md
   - Commands:
       - Commands
