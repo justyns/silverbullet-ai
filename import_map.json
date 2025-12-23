@@ -1,6 +1,7 @@
 {
   "imports": {
     "@std/assert": "jsr:@std/assert@^1.0.1",
+    "@std/html/entities": "jsr:@std/html@^1.0.5/entities",
     "@std/yaml": "jsr:@std/yaml@^1.0.8",
     "@std/encoding/base64": "jsr:@std/encoding@^1.0.0/base64",
     "@std/fs/walk": "jsr:@std/fs@^1.0.18/walk",

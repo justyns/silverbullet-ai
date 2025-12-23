@@ -1,4 +1,5 @@
 import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
+import { escape as escapeHtml, unescape as unescapeHtml } from "@std/html/entities";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
@@ -38,23 +39,21 @@ export function renderToolCallHtml(data: ToolCallData): string {
   const argEntries = Object.entries(args);
   const argsHtml = argEntries.length > 0
     ? `<div class="tool-args"><strong>Arguments:</strong><pre>${
-      argEntries
+      escapeHtml(argEntries
         .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
-        .join("\n")
+        .join("\n"))
     }</pre></div>`
     : "";
 
   // Use summary (new format) with fallback to result (legacy format)
   const displayText = data.summary ?? data.result ?? "";
 
-  // Escape HTML in display text to prevent XSS
-  const escapedDisplay = displayText
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  const escapedDisplay = escapeHtml(displayText);
+
+  const escapedName = escapeHtml(data.name);
 
   return `<details class="tool-call ${statusClass}">
-  <summary>🔧 <strong>${data.name}</strong> → <span class="status">${status}</span></summary>
+  <summary>🔧 <strong>${escapedName}</strong> → <span class="status">${status}</span></summary>
   <div class="tool-details">
     ${argsHtml}
     <div class="tool-result"><strong>Result:</strong><pre>${escapedDisplay}</pre></div>
@@ -175,11 +174,7 @@ export function postProcessToolCallHtml(html: string): string {
 
   return html.replace(pattern, (_match, jsonContent) => {
     try {
-      const decoded = jsonContent
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">");
+      const decoded = unescapeHtml(jsonContent);
       const data = parseToolCallJson(decoded);
       if (data) {
         return renderToolCallHtml(data);
@@ -539,6 +534,7 @@ export type DiffLine = {
 /**
  * Computes a simple line-by-line diff between two strings.
  * Returns an array of diff lines with type indicators.
+ * TODO: Probably should use a real library for this, but it works fine for simple stuff so far
  */
 export function computeSimpleDiff(before: string, after: string): DiffLine[] {
   const beforeLines = before.split("\n");

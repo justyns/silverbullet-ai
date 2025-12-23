@@ -78,7 +78,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       "silverbullet-ai.postProcessToolCallHtml",
       html,
     );
-    element.innerHTML = finalHtml;
+    element.innerHTML = DOMPurify.sanitize(finalHtml);
   }
 
   function showAutocomplete(items) {
