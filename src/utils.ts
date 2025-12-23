@@ -39,9 +39,11 @@ export function renderToolCallHtml(data: ToolCallData): string {
   const argEntries = Object.entries(args);
   const argsHtml = argEntries.length > 0
     ? `<div class="tool-args"><strong>Arguments:</strong><pre>${
-      escapeHtml(argEntries
-        .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
-        .join("\n"))
+      escapeHtml(
+        argEntries
+          .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
+          .join("\n"),
+      )
     }</pre></div>`
     : "";
 
