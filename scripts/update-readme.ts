@@ -1,5 +1,5 @@
-import * as yaml from "https://esm.sh/yaml@2.3.4";
-import { parseFiles } from "https://esm.sh/@structured-types/api";
+import * as yaml from "yaml";
+import { parseFiles } from "@structured-types/api";
 
 const tag = Deno.args[0];
 
@@ -57,15 +57,7 @@ async function updateReadme(tag: string) {
         if (error instanceof Deno.errors.NotFound) {
           // Command doc does not exist, create a new one
           if (docs) {
-            const sanitizedDocs = docs.replace(/\\/g, "\\\\").replace(
-              /"/g,
-              '\\"',
-            );
-            const commandDocsContent = `---
-tags: commands
-commandName: "${value.command.name}"
-commandSummary: "${sanitizedDocs}"
----`;
+            const commandDocsContent = `${docs}\n`;
             await Deno.writeTextFile(commandDocsPath, commandDocsContent);
           }
         } else {
@@ -78,8 +70,7 @@ commandSummary: "${sanitizedDocs}"
   // This "dynamic" part of the readme will be enclosed with comments to make it replaceable
   const startCommandsMarker = "<!-- start-commands-and-functions -->";
   const endCommandsMarker = "<!-- end-commands-and-functions -->";
-  const commandsInsertionSection =
-    `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
+  const commandsInsertionSection = `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
 
   // Replace or insert the commands and functions section in the README
   if (
@@ -101,8 +92,7 @@ commandSummary: "${sanitizedDocs}"
   // Update the features section in the README
   const startFeaturesMarker = "<!-- start-features -->";
   const endFeaturesMarker = "<!-- end-features -->";
-  const featuresInsertionSection =
-    `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
+  const featuresInsertionSection = `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
 
   if (
     readmeContent.includes(startFeaturesMarker) &&

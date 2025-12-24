@@ -2,6 +2,54 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.6.0 (Unreleased)
+
+### New Chat Assistant Panel
+- Added a side-panel for AI chat (`AI: Open Assistant` command)
+- Markdown rendering in chat messages
+- Tool calls rendered as expandable blocks
+- Strip tool calls from chat history to reduce context size (but they are stored in local storage temporarily)
+- Default context including current page name and content
+- Customizable chat context via Space Lua (e.g. current date or other dynamic values)
+- Button to export current chat to a note
+
+### Agents
+- New agent system for customizable personas with specific context and tools (e.g. "silverbullet lua expert")
+- Create custom agents via Space Lua (`ai.agents.myagent = {...}`)
+- Create page-based agents with `meta/template/aiAgent` tag
+- Tool filtering with whitelist (`tools`) or blacklist (`toolsExclude`)
+- `AI: Select Agent` and `AI: Clear Agent` commands
+
+### Tool and function calling support
+- New tool system allowing interactions with your space
+- Tools defined via Space Lua in `ai.tools` table
+- Approval system for tools that modify data (shows diff preview)
+- Built-in tools:
+    - `read_note` - Read page content or specific sections
+    - `list_pages` - List pages with filtering options
+    - `get_page_info` - Get page metadata
+    - `create_note` - Create new pages
+    - `update_note` - Update page content (replace, append, prepend)
+    - `search_replace` - Find and replace text
+    - `update_frontmatter` - Update YAML frontmatter keys
+    - `rename_note` - Rename pages with backlink updates
+    - `navigate` - Navigate to pages or positions
+    - `eval_lua` - Execute Lua expressions
+    - `ask_user` - Get immediate feedback from the user
+- Updated default system prompt to include instructions for tools when enabled
+
+### Misc
+- Update system prompt to include basic SB formatting hints and docs links
+- Add support for structured output
+- Connectivity test now includes structured output and tool usage tests
+- Migrated commands to Space Lua
+    - AI: Suggest Page Name
+    - AI: Generate tags for note
+    - AI: Generate Note FrontMatter
+    - AI: Enhance Note
+- Created an initial version of a benchmark system to verify if specific models can correctly use tools for sbai
+
+---
 ## 0.5.0 (2025-12-15)
 
 ### SilverBullet v2 Support
@@ -103,7 +151,7 @@ This page is a brief overview of each version.
 - Fix bug when embeddingModels is undefined
 ---
 ## 0.2.0
-* Vector search and embeddings generation [[embe]] by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
+* Vector search and embeddings generation by [@justyns](https://github.com/justyns) in [#37](https://github.com/justyns/silverbullet-ai/pull/37)
 * Enrich chat messages with RAG by searching our local embeddings by [@justyns](https://github.com/justyns) in [#38](https://github.com/justyns/silverbullet-ai/pull/38)
 * Refactor: Re-organize providers, interfaces, and types by [@justyns](https://github.com/justyns) in [#39](https://github.com/justyns/silverbullet-ai/pull/39)
 * Add try/catch to tests by [@justyns](https://github.com/justyns) in [#40](https://github.com/justyns/silverbullet-ai/pull/40)

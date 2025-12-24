@@ -1,18 +1,14 @@
 name: silverbullet-ai
 requiredPermissions:
   - fetch
+assets:
+  - "assets/*"
 functions:
-  aiPromptSlashCommplete:
-    path: src/prompts.ts:aiPromptSlashComplete
-    events:
-      - slash:complete
   queryAI:
     path: sbai.ts:queryAI
+  chat:
+    path: sbai.ts:chat
 
-  tagNoteWithAI:
-    path: sbai.ts:tagNoteWithAI
-    command:
-      name: "AI: Generate tags for note"
   promptAndGenerateImage:
     path: sbai.ts:promptAndGenerateImage
     command:
@@ -27,18 +23,6 @@ functions:
     path: src/prompts.ts:insertAiPromptFromTemplate
     command:
       name: "AI: Execute AI Prompt from Custom Template"
-  suggestPageName:
-    path: sbai.ts:suggestPageName
-    command:
-      name: "AI: Suggest Page Name"
-  enhanceNoteFrontMatter:
-    path: sbai.ts:enhanceNoteFrontMatter
-    command:
-      name: "AI: Generate Note FrontMatter"
-  enhanceNoteWithAI:
-    path: sbai.ts:enhanceNoteWithAI
-    command:
-      name: "AI: Enhance Note"
   selectTextModel:
     path: sbai.ts:selectModelFromConfig
     command:
@@ -51,6 +35,14 @@ functions:
     path: sbai.ts:selectEmbeddingModelFromConfig
     command:
       name: "AI: Select Embedding Model from Config"
+  selectAgent:
+    path: sbai.ts:selectAgentCommand
+    command:
+      name: "AI: Select Agent"
+  clearAgent:
+    path: sbai.ts:clearAgentCommand
+    command:
+      name: "AI: Clear Agent"
   testEmbeddingGeneration:
     path: sbai.ts:testEmbeddingGeneration
     command:
@@ -97,3 +89,42 @@ functions:
     path: src/connectivity.ts:connectivityTestCommand
     command:
       name: "AI: Connectivity Test"
+  getBenchmarkResults:
+    path: src/benchmark.ts:getBenchmarkResults
+  benchmarkCommand:
+    path: src/benchmark.ts:benchmarkCommand
+    command:
+      name: "AI: Run Benchmark"
+
+  # AI Assistant Panel
+  openAIAssistant:
+    path: src/chat-panel.ts:openAIAssistant
+    command:
+      name: "AI: Open Assistant"
+      key: "Ctrl-Shift-a"
+      mac: "Cmd-Shift-a"
+  closeAIAssistant:
+    path: src/chat-panel.ts:closeAIAssistant
+  toggleAIAssistant:
+    path: src/chat-panel.ts:toggleAIAssistant
+    command:
+      name: "AI: Toggle Assistant Panel"
+  startPanelChat:
+    path: src/chat-panel.ts:startPanelChat
+  getPanelChatChunk:
+    path: src/chat-panel.ts:getPanelChatChunk
+  chatAgentState:
+    path: src/chat-panel.ts:chatAgentState
+  exportPanelChat:
+    path: src/chat-panel.ts:exportPanelChat
+  submitApproval:
+    path: src/tools.ts:submitApproval
+  requestWriteApproval:
+    path: src/tools.ts:requestWriteApproval
+  getWriteDiff:
+    path: src/tools.ts:getWriteDiff
+  postProcessToolCallHtml:
+    path: src/utils.ts:postProcessToolCallHtml
+  renderToolCallWidget:
+    path: sbai.ts:renderToolCallWidget
+    codeWidget: toolcall

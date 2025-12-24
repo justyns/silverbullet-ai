@@ -1,0 +1,528 @@
+<!-- TODO: I am not a UI person, plz feel free to help -->
+<style>
+  :root {
+    --bg: #fff;
+    --text: #333;
+    --border: #ddd;
+    --btn-bg: #eee;
+    --btn-text: #333;
+    --btn-border: #ccc;
+    --accent: #464cfc;
+    --accent-text: #fff;
+    --input-bg: #fff;
+    --msg-assistant-bg: #f0f0f0;
+    --subtle: #888;
+    --overlay-light: rgba(0, 0, 0, 0.05);
+    --overlay-medium: rgba(0, 0, 0, 0.1);
+    --code-font: "SF Mono", Monaco, "Cascadia Code", monospace;
+  }
+
+  [data-theme="dark"] {
+    --bg: #1e1e1e;
+    --text: #d4d4d4;
+    --border: #444;
+    --btn-bg: #333;
+    --btn-text: #d4d4d4;
+    --btn-border: #555;
+    --input-bg: #2d2d2d;
+    --msg-assistant-bg: #2d2d2d;
+    --overlay-light: rgba(255, 255, 255, 0.05);
+    --overlay-medium: rgba(255, 255, 255, 0.1);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ai-chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .ai-chat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .ai-chat-header h3 {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .ai-chat-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .ai-chat-actions button {
+    background: var(--btn-bg);
+    border: 1px solid var(--btn-border);
+    color: var(--btn-text);
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+  }
+
+  .ai-chat-actions button:hover {
+    opacity: 0.8;
+  }
+
+  .ai-chat-actions button.close-btn {
+    border: none;
+    font-size: 16px;
+    padding: 4px 6px;
+  }
+
+  .ai-chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .message {
+    max-width: 90%;
+    padding: 8px 12px;
+    border-radius: 8px;
+    line-height: 1.4;
+    word-wrap: break-word;
+  }
+
+  .message.user {
+    align-self: flex-end;
+    background: var(--accent);
+    color: var(--accent-text);
+    border-bottom-right-radius: 2px;
+    white-space: pre-wrap;
+  }
+
+  .message.assistant {
+    align-self: flex-start;
+    background: var(--msg-assistant-bg);
+    border-bottom-left-radius: 2px;
+  }
+
+  .message.assistant.streaming {
+    white-space: pre-wrap;
+  }
+
+  .message.streaming::after {
+    content: "▊";
+    animation: blink 1s infinite;
+  }
+
+  @keyframes blink {
+    0%,
+    50% {
+      opacity: 1;
+    }
+
+    51%,
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Markdown rendering in assistant messages */
+  .message.assistant p {
+    margin: 0 0 8px 0;
+  }
+
+  .message.assistant p:last-child {
+    margin-bottom: 0;
+  }
+
+  .message.assistant code {
+    background: var(--overlay-medium);
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-family: var(--code-font);
+    font-size: 0.9em;
+  }
+
+  .message.assistant pre {
+    background: var(--overlay-light);
+    padding: 10px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+  }
+
+  .message.assistant pre code {
+    background: none;
+    padding: 0;
+  }
+
+  .message.assistant ul,
+  .message.assistant ol {
+    margin: 8px 0;
+    padding-left: 20px;
+  }
+
+  .message.assistant li {
+    margin: 4px 0;
+  }
+
+  .message.assistant blockquote {
+    border-left: 3px solid var(--subtle);
+    margin: 8px 0;
+    padding: 4px 12px;
+    color: var(--subtle);
+    background: var(--overlay-light);
+    border-radius: 0 4px 4px 0;
+    font-size: 0.9em;
+  }
+
+  .message.assistant a {
+    color: var(--accent);
+    text-decoration: none;
+  }
+
+  .message.assistant a:hover {
+    text-decoration: underline;
+  }
+
+  .message.assistant h1,
+  .message.assistant h2,
+  .message.assistant h3,
+  .message.assistant h4 {
+    margin: 12px 0 8px 0;
+    font-weight: 600;
+  }
+
+  .message.assistant h1 {
+    font-size: 1.3em;
+  }
+
+  .message.assistant h2 {
+    font-size: 1.2em;
+  }
+
+  .message.assistant h3 {
+    font-size: 1.1em;
+  }
+
+  .message.assistant h4 {
+    font-size: 1em;
+  }
+
+  .message.assistant table {
+    border-collapse: collapse;
+    margin: 8px 0;
+    width: 100%;
+  }
+
+  .message.assistant th,
+  .message.assistant td {
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    text-align: left;
+  }
+
+  .message.assistant th {
+    background: var(--overlay-light);
+  }
+
+  /* Input area */
+  .ai-chat-input {
+    display: flex;
+    gap: 8px;
+    padding: 12px;
+    border-top: 1px solid var(--border);
+  }
+
+  .input-wrapper {
+    position: relative;
+    flex: 1;
+  }
+
+  .input-wrapper textarea {
+    width: 100%;
+  }
+
+  .ai-chat-input textarea {
+    background: var(--input-bg);
+    border: 1px solid var(--btn-border);
+    color: var(--text);
+    padding: 8px;
+    border-radius: 4px;
+    resize: none;
+    font-family: inherit;
+    font-size: 14px;
+    min-height: 40px;
+    max-height: 120px;
+  }
+
+  .ai-chat-input textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .ai-chat-input button {
+    background: var(--accent);
+    color: var(--accent-text);
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+  }
+
+  .ai-chat-input button:hover {
+    opacity: 0.9;
+  }
+
+  .ai-chat-input button:disabled {
+    background: var(--btn-bg);
+    color: var(--subtle);
+    cursor: not-allowed;
+  }
+
+  /* Autocomplete dropdown */
+  .autocomplete-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    margin-bottom: 4px;
+  }
+
+  .autocomplete-dropdown.hidden {
+    display: none;
+  }
+
+  .autocomplete-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .autocomplete-item:last-child {
+    border-bottom: none;
+  }
+
+  .autocomplete-item:hover,
+  .autocomplete-item.selected {
+    background: var(--accent);
+    color: var(--accent-text);
+  }
+
+  .autocomplete-item .page-name {
+    font-weight: 500;
+  }
+
+  .autocomplete-item .detail {
+    font-size: 12px;
+    color: var(--subtle);
+    margin-left: 8px;
+  }
+
+  .autocomplete-item:hover .detail,
+  .autocomplete-item.selected .detail {
+    color: var(--accent-text);
+    opacity: 0.8;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--subtle);
+    text-align: center;
+    padding: 20px;
+  }
+
+  .empty-state h4 {
+    margin-bottom: 8px;
+  }
+
+  /* Tool call expandable blocks */
+  .tool-call {
+    margin: 4px 0;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    background: var(--bg);
+  }
+
+  .tool-call summary {
+    padding: 8px 12px;
+    cursor: pointer;
+    background: var(--overlay-light);
+    border-radius: 6px;
+    list-style: none;
+  }
+
+  .tool-call summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .tool-call summary::before {
+    content: "▶";
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 10px;
+    transition: transform 0.2s;
+  }
+
+  .tool-call[open] summary::before {
+    transform: rotate(90deg);
+  }
+
+  .tool-call[open] summary {
+    border-bottom: 1px solid var(--border);
+    border-radius: 6px 6px 0 0;
+  }
+
+  .tool-call summary:hover {
+    background: var(--overlay-medium);
+  }
+
+  .tool-call .status {
+    font-weight: bold;
+  }
+
+  .tool-call.success .status {
+    color: #22c55e;
+  }
+
+  .tool-call.error .status {
+    color: #ef4444;
+  }
+
+  .tool-call .tool-details {
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 0 0 6px 6px;
+  }
+
+  .tool-call .tool-args,
+  .tool-call .tool-result {
+    margin-bottom: 8px;
+  }
+
+  .tool-call .tool-result:last-child {
+    margin-bottom: 0;
+  }
+
+  .tool-call .tool-details pre {
+    margin: 4px 0 0 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--overlay-light);
+    padding: 6px 8px;
+    border-radius: 4px;
+  }
+
+  /* Agent indicator */
+  .agent-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    background: var(--overlay-light);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+
+  .agent-indicator.hidden {
+    display: none;
+  }
+
+  .agent-indicator .agent-icon {
+    font-size: 14px;
+  }
+
+  .agent-indicator .agent-name {
+    flex: 1;
+    font-weight: 500;
+  }
+
+  .agent-indicator .clear-agent-btn {
+    background: none;
+    border: none;
+    color: var(--subtle);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 3px;
+  }
+
+  .agent-indicator .clear-agent-btn:hover {
+    background: var(--overlay-medium);
+    color: var(--text);
+  }
+</style>
+
+<div class="ai-chat-panel">
+  <div class="ai-chat-header">
+    <h3>AI Assistant</h3>
+    <div class="ai-chat-actions">
+      <button id="new-chat-btn" title="Start new conversation">New</button>
+      <button id="export-btn" title="Export to markdown">Export</button>
+      <button id="close-btn" class="close-btn" title="Close panel">×</button>
+    </div>
+  </div>
+  <div id="agent-indicator" class="agent-indicator hidden">
+    <span class="agent-icon">🤖</span>
+    <span id="agent-name" class="agent-name"></span>
+    <button id="clear-agent-btn" class="clear-agent-btn" title="Clear agent">
+      ✕
+    </button>
+  </div>
+  <div class="ai-chat-messages" id="messages">
+    <div class="empty-state" id="empty-state">
+      <h4>Start a conversation</h4>
+      <p>Ask anything about your notes or something.</p>
+    </div>
+  </div>
+  <div class="ai-chat-input">
+    <div class="input-wrapper">
+      <textarea
+        id="user-input"
+        placeholder="Type a message... (@ or [[ for pages)"
+        rows="1"
+      ></textarea>
+      <div id="autocomplete-dropdown" class="autocomplete-dropdown hidden"></div>
+    </div>
+    <button id="send-btn">Send</button>
+  </div>
+</div>
+
+<script
+  src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js"
+  integrity="sha512-78KH17QLT5e55GJqP76vutp1D2iAoy06WcYBXB6iBCsmO6wWzx0Qdg8EDpm8mKXv68BcvHOyeeP4wxAL0twJGQ=="
+  crossorigin="anonymous"
+  referrerpolicy="no-referrer"
+></script>

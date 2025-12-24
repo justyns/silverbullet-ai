@@ -1,11 +1,3 @@
----
-tags: provider
-textProvider: true
-imageProvider: false
-apiProvider: openai
-embeddingProvider: true
----
-
 [OpenRouter](https://openrouter.ai/) provides access to a lot of different models, some of them even being free. Since it exposes all of these LLMs through an openai compatible api, we can use the openai provider to configure them.
 
 It's also possible to configure several different models using the same [openrouter api key](https://openrouter.ai/keys).

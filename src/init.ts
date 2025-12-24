@@ -20,8 +20,6 @@ import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 import { MockImageProvider } from "./mocks/mockproviders.ts";
 import { MockProvider } from "./mocks/mockproviders.ts";
 import { MockEmbeddingProvider } from "./mocks/mockproviders.ts";
-import { defineConfigSchemas } from "./config-schema.ts";
-
 export let apiKey: string;
 export let aiSettings: AISettings;
 export let chatSystemPrompt: ChatMessage;
@@ -323,10 +321,14 @@ async function loadAndMergeSettings() {
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
     userInstructions: "",
+    customContext: "",
     parseWikiLinks: true,
     bakeMessages: true,
     customEnrichFunctions: [],
     searchEmbeddings: false,
+    enableTools: true,
+    skipToolApproval: false,
+    defaultAgent: "",
   };
   const defaultPromptInstructions: PromptInstructions = {
     pageRenameSystem: "",
@@ -350,13 +352,6 @@ async function loadAndMergeSettings() {
 }
 
 export async function initializeOpenAI(configure = true) {
-  // Define config schemas first to enable validation
-  try {
-    await defineConfigSchemas();
-  } catch (error) {
-    console.warn("Failed to define config schemas:", error);
-  }
-
   const newCombinedSettings = await loadAndMergeSettings();
 
   if (
@@ -400,8 +395,25 @@ export async function initializeOpenAI(configure = true) {
   chatSystemPrompt = {
     role: "system",
     content:
-      `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet.`,
+      `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet (https://silverbullet.md/). You are the silverbullet-ai assistant (https://ai.silverbullet.md/).
+
+SilverBullet formatting:
+- Wiki links: [[Page Name]] or [[Page Name|display text]] or [[Page#Header]] for sections
+- Transclusions: ![[Page]] or ![[Page#Header]] embeds content inline
+- Tasks: - [ ] incomplete, - [x] complete
+- Tags: #tag inline or in frontmatter as tags: [tag1, tag2]
+- Attributes: [key: value] adds metadata to items/tasks
+- Frontmatter: YAML between --- at top; supports aliases, displayName, tags`,
   };
+  if (aiSettings.chat.enableTools) {
+    chatSystemPrompt.content +=
+      `\nYou have access to tools that can help you assist the user. Use them proactively when they would be helpful - for example, reading notes, searching, or performing actions the user requests.`;
+    chatSystemPrompt.content += `\n\nTool selection guidelines:
+- Use update_frontmatter (not update_note) when only changing page metadata like tags, status, or other YAML frontmatter fields
+- Use rename_note to move or rename pages - it automatically updates all backlinks
+- Use update_note for changes to the actual page content (body text, sections)
+- Use search_replace for small, targeted text changes within page content`;
+  }
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
       `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;

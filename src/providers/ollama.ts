@@ -1,4 +1,4 @@
-import { EmbeddingGenerationOptions, StreamChatOptions } from "../types.ts";
+import type { ChatMessage, ChatResponse, EmbeddingGenerationOptions, StreamChatOptions, Tool } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
@@ -32,15 +32,52 @@ export class OllamaProvider extends AbstractProvider {
     );
   }
 
-  async chatWithAI(
-    { messages, stream, onDataReceived, onResponseComplete }: StreamChatOptions,
-  ): Promise<any> {
-    return await this.openaiProvider.chatWithAI({
-      messages,
-      stream,
-      onDataReceived,
-      onResponseComplete,
-    });
+  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+    return await this.openaiProvider.streamChat(options);
+  }
+
+  async chat(
+    messages: ChatMessage[],
+    tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
+  ): Promise<ChatResponse> {
+    return await this.openaiProvider.chat(messages, tools, response_format);
+  }
+
+  /**
+   * Get model capabilities from Ollama's /api/show endpoint.
+   * Returns capabilities array (e.g., ["completion", "tools", "vision"]) or null if unavailable.
+   */
+  override async getModelCapabilities(modelName?: string): Promise<string[] | null> {
+    try {
+      const headers: HttpHeaders = {
+        "Content-Type": "application/json",
+      };
+
+      if (this.requireAuth) {
+        headers["Authorization"] = `Bearer ${this.apiKey}`;
+      }
+
+      const response = await this.fetch(
+        `${this.baseUrl.replace(/\/v1\/?/, "")}/api/show`,
+        {
+          method: "POST",
+          headers: headers,
+          body: JSON.stringify({ model: modelName || this.modelName }),
+        },
+      );
+
+      if (!response.ok) {
+        console.error("Failed to get model capabilities:", response.status);
+        return null;
+      }
+
+      const data = await response.json();
+      return data.capabilities || null;
+    } catch (error) {
+      console.error("Error fetching model capabilities:", error);
+      return null;
+    }
   }
 
   async listModels(): Promise<string[]> {
@@ -61,8 +98,10 @@ export class OllamaProvider extends AbstractProvider {
 
       if (!response.ok) {
         console.error("HTTP response: ", response);
-        console.error("HTTP response body: ", await response.json());
-        throw new Error(`HTTP error, status: ${response.status}`);
+        const errorBody = await response.json();
+        console.error("HTTP response body: ", errorBody);
+        const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+        throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
 
       const data = await response.json();
@@ -113,8 +152,10 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
 
     if (!response.ok) {
       console.error("HTTP response: ", response);
-      console.error("HTTP response body: ", await response.json());
-      throw new Error(`HTTP error, status: ${response.status}`);
+      const errorBody = await response.json();
+      console.error("HTTP response body: ", errorBody);
+      const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
+      throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }
 
     const data = await response.json();

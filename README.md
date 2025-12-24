@@ -17,15 +17,18 @@ If you are new here, start with either the `AI: Chat on current page` command or
 - **Insert Summary**: Inserts a summary of the selected text or note at the cursor position.
 - **Call OpenAI with Note Context**: Sends the note or selected text to OpenAI based on a user-defined prompt.
 - **Interactive Chat**:  Have an interactive chat, utilizing the current note as the chat interface.
-  - **RAG (**R**etrieval **A**ugmented Generation)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
+  - **RAG (**R**etrieval **A**ugmented **G**eneration)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
+- **AI Assistant Panel**: Right-side chat panel for persistent conversations across pages.
 - **Templated Prompts**: Define custom notes as a templated prompt that can be rendered, sent to llm, and then inserted into the page.
+- **AI Agents**: Create specialized AI personas with custom system prompts, tool filtering, and page or Lua-based definitions.
+- **AI Tools**: Built-in tools (read, create, update notes; search, navigate; execute Lua) with custom tool support and approval gates.
 - **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
 - **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
 - **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
 - **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
 - **Similarity search**: Allows doing a similarity search based on indexed embeddings.
 - **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
-- **FrontMatter generation**: **Experimental** extracts useful information from a note’s context and generates frontmatter attributes for it.
+- **FrontMatter generation**: **Experimental** extracts useful information from a note's context and generates frontmatter attributes for it.
 <!-- end-features -->
 
 ### Available commands
@@ -33,8 +36,6 @@ If you are new here, start with either the `AI: Chat on current page` command or
 The list below are the commands available in this plugin.
 
 <!-- start-commands-and-functions -->
-- **AI: Generate tags for note**: Asks the LLM to generate tags for the current note.
-Generated tags are added to the note's frontmatter.
 - **AI: Generate and insert image using DallE**: Prompts the user for a custom prompt to send to DALL·E, then sends the prompt to DALL·E to generate an image.
 The resulting image is then uploaded to the space and inserted into the note with a caption.
 - **AI: Chat on current page**: Streams a conversation with the LLM, but uses the current page as a sort of chat history.
@@ -42,20 +43,20 @@ New responses are always appended to the end of the page.
 - **AI: Execute AI Prompt from Custom Template**: Executes an AI prompt template. Supports two modes:
 1. Page-based: Pass SlashCompletionOption with templatePage to read template from a page
 2. Direct: Pass SpaceLuaPromptOptions with template string directly
-- **AI: Suggest Page Name**: Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
-- **AI: Generate Note FrontMatter**: Extracts important information from the current note and converts it
-to frontmatter attributes.
-- **AI: Enhance Note**: Enhances the current note by running the commands to generate tags for a note,
-generate new frontmatter attributes, and a new note name.
 - **AI: Select Text Model from Config**: Prompts the user to select a text/llm model from the configured models.
 - **AI: Select Image Model from Config**: Prompts the user to select an image model from the configured models.
 - **AI: Select Embedding Model from Config**: Prompts the user to select an embedding model from the configured models.
+- **AI: Select Agent**: undefined
+- **AI: Clear Agent**: undefined
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
 isn't too helpful for most cases.
 - **AI: Search**: Ask the user for a search query, run the search, and navigate to the results page.
 Search results are provided by calculating the cosine similarity between the
 query embedding and each indexed embedding.
 - **AI: Connectivity Test**: Command to run connectivity tests and navigate to the results page.
+- **AI: Run Benchmark**: undefined
+- **AI: Open Assistant**: Opens the AI Assistant panel
+- **AI: Toggle Assistant Panel**: Toggles the AI Assistant panel
 
 <!-- end-commands-and-functions -->
 
@@ -82,14 +83,14 @@ config.set {
     },
 
     -- Configure one or more text models
-    -- Provider may be openai or gemini. Most local or self-hosted LLMs offer an openai compatible api.
+    -- Provider may be openai, gemini, or ollama.
     textModels = {
       {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-turbo"},
       {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo"},
       {
         name = "ollama-llama3",
         modelName = "llama3",
-        provider = "openai",
+        provider = "ollama",
         baseUrl = "http://localhost:11434/v1",
         requireAuth = false
       }
@@ -115,9 +116,10 @@ config.set {
       {
         name = "ollama-llama3",
         modelName = "llama3",  -- Run `ollama list` to see available models
-        provider = "openai",
+        provider = "ollama",
         baseUrl = "http://localhost:11434/v1",
-        requireAuth = false
+        requireAuth = false,
+        useProxy = false  -- Bypass SilverBullet's proxy for local requests
       }
     }
   }
@@ -125,6 +127,8 @@ config.set {
 ```
 
 **requireAuth**: When using Ollama and Chrome, requireAuth needs to be set to false so that the Authorization header isn't set. Otherwise you will get a CORS error.
+
+**useProxy**: Set to false to bypass SilverBullet's proxy and make requests directly to Ollama.
 
 #### Mistral.ai
 
@@ -172,9 +176,9 @@ config.set {
 }
 ```
 
-#### Google Gemini (Experimental)
+#### Google Gemini
 
-Google does not offer an openai-compatible api, so consider the support for Gemini to be experimental:
+Google Gemini is supported as a text provider:
 
 ```lua
 config.set {
@@ -184,8 +188,8 @@ config.set {
     },
     textModels = {
       {
-        name = "gemini-pro",
-        modelName = "gemini-pro",
+        name = "gemini-2.0-flash",
+        modelName = "gemini-2.0-flash",
         provider = "gemini",
         secretName = "GOOGLE_AI_STUDIO_KEY"
       }
@@ -194,7 +198,7 @@ config.set {
 }
 ```
 
-**Note**: AI Studio is not the same as the Gemini App (previously Bard). You need access to https://aistudio.google.com/app specifically.
+**Note**: Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey). AI Studio is not the same as the Gemini App (previously Bard).
 
 #### Dall-E
 
@@ -240,7 +244,7 @@ Template notes make use of all of the template language available to SilverBulle
 
 To be a templated prompt, the note must have the following frontmatter:
 
-- `tags` must include `template` and `aiPrompt`
+- `tags` must include `meta/template/aiPrompt`
 - `aiprompt` object must exist and have a `description` key
 - Optionally, `aiprompt.systemPrompt` can be specified to override the system prompt
 
@@ -248,9 +252,7 @@ For example, here is a templated prompt to summarize the current note and insert
 
 ``` markdown
 ---
-tags:
-- template
-- aiPrompt
+tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a summary of the current page."
@@ -269,9 +271,7 @@ Another example prompt is to pull in remote pages and ask the llm to generate Sp
 
 ```
 ---
-tags:
-- template
-- aiPrompt
+tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Describe the Space Lua functionality you want and generate it"

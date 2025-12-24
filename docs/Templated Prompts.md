@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 20
----
-
 Template notes make use of all of the template language available to SilverBullet.
 
 ## Creating Markdown Templates
@@ -38,7 +33,7 @@ With the above note saved as `AI: Generate note summary`, you can run the `AI: E
 
 Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
 
-```
+``` markdown
 ---
 tags: meta/template/aiPrompt
 
@@ -68,7 +63,7 @@ You can also define AI prompts entirely in Space Lua using `ai.prompt.define`:
 ai.prompt.define {
   name = "Quick Summary",
   description = "Summarize selected text",
-  slashCommand = "aiQuickSummary",  -- Optional: register as slash command
+  slashCommand = "aiQuickSummary",
   systemPrompt = "You are a helpful assistant.",
   template = "Summarize this:\n\n${@selectedText or @currentPageText}",
   insertAt = "replace-selection",
@@ -86,7 +81,7 @@ Supported keys in the spec:
 * `template`: The prompt template string, supports `${...}` interpolation (required)
 * `description`: Description shown in pickers
 * `slashCommand`: (optional) Register as a slash command with this name
-* `systemPrompt`: (optional) System prompt for the AI
+* `systemPrompt`: (optional) System prompt for the LLM
 * `insertAt`: (optional) Where to insert result (default: `cursor`)
 * `chat`: (optional) Set to `true` for multi-turn chat mode
 * `enrichMessages`: (optional) Set to `true` to enable message enrichment
@@ -152,7 +147,7 @@ tags: meta/template/aiPrompt
 
 aiprompt:
   description: "Generate a summary of the current page."
-  system: You are an AI Note Summary bot.  Help the user create useful and accurate summaries.
+  systemPrompt: You are an AI Note Summary bot. Help the user create useful and accurate summaries.
   slashCommand: aisummarychat
   chat: true
 ---

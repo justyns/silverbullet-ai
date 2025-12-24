@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 2
----
-
 ## Library Manager (Recommended)
 
 Requires SilverBullet v2.3.0+
@@ -38,9 +33,9 @@ config.set {
     },
     textModels = {
       {
-        name = "GPT-4",
-        description = "OpenAI GPT-4",
-        modelName = "gpt-4",
+        name = "GPT-4o",
+        description = "OpenAI GPT-4o",
+        modelName = "gpt-4o",
         provider = "openai",
         secretName = "OPENAI_API_KEY",
         requireAuth = true

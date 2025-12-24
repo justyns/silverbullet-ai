@@ -1,5 +1,6 @@
 test-space/
 *.js
+!assets/*.js
 *.js.map
 *.db-shm
 *.db-wal
@@ -15,3 +16,6 @@ test?space*
 site/
 testspace*/
 dist/
+silverbullet
+*.diff
+sb-tui/

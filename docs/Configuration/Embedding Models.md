@@ -90,7 +90,7 @@ config.set {
       {
         name = "ollama-gemma2",
         modelName = "gemma2",
-        provider = "openai",
+        provider = "ollama",
         baseUrl = "http://localhost:11434/v1",
         requireAuth = false,
         useProxy = false

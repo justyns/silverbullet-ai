@@ -1,8 +1,5 @@
 import { editor, markdown, YAML } from "@silverbulletmd/silverbullet/syscalls";
-import {
-  collectNodesOfType,
-  renderToText,
-} from "@silverbulletmd/silverbullet/lib/tree";
+import { collectNodesOfType, renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import type { FrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 
 export async function getSelectedText() {

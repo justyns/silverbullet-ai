@@ -9,6 +9,7 @@ import {
   getSelectedTextModel,
   initIfNeeded,
 } from "./init.ts";
+import type { Tool } from "./types.ts";
 
 const connectivityTestPage = "🛰️ AI Connectivity Test";
 
@@ -97,8 +98,7 @@ export async function runConnectivityTests(): Promise<string> {
         aiSettings.embeddingModels.forEach((m) => text += `* ${m.name}\n`);
         text += "\n";
       } else {
-        text +=
-          "### 🔤 Embedding Models\n\n_No embedding models configured._\n\n";
+        text += "### 🔤 Embedding Models\n\n_No embedding models configured._\n\n";
       }
 
       text += `## Quick Setup
@@ -122,9 +122,9 @@ Use these commands to select your models:
 | Provider | ${model.provider} |
 | Model Name | \`${model.modelName}\` |
 | Authentication | ${model.requireAuth ? "Required" : "Not Required"} |
-| Secret Name | ${
-          model.secretName ? `\`${model.secretName}\`` : "_Not provided_"
-        } |${model.baseUrl ? `\n| API Endpoint | \`${model.baseUrl}\` |` : ""}
+| Secret Name | ${model.secretName ? `\`${model.secretName}\`` : "_Not provided_"} |${
+          model.baseUrl ? `\n| API Endpoint | \`${model.baseUrl}\` |` : ""
+        }
 
 `;
       };
@@ -163,17 +163,14 @@ Use these commands to select your models:
               "This is a connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).",
             );
             if (response && response.trim() === "CONNECTED") {
-              text +=
-                "> ✅ Successfully connected to API and received expected response\n\n";
+              text += "> ✅ Successfully connected to API and received expected response\n\n";
             } else {
-              text +=
-                "> ⚠️ Connected to API but received unexpected response\n\n";
+              text += "> ⚠️ Connected to API but received unexpected response\n\n";
               text += "```diff\n";
               text += "- Expected: CONNECTED\n";
               text += `+ Received: ${response}\n`;
               text += "```\n\n";
-              text +=
-                "_Note: The API is accessible but may not be following instructions precisely._\n\n";
+              text += "_Note: The API is accessible but may not be following instructions precisely._\n\n";
             }
 
             // Test streaming API connectivity
@@ -182,36 +179,32 @@ Use these commands to select your models:
               const chunks: string[] = [];
               const streamingResult = await new Promise<string>(
                 (resolve, reject) => {
-                  provider.chatWithAI({
+                  provider.streamChat({
                     messages: [{
                       role: "user",
                       content:
                         "This is a streaming connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).",
                     }],
-                    stream: true,
-                    onDataReceived: (chunk) => {
+                    onChunk: (chunk) => {
                       console.log("Streaming chunk received:", chunk);
                       chunks.push(chunk);
                     },
-                    onResponseComplete: (finalResponse) => {
-                      resolve(finalResponse);
+                    onComplete: (response) => {
+                      resolve(response.content || "");
                     },
                   }).catch(reject);
                 },
               );
 
               if (streamingResult.trim() === "CONNECTED") {
-                text +=
-                  "> ✅ Successfully connected to streaming API and received expected response\n\n";
+                text += "> ✅ Successfully connected to streaming API and received expected response\n\n";
               } else {
-                text +=
-                  "> ⚠️ Connected to streaming API but received unexpected response\n\n";
+                text += "> ⚠️ Connected to streaming API but received unexpected response\n\n";
                 text += "```diff\n";
                 text += "- Expected: CONNECTED\n";
                 text += `+ Received: ${streamingResult}\n`;
                 text += "```\n\n";
-                text +=
-                  "_Note: The streaming API is accessible but may not be following instructions precisely._\n\n";
+                text += "_Note: The streaming API is accessible but may not be following instructions precisely._\n\n";
               }
 
               text += "Received chunks: \n```\n";
@@ -220,11 +213,172 @@ Use these commands to select your models:
               });
               text += "```\n\n\n";
             } catch (streamError) {
-              text +=
-                `> ❌ Failed to connect to streaming API: ${streamError}\n\n`;
+              text += `> ❌ Failed to connect to streaming API: ${streamError}\n\n`;
               text += "**Troubleshooting Tips:**\n\n";
               text += "* Verify your provider supports streaming\n";
               text += "* Ensure there isn't a proxy affecting streaming\n\n";
+            }
+
+            // Test structured output (JSON mode)
+            text += "#### 📡 Structured Output Test\n\n";
+            try {
+              const structuredResponse = await provider.chat(
+                [{
+                  role: "user",
+                  content: 'Return a JSON object with a single key "status" and value "CONNECTED". No other text.',
+                }],
+                undefined,
+                { type: "json_object" },
+              );
+
+              if (structuredResponse.content) {
+                try {
+                  const parsed = JSON.parse(structuredResponse.content.trim());
+                  if (parsed.status === "CONNECTED") {
+                    text += "> ✅ Successfully received structured JSON response\n\n";
+                  } else {
+                    text += "> ⚠️ Received valid JSON but unexpected content\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  }
+                } catch {
+                  text += "> ⚠️ Response was not valid JSON (provider may not support structured output)\n\n";
+                  text += "```\n";
+                  text += structuredResponse.content + "\n";
+                  text += "```\n\n";
+                }
+              } else {
+                text += "> ⚠️ Received empty response\n\n";
+              }
+            } catch (structuredError) {
+              text += `> ❌ Failed to test structured output: ${structuredError}\n\n`;
+              text += "_Note: Some providers may not support structured output._\n\n";
+            }
+
+            // Test structured output with JSON schema
+            text += "#### 📡 Structured Output Test (JSON Schema)\n\n";
+            try {
+              const schemaResponse = await provider.chat(
+                [{
+                  role: "user",
+                  content: "Generate a test response with status CONNECTED and version 1.",
+                }],
+                undefined,
+                {
+                  type: "json_schema",
+                  json_schema: {
+                    name: "connectivity_test",
+                    schema: {
+                      type: "object",
+                      properties: {
+                        status: { type: "string", enum: ["CONNECTED"] },
+                        version: { type: "number" },
+                      },
+                      required: ["status", "version"],
+                      additionalProperties: false,
+                    },
+                    strict: true,
+                  },
+                },
+              );
+
+              if (schemaResponse.content) {
+                try {
+                  const parsed = JSON.parse(schemaResponse.content.trim());
+                  if (
+                    parsed.status === "CONNECTED" &&
+                    typeof parsed.version === "number"
+                  ) {
+                    text += "> ✅ Successfully received schema-validated JSON response\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  } else {
+                    text += "> ⚠️ Received JSON but schema validation would fail\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(parsed, null, 2) + "\n";
+                    text += "```\n\n";
+                  }
+                } catch {
+                  text += "> ⚠️ Response was not valid JSON (provider may not support json_schema)\n\n";
+                  text += "```\n";
+                  text += schemaResponse.content + "\n";
+                  text += "```\n\n";
+                }
+              } else {
+                text += "> ⚠️ Received empty response\n\n";
+              }
+            } catch (schemaError) {
+              text += `> ❌ Failed to test JSON schema output: ${schemaError}\n\n`;
+              text += "_Note: JSON schema mode may not be supported by all providers._\n\n";
+            }
+
+            // Test tool/function calling
+            text += "#### 🔧 Tool Calling Test\n\n";
+
+            // Check if model advertises tool support
+            const capabilities = await provider.getModelCapabilities();
+            if (capabilities && !capabilities.includes("tools")) {
+              text += "> ⚠️ Model does not advertise tool support\n\n";
+              text += `Capabilities: ${capabilities.join(", ")}\n\n`;
+            } else {
+              try {
+                const testTools: Tool[] = [{
+                  type: "function",
+                  function: {
+                    name: "get_current_time",
+                    description: "Get the current time in a specific timezone",
+                    parameters: {
+                      type: "object",
+                      properties: {
+                        timezone: {
+                          type: "string",
+                          description: "The timezone (e.g., 'UTC', 'America/New_York')",
+                        },
+                      },
+                      required: ["timezone"],
+                    },
+                  },
+                }];
+
+                const toolResponse = await provider.chat(
+                  [{
+                    role: "user",
+                    content: "What time is it in UTC? Use the get_current_time tool.",
+                  }],
+                  testTools,
+                );
+
+                if (toolResponse.tool_calls && toolResponse.tool_calls.length > 0) {
+                  const toolCall = toolResponse.tool_calls[0];
+                  if (toolCall.function.name === "get_current_time") {
+                    text += "> ✅ Model correctly generated a tool call\n\n";
+                    text += "```json\n";
+                    text += JSON.stringify(
+                      {
+                        name: toolCall.function.name,
+                        arguments: JSON.parse(toolCall.function.arguments),
+                      },
+                      null,
+                      2,
+                    ) + "\n";
+                    text += "```\n\n";
+                  } else {
+                    text += "> ⚠️ Model called unexpected tool: " +
+                      toolCall.function.name + "\n\n";
+                  }
+                } else {
+                  text += "> ⚠️ Model did not generate a tool call (may not support function calling)\n\n";
+                  if (toolResponse.content) {
+                    text += "Response: " + toolResponse.content.slice(0, 200) +
+                      "\n\n";
+                  }
+                }
+              } catch (toolError) {
+                text += `> ❌ Failed to test tool calling: ${toolError}\n\n`;
+                text += "_Note: Some providers may not support function/tool calling._\n\n";
+              }
             }
           } catch (error) {
             text += `> ❌ Failed to connect to API: ${error}\n\n`;
@@ -242,8 +396,7 @@ Use these commands to select your models:
 
       if (imageModel) {
         showModelDetails(imageModel, "Image Model", "🎨");
-        text +=
-          "> ℹ️ Image generation testing is disabled to avoid unnecessary API usage\n\n";
+        text += "> ℹ️ Image generation testing is disabled to avoid unnecessary API usage\n\n";
       }
 
       if (embeddingModel) {
@@ -263,8 +416,7 @@ Use these commands to select your models:
               .generateEmbeddings({ text: testText });
             if (embeddings && embeddings.length > 0) {
               text += "> ✅ Successfully generated embeddings\n\n";
-              text +=
-                `\`\`\`\nGenerated ${embeddings.length}-dimensional embedding vector\n\`\`\`\n\n`;
+              text += `\`\`\`\nGenerated ${embeddings.length}-dimensional embedding vector\n\`\`\`\n\n`;
             } else {
               text += "> ⚠️ Connected to API but received empty embeddings\n\n";
             }

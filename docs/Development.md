@@ -1,9 +1,3 @@
----
-tags: sidebar
-navOrder: 99
----
-
-
 ## Build
 To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
 
@@ -28,9 +22,9 @@ SilverBullet will automatically sync and load the new version of the plug (or sp
 
 ## Docs
 
-Documentation is located in the `docs/` directory and rendered using a combination of the [silverbullet-pub plugin](https://github.com/silverbulletmd/silverbullet-pub) and [mkdocs](https://github.com/mkdocs/mkdocs).
+Documentation is located in the `docs/` directory and rendered using [mkdocs](https://github.com/mkdocs/mkdocs).
 
-To make changes, use silverbullet locally like: `silverbullet docs/`
+To make changes, use silverbullet (or any markdown editor) locally like: `silverbullet docs/`
 
 If you want to see changes in real-time, open up two terminals and run these two commands:
 

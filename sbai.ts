@@ -1,23 +1,22 @@
-import {
-  extractFrontMatter,
-} from "@silverbulletmd/silverbullet/lib/frontmatter";
-import {
-  editor,
-  index,
-  lua,
-  markdown,
-  space,
-  system,
-} from "@silverbulletmd/silverbullet/syscalls";
-import { decodeBase64 } from "https://deno.land/std@0.224.0/encoding/base64.ts";
-import { parse as parseYAML } from "https://deno.land/std@0.224.0/yaml/mod.ts";
-import { getPageLength, updateFrontmatter } from "./src/editorUtils.ts";
+import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
+import { decodeBase64 } from "@std/encoding/base64";
+import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
   ImageGenerationOptions,
   ImageModelConfig,
   ModelConfig,
+  ResponseFormat,
 } from "./src/types.ts";
+
+type CodeWidgetContent = {
+  html?: string;
+  script?: string;
+  width?: number;
+  height?: number;
+  url?: string;
+};
 import {
   aiSettings,
   chatSystemPrompt,
@@ -34,10 +33,91 @@ import {
   setSelectedTextModel,
 } from "./src/init.ts";
 import {
+  assembleMessagesWithAttachments,
+  cleanMessagesForApi,
   convertPageToMessages,
   enrichChatMessages,
   folderName,
 } from "./src/utils.ts";
+import {
+  convertToOpenAITools,
+  createToolCallWidget,
+  discoverTools,
+  runAgenticChat,
+  runStreamingAgenticChat,
+} from "./src/tools.ts";
+import { chatAgentState } from "./src/chat-panel.ts";
+import { selectAgent } from "./src/agents.ts";
+
+/**
+ * Renders a tool-call fenced code block as an HTML widget.
+ * Called by SilverBullet when it encounters ```tool-call blocks.
+ */
+export function renderToolCallWidget(
+  bodyText: string,
+  _pageName: string,
+): CodeWidgetContent | null {
+  try {
+    const data = JSON.parse(bodyText);
+    const { name, args, result, success } = data;
+
+    const status = success ? "✓" : "✗";
+    const statusClass = success ? "success" : "error";
+    const argsStr = Object.keys(args || {}).length > 0 ? JSON.stringify(args, null, 2) : "";
+
+    const escapedResult = (result || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const escapedArgs = argsStr
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+
+    const html = `
+      <style>
+        .tool-call { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; }
+        @media (prefers-color-scheme: dark) { .tool-call { background: #2d2d2d; color: #d4d4d4; } }
+        .tool-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+        .tool-name { font-weight: 600; }
+        .tool-status { font-size: 14px; }
+        .tool-status.success { color: #22c55e; }
+        .tool-status.error { color: #ef4444; }
+        .tool-details { display: none; margin-top: 8px; font-size: 12px; }
+        .tool-details.open { display: block; }
+        .tool-section { margin: 4px 0; }
+        .tool-section-title { font-weight: 500; color: #666; }
+        @media (prefers-color-scheme: dark) { .tool-section-title { color: #888; } }
+        .tool-section pre { margin: 2px 0; padding: 4px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+        @media (prefers-color-scheme: dark) { .tool-section pre { background: rgba(255,255,255,0.05); } }
+      </style>
+      <div class="tool-call">
+        <div class="tool-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
+          <span>🔧</span>
+          <span class="tool-name">${name}</span>
+          <span class="tool-status ${statusClass}">${status}</span>
+        </div>
+        <div class="tool-details">
+          ${
+      escapedArgs
+        ? `<div class="tool-section"><div class="tool-section-title">Arguments</div><pre>${escapedArgs}</pre></div>`
+        : ""
+    }
+          ${
+      escapedResult
+        ? `<div class="tool-section"><div class="tool-section-title">Result</div><pre>${escapedResult}</pre></div>`
+        : ""
+    }
+        </div>
+      </div>
+    `;
+
+    return { html };
+  } catch (e) {
+    console.error("Error rendering tool call widget:", e);
+    return null;
+  }
+}
 
 /**
  * Prompts the user to select a text/llm model from the configured models.
@@ -131,223 +211,38 @@ export async function selectEmbeddingModelFromConfig() {
   console.log(`Selected embedding model:`, selectedEmbeddingModel);
 }
 
-/**
- * Asks the LLM to generate tags for the current note.
- * Generated tags are added to the note's frontmatter.
- */
-export async function tagNoteWithAI() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-  const tagResults = await index.queryLuaObjects<{ name: string }>("tag", {
-    objectVariable: "_",
-    where: await lua.parseExpression(`_.parent == "page"`),
-  });
-  const allTags = tagResults.map((t: { name: string }) => t.name);
-  console.log("All tags:", allTags);
-  const systemPrompt =
-    `You are an AI tagging assistant. Please provide a short list of tags, separated by spaces. Follow these guidelines:
-    - Only return tags and no other content.
-    - Tags must be one word only and in lowercase.
-    - Use existing tags as a starting point.
-    - Suggest tags sparingly, treating them as thematic descriptors rather than keywords.
-
-    The following tags are currently being used by other notes:
-    ${allTags.join(", ")}
-    
-    Always follow the below rules, if any, given by the user:
-    ${aiSettings.promptInstructions.tagRules}`;
-  const userPrompt = `Page Title: ${noteName}\n\nPage Content:\n${noteContent}`;
-  const response = await currentAIProvider.singleMessageChat(
-    userPrompt,
-    systemPrompt,
-  );
-  const tags = response.trim().replace(/,/g, "").split(/\s+/);
-
-  // Extract current frontmatter from the note
-  const tree = await markdown.parseMarkdown(noteContent);
-  const frontMatter = await extractFrontMatter(tree);
-
-  // Add new tags to the existing ones in the frontmatter
-  const updatedTags = [...new Set([...(frontMatter.tags || []), ...tags])];
-  frontMatter.tags = updatedTags;
-
-  await updateFrontmatter(frontMatter);
-  await editor.flashNotification("Note tagged successfully.");
-}
-
-/**
- * Ask the LLM to provide a name for the current note, allow the user to choose from the suggestions, and then rename the page.
- */
-export async function suggestPageName() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-
-  // Replacing this with the loading filterbox below instead
-  // await editor.flashNotification("Generating suggestions...");
-
-  // Open up a filterbox that acts as a "loading" modal until the real one is opened
-  const loadingOption = [{
-    name: "Generating suggestions...",
-    description: "",
-  }];
-  const filterBoxPromise = editor.filterBox(
-    "Loading...",
-    loadingOption,
-    "Retrieving suggestions from LLM provider.",
-  );
-
-  // Handle the initial filter box promise (if needed)
-  filterBoxPromise.then((selectedOption) => {
-    // Handle the selected option (if the user selects "loading...")
-    console.log("Selected option (initial):", selectedOption);
-  });
-
-  // Allow overriding the default system prompt entirely
-  let systemPrompt = "";
-  if (aiSettings.promptInstructions.pageRenameSystem) {
-    systemPrompt = aiSettings.promptInstructions.pageRenameSystem;
-  } else {
-    systemPrompt =
-      `You are an AI note-naming assistant. Your task is to suggest three to five possible names for the provided note content. Please adhere to the following guidelines:
-    - Provide each name on a new line.
-    - Use only spaces, forward slashes (as folder separators), and hyphens as special characters.
-    - Ensure the names are concise, descriptive, and relevant to the content.
-    - Avoid suggesting the same name as the current note.
-    - Include as much detail as possible within 3 to 10 words.
-    - Start names with ASCII characters only.
-    - Do not use markdown or any other formatting in your response.`;
-  }
-
-  const response = await currentAIProvider.singleMessageChat(
-    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    `${systemPrompt}
-
-Always follow the below rules, if any, given by the user:
-${aiSettings.promptInstructions.pageRenameRules}`,
-    true,
-  );
-
-  let suggestions = response.trim().split("\n").filter((line: string) =>
-    line.trim() !== ""
-  ).map((line: string) => line.replace(/^[*-]\s*/, "").trim());
-
-  // Always include the note's current name in the suggestions
-  suggestions.push(noteName);
-
-  // Remove duplicates
-  suggestions = [...new Set(suggestions)];
-
-  if (suggestions.length === 0) {
-    await editor.flashNotification("No suggestions available.");
-  }
-
-  const selectedSuggestion = await editor.filterBox(
-    "New page name",
-    suggestions.map((suggestion: string) => ({
-      name: suggestion,
-    })),
-    "Select a new page name from one of the suggestions below.",
-  );
-
-  if (!selectedSuggestion) {
-    await editor.flashNotification("No page name selected.", "error");
-    return;
-  }
-
-  console.log("selectedSuggestion", selectedSuggestion);
-  const renamedPage = await system.invokeFunction("index.renamePageCommand", {
-    oldPage: noteName,
-    page: selectedSuggestion.name,
-  });
-  console.log("renamedPage", renamedPage);
-  if (!renamedPage) {
-    await editor.flashNotification("Error renaming page.", "error");
+export async function selectAgentCommand() {
+  const agent = await selectAgent();
+  if (agent) {
+    chatAgentState("set", agent);
+    await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
   }
 }
 
+export async function clearAgentCommand() {
+  chatAgentState("clear");
+  await editor.flashNotification("Agent cleared");
+}
+
 /**
- * Extracts important information from the current note and converts it
- * to frontmatter attributes.
+ * Checks if AI tools are enabled for the current page.
+ * Tools can be disabled globally via config or per-page via frontmatter.
  */
-export async function enhanceNoteFrontMatter() {
-  await initIfNeeded();
-  const noteContent = await editor.getText();
-  const noteName = await editor.getCurrentPage();
-  const blacklistedAttrs = ["title", "tags"];
+async function areToolsEnabled(): Promise<boolean> {
+  // Check global config
+  if (aiSettings.chat?.enableTools === false) return false;
 
-  const systemPrompt =
-    `You are an AI note enhancing assistant. Your task is to understand the content of a note, detect and extract important information, and convert it to frontmatter attributes. Please adhere to the following guidelines:
-      - Only return valid YAML frontmatter.
-      - Do not use any markdown or any other formatting in your response.
-      - Do not include --- in your response.
-      - Do not include any content from the note in your response.
-      - Extract useful facts from the note and add them to the frontmatter, such as a person's name, age, a location, etc.
-      - Do not return any tags.
-      - Do not return a new note title.
-      - Do not use special characters in key names.  Only ASCII.
-      - Only return important information that would be useful when searching or filtering notes.
-      `;
-
-  const response = await currentAIProvider.singleMessageChat(
-    `Current Page Title: ${noteName}\n\nPage Content:\n${noteContent}`,
-    `${systemPrompt}
-
-Always follow the below rules, if any, given by the user:
-${aiSettings.promptInstructions.enhanceFrontMatterPrompt}`,
-    true,
-  );
-
-  console.log("frontmatter returned by enhanceNoteFrontMatter", response);
+  // Check page frontmatter
   try {
-    const newFrontMatter = parseYAML(response);
-    if (
-      typeof newFrontMatter !== "object" || Array.isArray(newFrontMatter) ||
-      !newFrontMatter
-    ) {
-      throw new Error("Invalid YAML: Not an object");
-    }
-
-    // Delete any blacklisted attributes from the response
-    blacklistedAttrs.forEach((attr) => {
-      delete (newFrontMatter as Record<string, any>)[attr];
-    });
-
-    // Extract current frontmatter from the note
-    const tree = await markdown.parseMarkdown(noteContent);
-    const frontMatter = await extractFrontMatter(tree);
-
-    // Merge old and new frontmatter
-    const updatedFrontmatter = {
-      ...frontMatter,
-      ...newFrontMatter,
-    };
-
-    await updateFrontmatter(updatedFrontmatter);
-  } catch (e) {
-    console.error("Invalid YAML returned by enhanceNoteFrontMatter", e);
-    await editor.flashNotification(
-      "Error: Invalid Frontmatter YAML returned.",
-      "error",
-    );
-    return;
+    const pageText = await editor.getText();
+    const tree = await markdown.parseMarkdown(pageText);
+    const frontmatter = await extractFrontMatter(tree);
+    if (frontmatter.aiTools === false) return false;
+  } catch (_e) {
+    // If we can't get frontmatter, enable tools by default
   }
 
-  await editor.flashNotification(
-    "Frontmatter enhanced successfully.",
-    "info",
-  );
-}
-
-/**
- * Enhances the current note by running the commands to generate tags for a note,
- * generate new frontmatter attributes, and a new note name.
- */
-export async function enhanceNoteWithAI() {
-  await tagNoteWithAI();
-  await enhanceNoteFrontMatter();
-  await suggestPageName();
+  return true;
 }
 
 /**
@@ -363,8 +258,12 @@ export async function streamChatOnPage() {
     );
     return;
   }
-  messages.unshift(chatSystemPrompt);
-  const enrichedMessages = await enrichChatMessages(messages);
+  const cleanedMessages = await cleanMessagesForApi(messages);
+  const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+  const enrichedMessages = assembleMessagesWithAttachments(
+    chatSystemPrompt,
+    messagesWithAttachments,
+  );
   console.log("enrichedMessages", enrichedMessages);
 
   let cursorPos = await getPageLength();
@@ -376,9 +275,72 @@ export async function streamChatOnPage() {
   await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
 
   try {
+    // Check if tools are enabled and available
+    const toolsEnabled = await areToolsEnabled();
+    const luaTools = toolsEnabled ? await discoverTools() : new Map();
+    const tools = convertToOpenAITools(luaTools);
+
+    if (tools.length > 0) {
+      console.log(`Chat on page: using ${tools.length} tools with streaming`);
+
+      // Queue to serialize async insertions (SSE events fire faster than editor can insert)
+      let insertQueue = Promise.resolve();
+      const loadingMessage = "🤔 Thinking … ";
+      let stillLoading = true;
+
+      // Insert loading indicator
+      await editor.insertAtPos(loadingMessage, cursorPos);
+
+      // Use streaming with tool support
+      await runStreamingAgenticChat({
+        messages: enrichedMessages,
+        tools,
+        luaTools,
+        streamFunction: (options) => currentAIProvider.streamChat(options),
+        onChunk: (chunk) => {
+          if (stillLoading) {
+            // Replace loading message with first chunk
+            stillLoading = false;
+            const pos = cursorPos;
+            cursorPos += chunk.length;
+            insertQueue = insertQueue.then(() => editor.replaceRange(pos, pos + loadingMessage.length, chunk));
+          } else {
+            const pos = cursorPos;
+            cursorPos += chunk.length;
+            insertQueue = insertQueue.then(() => editor.insertAtPos(chunk, pos));
+          }
+        },
+        onToolCall: (name, args, result) => {
+          const toolWidget = createToolCallWidget(
+            name,
+            args,
+            result.success,
+            result.success ? result.summary : result.error,
+          );
+          const toolLine = `\n${toolWidget}\n\n`;
+
+          if (stillLoading) {
+            // Replace loading message with tool indicator
+            stillLoading = false;
+            const pos = cursorPos;
+            cursorPos += toolLine.length;
+            insertQueue = insertQueue.then(() => editor.replaceRange(pos, pos + loadingMessage.length, toolLine));
+          } else {
+            const pos = cursorPos;
+            cursorPos += toolLine.length;
+            insertQueue = insertQueue.then(() => editor.insertAtPos(toolLine, pos));
+          }
+        },
+      });
+
+      // Wait for all pending insertions to complete
+      await insertQueue;
+      return;
+    }
+
+    // No tools available - use simple streaming
     await currentAIProvider.streamChatIntoEditor({
       messages: enrichedMessages,
-      stream: true,
     }, cursorPos);
   } catch (error) {
     console.error("Error streaming chat on page:", error);
@@ -433,8 +395,7 @@ export async function promptAndGenerateImage() {
 
       // And then insert it with the prompt dall-e rewrote for us
       // TODO: This uses the original prompt as alt-text, but sometimes it's kind of long. I'd like to let the user provide a template for how this looks.
-      const markdownImg =
-        `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
+      const markdownImg = `![${finalFileName}](${finalFileName})\n*${revisedPrompt}*`;
       await editor.insertAtCursor(markdownImg);
       await editor.flashNotification(
         "Image generated and inserted with caption successfully.",
@@ -467,6 +428,109 @@ export async function queryAI(
     return response;
   } catch (error) {
     console.error("Error querying OpenAI:", error);
+    throw error;
+  }
+}
+
+/**
+ * Options for the chat function callable from Space Lua
+ */
+export type ChatOptions = {
+  messages: Array<{ role: string; content: string }>;
+  systemPrompt?: string;
+  useTools?: boolean;
+  response_format?: ResponseFormat;
+};
+
+/**
+ * Result from the chat function
+ */
+export type ChatResult = {
+  response: string;
+  toolCalls?: string;
+};
+
+/**
+ * Lua-callable chat function with optional tool support.
+ * This allows Space Lua code to make LLM calls that can use AI tools.
+ *
+ * @example From Space Lua:
+ * ```lua
+ * -- Simple chat without tools
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "What is 2+2?"}
+ *   }
+ * })
+ * print(result.response)
+ *
+ * -- Chat with tools enabled
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "Read the page 'My Notes' and summarize it"}
+ *   },
+ *   useTools = true
+ * })
+ * print(result.response)
+ * print(result.toolCalls) -- Shows which tools were called
+ *
+ * -- With custom system prompt
+ * local result = system.invokeFunction("silverbullet-ai.chat", {
+ *   messages = {
+ *     {role = "user", content = "Translate to French: Hello"}
+ *   },
+ *   systemPrompt = "You are a helpful translator."
+ * })
+ * ```
+ */
+export async function chat(options: ChatOptions): Promise<ChatResult> {
+  try {
+    await initIfNeeded();
+
+    const messages = options.messages.map((m) => ({
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content,
+    }));
+
+    // Add system prompt if provided
+    if (options.systemPrompt) {
+      messages.unshift({
+        role: "system",
+        content: options.systemPrompt,
+      });
+    }
+
+    // If tools are enabled, use the agentic chat
+    if (options.useTools) {
+      const luaTools = await discoverTools();
+      const tools = convertToOpenAITools(luaTools);
+
+      if (tools.length > 0) {
+        const result = await runAgenticChat({
+          messages,
+          tools,
+          luaTools,
+          chatFunction: (msgs, t) => currentAIProvider.chat(msgs, t),
+        });
+
+        return {
+          response: result.finalResponse,
+          toolCalls: result.toolCallsText || undefined,
+        };
+      }
+    }
+
+    // No tools - use simple non-streaming chat
+    const response = await currentAIProvider.chat(
+      messages,
+      undefined,
+      options.response_format,
+    );
+    return {
+      response: response.content || "",
+    };
+  } catch (error) {
+    console.error("Error in chat function:", error);
     throw error;
   }
 }

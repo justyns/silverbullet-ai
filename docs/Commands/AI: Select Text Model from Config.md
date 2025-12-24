@@ -1,7 +1,7 @@
----
-tags: commands
-commandName: "AI: Select Text Model from Config"
-description: "Prompts the user to select a text/llm model from the configured models."
----
+Opens a filter box listing all configured text models. The selected model will be used for:
 
-${_CTX.currentPage.description}
+- Chat conversations
+- Templated prompts
+- All text generation tasks
+
+See [[Configuration/Text Models]] for how to configure text models.

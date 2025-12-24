@@ -1,7 +1,9 @@
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import {
+import type {
+  ChatMessage,
+  ChatResponse,
   EmbeddingGenerationOptions,
   ImageGenerationOptions,
   StreamChatOptions,
@@ -16,15 +18,35 @@ export class MockProvider extends AbstractProvider {
     super(apiKey, baseUrl, "mock", modelName);
   }
 
-  async chatWithAI(options: StreamChatOptions): Promise<any> {
-    const mockResponse = "This is a mock response from the AI.";
-    if (options.onDataReceived) {
-      for (const char of mockResponse) {
+  async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+    const mockResponse = "This is a mock streaming response.";
+
+    if (options.onChunk) {
+      for (const word of mockResponse.split(" ")) {
         await new Promise((resolve) => setTimeout(resolve, 50));
-        options.onDataReceived(char);
+        options.onChunk(word + " ");
       }
     }
-    return mockResponse;
+
+    const response: ChatResponse = {
+      content: mockResponse,
+      tool_calls: undefined,
+      finish_reason: "stop",
+    };
+
+    if (options.onComplete) {
+      options.onComplete(response);
+    }
+
+    return response;
+  }
+
+  chat(_messages: ChatMessage[]): Promise<ChatResponse> {
+    return Promise.resolve({
+      content: "This is a mock response from the AI.",
+      tool_calls: undefined,
+      finish_reason: "stop",
+    });
   }
 
   listModels(): Promise<string[]> {

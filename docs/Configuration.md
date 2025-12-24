@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 3
----
-
 Configuration is done using SilverBullet v2's Space Lua configuration system.
 
 ## Basic Example
@@ -31,21 +26,18 @@ config.set {
     },
 
     -- Configure one or more text models
-    -- Provider may be openai or gemini. Most local or self-hosted LLMs offer
-    -- an openai compatible api, so choose openai as the provider for those
-    -- and change the baseUrl accordingly.
+    -- Provider may be openai, gemini, or ollama.
     textModels = {
       {
         name = "ollama-phi-2",
         modelName = "phi-2",
-        provider = "openai",
+        provider = "ollama",
         baseUrl = "http://localhost:11434/v1",
         requireAuth = false,
         useProxy = false  -- Bypass SilverBullet's proxy for local services
       },
-      {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-0125-preview"},
-      {name = "gpt-4-vision-preview", provider = "openai", modelName = "gpt-4-vision-preview"},
-      {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo-0125"}
+      {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
+      {name = "gpt-4o-mini", provider = "openai", modelName = "gpt-4o-mini"}
     },
 
     -- Chat section is optional, but may help provide better results

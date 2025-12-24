@@ -1,7 +1,3 @@
----
-tags: commands
-commandName: "AI: Select Image Model from Config"
-description: "Prompts the user to select an image model from the configured models."
----
+Opens a filter box listing all configured image models. The selected model will be used for image generation commands like [[Commands/AI: Generate and insert image using DallE]].
 
-${_CTX.currentPage.description}
+See [[Configuration/Image Models]] for how to configure image models.

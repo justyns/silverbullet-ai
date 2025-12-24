@@ -1,11 +1,3 @@
----
-tags: commands
-commandName: "AI: Chat on current page"
-commandSummary: "Streams a conversation with the LLM, but uses the current page as a sort of chat history.
-New responses are always appended to the end of the page."
----
-
-
 Ever wanted to chat with an AI/LLM directly from your editor or notes?  Now you can!
 
 Run `AI: Chat on current page` or press (CTRL|CMD)+SHIFT+ENTER on any page and that page will become a new chat.
@@ -23,8 +15,8 @@ Another helpful chat feature is the ability to specify [[Configuration/Chat Inst
 
 ![](/Commands/2024-03-08-chat-custom-instructions.gif)
 
-If [[Configuration|bakeMessages]] is set to true (it is by default), any [Live Queries](https://silverbullet.md/Live%20Queries) or [Live Templates](https://silverbullet.md/Live%20Templates) are rendered before being sent to the llm.
+If [[Configuration|bakeMessages]] is set to true (it is by default), any Space Lua templates (`${...}`) and queries (`${query[[...]]}`) are rendered before being sent to the LLM.
 
-As of version 0.2.0, if `aiSettings.indexEmbeddings` and `aiSettings.chat.searchEmbeddings` are both enabled and [[Configuration/Embedding Models|an embedding model]] is properly configured, your existing notes will automatically be searched for relevant content (based on a semantic/similarity search using vector embeddings) and sent to the LLM for context.
+If `ai.indexEmbeddings` and `ai.chat.searchEmbeddings` are both enabled and [[Configuration/Embedding Models|an embedding model]] is properly configured, your existing notes will automatically be searched for relevant content (based on a semantic/similarity search using vector embeddings) and sent to the LLM for context.
 
 In some cases, this removes the need to link directly to another note as the search will do it for you.  Do keep in mind that this increases the amount of information sent to the llm api and also reduces your control over what information is sent.

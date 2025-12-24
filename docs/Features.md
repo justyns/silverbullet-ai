@@ -1,15 +1,12 @@
-
-- **Summarize Note**: Summarizes the content of a note or selected text.
-- **Replace with Summary**: Replaces the selected text with its summary.
-- **Insert Summary**: Inserts a summary of the selected text or note at the cursor position.
-- **Call OpenAI with Note Context**: Sends the note or selected text to OpenAI based on a user-defined prompt.
-- **Interactive Chat**:  Have an interactive chat, utilizing the current note as the chat interface.
-  - **RAG (**R**etrieval **A**ugmented Generation)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
-- **Templated Prompts**: Define custom notes as a templated prompt that can be rendered, sent to llm, and then inserted into the page.
-- **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
-- **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
-- **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
-- **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
-- **Similarity search**: Allows doing a similarity search based on indexed embeddings.
-- **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
-- **FrontMatter generation**: **Experimental** extracts useful information from a note’s context and generates frontmatter attributes for it.
+- **Interactive Chat**: Multi-turn conversations using the current note as the chat interface
+- **AI Assistant Panel**: Right-side chat panel for persistent conversations across pages
+- **RAG (Retrieval Augmented Generation)**: Automatic vector embedding search for relevant context
+- **Context Enrichment**: Wiki-link parsing, template expansion, and custom enrichment functions
+- **AI Agents**: Create specialized AI personas with custom system prompts, tool filtering, and page or Lua-based definitions
+- **AI Tools**: Built-in tools (read, create, update notes; search, navigate; execute Lua) with custom tool support and approval gates
+- **Templated Prompts**: Define custom prompts as pages or in Space Lua with multiple insertion modes
+- **Vector Embeddings**: Chunk-based embeddings stored in SilverBullet's datastore for semantic search
+- **Note Summaries**: *Experimental* - Generate and index page summaries
+- **Image Generation**: DALL-E integration with auto-upload and caption insertion
+- **Bundled Prompts**: Generate tags, suggest page names, generate frontmatter, enhance notes
+- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, any OpenAI-compatible API

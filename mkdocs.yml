@@ -86,10 +86,16 @@ nav:
       - Configuration.md
       - Configuration
   - Templated Prompts.md
+  - Bundled Prompts.md
+  - Agents.md
+  - Tools.md
+  - Context Enrichment.md
+  - Space Lua.md
   - Commands:
       - Commands
   - Providers:
       - Providers
+  - Recommended Models.md
   - SilverBullet v2 Migration Guide.md
   - Changelog.md
   - Development.md

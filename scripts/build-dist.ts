@@ -4,9 +4,9 @@
  * Combines all library Space Lua files into a single file
  */
 
-import { walk } from "jsr:@std/fs@1/walk";
-import { emptyDir } from "jsr:@std/fs@1/empty-dir";
-import { join } from "jsr:@std/path@1";
+import { walk } from "@std/fs/walk";
+import { emptyDir } from "@std/fs/empty-dir";
+import { join } from "@std/path";
 
 const DIST_DIR = "dist";
 const LIBRARY_DIR = "silverbullet-ai";
