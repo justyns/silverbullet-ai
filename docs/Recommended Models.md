@@ -11,6 +11,8 @@ This page lists AI models and their compatibility with silverbullet-ai features,
 |-------|----------|--------------|-----------|-------|
 | gpt-4o | OpenAI | Yes | 6/6 | |
 
+TODO: More to be added later
+
 ## Notes
 
 ### Running Your Own Benchmark

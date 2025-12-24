@@ -1,10 +1,3 @@
----
-tags: commands
-commandName: "AI: Generate Note FrontMatter"
-commandSummary: "Extracts important information from the current note and converts it
-to frontmatter attributes."
----
-
 > **note**: **Experimental**: This is new and not well-tested.  Please submit feedback if you have ideas for making it better.
 
 This command will attempt to extract useful information from a note and then generate frontmatter attributes for that note.

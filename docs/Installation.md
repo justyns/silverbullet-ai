@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 2
----
-
 ## Library Manager (Recommended)
 
 Requires SilverBullet v2.3.0+

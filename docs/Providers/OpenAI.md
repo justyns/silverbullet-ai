@@ -1,11 +1,3 @@
----
-tags: provider
-textProvider: true
-imageProvider: false
-apiProvider: openai
-embeddingProvider: true
----
-
 [OpenAI](https://platform.openai.com/) is the default provider for text models.
 
 For other OpenAI-compatible services, see:

@@ -1,11 +1,3 @@
----
-tags: provider
-textProvider: false
-imageProvider: true
-apiProvider: dalle
-embeddingProvider: false
----
-
 Dall-E can be configured to use for generating images with this configuration:
 
 ```lua

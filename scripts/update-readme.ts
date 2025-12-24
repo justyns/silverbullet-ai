@@ -57,15 +57,7 @@ async function updateReadme(tag: string) {
         if (error instanceof Deno.errors.NotFound) {
           // Command doc does not exist, create a new one
           if (docs) {
-            const sanitizedDocs = docs.replace(/\\/g, "\\\\").replace(
-              /"/g,
-              '\\"',
-            );
-            const commandDocsContent = `---
-tags: commands
-commandName: "${value.command.name}"
-commandSummary: "${sanitizedDocs}"
----`;
+            const commandDocsContent = `${docs}\n`;
             await Deno.writeTextFile(commandDocsPath, commandDocsContent);
           }
         } else {

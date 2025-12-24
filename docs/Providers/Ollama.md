@@ -1,11 +1,3 @@
----
-tags: provider
-textProvider: true
-imageProvider: false
-apiProvider: ollama
-embeddingProvider: true
----
-
 Ollama is supported both as a text/llm provider, and also can be used for embeddings generation.
 
 To use Ollama locally, make sure you have it running first and the desired models downloaded. Then, set the `baseUrl` to the url of your ollama instance:

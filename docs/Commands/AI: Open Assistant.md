@@ -1,10 +1,4 @@
----
-tags: commands
-commandName: "AI: Open Assistant"
-commandSummary: "Opens the AI Assistant chat panel on the right side of the editor."
----
-
-Opens an interactive chat panel on the right side of the screen for conversing with the AI.
+Opens an interactive chat panel on the right side of the screen for conversing with the assistant.
 
 **Keyboard shortcut:** ++ctrl+shift+a++ (++cmd+shift+a++ on Mac)
 

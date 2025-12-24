@@ -1,9 +1,3 @@
----
-tags: commands
-commandName: "AI: Test Embedding Generation"
-commandSummary: "Utility command to test embedding generation."
----
-
 A developer utility command that:
 
 1. Prompts you to enter some text

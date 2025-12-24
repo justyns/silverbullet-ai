@@ -1,9 +1,3 @@
----
-tags: commands
-commandName: "AI: Generate and insert image using DallE"
-commandSummary: "Generates an image using DALL-E and inserts it into the current note."
----
-
 When triggered:
 
 1. Prompts you for an image description

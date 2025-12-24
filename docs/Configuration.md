@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 3
----
-
 Configuration is done using SilverBullet v2's Space Lua configuration system.
 
 ## Basic Example

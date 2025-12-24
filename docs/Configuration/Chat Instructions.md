@@ -92,7 +92,7 @@ config.set {
 }
 ```
 
-This is useful for time-sensitive queries where you want the AI to know the current date without having to type it manually.
+This is useful for time-sensitive queries where you want the LLM to know the current date without having to type it manually.
 
 **Example - Include a profile page:**
 

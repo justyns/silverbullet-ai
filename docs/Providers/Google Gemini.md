@@ -1,11 +1,3 @@
----
-tags: provider
-textProvider: true
-imageProvider: false
-apiProvider: gemini
-embeddingProvider: true
----
-
 Google Gemini is supported as a text provider and for embeddings. Note that Gemini uses a different API format than OpenAI, so some features may behave slightly differently.
 
 ```lua

@@ -63,7 +63,7 @@ Add tools to the `ai.tools` table in any Space Lua block:
 
 ```lua
 ai.tools.my_tool = {
-  description = "What this tool does (shown to the AI)",
+  description = "What this tool does (shown to the LLM)",
   parameters = {
     type = "object",
     properties = {
@@ -80,7 +80,7 @@ ai.tools.my_tool = {
 
 Each tool needs:
 
-- `description` - Explains what the tool does (the AI uses this to decide when to call it)
+- `description` - Explains what the tool does (the LLM uses this to decide when to call it)
 - `parameters` - JSON Schema defining input parameters
 - `handler` - Function that receives `args` and returns a string result
 - `requiresApproval` - (optional) If `true`, user must confirm before the tool executes
@@ -108,7 +108,7 @@ ai.tools.update_note = {
 }
 ```
 
-When the AI calls a tool with `requiresApproval = true`, a confirmation dialog appears showing the tool name and arguments. Users can reject instead of approving, and can provide a message telling the llm what to do differently.
+When the LLM calls a tool with `requiresApproval = true`, a confirmation dialog appears showing the tool name and arguments. Users can reject instead of approving, and can provide a message telling the LLM what to do differently.
 
 ### Diff Preview with `ai.writePage`
 

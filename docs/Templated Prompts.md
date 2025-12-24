@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 20
----
-
 Template notes make use of all of the template language available to SilverBullet.
 
 ## Creating Markdown Templates
@@ -86,7 +81,7 @@ Supported keys in the spec:
 * `template`: The prompt template string, supports `${...}` interpolation (required)
 * `description`: Description shown in pickers
 * `slashCommand`: (optional) Register as a slash command with this name
-* `systemPrompt`: (optional) System prompt for the AI
+* `systemPrompt`: (optional) System prompt for the LLM
 * `insertAt`: (optional) Where to insert result (default: `cursor`)
 * `chat`: (optional) Set to `true` for multi-turn chat mode
 * `enrichMessages`: (optional) Set to `true` to enable message enrichment

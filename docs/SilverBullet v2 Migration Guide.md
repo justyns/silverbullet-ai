@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 10
----
-
 # SilverBullet v2 Migration Guide
 
 This guide covers migrating silverbullet-ai from SilverBullet v1 to v2. The main change is moving from SETTINGS/SECRETS pages to Space Lua configuration.

@@ -182,7 +182,7 @@ aiagent:
 |----------|------|-------------|
 | `name` | string | Display name and lookup key for the agent. Use this in `defaultAgent` config. |
 | `description` | string | Brief description shown in picker |
-| `systemPrompt` | string | The system prompt for the AI |
+| `systemPrompt` | string | The system prompt for the LLM |
 | `tools` | string[] | Whitelist - only these tools are available |
 | `toolsExclude` | string[] | Blacklist - these tools are removed |
 

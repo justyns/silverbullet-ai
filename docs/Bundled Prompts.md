@@ -1,6 +1,6 @@
 # Bundled Prompts
 
-The plug ships with several pre-built AI prompt templates defined in Space Lua. These appear as commands in the command palette but are implemented as AI prompts that can be customized through configuration.
+The plug ships with several prompt templates defined in Space Lua. These appear as commands in the command palette but are implemented as AI prompts that can be customized through configuration.
 
 ## Available Bundled Prompts
 
@@ -57,14 +57,3 @@ If tags include #receipt, move it to "Receipts/YYYY/MM-MMMM/" using the date fro
   }
 })
 ```
-
-## How These Work
-
-Unlike native plug commands, these are defined as Space Lua commands that call into the AI plug. This means:
-
-- They can be customized through configuration
-- They appear in the command palette like regular commands
-- They can be invoked from other Space Lua code
-- You can create your own similar prompts
-
-The source for these prompts can be found in the `silverbullet-ai/Space Lua/` directory of the plug.

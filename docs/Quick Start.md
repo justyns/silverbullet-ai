@@ -1,8 +1,3 @@
----
-tags: sidebar
-navOrder: 1
----
-
 This is a short introduction to installing and using the SilverBullet AI plug with **SilverBullet v2**.
 
 ## Installation
@@ -65,3 +60,7 @@ Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+S
 Or try searching with [[Commands/AI: Search]] after configuring an [[Configuration/Embedding Models|Embedding model]] and re-indexing the space.
 
 And that's it! Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go further.
+
+### Troubleshooting
+
+If something didn't work right, try using the `AI: Connectivity Test` command and also checking your browser's javascript console.

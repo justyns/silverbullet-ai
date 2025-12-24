@@ -1,6 +1,6 @@
 # Space Lua
 
-Call the AI from your own Space Lua code using the `silverbullet-ai.chat` function.
+Call the LLM from your own Space Lua code using the `silverbullet-ai.chat` function.
 
 ## Basic Usage
 
@@ -24,7 +24,7 @@ print(result.response)  -- "The capital of France is Paris."
 
 ## With Tools
 
-When `useTools` is enabled, the AI can use any tools defined in `ai.tools`:
+When `useTools` is enabled, the LLM can use any tools defined in `ai.tools`:
 
 ```lua
 local result = system.invokeFunction("silverbullet-ai.chat", {

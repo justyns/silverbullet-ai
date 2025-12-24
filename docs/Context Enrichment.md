@@ -1,6 +1,6 @@
 # Context Enrichment
 
-The AI plug automatically enriches chat messages with relevant context before sending them to the LLM. This helps the AI understand your notes and provide more relevant responses.
+The AI plug automatically enriches chat messages with relevant context before sending them to the LLM. This helps the LLM understand your notes and provide more relevant responses.
 
 ## How It Works
 
@@ -46,7 +46,7 @@ When `parseWikiLinks` is enabled, any `[[PageName]]` references in your message 
 Can you summarize the key points from [[Project Notes]]?
 ```
 
-The content of the "Project Notes" page will be attached to your message, giving the AI access to that information.
+The content of the "Project Notes" page will be attached to your message, giving the LLM access to that information.
 
 **Agent context:** Page-based agents (see [[Agents]]) can also include wiki-links in their page body. These become attachments that persist across the entire chat session.
 
@@ -64,10 +64,10 @@ When `bakeMessages` is enabled, SilverBullet templates and queries in your messa
 What should I work on today?
 
 Current tasks:
-{{query [[from]] [[index.tag("task")]] [[where]] [[_.done]] [[==]] [[false]]}}
+${query[[from index.tag("task") where _.done == false]]}
 ```
 
-The query results will be included in the message sent to the AI.
+The query results will be included in the message sent to the LLM.
 
 ## Custom Enrichment Functions
 
@@ -119,7 +119,7 @@ Content of the page goes here...
 </context>
 ```
 
-This format helps the AI distinguish between your message and the attached context.
+This format helps the LLM distinguish between your message and the attached context.  It's also inserted as it's own chat message to help preserve caching with providers that support it.
 
 ## Disabling Enrichment
 
