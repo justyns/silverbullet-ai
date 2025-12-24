@@ -15,7 +15,7 @@ Another helpful chat feature is the ability to specify [[Configuration/Chat Inst
 
 ![](/Commands/2024-03-08-chat-custom-instructions.gif)
 
-If [[Configuration|bakeMessages]] is set to true (it is by default), any [Live Queries](https://silverbullet.md/Live%20Queries) or [Live Templates](https://silverbullet.md/Live%20Templates) are rendered before being sent to the llm.
+If [[Configuration|bakeMessages]] is set to true (it is by default), any Space Lua templates (`${...}`) and queries (`${query[[...]]}`) are rendered before being sent to the LLM.
 
 If `ai.indexEmbeddings` and `ai.chat.searchEmbeddings` are both enabled and [[Configuration/Embedding Models|an embedding model]] is properly configured, your existing notes will automatically be searched for relevant content (based on a semantic/similarity search using vector embeddings) and sent to the LLM for context.
 
