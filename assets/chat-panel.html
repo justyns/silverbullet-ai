@@ -483,6 +483,126 @@
     background: var(--overlay-medium);
     color: var(--text);
   }
+
+  /* Mobile responsive styles */
+  @media (max-width: 768px) {
+    body {
+      font-size: 13px;
+    }
+
+    .ai-chat-header {
+      padding: 6px 8px;
+    }
+
+    .ai-chat-header h3 {
+      font-size: 13px;
+    }
+
+    .ai-chat-actions {
+      gap: 2px;
+    }
+
+    .ai-chat-actions button {
+      padding: 3px 6px;
+      font-size: 11px;
+    }
+
+    .ai-chat-messages {
+      padding: 8px;
+      gap: 8px;
+    }
+
+    .message {
+      max-width: 95%;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+
+    .ai-chat-input {
+      padding: 8px;
+      gap: 6px;
+    }
+
+    .ai-chat-input textarea {
+      padding: 6px;
+      font-size: 13px;
+      min-height: 36px;
+      max-height: 100px;
+    }
+
+    .ai-chat-input button {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .agent-indicator {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+
+    .tool-call {
+      font-size: 12px;
+    }
+
+    .tool-call summary {
+      padding: 6px 10px;
+    }
+
+    .tool-call .tool-details {
+      padding: 6px 10px;
+    }
+
+    .autocomplete-dropdown {
+      max-height: 150px;
+    }
+
+    .autocomplete-item {
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+  }
+
+  /* Extra small screens (phones in portrait) */
+  @media (max-width: 480px) {
+    body {
+      font-size: 12px;
+    }
+
+    .ai-chat-header h3 {
+      font-size: 12px;
+    }
+
+    .ai-chat-actions button {
+      padding: 2px 4px;
+      font-size: 10px;
+    }
+
+    .ai-chat-messages {
+      padding: 6px;
+      gap: 6px;
+    }
+
+    .message {
+      padding: 5px 8px;
+      font-size: 12px;
+    }
+
+    .ai-chat-input {
+      padding: 6px;
+      gap: 4px;
+    }
+
+    .ai-chat-input textarea {
+      padding: 5px;
+      font-size: 12px;
+      min-height: 32px;
+    }
+
+    .ai-chat-input button {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+  }
 </style>
 
 <div class="ai-chat-panel">
