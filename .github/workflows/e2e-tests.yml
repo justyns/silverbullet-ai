@@ -1,0 +1,56 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2.0.3
+        with:
+          deno-version: v2.x
+
+      - name: Install SilverBullet
+        run: deno install -A --global npm:silverbullet
+
+      - name: Build plugin
+        run: deno task build
+
+      - name: Copy plugin to test space
+        run: |
+          mkdir -p test-space/_plug
+          cp silverbullet-ai.plug.js test-space/_plug/
+
+      - name: Install Playwright browsers
+        run: deno task playwright:install
+
+      - name: Run E2E tests
+        run: deno task test:e2e
+
+      - name: Upload test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            e2e-tests/test-results/
+            e2e-tests/playwright-report/
+          retention-days: 7
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e-tests/playwright-report/
+          retention-days: 7
