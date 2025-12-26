@@ -1,4 +1,4 @@
-import { test, expect } from "npm:@playwright/test@1.49.0";
+import { test, expect } from "npm:@playwright/test@1.56.1";
 
 test.describe("AI Chat Panel", () => {
   test.beforeEach(async ({ page }) => {

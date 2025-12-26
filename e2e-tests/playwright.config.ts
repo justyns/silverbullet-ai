@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "npm:@playwright/test@1.49.0";
+import { defineConfig, devices } from "npm:@playwright/test@1.56.1";
 
 /**
  * Playwright configuration for SilverBullet AI plugin E2E tests
