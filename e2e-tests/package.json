@@ -1,0 +1,18 @@
+{
+  "name": "e2e-tests",
+  "version": "1.0.0",
+  "description": "This directory contains end-to-end browser tests for the SilverBullet AI plugin using [Playwright](https://playwright.dev/).",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}
