@@ -11,7 +11,7 @@ test.describe("AI Chat Panel", () => {
 
   test("should open chat panel with keyboard shortcut", async ({ page }) => {
     // Open command palette (Cmd/Ctrl+K)
-    const isMac = process.platform === "darwin";
+    const isMac = Deno.build.os === "darwin";
     await page.keyboard.press(isMac ? "Meta+K" : "Control+K");
 
     // Type the command to open AI assistant
@@ -136,7 +136,7 @@ test.describe("AI Chat Panel", () => {
 
 // Helper function to open chat panel
 async function openChatPanel(page: any) {
-  const isMac = process.platform === "darwin";
+  const isMac = Deno.build.os === "darwin";
   await page.keyboard.press(isMac ? "Meta+K" : "Control+K");
   await page.keyboard.type("AI: Toggle Assistant Panel");
   await page.keyboard.press("Enter");
