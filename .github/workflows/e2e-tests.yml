@@ -21,7 +21,10 @@ jobs:
           deno-version: v2.x
 
       - name: Install SilverBullet
-        run: deno install -A --global npm:silverbullet
+        run: deno install -f --name silverbullet --unstable-kv --unstable-worker-options -A --global https://get.silverbullet.md
+
+      - name: Add Deno bin to PATH
+        run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
 
       - name: Build plugin
         run: deno task build
