@@ -1,4 +1,4 @@
-import { defineConfig, devices } from "npm:@playwright/test@1.56.1";
+import { defineConfig, devices } from "@playwright/test";
 
 /**
  * Playwright configuration for SilverBullet AI plugin E2E tests
@@ -11,13 +11,13 @@ export default defineConfig({
   fullyParallel: true,
 
   /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!Deno.env.get("CI"),
+  forbidOnly: !!process.env.CI,
 
   /* Retry on CI only */
-  retries: Deno.env.get("CI") ? 2 : 0,
+  retries: process.env.CI ? 2 : 0,
 
   /* Opt out of parallel tests on CI. */
-  workers: Deno.env.get("CI") ? 1 : undefined,
+  workers: process.env.CI ? 1 : undefined,
 
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: [
@@ -28,7 +28,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: "http://localhost:3000",
+    baseURL: "http://localhost:3333",
 
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: "on-first-retry",
@@ -70,9 +70,10 @@ export default defineConfig({
 
   /* Run your local dev server before starting the tests */
   webServer: {
-    command: "deno run -A npm:silverbullet ./test-space --port 3000",
-    url: "http://localhost:3000",
-    reuseExistingServer: !Deno.env.get("CI"),
+    command:
+      "docker rm -f silverbullet-e2e 2>/dev/null; docker run --rm -p 3333:3000 -v ./test-space:/space --name silverbullet-e2e silverbullet",
+    url: "http://localhost:3333",
+    reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
   },
 });

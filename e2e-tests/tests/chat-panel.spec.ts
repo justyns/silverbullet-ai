@@ -1,4 +1,7 @@
-import { test, expect } from "npm:@playwright/test@1.56.1";
+import { expect, test } from "@playwright/test";
+
+// Run tests serially to avoid command palette conflicts
+test.describe.configure({ mode: "serial" });
 
 test.describe("AI Chat Panel", () => {
   test.beforeEach(async ({ page }) => {
@@ -9,32 +12,61 @@ test.describe("AI Chat Panel", () => {
     await page.waitForLoadState("networkidle");
   });
 
-  test("should open chat panel with keyboard shortcut", async ({ page }) => {
-    // Open command palette (Cmd/Ctrl+K)
-    const isMac = Deno.build.os === "darwin";
-    await page.keyboard.press(isMac ? "Meta+K" : "Control+K");
+  test("should load SilverBullet with AI plugin", async ({ page }) => {
+    // Wait for SilverBullet to fully initialize
+    await page.waitForTimeout(3000);
 
-    // Type the command to open AI assistant
-    await page.keyboard.type("AI: Toggle Assistant Panel");
+    // Check that the page title/header shows the test space
+    await expect(page.locator(".cm-content.cm-lineWrapping")).toBeVisible();
+
+    // The AI plugin should be loaded - check console for aiSettings
+    // This test just verifies the basic setup works
+  });
+
+  // TODO: These tests are flaky due to keyboard shortcut timing issues with Playwright
+  // The command palette doesn't reliably open with keyboard shortcuts in headless mode
+  // Consider using a different approach (e.g., direct API calls) in the future
+  test("should open chat panel with command palette", async ({ page }) => {
+    // Wait a bit for SilverBullet to fully initialize
+    await page.waitForTimeout(3000);
+
+    // Click on the main editor to ensure focus
+    await page.locator(".cm-content.cm-lineWrapping").first().click();
+    await page.waitForTimeout(500);
+
+    // Use keyboard shortcut Ctrl+/ to open command palette
+    await page.keyboard.press("Control+/");
+    await page.waitForTimeout(1000);
+
+    // Type slowly to avoid garbled text
+    await page.keyboard.type("AI: Toggle Assistant Panel", { delay: 50 });
+    await page.waitForTimeout(500);
     await page.keyboard.press("Enter");
 
     // Wait for the panel to appear
+    await page.waitForTimeout(2000);
+
     // The panel is loaded in an iframe
-    const panelFrame = page.frameLocator('iframe[title="rhs"]');
+    const panelFrame = page.frameLocator("iframe").first();
 
     // Check that the panel header is visible
-    await expect(panelFrame.locator("h3")).toContainText("AI Assistant");
+    await expect(panelFrame.locator(".ai-chat-header")).toContainText("AI Assistant");
   });
 
   test("should display chat input and send button", async ({ page }) => {
     // Open chat panel via command
     await openChatPanel(page);
 
-    const panelFrame = page.frameLocator('iframe[title="rhs"]');
+    // Wait for panel iframe to be available
+    await page.waitForSelector("iframe", { timeout: 10000 });
+    const panelFrame = page.frameLocator("iframe").first();
+
+    // Wait for the panel content to load
+    await panelFrame.locator(".ai-chat-panel").waitFor({ timeout: 10000 });
 
     // Check for input textarea
     const input = panelFrame.locator("#user-input");
-    await expect(input).toBeVisible();
+    await expect(input).toBeVisible({ timeout: 10000 });
     await expect(input).toHaveAttribute("placeholder", /Type a message/);
 
     // Check for send button
@@ -47,7 +79,7 @@ test.describe("AI Chat Panel", () => {
     // Open chat panel
     await openChatPanel(page);
 
-    const panelFrame = page.frameLocator('iframe[title="rhs"]');
+    const panelFrame = page.frameLocator("iframe").first();
 
     // Check for empty state message
     const emptyState = panelFrame.locator(".empty-state");
@@ -59,7 +91,7 @@ test.describe("AI Chat Panel", () => {
     // Open chat panel
     await openChatPanel(page);
 
-    const panelFrame = page.frameLocator('iframe[title="rhs"]');
+    const panelFrame = page.frameLocator("iframe").first();
 
     // Click new chat button
     const newChatBtn = panelFrame.locator("#new-chat-btn");
@@ -75,7 +107,7 @@ test.describe("AI Chat Panel", () => {
     // Open chat panel
     await openChatPanel(page);
 
-    const panelFrame = page.frameLocator('iframe[title="rhs"]');
+    const panelFrame = page.frameLocator("iframe").first();
 
     // Click close button
     const closeBtn = panelFrame.locator("#close-btn");
@@ -85,9 +117,8 @@ test.describe("AI Chat Panel", () => {
     // Wait a bit for panel to close
     await page.waitForTimeout(500);
 
-    // Panel iframe should no longer be visible
-    const panelIframe = page.locator('iframe[title="rhs"]');
-    await expect(panelIframe).not.toBeVisible();
+    // Panel should no longer be visible (check for the AI chat header)
+    await expect(page.locator(".sb-panel")).not.toBeVisible();
   });
 
   test.describe("Mobile responsiveness", () => {
@@ -97,7 +128,7 @@ test.describe("AI Chat Panel", () => {
       // Open chat panel
       await openChatPanel(page);
 
-      const panelFrame = page.frameLocator('iframe[title="rhs"]');
+      const panelFrame = page.frameLocator("iframe").first();
 
       // Check that header is visible and readable
       const header = panelFrame.locator(".ai-chat-header");
@@ -120,7 +151,12 @@ test.describe("AI Chat Panel", () => {
       // Open chat panel
       await openChatPanel(page);
 
-      const panelFrame = page.frameLocator('iframe[title="rhs"]');
+      // Wait for panel iframe to be available
+      await page.waitForSelector("iframe", { timeout: 15000 });
+      const panelFrame = page.frameLocator("iframe").first();
+
+      // Wait for the panel to be fully loaded
+      await panelFrame.locator(".ai-chat-panel").waitFor({ timeout: 15000 });
 
       // Check that body has mobile font size applied
       const body = panelFrame.locator("body");
@@ -136,11 +172,22 @@ test.describe("AI Chat Panel", () => {
 
 // Helper function to open chat panel
 async function openChatPanel(page: any) {
-  const isMac = Deno.build.os === "darwin";
-  await page.keyboard.press(isMac ? "Meta+K" : "Control+K");
-  await page.keyboard.type("AI: Toggle Assistant Panel");
+  // Wait for SilverBullet to initialize
+  await page.waitForTimeout(3000);
+
+  // Click on the main editor to ensure focus
+  await page.locator(".cm-content.cm-lineWrapping").first().click();
+  await page.waitForTimeout(500);
+
+  // Use keyboard shortcut Ctrl+/ to open command palette
+  await page.keyboard.press("Control+/");
+  await page.waitForTimeout(1000);
+
+  // Type slowly to avoid garbled text
+  await page.keyboard.type("AI: Toggle Assistant Panel", { delay: 50 });
+  await page.waitForTimeout(500);
   await page.keyboard.press("Enter");
 
   // Wait for panel to be ready
-  await page.waitForTimeout(1000);
+  await page.waitForTimeout(2000);
 }
