@@ -19,3 +19,9 @@ dist/
 silverbullet
 *.diff
 sb-tui/
+
+# E2E test artifacts
+e2e-tests/test-results/
+e2e-tests/playwright-report/
+e2e-tests/.auth/
+e2e-tests/node_modules/

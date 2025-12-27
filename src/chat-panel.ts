@@ -67,7 +67,9 @@ export async function openAIAssistant() {
     "silverbullet-ai",
     "assets/chat-panel.js",
   );
-  await editor.showPanel("rhs", 2, html, script);
+  // Use panel size 1 instead of 2 for better mobile experience
+  // This gives more room to both the document and the chat panel
+  await editor.showPanel("rhs", 1, html, script);
   isPanelOpen = true;
 }
 
