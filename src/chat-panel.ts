@@ -50,7 +50,7 @@ async function initChatAgent(): Promise<void> {
 }
 
 /**
- * Opens the AI Assistant panel
+ * Opens the AI Assistant panel (side panel)
  */
 export async function openAIAssistant() {
   await initIfNeeded();
@@ -74,10 +74,33 @@ export async function openAIAssistant() {
 }
 
 /**
- * Closes the AI Assistant panel
+ * Opens the AI Assistant as a full-screen modal (better for mobile)
+ */
+export async function openAIAssistantModal() {
+  await initIfNeeded();
+
+  if (isPanelOpen) {
+    return;
+  }
+
+  const html = await asset.readAsset(
+    "silverbullet-ai",
+    "assets/chat-panel.html",
+  );
+  const script = await asset.readAsset(
+    "silverbullet-ai",
+    "assets/chat-panel.js",
+  );
+  await editor.showPanel("modal", 20, html, script);
+  isPanelOpen = true;
+}
+
+/**
+ * Closes the AI Assistant panel (works for both side panel and modal)
  */
 export async function closeAIAssistant() {
   await editor.hidePanel("rhs");
+  await editor.hidePanel("modal");
   isPanelOpen = false;
 }
 

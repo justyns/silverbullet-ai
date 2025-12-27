@@ -103,6 +103,10 @@ functions:
       name: "AI: Open Assistant"
       key: "Ctrl-Shift-a"
       mac: "Cmd-Shift-a"
+  openAIAssistantModal:
+    path: src/chat-panel.ts:openAIAssistantModal
+    command:
+      name: "AI: Open Assistant (Full Screen)"
   closeAIAssistant:
     path: src/chat-panel.ts:closeAIAssistant
   toggleAIAssistant:

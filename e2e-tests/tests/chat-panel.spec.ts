@@ -168,9 +168,74 @@ test.describe("AI Chat Panel", () => {
       expect(fontSize).toBe("12px");
     });
   });
+
+  test.describe("Full Screen Modal", () => {
+    test("should open chat as full-screen modal", async ({ page }) => {
+      // Open chat panel in modal mode
+      await openChatPanelModal(page);
+
+      // The modal is loaded in an iframe inside a modal container
+      const panelFrame = page.frameLocator("iframe").first();
+
+      // Check that the panel header is visible
+      await expect(panelFrame.locator(".ai-chat-header")).toContainText("AI Assistant");
+
+      // Check for input and send button
+      const input = panelFrame.locator("#user-input");
+      await expect(input).toBeVisible();
+
+      const sendBtn = panelFrame.locator("#send-btn");
+      await expect(sendBtn).toBeVisible();
+    });
+
+    test("should close modal with close button", async ({ page }) => {
+      // Open chat panel in modal mode
+      await openChatPanelModal(page);
+
+      const panelFrame = page.frameLocator("iframe").first();
+
+      // Click close button
+      const closeBtn = panelFrame.locator("#close-btn");
+      await expect(closeBtn).toBeVisible();
+      await closeBtn.click();
+
+      // Wait a bit for modal to close
+      await page.waitForTimeout(500);
+
+      // Modal should no longer be visible
+      await expect(page.locator(".sb-modal")).not.toBeVisible();
+    });
+
+    test.describe("Mobile viewport with modal", () => {
+      test.use({ viewport: { width: 375, height: 667 } }); // iPhone SE size
+
+      test("should work well on mobile with full-screen modal", async ({ page }) => {
+        // Open chat panel in modal mode - better for mobile
+        await openChatPanelModal(page);
+
+        const panelFrame = page.frameLocator("iframe").first();
+
+        // Check that header is visible
+        const header = panelFrame.locator(".ai-chat-header");
+        await expect(header).toBeVisible();
+
+        // Check that input is visible and usable
+        const input = panelFrame.locator("#user-input");
+        await expect(input).toBeVisible();
+
+        // Type some text to ensure it's functional
+        await input.fill("Test message on mobile");
+        await expect(input).toHaveValue("Test message on mobile");
+
+        // Send button should be visible
+        const sendBtn = panelFrame.locator("#send-btn");
+        await expect(sendBtn).toBeVisible();
+      });
+    });
+  });
 });
 
-// Helper function to open chat panel
+// Helper function to open chat panel (side panel)
 async function openChatPanel(page: any) {
   // Wait for SilverBullet to initialize
   await page.waitForTimeout(3000);
@@ -189,5 +254,27 @@ async function openChatPanel(page: any) {
   await page.keyboard.press("Enter");
 
   // Wait for panel to be ready
+  await page.waitForTimeout(2000);
+}
+
+// Helper function to open chat panel as full-screen modal
+async function openChatPanelModal(page: any) {
+  // Wait for SilverBullet to initialize
+  await page.waitForTimeout(3000);
+
+  // Click on the main editor to ensure focus
+  await page.locator(".cm-content.cm-lineWrapping").first().click();
+  await page.waitForTimeout(500);
+
+  // Use keyboard shortcut Ctrl+/ to open command palette
+  await page.keyboard.press("Control+/");
+  await page.waitForTimeout(1000);
+
+  // Type slowly to avoid garbled text - use the full screen command
+  await page.keyboard.type("AI: Open Assistant (Full Screen)", { delay: 50 });
+  await page.waitForTimeout(500);
+  await page.keyboard.press("Enter");
+
+  // Wait for modal to be ready
   await page.waitForTimeout(2000);
 }
