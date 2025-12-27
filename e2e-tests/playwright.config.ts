@@ -7,6 +7,9 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests",
 
+  /* Global setup - configures test space with AI credentials */
+  globalSetup: "./global-setup.ts",
+
   /* Run tests in files in parallel */
   fullyParallel: true,
 

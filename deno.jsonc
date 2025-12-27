@@ -6,10 +6,10 @@
     "dist": "deno run --allow-read --allow-write scripts/build-dist.ts",
     "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts",
     "test": "deno test --coverage=cov_profile --allow-env",
-    "test:e2e": "cd e2e-tests && deno run -A npm:playwright@1.56.1 test",
-    "test:e2e:ui": "cd e2e-tests && deno run -A npm:playwright@1.56.1 test --ui",
-    "test:e2e:headed": "cd e2e-tests && deno run -A npm:playwright@1.56.1 test --headed",
-    "playwright:install": "deno run -A npm:playwright@1.56.1 install"
+    "test:e2e": "cd e2e-tests && npm install && npx playwright test",
+    "test:e2e:ui": "cd e2e-tests && npm install && npx playwright test --ui",
+    "test:e2e:headed": "cd e2e-tests && npm install && npx playwright test --headed",
+    "playwright:install": "cd e2e-tests && npm install && npx playwright install"
   },
   "lint": {
     "rules": {

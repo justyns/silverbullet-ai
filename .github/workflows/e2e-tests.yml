@@ -34,14 +34,30 @@ jobs:
 
       - name: Copy plugin to test space
         run: |
-          mkdir -p test-space/_plug
-          cp silverbullet-ai.plug.js test-space/_plug/
+          mkdir -p e2e-tests/test-space/_plug
+          cp silverbullet-ai.plug.js e2e-tests/test-space/_plug/
 
       - name: Install Playwright browsers
         run: deno task playwright:install
 
+      - name: Start SilverBullet
+        run: silverbullet e2e-tests/test-space --port 3000 &
+
+      - name: Wait for SilverBullet
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:3000 > /dev/null; then
+              echo "SilverBullet is ready"
+              break
+            fi
+            echo "Waiting for SilverBullet..."
+            sleep 2
+          done
+
       - name: Run E2E tests
-        run: deno task test:e2e
+        run: cd e2e-tests && npm install && npx playwright test --config=playwright.config.node.ts
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
 
       - name: Upload test results
         if: failure()
