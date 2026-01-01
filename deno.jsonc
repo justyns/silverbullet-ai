@@ -16,7 +16,10 @@
       "exclude": [
         "no-explicit-any"
       ]
-    }
+    },
+    "exclude": [
+      "e2e-tests/"
+    ]
   },
   "fmt": {
     "lineWidth": 120,
@@ -25,7 +28,8 @@
       ".*.md",
       "**/*.md",
       "*.plug.js",
-      "**/*.plug.js"
+      "**/*.plug.js",
+      "e2e-tests/"
     ]
   }
 }
