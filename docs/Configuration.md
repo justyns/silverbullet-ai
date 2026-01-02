@@ -16,7 +16,7 @@ config.set {
         apiKey = openai_key,
         -- Could also be something like: apiKey = config.get("ai.keys.OPENAI_API_KEY"),
         useProxy = false,
-        preferredModels = {"gpt-4o", "gpt-4o-mini"}  -- Shown first in picker
+        preferredModels = {"gpt-4o", "gpt-4o-mini"}
       },
       ollama = {
         baseUrl = "http://localhost:11434/v1",

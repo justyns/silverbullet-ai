@@ -3,10 +3,39 @@
 For other OpenAI-compatible services, see:
 
 - [[Providers/Ollama]] - Local models
+- [[Providers/OpenRouter]] - Access many models via one API
 - [[Providers/Mistral Ai]] - Mistral AI
 - [[Providers/Perplexity Ai]] - Perplexity AI
 
-## Example config:
+## Provider Configuration (Recommended)
+
+```lua
+local openai_key = "sk-your-openai-key-here"
+
+config.set {
+  ai = {
+    providers = {
+      openai = {
+        apiKey = openai_key,
+        preferredModels = {"gpt-4o", "gpt-4o-mini"}
+      }
+    },
+    -- Optional: auto-select a default model on startup
+    defaultTextModel = "openai:gpt-4o"
+  }
+}
+```
+
+With this configuration:
+
+- Run **"AI: Select Text Model"** to see all available OpenAI models
+- **"AI: Refresh Model List"** updates the cached model list
+- `preferredModels` appear first in the picker (marked with ★)
+
+## Legacy Configuration
+
+!!! warning "Deprecated"
+    The `textModels` array configuration is deprecated. Please migrate to the `providers` config above.
 
 ```lua
 config.set {
@@ -22,11 +51,17 @@ config.set {
 }
 ```
 
-- **name**: Display name for this model in SilverBullet
-- **provider**: `openai`
-- **modelName**: One of the models listed on [OpenAI's list of models](https://platform.openai.com/docs/models/overview)
-- **secretName**: Name of the API key in `ai.keys`. Defaults to `OPENAI_API_KEY` if not set.
+## Provider Options
 
-## Cost (OpenAI)
+| Option | Description |
+|--------|-------------|
+| `apiKey` | Your OpenAI API key |
+| `baseUrl` | Custom API endpoint (default: `https://api.openai.com/v1`) |
+| `useProxy` | Use SilverBullet's proxy (default: `true`) |
+| `preferredModels` | Array of model names to show first in the picker |
 
-While this plugin is free to use, OpenAI does charge for their API usage. Please see their [pricing page](https://openai.com/pricing) for cost of the various apis.
+## Cost
+
+While this plugin is free to use, OpenAI does charge for their API usage. Please see their [pricing page](https://openai.com/pricing) for cost of the various APIs.
+
+See [OpenAI's list of models](https://platform.openai.com/docs/models/overview) for available model names.
