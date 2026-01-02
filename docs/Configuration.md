@@ -64,6 +64,7 @@ With this configuration:
 | `baseUrl` | Custom API endpoint (required for Ollama, optional for OpenAI-compatible APIs) |
 | `useProxy` | Whether to use SilverBullet's proxy (default: true, set false for local services) |
 | `preferredModels` | Array of model names to show first in the picker |
+| `fetchModels` | Whether to fetch models from API (default: true). Set to `false` for APIs that don't support listing models - only `preferredModels` will be shown |
 
 ## Legacy Configuration (Deprecated)
 

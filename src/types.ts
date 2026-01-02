@@ -211,6 +211,7 @@ export type ProviderConfig = {
   baseUrl?: string;
   useProxy?: boolean;
   preferredModels?: string[];
+  fetchModels?: boolean; // Whether to fetch models from API (default: true)
 };
 
 export type ProvidersConfig = {

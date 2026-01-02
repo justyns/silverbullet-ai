@@ -111,6 +111,11 @@ export async function getModelsForProvider(
   providerName: string,
   config: ProviderConfig,
 ): Promise<string[]> {
+  // If fetchModels is explicitly false, only return preferredModels
+  if (config.fetchModels === false) {
+    return config.preferredModels || [];
+  }
+
   const cached = await getCachedModels(providerName);
   if (cached) {
     return cached;
@@ -149,7 +154,7 @@ export async function refreshModelCacheForProvider(
 ): Promise<string[]> {
   const providers = aiSettings?.providers as ProvidersConfig | undefined;
   const config = providers?.[providerName];
-  if (!config) {
+  if (!config || config.fetchModels === false) {
     return [];
   }
   return await discoverModelsForProvider(providerName, config);
@@ -163,7 +168,7 @@ export async function refreshAllModelCaches(): Promise<number> {
 
   let totalModels = 0;
   for (const [providerName, config] of Object.entries(providers)) {
-    if (!config) continue;
+    if (!config || config.fetchModels === false) continue;
     const models = await discoverModelsForProvider(providerName, config);
     totalModels += models.length;
   }
