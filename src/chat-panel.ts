@@ -274,11 +274,11 @@ async function runToolLoop(
     },
   });
 
-  // Accumulate usage from this chat session
+  // Update usage to reflect current context size (not cumulative)
   if (result.usage) {
-    sessionTokenUsage.prompt_tokens += result.usage.prompt_tokens;
-    sessionTokenUsage.completion_tokens += result.usage.completion_tokens;
-    sessionTokenUsage.total_tokens += result.usage.total_tokens;
+    sessionTokenUsage.prompt_tokens = result.usage.prompt_tokens;
+    sessionTokenUsage.completion_tokens = result.usage.completion_tokens;
+    sessionTokenUsage.total_tokens = result.usage.total_tokens;
     saveTokenUsage();
   }
 
@@ -305,11 +305,11 @@ async function streamFinalResponse(
       buffer.chunks.push(chunk);
     },
     onComplete: (response) => {
-      // Accumulate usage from streaming response
+      // Update usage to reflect current context size (not cumulative)
       if (response.usage) {
-        sessionTokenUsage.prompt_tokens += response.usage.prompt_tokens;
-        sessionTokenUsage.completion_tokens += response.usage.completion_tokens;
-        sessionTokenUsage.total_tokens += response.usage.total_tokens;
+        sessionTokenUsage.prompt_tokens = response.usage.prompt_tokens;
+        sessionTokenUsage.completion_tokens = response.usage.completion_tokens;
+        sessionTokenUsage.total_tokens = response.usage.total_tokens;
         saveTokenUsage();
       }
       buffer.status = "complete";
