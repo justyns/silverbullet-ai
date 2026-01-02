@@ -1,5 +1,5 @@
 import { SSE } from "sse.js";
-import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool } from "../types.ts";
+import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool, Usage } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
@@ -124,6 +124,7 @@ export class GeminiProvider extends AbstractProvider {
 
         const source = new SSE(sseUrl, sseOptions);
         let fullContent = "";
+        let usage: Usage | undefined;
 
         source.addEventListener("message", (e: sseEvent) => {
           try {
@@ -133,6 +134,7 @@ export class GeminiProvider extends AbstractProvider {
                 content: fullContent,
                 tool_calls: undefined,
                 finish_reason: "stop",
+                usage,
               };
               if (onComplete) onComplete(response);
               resolve(response);
@@ -141,11 +143,20 @@ export class GeminiProvider extends AbstractProvider {
               console.error("Received empty message from Gemini");
             } else {
               const data = JSON.parse(e.data);
-              const msg = data.candidates[0].content.parts[0].text ||
+              const msg = data.candidates?.[0]?.content?.parts?.[0]?.text ||
                 data.text ||
                 "";
               fullContent += msg;
               if (onChunk) onChunk(msg);
+
+              // Capture usage metadata (comes in final chunk)
+              if (data.usageMetadata) {
+                usage = {
+                  prompt_tokens: data.usageMetadata.promptTokenCount || 0,
+                  completion_tokens: data.usageMetadata.candidatesTokenCount || 0,
+                  total_tokens: data.usageMetadata.totalTokenCount || 0,
+                };
+              }
             }
           } catch (error) {
             console.error("Error processing message event:", error, e.data);
@@ -158,6 +169,7 @@ export class GeminiProvider extends AbstractProvider {
             content: fullContent,
             tool_calls: undefined,
             finish_reason: "stop",
+            usage,
           };
           if (onComplete) onComplete(response);
           resolve(response);
@@ -222,6 +234,13 @@ export class GeminiProvider extends AbstractProvider {
     return {
       content: responseData.candidates[0].content.parts[0].text,
       tool_calls: undefined,
+      usage: responseData.usageMetadata
+        ? {
+          prompt_tokens: responseData.usageMetadata.promptTokenCount || 0,
+          completion_tokens: responseData.usageMetadata.candidatesTokenCount || 0,
+          total_tokens: responseData.usageMetadata.totalTokenCount || 0,
+        }
+        : undefined,
     };
   }
 }

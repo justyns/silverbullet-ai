@@ -25,10 +25,17 @@ export type StreamChatOptions = {
   postProcessors?: string[];
 };
 
+export type Usage = {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+};
+
 export type ChatResponse = {
   content: string | null;
   tool_calls?: ToolCall[];
   finish_reason?: "stop" | "tool_calls" | "length";
+  usage?: Usage;
 };
 
 export type ImageGenerationOptions = {

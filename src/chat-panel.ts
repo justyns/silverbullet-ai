@@ -1,12 +1,19 @@
 import { asset, clientStore, editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
-import type { AIAgentTemplate, Attachment, ChatMessage, LuaToolDefinition, Tool } from "./types.ts";
-import { aiSettings, chatSystemPrompt, currentAIProvider, initIfNeeded } from "./init.ts";
+import type { AIAgentTemplate, Attachment, ChatMessage, LuaToolDefinition, Tool, Usage } from "./types.ts";
+import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
+import { getModelContextLimit as lookupModelContextLimit } from "./model-metadata.ts";
 
 let isPanelOpen = false;
 let currentChatAgent: AIAgentTemplate | null = null;
+
+let sessionTokenUsage: Usage = {
+  prompt_tokens: 0,
+  completion_tokens: 0,
+  total_tokens: 0,
+};
 
 interface StreamBuffer {
   chunks: string[];
@@ -15,6 +22,7 @@ interface StreamBuffer {
 }
 const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
+const TOKEN_USAGE_KEY = "ai.panelTokenUsage";
 
 /**
  * Helper to avoid exporting get/set/clear separately in the plug yaml
@@ -266,6 +274,14 @@ async function runToolLoop(
     },
   });
 
+  // Accumulate usage from this chat session
+  if (result.usage) {
+    sessionTokenUsage.prompt_tokens += result.usage.prompt_tokens;
+    sessionTokenUsage.completion_tokens += result.usage.completion_tokens;
+    sessionTokenUsage.total_tokens += result.usage.total_tokens;
+    saveTokenUsage();
+  }
+
   if (result.toolCallsText) {
     buffer.chunks.push(result.toolCallsText);
   }
@@ -288,7 +304,14 @@ async function streamFinalResponse(
     onChunk: (chunk: string) => {
       buffer.chunks.push(chunk);
     },
-    onComplete: (_response) => {
+    onComplete: (response) => {
+      // Accumulate usage from streaming response
+      if (response.usage) {
+        sessionTokenUsage.prompt_tokens += response.usage.prompt_tokens;
+        sessionTokenUsage.completion_tokens += response.usage.completion_tokens;
+        sessionTokenUsage.total_tokens += response.usage.total_tokens;
+        saveTokenUsage();
+      }
       buffer.status = "complete";
     },
   });
@@ -389,4 +412,60 @@ tags: aichat${agentRef ? `\nagent: "${agentRef}"` : ""}
     console.error("Error exporting chat:", error);
     await editor.flashNotification("Failed to export chat", "error");
   }
+}
+
+/**
+ * Returns the current session's token usage.
+ */
+export function getSessionTokenUsage(): Usage {
+  return { ...sessionTokenUsage };
+}
+
+/**
+ * Resets the session token usage (e.g., when starting a new chat).
+ */
+export async function resetSessionTokenUsage(): Promise<void> {
+  sessionTokenUsage = {
+    prompt_tokens: 0,
+    completion_tokens: 0,
+    total_tokens: 0,
+  };
+  await saveTokenUsage();
+}
+
+/**
+ * Saves the current token usage to clientStore.
+ */
+async function saveTokenUsage(): Promise<void> {
+  try {
+    await clientStore.set(TOKEN_USAGE_KEY, sessionTokenUsage);
+  } catch (e) {
+    console.error("Failed to save token usage:", e);
+  }
+}
+
+/**
+ * Loads token usage from clientStore.
+ */
+export async function loadTokenUsage(): Promise<void> {
+  try {
+    const stored = await clientStore.get(TOKEN_USAGE_KEY) as Usage | null;
+    if (stored) {
+      sessionTokenUsage = stored;
+    }
+  } catch (e) {
+    console.error("Failed to load token usage:", e);
+  }
+}
+
+/**
+ * Gets the context window limit for the currently selected model.
+ */
+export async function getModelContextLimit(): Promise<number | null> {
+  await initIfNeeded();
+  const model = await getSelectedTextModel();
+  if (!model?.modelName) {
+    return null;
+  }
+  return lookupModelContextLimit(model.modelName);
 }

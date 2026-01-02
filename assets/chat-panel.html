@@ -90,6 +90,26 @@
     padding: 4px 6px;
   }
 
+  .token-display {
+    font-size: 11px;
+    color: var(--subtle);
+    padding: 2px 8px;
+    background: var(--overlay-light);
+    border-radius: 4px;
+    cursor: help;
+    white-space: nowrap;
+  }
+
+  .token-display.warning {
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+  }
+
+  .token-display.danger {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+  }
+
   .ai-chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -608,6 +628,9 @@
 <div class="ai-chat-panel">
   <div class="ai-chat-header">
     <h3>AI Assistant</h3>
+    <div id="token-display" class="token-display" title="Tokens used / Context limit">
+      <span id="token-count">0</span> / <span id="context-limit">--</span>
+    </div>
     <div class="ai-chat-actions">
       <button id="new-chat-btn" title="Start new conversation">New</button>
       <button id="export-btn" title="Export to markdown">Export</button>

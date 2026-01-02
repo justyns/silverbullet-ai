@@ -1,6 +1,6 @@
 import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import { computeSimpleDiff, type DiffLine } from "./utils.ts";
-import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool } from "./types.ts";
+import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool, Usage } from "./types.ts";
 import { aiSettings } from "./init.ts";
 
 const MAX_TOOL_ITERATIONS = 10;
@@ -627,12 +627,25 @@ export type AgenticChatResult = {
   messages: ChatMessage[];
   finalResponse: string;
   toolCallsText: string;
+  usage?: Usage;
 };
 
 /**
  * Runs an agentic chat loop that executes tool calls until we get a final response.
  * This is a reusable utility for both the chat panel and chat-on-page.
  */
+function aggregateUsage(total: Usage | undefined, add: Usage | undefined): Usage | undefined {
+  if (!add) return total;
+  if (!total) {
+    return { ...add };
+  }
+  return {
+    prompt_tokens: total.prompt_tokens + add.prompt_tokens,
+    completion_tokens: total.completion_tokens + add.completion_tokens,
+    total_tokens: total.total_tokens + add.total_tokens,
+  };
+}
+
 export async function runAgenticChat(
   options: AgenticChatOptions,
 ): Promise<AgenticChatResult> {
@@ -648,6 +661,7 @@ export async function runAgenticChat(
   const workingMessages = [...messages];
   let toolCallsText = "";
   let iterations = 0;
+  let totalUsage: Usage | undefined;
 
   // If no tools available, just call once and return
   if (tools.length === 0) {
@@ -656,6 +670,7 @@ export async function runAgenticChat(
       messages: workingMessages,
       finalResponse: response.content || "",
       toolCallsText: "",
+      usage: response.usage,
     };
   }
 
@@ -664,6 +679,7 @@ export async function runAgenticChat(
     iterations++;
 
     const response = await chatFunction(workingMessages, tools);
+    totalUsage = aggregateUsage(totalUsage, response.usage);
 
     if (response.tool_calls && response.tool_calls.length > 0) {
       workingMessages.push({
@@ -685,6 +701,7 @@ export async function runAgenticChat(
         messages: workingMessages,
         finalResponse: response.content || "",
         toolCallsText,
+        usage: totalUsage,
       };
     }
   }
@@ -694,6 +711,7 @@ export async function runAgenticChat(
     messages: workingMessages,
     finalResponse: "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
+    usage: totalUsage,
   };
 }
 
@@ -736,6 +754,7 @@ export async function runStreamingAgenticChat(
   let toolCallsText = "";
   let iterations = 0;
   let fullResponse = "";
+  let totalUsage: Usage | undefined;
 
   // If no tools available, just stream once and return
   if (tools.length === 0) {
@@ -748,6 +767,7 @@ export async function runStreamingAgenticChat(
       messages: workingMessages,
       finalResponse: result.content || "",
       toolCallsText: "",
+      usage: result.usage,
     };
   }
 
@@ -760,6 +780,7 @@ export async function runStreamingAgenticChat(
       tools,
       onChunk,
     });
+    totalUsage = aggregateUsage(totalUsage, result.usage);
 
     if (result.tool_calls && result.tool_calls.length > 0) {
       workingMessages.push({
@@ -783,6 +804,7 @@ export async function runStreamingAgenticChat(
         messages: workingMessages,
         finalResponse: result.content || "",
         toolCallsText,
+        usage: totalUsage,
       };
     }
   }
@@ -793,5 +815,6 @@ export async function runStreamingAgenticChat(
     finalResponse: fullResponse +
       "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
+    usage: totalUsage,
   };
 }

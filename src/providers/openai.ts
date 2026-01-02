@@ -8,6 +8,7 @@ import type {
   StreamChatOptions,
   Tool,
   ToolCall,
+  Usage,
 } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider } from "../interfaces/Provider.ts";
@@ -54,6 +55,7 @@ export class OpenAIProvider extends AbstractProvider {
         const requestBody: Record<string, unknown> = {
           model: this.modelName,
           stream: true,
+          stream_options: { include_usage: true },
           messages: messages,
         };
 
@@ -76,6 +78,7 @@ export class OpenAIProvider extends AbstractProvider {
         const source = new SSE(sseUrl, sseOptions);
         let fullContent = "";
         let finishReason: string = "stop";
+        let usage: Usage | undefined;
 
         const toolCallsAccumulator = new Map<number, {
           id: string;
@@ -96,6 +99,7 @@ export class OpenAIProvider extends AbstractProvider {
                 content: fullContent,
                 tool_calls: toolCalls,
                 finish_reason: finishReason as "stop" | "tool_calls" | "length",
+                usage,
               };
 
               if (onComplete) onComplete(response);
@@ -104,6 +108,16 @@ export class OpenAIProvider extends AbstractProvider {
             }
 
             const data = JSON.parse(e.data);
+
+            // Capture usage from final chunk (sent when stream_options.include_usage is true)
+            if (data.usage) {
+              usage = {
+                prompt_tokens: data.usage.prompt_tokens,
+                completion_tokens: data.usage.completion_tokens,
+                total_tokens: data.usage.total_tokens,
+              };
+            }
+
             const choice = data.choices?.[0];
             if (!choice) return;
 
@@ -243,6 +257,13 @@ export class OpenAIProvider extends AbstractProvider {
       return {
         content: message.content,
         tool_calls: message.tool_calls as ToolCall[] | undefined,
+        usage: data.usage
+          ? {
+            prompt_tokens: data.usage.prompt_tokens,
+            completion_tokens: data.usage.completion_tokens,
+            total_tokens: data.usage.total_tokens,
+          }
+          : undefined,
       };
     } catch (error) {
       console.error("Error calling OpenAI chat endpoint:", error);

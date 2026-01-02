@@ -11,11 +11,46 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const agentIndicator = document.getElementById("agent-indicator");
   const agentNameEl = document.getElementById("agent-name");
   const clearAgentBtn = document.getElementById("clear-agent-btn");
+  const tokenDisplayEl = document.getElementById("token-display");
+  const tokenCountEl = document.getElementById("token-count");
+  const contextLimitEl = document.getElementById("context-limit");
 
   let chatHistory = [];
   let chatData = { id: null, messages: [] };
   let currentStreamId = null;
   let isStreaming = false;
+
+  function formatNumber(n) {
+    return n.toLocaleString();
+  }
+
+  async function updateTokenDisplay() {
+    try {
+      const usage = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.getSessionTokenUsage",
+      );
+      const limit = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.getModelContextLimit",
+      );
+
+      tokenCountEl.textContent = formatNumber(usage.total_tokens);
+      contextLimitEl.textContent = limit ? formatNumber(limit) : "--";
+
+      tokenDisplayEl.classList.remove("warning", "danger");
+      if (limit) {
+        const ratio = usage.total_tokens / limit;
+        if (ratio > 0.9) {
+          tokenDisplayEl.classList.add("danger");
+        } else if (ratio > 0.75) {
+          tokenDisplayEl.classList.add("warning");
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update token display:", e);
+    }
+  }
 
   function generateChatId() {
     return `chat_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
@@ -157,6 +192,12 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       } else {
         chatData = { id: generateChatId(), messages: [] };
       }
+      // Load persisted token usage before updating display
+      await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.loadTokenUsage",
+      );
+      await updateTokenDisplay();
     } catch (e) {
       console.error("Failed to load chat history:", e);
     }
@@ -237,6 +278,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           }
           chatHistory.push({ role: "assistant", content: fullResponse });
           await saveHistory();
+          await updateTokenDisplay();
           break;
         } else if (result.status === "error") {
           isStreaming = false;
@@ -310,6 +352,15 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     chatHistory = [];
     await saveHistory();
     await renderAllMessages();
+    try {
+      await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.resetSessionTokenUsage",
+      );
+    } catch (e) {
+      console.error("Failed to reset token usage:", e);
+    }
+    await updateTokenDisplay();
     userInput.focus();
   }
 

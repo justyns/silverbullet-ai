@@ -2,18 +2,26 @@
   "version": "5",
   "specifiers": {
     "jsr:@silverbulletmd/silverbullet@2.3.0": "2.3.0",
+    "jsr:@std/assert@^1.0.1": "1.0.16",
     "jsr:@std/encoding@1": "1.0.6",
     "jsr:@std/fs@^1.0.18": "1.0.20",
     "jsr:@std/html@^1.0.5": "1.0.5",
     "jsr:@std/internal@^1.0.12": "1.0.12",
     "jsr:@std/path@^1.0.8": "1.1.3",
     "jsr:@std/path@^1.1.3": "1.1.3",
+    "jsr:@std/yaml@^1.0.8": "1.0.10",
     "npm:playwright@1.56.1": "1.56.1",
     "npm:sse.js@2.2.0": "2.2.0"
   },
   "jsr": {
     "@silverbulletmd/silverbullet@2.3.0": {
       "integrity": "a34e0134ddcecfb9cbe4213d80b8b0c5aec9f7ad1f88093d768fd362942d0db9"
+    },
+    "@std/assert@1.0.16": {
+      "integrity": "6a7272ed1eaa77defe76e5ff63ca705d9c495077e2d5fd0126d2b53fc5bd6532",
+      "dependencies": [
+        "jsr:@std/internal"
+      ]
     },
     "@std/encoding@1.0.6": {
       "integrity": "ca87122c196e8831737d9547acf001766618e78cd8c33920776c7f5885546069"
@@ -35,6 +43,9 @@
       "dependencies": [
         "jsr:@std/internal"
       ]
+    },
+    "@std/yaml@1.0.10": {
+      "integrity": "245706ea3511cc50c8c6d00339c23ea2ffa27bd2c7ea5445338f8feff31fa58e"
     }
   },
   "npm": {
@@ -76,7 +87,13 @@
     "https://deno.land/x/silverbullet@2.0.0/lib/plugos/types.ts": "e4decd11d40797161b4fed67cc432f370ceb159b4680c57dde97e6300ea0abfb",
     "https://deno.land/x/silverbullet@2.0.0/lib/plugos/worker_runtime.ts": "6f16899c0a3d2525c4bf3f881463bce2d7f2b8b55f072fd74ae0f621ba74fea0",
     "https://deno.land/x/silverbullet@2.0.0/lib/proxy_fetch.ts": "831d98cf7f9ada653fc958f52ad367d8511e2634400c29e1fe9d6babd230c0bf",
-    "https://deno.land/x/silverbullet@2.0.0/type/datastore.ts": "43ac83561844fc5224bd2d5c6c2a92a2cdda6688d29b798c624e3c90bca7ab9d"
+    "https://deno.land/x/silverbullet@2.0.0/type/datastore.ts": "43ac83561844fc5224bd2d5c6c2a92a2cdda6688d29b798c624e3c90bca7ab9d",
+    "https://esm.sh/@lezer/common@1.2.3&target=es2022": "e1d6c185a1456f8ee6d8cb59d04fb680ebda0ee4a233688db759a26b24229786",
+    "https://esm.sh/@lezer/common@1.2.3/es2022/common.mjs": "3fe1f1d3bd025eba4e83552723719099b2c564cf5f00194d82e7fc023a9349a3",
+    "https://esm.sh/@lezer/highlight@1.2.1?external=@lezer/common,@lezer/lr&target=es2022": "5a5b5e59e13479ae0a9b4034ceb8ca8421241c6e93923297060c5399e44bacf6",
+    "https://esm.sh/@lezer/markdown@1.4.3/X-ZUBjb2RlbWlycm9yL2xhbmd1YWdlLEBsZXplci9jb21tb24sQGxlemVyL2hpZ2hsaWdodCxAbGV6ZXIvbHI/es2022/markdown.mjs": "4ba08f8045779d3d44175d180c61ca8b78066df6f7c29d40520422ab5f6a7789",
+    "https://esm.sh/@lezer/markdown@1.4.3?external=@lezer/common,@codemirror/language,@lezer/highlight,@lezer/lr&target=es2022": "b1b7c46d58d67a16fdd551183cedb0856b37acb194ef977fe0d1270e9cf12ca5",
+    "https://esm.sh/v135/@lezer/highlight@1.2.1/X-ZS9AbGV6ZXIvY29tbW9uLEBsZXplci9scg/es2022/highlight.mjs": "6456ed728c25a150075945bebc1a41fa2ce45a5b473b8939e1fc927c2a69d726"
   },
   "workspace": {
     "dependencies": [
