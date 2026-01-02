@@ -9,6 +9,7 @@ This page is a brief overview of each version.
   - Strip tool calls from chat history to reduce context size (but they are stored in local storage temporarily)
   - Default context including current page name and content
   - Customizable chat context via Space Lua (e.g. current date or other dynamic values)
+  - Track token usage against model's token limit (caches LiteLLM's public json)
 - Add a modal version of the same assistant chat
 - New agent system for customizable personas with specific context and tools (e.g. "silverbullet lua expert")
   - Create custom agents via Space Lua (`ai.agents.myagent = {...}`)

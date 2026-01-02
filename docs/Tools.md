@@ -33,6 +33,7 @@ existing notes.
 | `list_pages` | List pages with path filtering and recursion options | No |
 | `get_page_info` | Get page metadata (tags, size, modified date, subpages) | No |
 | `navigate` | Navigate to a page or position | No |
+| `ask_user` | Ask the user a question and get immediate feedback | No |
 
 ### Creating & Editing
 
