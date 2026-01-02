@@ -205,10 +205,27 @@ export type PromptInstructions = {
   enhanceFrontMatterPrompt: string;
 };
 
+export type ProviderConfig = {
+  provider?: string; // Provider type: "openai", "gemini", "ollama" - defaults from key name
+  apiKey?: string;
+  baseUrl?: string;
+  useProxy?: boolean;
+  preferredModels?: string[];
+};
+
+export type ProvidersConfig = {
+  [key: string]: ProviderConfig | undefined;
+};
+
 export type AISettings = {
+  // New provider-centric config
+  providers?: ProvidersConfig;
+
+  // Legacy model arrays (deprecated)
   textModels: ModelConfig[];
   imageModels: ImageModelConfig[];
   embeddingModels: EmbeddingModelConfig[];
+
   chat: ChatSettings;
   promptInstructions: PromptInstructions;
   indexEmbeddings: boolean;
@@ -223,6 +240,7 @@ export type ModelConfig = {
   description: string;
   modelName: string;
   provider: Provider;
+  providerKey?: string; // The config key name (e.g., "ollama-home") for looking up provider config
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;

@@ -1,7 +1,7 @@
 import { SSE } from "sse.js";
 import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool, Usage } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import { AbstractProvider } from "../interfaces/Provider.ts";
+import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type HttpHeaders = {
@@ -19,6 +19,12 @@ type GeminiChatContent = {
 };
 
 export class GeminiProvider extends AbstractProvider {
+  static defaults: ProviderDefaults = {
+    baseUrl: "https://generativelanguage.googleapis.com",
+    requireAuth: true,
+    useProxy: true,
+  };
+
   override name = "Gemini";
 
   constructor(

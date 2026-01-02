@@ -1,6 +1,6 @@
 import type { ChatMessage, ChatResponse, EmbeddingGenerationOptions, StreamChatOptions, Tool } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import { AbstractProvider } from "../interfaces/Provider.ts";
+import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
 
 type HttpHeaders = {
@@ -10,6 +10,12 @@ type HttpHeaders = {
 
 // For now, the Ollama provider is just a wrapper around the openai provider
 export class OllamaProvider extends AbstractProvider {
+  static defaults: ProviderDefaults = {
+    baseUrl: "http://localhost:11434/v1",
+    requireAuth: false,
+    useProxy: true,
+  };
+
   override name = "Ollama";
   requireAuth: boolean;
   openaiProvider: OpenAIProvider;

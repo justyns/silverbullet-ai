@@ -17,6 +17,7 @@ const aiConfigSample = {
       name: "mock-t1",
       provider: "mock",
       modelName: "mock-t1",
+      requireAuth: false,
     },
   ],
   imageModels: [
@@ -24,6 +25,7 @@ const aiConfigSample = {
       name: "mock-i1",
       provider: "mock",
       modelName: "mock-i1",
+      requireAuth: false,
     },
   ],
   embeddingModels: [

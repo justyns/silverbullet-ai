@@ -26,12 +26,15 @@ import {
   currentAIProvider,
   currentEmbeddingProvider,
   currentImageProvider,
+  getProviderConfig,
+  getProviderDefaults,
   initializeOpenAI,
   initIfNeeded,
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
+import { getAllAvailableModels, refreshAllModelCaches } from "./src/model-discovery.ts";
 import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
@@ -126,39 +129,177 @@ export function renderToolCallWidget(
   }
 }
 
+type FilterOption = {
+  name: string;
+  description?: string;
+  category?: string;
+  hint?: string;
+  orderId?: number;
+  provider?: string; // Key name for display (e.g., "ollama-home")
+  providerType?: string; // Actual provider type (e.g., "ollama")
+  modelName?: string;
+  isUtility?: boolean;
+};
+
 /**
  * Prompts the user to select a text/llm model from the configured models.
+ * Supports both legacy textModels config and new providers config with dynamic discovery.
  */
 export async function selectModelFromConfig() {
-  if (!aiSettings || !aiSettings.textModels) {
+  if (!aiSettings) {
     await initializeOpenAI(false);
   }
-  const modelOptions = aiSettings.textModels.map((model) => ({
-    ...model,
-    name: model.name,
-    description: model.description || `${model.modelName} on ${model.provider}`,
-  }));
-  const selectedModel = await editor.filterBox("Select a model", modelOptions);
 
-  if (!selectedModel) {
+  const options: FilterOption[] = [];
+  const hasProviders = aiSettings.providers && Object.keys(aiSettings.providers).length > 0;
+
+  // If providers config exists, use dynamic discovery
+  if (hasProviders) {
+    const discovered = await getAllAvailableModels();
+
+    for (const model of discovered) {
+      const providerConfig = getProviderConfig(model.provider);
+      const preferred = providerConfig.preferredModels || [];
+      const preferredIndex = preferred.indexOf(model.id);
+      const isPreferred = preferredIndex !== -1;
+
+      options.push({
+        name: model.name,
+        category: model.provider,
+        provider: model.provider,
+        providerType: model.providerType,
+        modelName: model.id,
+        hint: isPreferred ? "★" : undefined,
+        orderId: isPreferred ? -500 + preferredIndex : 0,
+      });
+    }
+  }
+
+  // Also add legacy textModels (shown first if no providers, or merged if both exist)
+  if (aiSettings.textModels?.length > 0) {
+    for (const model of aiSettings.textModels) {
+      // Skip if already added from discovery (same provider + modelName)
+      const exists = options.some(
+        (o) => o.provider === model.provider && o.modelName === model.modelName,
+      );
+      if (!exists) {
+        options.push({
+          name: model.name,
+          description: model.description || `${model.modelName} on ${model.provider}`,
+          category: model.provider,
+          provider: model.provider,
+          modelName: model.modelName,
+          hint: "configured",
+          orderId: -1000, // Show configured models first
+        });
+      }
+    }
+  }
+
+  // Sort by orderId (lower first)
+  options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
+
+  // Add utility options
+  options.push({
+    name: "Enter custom model...",
+    category: "Other",
+    orderId: 1000,
+    isUtility: true,
+  });
+
+  if (hasProviders) {
+    options.push({
+      name: "Refresh model lists",
+      category: "Other",
+      orderId: 1001,
+      isUtility: true,
+    });
+  }
+
+  const selected = await editor.filterBox("Select a model", options);
+
+  if (!selected) {
     await editor.flashNotification("No model selected.", "error");
     return;
   }
-  const selectedModelName = selectedModel.name;
-  await setSelectedTextModel(selectedModel as ModelConfig);
-  await configureSelectedModel(selectedModel as ModelConfig);
 
-  await editor.flashNotification(`Selected model: ${selectedModelName}`);
-  console.log(`Selected model:`, selectedModel);
+  // Handle utility options
+  if (selected.name === "Refresh model lists") {
+    await editor.flashNotification("Refreshing model lists...", "info");
+    const count = await refreshAllModelCaches();
+    await editor.flashNotification(`Refreshed: ${count} models found`, "info");
+    // Re-run selection after refresh
+    return selectModelFromConfig();
+  }
+
+  if (selected.name === "Enter custom model...") {
+    const customModel = await editor.prompt("Enter model name (provider:model):");
+    if (!customModel) return;
+
+    // Parse "provider:model" format or just use as model name
+    const parts = customModel.split(":");
+    let provider = "openai";
+    let modelName = customModel;
+
+    if (parts.length === 2) {
+      provider = parts[0];
+      modelName = parts[1];
+    }
+
+    const defaults = getProviderDefaults(provider);
+    const modelConfig: ModelConfig = {
+      name: modelName,
+      description: `Custom model: ${modelName}`,
+      modelName: modelName,
+      provider: provider as any,
+      secretName: "",
+      requireAuth: defaults.requireAuth,
+    };
+
+    await setSelectedTextModel(modelConfig);
+    await configureSelectedModel(modelConfig);
+    await editor.flashNotification(`Selected custom model: ${modelName}`);
+    return;
+  }
+
+  // Build ModelConfig from selection
+  // Use providerType (actual provider like "ollama") not provider key name (like "ollama-home")
+  // Store providerKey (the config key like "ollama-home") for looking up provider config
+  const providerType = selected.providerType || selected.provider || "openai";
+  const defaults = getProviderDefaults(providerType);
+  const modelConfig: ModelConfig = {
+    name: selected.name,
+    description: selected.description || "",
+    modelName: selected.modelName || selected.name,
+    provider: providerType as any,
+    providerKey: selected.provider,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+  };
+
+  await setSelectedTextModel(modelConfig);
+  await configureSelectedModel(modelConfig);
+  await editor.flashNotification(`Selected model: ${selected.name}`);
+  console.log(`Selected model:`, modelConfig);
 }
 
 /**
  * Prompts the user to select an image model from the configured models.
+ * Note: Image models must be configured in the legacy imageModels array.
  */
 export async function selectImageModelFromConfig() {
   if (!aiSettings || !aiSettings.imageModels) {
     await initializeOpenAI(false);
   }
+
+  if (!aiSettings.imageModels || aiSettings.imageModels.length === 0) {
+    await editor.flashNotification(
+      "No image models configured. Add imageModels to your ai config.",
+      "error",
+    );
+    return;
+  }
+
   const imageModelOptions = aiSettings.imageModels.map((model) => ({
     ...model,
     name: model.name,
@@ -185,11 +326,21 @@ export async function selectImageModelFromConfig() {
 
 /**
  * Prompts the user to select an embedding model from the configured models.
+ * Note: Embedding models must be configured in the legacy embeddingModels array.
  */
 export async function selectEmbeddingModelFromConfig() {
   if (!aiSettings || !aiSettings.embeddingModels) {
     await initializeOpenAI(false);
   }
+
+  if (!aiSettings.embeddingModels || aiSettings.embeddingModels.length === 0) {
+    await editor.flashNotification(
+      "No embedding models configured. Add embeddingModels to your ai config.",
+      "error",
+    );
+    return;
+  }
+
   const embeddingModelOptions = aiSettings.embeddingModels.map((model) => ({
     ...model,
     name: model.name,

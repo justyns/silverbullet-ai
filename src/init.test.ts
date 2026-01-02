@@ -176,7 +176,7 @@ Deno.test("initializeOpenAI should throw an error if the API key is empty", asyn
     if (error instanceof Error) {
       assertEquals(
         error.message,
-        "AI API key is missing. Please set it in the secrets page.",
+        'AI API key is missing for provider "openai". Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.',
         "initializeOpenAI did not handle empty secrets correctly",
       );
     } else {
@@ -195,7 +195,7 @@ Deno.test("initializeOpenAI should throw an error if the API secret is missing",
     if (error instanceof Error) {
       assertEquals(
         error.message,
-        "Failed to read the AI API key. Please check your Space Lua config.",
+        'AI API key is missing for provider "openai". Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.',
         "initializeOpenAI did not handle missing secrets correctly",
       );
     } else {
@@ -215,7 +215,7 @@ Deno.test(
       if (error instanceof Error) {
         assertEquals(
           error.message,
-          "Failed to read the AI API key. Please check your Space Lua config.",
+          'AI API key is missing for provider "openai". Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.',
           "initializeOpenAI did not handle missing secrets correctly",
         );
       } else {

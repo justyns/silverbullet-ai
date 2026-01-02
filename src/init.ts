@@ -3,7 +3,7 @@ import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
 import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
 import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
-import { ProviderInterface } from "./interfaces/Provider.ts";
+import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
@@ -15,6 +15,7 @@ import type {
   ImageModelConfig,
   ModelConfig,
   PromptInstructions,
+  ProviderConfig,
 } from "./types.ts";
 import { EmbeddingProvider, ImageProvider, Provider } from "./types.ts";
 import { MockImageProvider } from "./mocks/mockproviders.ts";
@@ -82,6 +83,34 @@ export async function setSelectedTextModel(model: ModelConfig) {
 
 export async function setSelectedEmbeddingModel(model: EmbeddingModelConfig) {
   await clientStore.set("ai.selectedEmbeddingModel", model);
+}
+
+export function getProviderConfig(providerName: string): ProviderConfig {
+  const providers = aiSettings?.providers;
+  if (providers && providers[providerName]) {
+    return providers[providerName]!;
+  }
+  return {};
+}
+
+const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
+  openai: OpenAIProvider,
+  gemini: GeminiProvider,
+  ollama: OllamaProvider,
+};
+
+const defaultProviderDefaults: ProviderDefaults = {
+  baseUrl: "",
+  requireAuth: true,
+  useProxy: true,
+};
+
+export function getProviderDefaults(providerType: string): ProviderDefaults {
+  return providerRegistry[providerType.toLowerCase()]?.defaults || defaultProviderDefaults;
+}
+
+function getDefaultBaseUrl(providerName: string): string {
+  return getProviderDefaults(providerName).baseUrl;
 }
 
 export async function getAndConfigureModel() {
@@ -223,36 +252,69 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
   }
 }
 
+async function resolveApiKey(
+  providerName: string,
+  model: { requireAuth?: boolean; secretName?: string },
+): Promise<string> {
+  const providerConfig = getProviderConfig(providerName);
+
+  // 1. Try provider config apiKey (new, preferred)
+  if (providerConfig.apiKey) {
+    return providerConfig.apiKey;
+  }
+
+  // 2. Try legacy ai.keys lookup
+  if (model.requireAuth !== false) {
+    try {
+      const legacyKey = await system.getConfig(
+        `ai.keys.${model.secretName || providerName.toUpperCase() + "_API_KEY"}`,
+      );
+      if (legacyKey) {
+        return legacyKey;
+      }
+    } catch {
+      // Ignore errors, will check if key is required below
+    }
+  }
+
+  return "";
+}
+
 export async function configureSelectedModel(model: ModelConfig) {
   log("configureSelectedModel called with:", model);
-  log("AI Keys:", await system.getConfig(`ai`));
   if (!model) {
     throw new Error("No model provided to configure");
   }
-  if (model.requireAuth) {
-    try {
-      const newApiKey = await system.getConfig(
-        `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
-      );
-      if (newApiKey !== apiKey) {
-        apiKey = newApiKey;
-        log("API key updated");
-      }
-    } catch (_error) {
-      console.error("Error reading secret:", _error);
-      throw new Error(
-        "Failed to read the AI API key. Please check your Space Lua config.",
-      );
-    }
-  }
-  if (model.requireAuth && !apiKey) {
+
+  // Use providerKey (the config key like "ollama-home") if available, else fall back to provider type
+  const configKey = model.providerKey || model.provider;
+  const providerConfig = getProviderConfig(configKey);
+  const resolvedApiKey = await resolveApiKey(configKey, model);
+
+  // Determine if auth is required (provider config can override model config)
+  const requireAuth = model.requireAuth ?? true;
+
+  if (requireAuth && !resolvedApiKey) {
     throw new Error(
-      "AI API key is missing. Please set it in your Space Lua config.",
+      `AI API key is missing for provider "${model.provider}". ` +
+        "Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.",
     );
   }
 
-  currentModel = model;
-  return setupAIProvider(model);
+  if (resolvedApiKey !== apiKey) {
+    apiKey = resolvedApiKey;
+    log("API key updated");
+  }
+
+  // Apply provider config defaults to model
+  const effectiveModel: ModelConfig = {
+    ...model,
+    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
+    useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
+  };
+
+  currentModel = effectiveModel;
+  return setupAIProvider(effectiveModel);
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
@@ -361,6 +423,17 @@ export async function initializeOpenAI(configure = true) {
     log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
     log("aiSettings updated to", aiSettings);
+
+    // Deprecation warning for legacy config
+    if (
+      aiSettings.textModels?.length > 0 &&
+      !aiSettings.providers
+    ) {
+      console.warn(
+        "[silverbullet-ai] textModels config is deprecated. " +
+          "Please migrate to providers config. See https://ai.silverbullet.md/",
+      );
+    }
   } else {
     log("aiSettings unchanged", aiSettings);
   }

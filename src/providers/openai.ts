@@ -11,7 +11,7 @@ import type {
   Usage,
 } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import { AbstractProvider } from "../interfaces/Provider.ts";
+import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 
 type HttpHeaders = {
@@ -20,6 +20,12 @@ type HttpHeaders = {
 };
 
 export class OpenAIProvider extends AbstractProvider {
+  static defaults: ProviderDefaults = {
+    baseUrl: "https://api.openai.com/v1",
+    requireAuth: true,
+    useProxy: false,
+  };
+
   override name = "OpenAI";
   requireAuth: boolean;
 

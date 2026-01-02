@@ -35,6 +35,10 @@ functions:
     path: sbai.ts:selectEmbeddingModelFromConfig
     command:
       name: "AI: Select Embedding Model from Config"
+  refreshModelList:
+    path: src/model-discovery.ts:refreshModelListCommand
+    command:
+      name: "AI: Refresh Model List"
   selectAgent:
     path: sbai.ts:selectAgentCommand
     command:

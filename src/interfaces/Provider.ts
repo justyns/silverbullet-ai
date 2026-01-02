@@ -7,6 +7,12 @@ import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts
 // deno-lint-ignore no-explicit-any
 const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
 
+export type ProviderDefaults = {
+  baseUrl: string;
+  requireAuth: boolean;
+  useProxy: boolean;
+};
+
 export interface ProviderInterface {
   name: string;
   apiKey: string;
