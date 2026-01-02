@@ -221,6 +221,9 @@ export type AISettings = {
   // New provider-centric config
   providers?: ProvidersConfig;
 
+  // Default model to use (format: "provider:modelName", e.g., "ollama:llama3.2")
+  defaultTextModel?: string;
+
   // Legacy model arrays (deprecated)
   textModels: ModelConfig[];
   imageModels: ImageModelConfig[];

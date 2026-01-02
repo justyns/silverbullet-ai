@@ -28,6 +28,10 @@ config.set {
       }
     },
 
+    -- Default model to use (format: "provider:modelName")
+    -- This is auto-selected on startup if no model is already selected on this client
+    defaultTextModel = "ollama:llama3.2",
+
     -- Chat settings
     chat = {
       bakeMessages = true,
@@ -44,6 +48,13 @@ With this configuration:
 - **"AI: Select Text Model"** will show all available models from each configured provider
   - preferredModels will show up first, but you can type to filter through all available models
 - Use **"AI: Refresh Model List"** to update the cached model lists
+- **`defaultTextModel`** will automatically select the specified model on startup if no model is already selected
+
+### Global Options
+
+| Option | Description |
+|--------|-------------|
+| `defaultTextModel` | Default model to use on startup (format: `"provider:modelName"`, e.g., `"ollama:llama3.2"` or `"openai:gpt-4o"`) |
 
 ### Provider Options
 

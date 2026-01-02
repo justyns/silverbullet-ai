@@ -41,6 +41,8 @@ This page is a brief overview of each version.
     - AI: Generate Note FrontMatter
     - AI: Enhance Note
 - Created an initial version of a benchmark system to verify if specific models can correctly use tools for sbai
+- Add a new provider-based configuration to configure a provider like Ollama once and load models dynamically, instead of configuring each model separately
+- Added a `defaultTextModel` option
 
 ---
 ## 0.5.0 (2025-12-15)

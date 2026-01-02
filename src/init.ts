@@ -109,6 +109,31 @@ export function getProviderDefaults(providerType: string): ProviderDefaults {
   return providerRegistry[providerType.toLowerCase()]?.defaults || defaultProviderDefaults;
 }
 
+export function parseDefaultModelString(modelString: string): ModelConfig | null {
+  const parts = modelString.split(":");
+  if (parts.length < 2) {
+    console.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
+    return null;
+  }
+  const providerKey = parts[0];
+  const modelName = parts.slice(1).join(":");
+  const providerConfig = getProviderConfig(providerKey);
+  const providerType = providerConfig.provider || providerKey;
+  const defaults = getProviderDefaults(providerType);
+
+  return {
+    name: modelName,
+    description: "",
+    modelName: modelName,
+    provider: providerType as Provider,
+    providerKey: providerKey,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+    baseUrl: providerConfig.baseUrl || defaults.baseUrl,
+    useProxy: providerConfig.useProxy ?? defaults.useProxy,
+  };
+}
+
 function getDefaultBaseUrl(providerName: string): string {
   return getProviderDefaults(providerName).baseUrl;
 }
@@ -441,6 +466,18 @@ export async function initializeOpenAI(configure = true) {
   if (aiSettings.textModels.length === 1) {
     // If there's only one text model, set it as the selected model
     await setSelectedTextModel(aiSettings.textModels[0]);
+  }
+
+  // Handle defaultTextModel config (format: "provider:modelName")
+  if (aiSettings.defaultTextModel) {
+    const selectedModel = await getSelectedTextModel();
+    if (!selectedModel) {
+      const defaultModel = parseDefaultModelString(aiSettings.defaultTextModel);
+      if (defaultModel) {
+        await setSelectedTextModel(defaultModel);
+        log("Set default text model:", defaultModel);
+      }
+    }
   }
 
   if (aiSettings.imageModels.length === 1) {
