@@ -176,7 +176,9 @@ export function postProcessToolCallHtml(html: string): string {
 
   return html.replace(pattern, (_match, jsonContent) => {
     try {
-      const decoded = unescapeHtml(jsonContent);
+      // SilverBullet's htmlEscape converts \n to <br>, convert back before parsing
+      const withNewlines = jsonContent.replace(/<br>/g, "\n");
+      const decoded = unescapeHtml(withNewlines);
       const data = parseToolCallJson(decoded);
       if (data) {
         return renderToolCallHtml(data);
@@ -492,7 +494,8 @@ async function enrichMessageWithWikiLinks(
     const result = await lua.evalExpression(
       `ai.enrichWithWikiLinks(${luaContent}, ${luaSeenNames})`,
     );
-    const attachments: Attachment[] = (result.attachments || []).map(
+    const rawAttachments = Array.isArray(result.attachments) ? result.attachments : [];
+    const attachments: Attachment[] = rawAttachments.map(
       (a: { name: string; content: string; type?: string }) => ({
         name: a.name,
         content: a.content,

@@ -231,6 +231,19 @@ Deno.test("postProcessToolCallHtml should pass through HTML without tool calls",
   assertEquals(result, html);
 });
 
+Deno.test("postProcessToolCallHtml should handle <br> tags in JSON (SilverBullet escaping)", () => {
+  // SilverBullet's htmlEscape converts \n to <br>, simulate that
+  const toolData =
+    `{<br>"id": "tool_1",<br>"name": "read_note",<br>"args": { "page": "Test" },<br>"result": "Content",<br>"success": true<br>}`;
+  const html = `<p>Some text</p><pre data-lang="toolcall">${toolData}</pre><p>More text</p>`;
+
+  const result = postProcessToolCallHtml(html);
+
+  assertEquals(result.includes("read_note"), true);
+  assertEquals(result.includes("<details"), true);
+  assertEquals(result.includes('class="tool-call'), true);
+});
+
 // Tests for assembleMessagesWithAttachments
 
 Deno.test("assembleMessagesWithAttachments should assemble messages without attachments", () => {

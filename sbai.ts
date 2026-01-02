@@ -59,20 +59,25 @@ export function renderToolCallWidget(
 ): CodeWidgetContent | null {
   try {
     const data = JSON.parse(bodyText);
-    const { name, args, result, success } = data;
+    const { name, args, result, summary, success } = data;
 
     const status = success ? "✓" : "✗";
     const statusClass = success ? "success" : "error";
-    const argsStr = Object.keys(args || {}).length > 0 ? JSON.stringify(args, null, 2) : "";
 
-    const escapedResult = (result || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
-    const escapedArgs = argsStr
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;");
+    // Format arguments as key: value (matching assistant panel)
+    const argEntries = Object.entries(args || {});
+    const argsStr = argEntries.length > 0
+      ? argEntries.map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`).join("\n")
+      : "";
+
+    // Use summary (new format) with fallback to result (legacy format)
+    const displayText = summary ?? result ?? "";
+
+    const escapeHtmlStr = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    const escapedResult = escapeHtmlStr(displayText);
+    const escapedArgs = escapeHtmlStr(argsStr);
+    const escapedName = escapeHtmlStr(name);
 
     const html = `
       <style>
@@ -80,6 +85,7 @@ export function renderToolCallWidget(
         @media (prefers-color-scheme: dark) { .tool-call { background: #2d2d2d; color: #d4d4d4; } }
         .tool-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
         .tool-name { font-weight: 600; }
+        .tool-arrow { color: #888; }
         .tool-status { font-size: 14px; }
         .tool-status.success { color: #22c55e; }
         .tool-status.error { color: #ef4444; }
@@ -94,18 +100,19 @@ export function renderToolCallWidget(
       <div class="tool-call">
         <div class="tool-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
           <span>🔧</span>
-          <span class="tool-name">${name}</span>
+          <strong class="tool-name">${escapedName}</strong>
+          <span class="tool-arrow">→</span>
           <span class="tool-status ${statusClass}">${status}</span>
         </div>
         <div class="tool-details">
           ${
       escapedArgs
-        ? `<div class="tool-section"><div class="tool-section-title">Arguments</div><pre>${escapedArgs}</pre></div>`
+        ? `<div class="tool-section"><div class="tool-section-title">Arguments:</div><pre>${escapedArgs}</pre></div>`
         : ""
     }
           ${
       escapedResult
-        ? `<div class="tool-section"><div class="tool-section-title">Result</div><pre>${escapedResult}</pre></div>`
+        ? `<div class="tool-section"><div class="tool-section-title">Result:</div><pre>${escapedResult}</pre></div>`
         : ""
     }
         </div>

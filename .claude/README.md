@@ -4,7 +4,8 @@ This directory contains Claude Code configuration for the SilverBullet AI plugin
 
 ## SessionStart Hook
 
-The `hooks/session-start.sh` script automatically sets up the testing environment when Claude Code on the web sessions start.
+The `hooks/session-start.sh` script automatically sets up the testing environment when Claude Code on the web sessions
+start.
 
 ### What it does
 
@@ -24,6 +25,7 @@ CLAUDE_CODE_REMOTE=true ./.claude/hooks/session-start.sh
 ### Configuration
 
 The hook is registered in `settings.json` and runs automatically when:
+
 - Starting a new Claude Code on the web session
 - Resuming an existing session
 - After `/clear` or `/compact` commands

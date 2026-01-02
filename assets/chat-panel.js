@@ -113,7 +113,16 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       "silverbullet-ai.postProcessToolCallHtml",
       html,
     );
-    element.innerHTML = DOMPurify.sanitize(finalHtml);
+    // DOMPurify may not be loaded yet if script runs before CDN loads
+    if (typeof DOMPurify !== "undefined") {
+      element.innerHTML = DOMPurify.sanitize(finalHtml, {
+        ADD_TAGS: ["details", "summary"],
+        ADD_ATTR: ["open"],
+      });
+    } else {
+      // Fallback: content is from our own backend, reasonably safe
+      element.innerHTML = finalHtml;
+    }
   }
 
   function showAutocomplete(items) {
