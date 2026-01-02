@@ -460,6 +460,7 @@ export async function loadTokenUsage(): Promise<void> {
 
 /**
  * Gets the context window limit for the currently selected model.
+ * First tries the provider's API (e.g., Ollama), then falls back to LiteLLM metadata.
  */
 export async function getModelContextLimit(): Promise<number | null> {
   await initIfNeeded();
@@ -467,5 +468,13 @@ export async function getModelContextLimit(): Promise<number | null> {
   if (!model?.modelName) {
     return null;
   }
+
+  // Try provider first (e.g., Ollama can query its own API)
+  const providerLimit = await currentAIProvider?.getContextLimit(model.modelName);
+  if (providerLimit) {
+    return providerLimit;
+  }
+
+  // Fall back to LiteLLM metadata lookup
   return lookupModelContextLimit(model.modelName);
 }

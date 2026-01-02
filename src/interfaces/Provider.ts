@@ -37,6 +37,7 @@ export interface ProviderInterface {
   ) => Promise<void>;
   getModelCapabilities: (modelName?: string) => Promise<string[] | null>;
   supportsCapability: (capability: string, modelName?: string) => Promise<boolean>;
+  getContextLimit: (modelName?: string) => Promise<number | null>;
 }
 
 export abstract class AbstractProvider implements ProviderInterface {
@@ -84,6 +85,14 @@ export abstract class AbstractProvider implements ProviderInterface {
   async supportsCapability(capability: string, modelName?: string): Promise<boolean> {
     const capabilities = await this.getModelCapabilities(modelName);
     return capabilities?.includes(capability) ?? false;
+  }
+
+  /**
+   * Get context limit for the model. Override in provider subclasses that can query this info.
+   * Returns null by default (falls back to LiteLLM metadata lookup).
+   */
+  getContextLimit(_modelName?: string): Promise<number | null> {
+    return Promise.resolve(null);
   }
 
   protected fetch(url: string, options: RequestInit): Promise<Response> {

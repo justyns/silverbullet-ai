@@ -51,10 +51,9 @@ export class OllamaProvider extends AbstractProvider {
   }
 
   /**
-   * Get model capabilities from Ollama's /api/show endpoint.
-   * Returns capabilities array (e.g., ["completion", "tools", "vision"]) or null if unavailable.
+   * Fetch model info from Ollama's /api/show endpoint.
    */
-  override async getModelCapabilities(modelName?: string): Promise<string[] | null> {
+  private async fetchModelInfo(modelName?: string): Promise<Record<string, unknown> | null> {
     try {
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -74,16 +73,56 @@ export class OllamaProvider extends AbstractProvider {
       );
 
       if (!response.ok) {
-        console.error("Failed to get model capabilities:", response.status);
+        console.error("Failed to get model info:", response.status);
         return null;
       }
 
-      const data = await response.json();
-      return data.capabilities || null;
+      return await response.json();
     } catch (error) {
-      console.error("Error fetching model capabilities:", error);
+      console.error("Error fetching model info:", error);
       return null;
     }
+  }
+
+  /**
+   * Get model capabilities from Ollama's /api/show endpoint.
+   * Returns capabilities array (e.g., ["completion", "tools", "vision"]) or null if unavailable.
+   */
+  override async getModelCapabilities(modelName?: string): Promise<string[] | null> {
+    const data = await this.fetchModelInfo(modelName);
+    return (data?.capabilities as string[]) || null;
+  }
+
+  /**
+   * Get context limit from Ollama's /api/show endpoint.
+   * Parses the num_ctx parameter from model_info or parameters.
+   */
+  override async getContextLimit(modelName?: string): Promise<number | null> {
+    const data = await this.fetchModelInfo(modelName);
+    if (!data) return null;
+
+    // Check model_info first (structured data)
+    const modelInfo = data.model_info as Record<string, unknown> | undefined;
+    if (modelInfo) {
+      // Look for context_length or similar keys
+      for (const key of Object.keys(modelInfo)) {
+        if (key.includes("context_length")) {
+          const value = modelInfo[key];
+          if (typeof value === "number") return value;
+        }
+      }
+    }
+
+    // Fall back to parsing parameters string (e.g., "num_ctx 4096")
+    const parameters = data.parameters as string | undefined;
+    if (parameters) {
+      const match = parameters.match(/num_ctx\s+(\d+)/);
+      if (match) {
+        return parseInt(match[1], 10);
+      }
+    }
+
+    return null;
   }
 
   async listModels(): Promise<string[]> {
