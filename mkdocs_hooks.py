@@ -14,52 +14,20 @@ root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "docs"))
 # llms.txt configuration
 BASE_URL = "https://ai.silverbullet.md"
 SB_BASE_URL = "https://silverbullet.md"
+SKIP_DIRS = {"Commands", "Library", "template"}
+SKIP_FILES = {"index.md", "Features.md", "Providers.md", "Commands.md", "mcp-server-design.md", "v2-migration-status.md"}
+HEADER = """\
+# SilverBullet AI
 
-# Files to exclude from llms.txt
-EXCLUDED_FILES = {
-    "index.md",
-    "Features.md",
-    "Providers.md",
-    "Commands.md",
-    "mcp-server-design.md",
-    "v2-migration-status.md",
-}
+> SilverBullet AI is a plug for SilverBullet v2 that integrates LLMs for
+> AI-powered note-taking, chat, semantic search, and content generation.
 
-# Category ordering and grouping
-CATEGORY_ORDER = [
-    "Getting Started",
-    "Core Features",
-    "Configuration",
-    "Providers",
-    "Optional",
-    "SilverBullet References",
-]
+SilverBullet AI provides multi-turn chat, customizable AI agents with tools,
+RAG-powered context enrichment, templated prompts, and supports multiple
+providers (OpenAI, Ollama, Gemini, Mistral, OpenRouter, Perplexity).
 
-# Categories to skip entirely
-SKIP_CATEGORIES = {"Commands"}
-
-# Map docs to categories (files not listed go to "Optional")
-DOC_CATEGORY_MAP = {
-    "Getting Started": ["Quick Start", "Installation"],
-    "Core Features": [
-        "Configuration",
-        "Templated Prompts",
-        "Bundled Prompts",
-        "Agents",
-        "Tools",
-        "Context Enrichment",
-    ],
-    "Optional": [
-        "Development",
-        "Changelog",
-        "Space Lua",
-        "Recommended Models",
-        "SilverBullet v2 Migration Guide",
-    ],
-}
-
-# External SilverBullet documentation links
-SILVERBULLET_DOCS = [
+"""
+SB_DOCS = [
     ("Space Lua", "Lua scripting system for SilverBullet"),
     ("Space Lua/Lua Integrated Query", "Query language for data"),
     ("Space Lua/Widget", "Custom UI widgets"),
@@ -69,207 +37,72 @@ SILVERBULLET_DOCS = [
     ("Frontmatter", "Page metadata format"),
     ("Object", "Object/attribute system"),
 ]
+DOC_ORDER = ["Quick Start", "Installation", "Configuration", "Templated Prompts", "Bundled Prompts", "Agents", "Tools", "Context Enrichment"]
 
 
 def strip_frontmatter(content: str) -> str:
-    """Remove YAML frontmatter from markdown content."""
     if content.startswith("---"):
         parts = content.split("---", 2)
-        if len(parts) > 2:
-            return parts[2].strip()
+        return parts[2].strip() if len(parts) > 2 else content
     return content
 
 
-def get_doc_url(doc_path: str, base_url: str = BASE_URL) -> str:
-    """Generate URL for a doc path."""
-    url_path = quote(doc_path, safe="/")
-    return f"{base_url}/{url_path}/"
-
-
-def get_doc_name(doc_path: str) -> str:
-    """Extract display name from doc path."""
-    return doc_path.split("/")[-1]
-
-
 def extract_description(content: str) -> str:
-    """Extract first meaningful line as description."""
-    content = strip_frontmatter(content)
-    for line in content.split("\n"):
+    for line in strip_frontmatter(content).split("\n"):
         line = line.strip()
-        if line and not line.startswith("#") and not line.startswith(">"):
-            # Clean up markdown formatting
-            line = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)  # Remove links
-            line = re.sub(r"\*\*([^*]+)\*\*", r"\1", line)  # Remove bold
-            line = re.sub(r"\*([^*]+)\*", r"\1", line)  # Remove italic
-            line = re.sub(r"`([^`]+)`", r"\1", line)  # Remove code
-            if len(line) > 100:
-                line = line[:97] + "..."
-            return line
+        if line and not line.startswith(("#", ">")):
+            line = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", line)
+            line = re.sub(r"[*`]([^*`]+)[*`]", r"\1", line)
+            return line[:97] + "..." if len(line) > 100 else line
     return ""
 
 
-def read_doc_content(docs_dir: Path, doc_path: str) -> str:
-    """Read and clean a doc file's content."""
-    file_path = docs_dir / f"{doc_path}.md"
-    if not file_path.exists():
-        return ""
-    content = file_path.read_text()
-    return strip_frontmatter(content)
-
-
-def discover_docs(docs_dir: Path) -> dict[str, list[tuple[str, str]]]:
-    """Discover all docs and categorize them."""
-    categories: dict[str, list[tuple[str, str]]] = {cat: [] for cat in CATEGORY_ORDER}
-
-    # Find category for a doc name
-    def get_category(name: str, subdir: str | None) -> str | None:
-        if subdir == "Configuration":
-            return "Configuration"
-        if subdir == "Providers":
-            return "Providers"
-        if subdir == "Commands":
-            return None  # Skip commands
-        for cat, docs in DOC_CATEGORY_MAP.items():
-            if name in docs:
-                return cat
-        return "Optional"
-
-    # Scan docs directory
-    for path in sorted(docs_dir.rglob("*.md")):
-        if path.name in EXCLUDED_FILES:
+def discover_docs(docs_dir: Path) -> dict[str, list[tuple[str, str, str]]]:
+    categories: dict[str, list[tuple[str, str, str]]] = {"Core": [], "Configuration": [], "Providers": [], "Optional": []}
+    for path in docs_dir.rglob("*.md"):
+        if path.name in SKIP_FILES or any(d in path.parts for d in SKIP_DIRS) or path.name.startswith("_"):
             continue
-        rel_path = path.relative_to(docs_dir)
-        parts = rel_path.parts
-
-        # Skip excluded directories
-        if any(p.startswith("_") or p == "template" or p == "Library" for p in parts):
-            continue
-
-        doc_name = path.stem
-        if len(parts) > 1:
-            subdir = parts[0]
-            doc_path = f"{subdir}/{doc_name}"
-        else:
-            subdir = None
-            doc_path = doc_name
-
-        category = get_category(doc_name, subdir)
-        if category is None:
-            continue  # Skip this doc
+        rel = path.relative_to(docs_dir)
+        subdir = rel.parts[0] if len(rel.parts) > 1 else None
+        cat = subdir if subdir in ("Configuration", "Providers") else "Core" if path.stem in DOC_ORDER else "Optional"
         content = path.read_text()
-        description = extract_description(content)
-        categories[category].append((doc_path, description))
-
-    # Add SilverBullet external docs
-    for doc_path, description in SILVERBULLET_DOCS:
-        categories["SilverBullet References"].append((doc_path, description))
-
+        doc_path = f"{subdir}/{path.stem}" if subdir else path.stem
+        categories[cat].append((doc_path, extract_description(content), content))
+    for cat in categories:
+        order = {name: i for i, name in enumerate(DOC_ORDER)}
+        categories[cat].sort(key=lambda x: (order.get(x[0].split("/")[-1], 999), x[0]))
     return categories
 
 
-def generate_llms_summary(docs_dir: Path) -> str:
-    """Generate llms.txt with links to docs."""
-    lines = [
-        "# SilverBullet AI",
-        "",
-        "> SilverBullet AI is a plug for SilverBullet v2 that integrates LLMs for",
-        "> AI-powered note-taking, chat, semantic search, and content generation.",
-        "",
-        "SilverBullet AI provides multi-turn chat, customizable AI agents with tools,",
-        "RAG-powered context enrichment, templated prompts, and supports multiple",
-        "providers (OpenAI, Ollama, Gemini, Mistral, OpenRouter, Perplexity).",
-        "",
-    ]
-
+def generate_llms_txt(docs_dir: Path, full: bool = False) -> str:
+    lines = [HEADER]
     categories = discover_docs(docs_dir)
-
-    for category in CATEGORY_ORDER:
-        docs = categories.get(category, [])
-        if not docs:
+    for cat in ["Core", "Configuration", "Providers", "Optional"]:
+        if not categories.get(cat):
             continue
-
-        lines.append(f"## {category}")
-        is_external = category == "SilverBullet References"
-
-        for doc_path, description in docs:
-            name = get_doc_name(doc_path)
-            base = SB_BASE_URL if is_external else BASE_URL
-            url = get_doc_url(doc_path, base)
-            if description:
-                lines.append(f"- [{name}]({url}): {description}")
+        lines.append(f"## {cat}\n" if not full else f"## {cat}\n")
+        for doc_path, desc, content in categories[cat]:
+            name = doc_path.split("/")[-1]
+            url = f"{BASE_URL}/{quote(doc_path, safe='/')}/"
+            if full:
+                lines.extend([f"### {name}\n", strip_frontmatter(content), ""])
             else:
-                lines.append(f"- [{name}]({url})")
+                lines.append(f"- [{name}]({url}): {desc}" if desc else f"- [{name}]({url})")
         lines.append("")
-
+    lines.append("## SilverBullet References\n")
+    if full:
+        lines.append("See https://silverbullet.md for full SilverBullet documentation.\n")
+    for doc_path, desc in SB_DOCS:
+        url = f"{SB_BASE_URL}/{quote(doc_path, safe='/')}/"
+        lines.append(f"- [{doc_path.split('/')[-1]}]({url}): {desc}")
     return "\n".join(lines)
-
-
-def generate_llms_full(docs_dir: Path) -> str:
-    """Generate llms-full.txt with inlined content."""
-    lines = [
-        "# SilverBullet AI",
-        "",
-        "> SilverBullet AI is a plug for SilverBullet v2 that integrates LLMs for",
-        "> AI-powered note-taking, chat, semantic search, and content generation.",
-        "",
-        "SilverBullet AI provides multi-turn chat, customizable AI agents with tools,",
-        "RAG-powered context enrichment, templated prompts, and supports multiple",
-        "providers (OpenAI, Ollama, Gemini, Mistral, OpenRouter, Perplexity).",
-        "",
-    ]
-
-    categories = discover_docs(docs_dir)
-
-    for category in CATEGORY_ORDER:
-        docs = categories.get(category, [])
-        if not docs:
-            continue
-
-        # Skip external docs for full content (we don't have their content)
-        if category == "SilverBullet References":
-            lines.append(f"## {category}")
-            lines.append("")
-            lines.append("See https://silverbullet.md for full SilverBullet documentation.")
-            lines.append("")
-            for doc_path, description in docs:
-                name = get_doc_name(doc_path)
-                url = get_doc_url(doc_path, SB_BASE_URL)
-                lines.append(f"- [{name}]({url}): {description}")
-            lines.append("")
-            continue
-
-        lines.append(f"## {category}")
-        lines.append("")
-        for doc_path, _ in docs:
-            name = get_doc_name(doc_path)
-            content = read_doc_content(docs_dir, doc_path)
-            if content:
-                lines.append(f"### {name}")
-                lines.append("")
-                lines.append(content)
-                lines.append("")
-
-    return "\n".join(lines)
-
-
-def generate_llms_txt(docs_dir: Path) -> None:
-    """Generate both llms.txt and llms-full.txt."""
-    llms_path = docs_dir / "llms.txt"
-    llms_full_path = docs_dir / "llms-full.txt"
-
-    llms_content = generate_llms_summary(docs_dir)
-    llms_path.write_text(llms_content)
-    log.info(f"Generated {llms_path}")
-
-    llms_full_content = generate_llms_full(docs_dir)
-    llms_full_path.write_text(llms_full_content)
-    log.info(f"Generated {llms_full_path}")
 
 
 def on_pre_build(config):
-    """Generate llms.txt and llms-full.txt before build."""
     docs_dir = Path(config["docs_dir"])
-    generate_llms_txt(docs_dir)
+    (docs_dir / "llms.txt").write_text(generate_llms_txt(docs_dir))
+    (docs_dir / "llms-full.txt").write_text(generate_llms_txt(docs_dir, full=True))
+    log.info("Generated llms.txt and llms-full.txt")
 
 
 def define_env(env):

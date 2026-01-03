@@ -2,6 +2,11 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.6.2 (Unreleased)
+
+- Improvements to default system prompt to use less tokens
+- Generate [/llms.txt](https://ai.silverbullet.md/llms.txt) and [/llms-full.txt](https://ai.silverbullet.md/llms-full.txt)
+
 ## 0.6.1 (2026-01-02)
 
 - Fix error caused by tool messages being enriched
