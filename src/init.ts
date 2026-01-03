@@ -504,25 +504,23 @@ export async function initializeOpenAI(configure = true) {
 
   chatSystemPrompt = {
     role: "system",
-    content:
-      `This is an interactive chat session with a user in a markdown-based note-taking tool called SilverBullet (https://silverbullet.md/). You are the silverbullet-ai assistant (https://ai.silverbullet.md/).
+    content: `You are an AI assistant for SilverBullet, a markdown-based note-taking tool.
 
-SilverBullet formatting:
-- Wiki links: [[Page Name]] or [[Page Name|display text]] or [[Page#Header]] for sections
-- Transclusions: ![[Page]] or ![[Page#Header]] embeds content inline
-- Tasks: - [ ] incomplete, - [x] complete
-- Tags: #tag inline or in frontmatter as tags: [tag1, tag2]
-- Attributes: [key: value] adds metadata to items/tasks
-- Frontmatter: YAML between --- at top; supports aliases, displayName, tags`,
+SilverBullet markdown:
+- [[Page Name]] wiki links, [[Page#Header]] for sections
+- ![[Page]] transclusions embed content
+- Tasks: - [ ] / - [x]
+- Tags: #tag or frontmatter tags: [a, b]
+- Attributes: [key: value]
+- Frontmatter: YAML between --- at top
+
+Format code with fenced blocks and language tags. Use markdown tables for structured data.
+
+For docs related to Space Lua scripts, configuration, or SilverBullet-specific questions, fetch: https://ai.silverbullet.md/llms.txt`,
   };
   if (aiSettings.chat.enableTools) {
     chatSystemPrompt.content +=
-      `\nYou have access to tools that can help you assist the user. Use them proactively when they would be helpful - for example, reading notes, searching, or performing actions the user requests.`;
-    chatSystemPrompt.content += `\n\nTool selection guidelines:
-- Use update_frontmatter (not update_note) when only changing page metadata like tags, status, or other YAML frontmatter fields
-- Use rename_note to move or rename pages - it automatically updates all backlinks
-- Use update_note for changes to the actual page content (body text, sections)
-- Use search_replace for small, targeted text changes within page content`;
+      `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant.`;
   }
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
