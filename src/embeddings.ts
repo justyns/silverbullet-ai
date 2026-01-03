@@ -203,7 +203,16 @@ export async function indexSummary(page: string) {
 export async function queueEmbeddingGeneration(
   { name: page, tree }: IndexTreeEvent,
 ) {
+  if (aiSettings && !aiSettings.indexEmbeddings) {
+    return;
+  }
+
   await initIfNeeded();
+
+  // After init, check again in case settings weren't loaded before
+  if (!aiSettings.indexEmbeddings) {
+    return;
+  }
 
   if (!canIndexPage(page)) {
     return;

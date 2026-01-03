@@ -7,6 +7,7 @@ This page is a brief overview of each version.
 - Improvements to default system prompt to use less tokens
 - Generate [/llms.txt](https://ai.silverbullet.md/llms.txt) and [/llms-full.txt](https://ai.silverbullet.md/llms-full.txt)
 - Agents now inherit the base system prompt by default, but can be toggled off with `inheritBasePrompt`
+- Fix potential performance issue where `page:index` events caused unnecessary async work when embeddings are disabled
 
 ## 0.6.1 (2026-01-02)
 
