@@ -1,5 +1,6 @@
 import { editor, space } from "@silverbulletmd/silverbullet/syscalls";
-import { aiSettings, configureSelectedModel, initializeOpenAI } from "./init.ts";
+import { aiSettings, configureSelectedModel, initializeOpenAI, parseDefaultModelString } from "./init.ts";
+import { getAllAvailableModels } from "./model-discovery.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import type { ToolExecutionResult } from "./tools.ts";
 import type { ModelConfig, Tool } from "./types.ts";
@@ -248,19 +249,41 @@ type SelectionOption = {
   model?: ModelConfig;
 };
 
-async function selectModelsForBenchmark(): Promise<ModelConfig[]> {
-  if (!aiSettings?.textModels?.length) {
-    await initializeOpenAI(false);
+async function getAllBenchmarkModels(): Promise<ModelConfig[]> {
+  const models: ModelConfig[] = [];
+  const seenNames = new Set<string>();
+
+  const discovered = await getAllAvailableModels();
+  for (const dm of discovered) {
+    const modelConfig = parseDefaultModelString(`${dm.provider}:${dm.id}`);
+    if (modelConfig && !seenNames.has(modelConfig.name)) {
+      models.push(modelConfig);
+      seenNames.add(modelConfig.name);
+    }
   }
 
-  if (!aiSettings.textModels || aiSettings.textModels.length === 0) {
+  for (const m of aiSettings.textModels || []) {
+    if (!seenNames.has(m.name)) {
+      models.push(m);
+      seenNames.add(m.name);
+    }
+  }
+
+  return models;
+}
+
+async function selectModelsForBenchmark(): Promise<ModelConfig[]> {
+  await initializeOpenAI(false);
+
+  const allModels = await getAllBenchmarkModels();
+  if (allModels.length === 0) {
     throw new Error("No text models configured");
   }
 
   const options: SelectionOption[] = [
     { name: "📊 All configured models", value: "all" },
     { name: "🔄 Select multiple...", value: "pick" },
-    ...aiSettings.textModels.map((m) => ({
+    ...allModels.map((m) => ({
       name: m.name,
       description: `${m.modelName} (${m.provider})`,
       value: "single",
@@ -271,17 +294,17 @@ async function selectModelsForBenchmark(): Promise<ModelConfig[]> {
   const selection = await editor.filterBox("Select models to benchmark", options) as SelectionOption | undefined;
 
   if (!selection) return [];
-  if (selection.value === "all") return [...aiSettings.textModels];
-  if (selection.value === "pick") return await pickMultipleModels();
+  if (selection.value === "all") return [...allModels];
+  if (selection.value === "pick") return await pickMultipleModels(allModels);
   return selection.model ? [selection.model] : [];
 }
 
-async function pickMultipleModels(): Promise<ModelConfig[]> {
+async function pickMultipleModels(allModels: ModelConfig[]): Promise<ModelConfig[]> {
   const selected: ModelConfig[] = [];
   const selectedNames = new Set<string>();
 
   while (true) {
-    const remaining = aiSettings.textModels.filter((m) => !selectedNames.has(m.name));
+    const remaining = allModels.filter((m) => !selectedNames.has(m.name));
     if (remaining.length === 0) break;
 
     const options: SelectionOption[] = [
