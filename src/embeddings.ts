@@ -5,9 +5,8 @@ import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
 import { log } from "./utils.ts";
-import { editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
+import { clientStore, editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
-import * as cache from "./cache.ts";
 
 const searchPrefix = "🤖 ";
 
@@ -168,15 +167,15 @@ export async function indexSummary(page: string) {
       "Provide a concise and informative summary of the above page. The summary should capture the key points and be useful for search purposes. Avoid any formatting or extraneous text.  No more than one paragraph.  Summary:\n";
   }
 
-  const cacheKey = await hashSHA256(
+  const cacheKey = `ai.summaryCache.${await hashSHA256(
     [summaryModel.name, pageText, summaryPrompt].join(""),
-  );
-  let summary = cache.getCache(cacheKey);
+  )}`;
+  let summary = await clientStore.get(cacheKey) as string | undefined;
   if (!summary) {
     summary = await summaryProvider.singleMessageChat(
       "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
     );
-    cache.setCache(cacheKey, summary);
+    await clientStore.set(cacheKey, summary);
   }
 
   const summaryEmbeddings = await currentEmbeddingProvider.generateEmbeddings({

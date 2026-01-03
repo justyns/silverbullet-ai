@@ -2,7 +2,7 @@ import type { ChatMessage, ChatResponse, EmbeddingGenerationOptions, StreamChatO
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
-import * as cache from "../cache.ts";
+import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -57,8 +57,8 @@ export class OllamaProvider extends AbstractProvider {
    */
   private async fetchModelInfo(modelName?: string): Promise<Record<string, unknown> | null> {
     const model = modelName || this.modelName;
-    const cacheKey = `ollama:modelInfo:${this.baseUrl}:${model}`;
-    const cached = cache.getCache(cacheKey);
+    const cacheKey = `ai.ollamaModelInfo.${this.baseUrl}:${model}`;
+    const cached = await clientStore.get(cacheKey) as Record<string, unknown> | undefined;
     if (cached) {
       return cached;
     }
@@ -87,7 +87,7 @@ export class OllamaProvider extends AbstractProvider {
       }
 
       const data = await response.json();
-      cache.setCache(cacheKey, data);
+      await clientStore.set(cacheKey, data);
       return data;
     } catch (error) {
       console.error("Error fetching model info:", error);

@@ -1,6 +1,6 @@
 import { EmbeddingGenerationOptions } from "../types.ts";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
-import * as cache from "../cache.ts";
+import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
 // deno-lint-ignore no-explicit-any
@@ -54,19 +54,17 @@ export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInte
   ): Promise<Array<number>>;
 
   async generateEmbeddings(options: EmbeddingGenerationOptions) {
-    const cacheKey = await hashSHA256(
+    const cacheKey = `ai.embeddingCache.${await hashSHA256(
       [this.modelName, options.text].join(""),
-    );
+    )}`;
 
-    // Check if we've already generated these embeddings
-    const cachedEmbedding = cache.getCache(cacheKey);
+    const cachedEmbedding = await clientStore.get(cacheKey) as Array<number> | undefined;
     if (cachedEmbedding) {
       return cachedEmbedding;
     }
 
-    // Not in cache
     const embedding = await this._generateEmbeddings(options);
-    cache.setCache(cacheKey, embedding);
+    await clientStore.set(cacheKey, embedding);
     return embedding;
   }
 }
