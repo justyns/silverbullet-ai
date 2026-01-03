@@ -157,9 +157,16 @@ def convert_admonitions(markdown):
 
 
 def process_links(markdown, root_dir, page):
+    def replacer(m):
+        # If it's a code block or inline code, leave it unchanged
+        if m.group(0).startswith('`'):
+            return m.group(0)
+        # Otherwise it's a wiki link - convert it
+        return replace_wiki_link(m, root_dir, page)
+
     return re.sub(
-        r'\[\[([^|\]]+)(?:\|([^\]]+))?\]\]',
-        lambda m: replace_wiki_link(m, root_dir, page),
+        r'```[\s\S]*?```|`[^`]+`|\[\[([^|\]]+)(?:\|([^\]]+))?\]\]',
+        replacer,
         markdown,
     )
 
