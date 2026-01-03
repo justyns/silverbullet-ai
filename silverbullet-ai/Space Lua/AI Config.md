@@ -21,6 +21,49 @@ config.define("ai.keys", {
   additionalProperties = schema.string(),
 })
 
+-- Schema for provider configuration (recommended)
+config.define("ai.providers", {
+  description = "Provider-level configuration for AI services",
+  type = "object",
+  additionalProperties = {
+    type = "object",
+    properties = {
+      provider = {
+        type = "string",
+        enum = {"openai", "gemini", "ollama", "mock"},
+        description = "Provider type (defaults to key name if omitted)",
+      },
+      apiKey = {
+        type = "string",
+        description = "API key for this provider",
+      },
+      baseUrl = {
+        type = "string",
+        description = "Custom API endpoint URL",
+      },
+      useProxy = {
+        type = "boolean",
+        description = "Whether to use SilverBullet's proxy (default: true)",
+      },
+      preferredModels = {
+        type = "array",
+        items = { type = "string" },
+        description = "Model names to show first in the picker",
+      },
+      fetchModels = {
+        type = "boolean",
+        description = "Whether to fetch models from API (default: true)",
+      },
+    },
+    additionalProperties = false,
+  },
+})
+
+config.define("ai.defaultTextModel", {
+  description = "Default model to use on startup (format: 'provider:modelName')",
+  type = "string",
+})
+
 -- Schema for text/chat models
 config.define("ai.textModels", {
   description = "Available text/chat models",

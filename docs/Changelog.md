@@ -6,6 +6,7 @@ This page is a brief overview of each version.
 
 - Fix error caused by tool messages being enriched
 - ctrl+a+shift actually toggles the assistant panel now instead of only opening it
+- Add JSON schema definitions for `ai.providers` and `ai.defaultTextModel` config
 
 ## 0.6.0 (2026-01-02)
 
