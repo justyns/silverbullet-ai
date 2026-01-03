@@ -34,11 +34,13 @@ export let currentImageModel: ImageModelConfig;
 export let currentEmbeddingModel: EmbeddingModelConfig;
 
 export async function initIfNeeded() {
+  if (!apiKey || !currentAIProvider || !aiSettings || !currentModel) {
+    await initializeOpenAI(true);
+    return;
+  }
+
   const selectedModel = await getSelectedTextModel();
-  if (
-    !apiKey || !currentAIProvider || !aiSettings || !currentModel ||
-    JSON.stringify(selectedModel) !== JSON.stringify(currentModel)
-  ) {
+  if (JSON.stringify(selectedModel) !== JSON.stringify(currentModel)) {
     await initializeOpenAI(true);
   }
 }
