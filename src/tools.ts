@@ -342,7 +342,7 @@ export async function requestWriteApproval(
   newContent: string,
 ): Promise<{ success: boolean; error?: string }> {
   // Skip approval if configured - write directly
-  if (aiSettings.chat.skipToolApproval) {
+  if (aiSettings?.chat?.skipToolApproval) {
     await space.writePage(page, newContent);
     return { success: true };
   }
@@ -530,7 +530,7 @@ async function processToolCalls(
     }
 
     const toolDef = luaTools.get(toolName);
-    if (toolDef?.requiresApproval && !aiSettings.chat.skipToolApproval) {
+    if (toolDef?.requiresApproval && !aiSettings?.chat?.skipToolApproval) {
       const approvalResult = await requestToolApproval(
         toolName,
         args,

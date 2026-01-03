@@ -334,7 +334,7 @@ export async function enrichChatMessages(
       }
     }
 
-    if (aiSettings.chat.searchEmbeddings && aiSettings.indexEmbeddings) {
+    if (aiSettings?.chat?.searchEmbeddings && aiSettings?.indexEmbeddings) {
       // Search local vector embeddings for relevant context
       const searchResultsText = await searchEmbeddingsForChat(enrichedContent);
       if (searchResultsText !== "No relevant pages found.") {
@@ -344,7 +344,7 @@ export async function enrichChatMessages(
       }
     }
 
-    if (aiSettings.chat.parseWikiLinks) {
+    if (aiSettings?.chat?.parseWikiLinks) {
       // Parse wiki links and collect as attachments for THIS message
       const wikiResult = await enrichMessageWithWikiLinks(
         enrichedContent,
@@ -355,7 +355,7 @@ export async function enrichChatMessages(
       messageAttachments.push(...wikiResult.attachments);
     }
 
-    if (aiSettings.chat.bakeMessages) {
+    if (aiSettings?.chat?.bakeMessages) {
       // This copies the logic from the share plugin and renders all of the queries/templates
       // TODO: This can be disabled globally, but it might be useful to have a temporary toggle per page
       const tree = await markdown.parseMarkdown(enrichedContent);
@@ -377,7 +377,7 @@ export async function enrichChatMessages(
     // And also combine with the plug settings
     const combinedEnrichFunctions = enrichFunctions
       .flat()
-      .concat(aiSettings.chat.customEnrichFunctions);
+      .concat(aiSettings?.chat?.customEnrichFunctions || []);
 
     // then get rid of duplicates
     const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];

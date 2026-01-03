@@ -157,7 +157,10 @@ export async function buildAgentSystemPrompt(
           `ai.enrichWithWikiLinks(${luaLongString(bodyContent)}, {})`,
         );
         fullPrompt += "\n\n" + result.content;
-        attachments = (result.attachments || []).map(
+        const rawAttachments = Array.isArray(result.attachments)
+          ? result.attachments
+          : Object.values(result.attachments || {});
+        attachments = rawAttachments.map(
           (a: { name: string; content: string; type?: string }) => ({
             name: a.name,
             content: a.content,

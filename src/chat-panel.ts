@@ -49,7 +49,7 @@ async function initChatAgent(): Promise<void> {
   if (currentChatAgent) return;
 
   const agents = await discoverAgents();
-  const configuredRef = aiSettings.chat.defaultAgent;
+  const configuredRef = aiSettings?.chat?.defaultAgent;
   const refToFind = configuredRef || "default";
   const defaultAgent = agents.find((a) => a.ref === refToFind);
   if (defaultAgent) {
@@ -176,7 +176,7 @@ export async function startPanelChat(
       console.log("Could not get page context:", e);
     }
 
-    if (aiSettings.chat.customContext) {
+    if (aiSettings?.chat?.customContext) {
       try {
         const customResult = await lua.evalExpression(
           aiSettings.chat.customContext,
