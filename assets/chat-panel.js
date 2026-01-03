@@ -513,6 +513,25 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     }
   });
 
+  // Handle link clicks - navigate internal links using SilverBullet
+  messagesContainer.addEventListener("click", function (e) {
+    const link = e.target.closest("a");
+    if (!link) return;
+
+    const href = link.getAttribute("href");
+    if (!href) return;
+
+    // External links - let browser handle normally
+    if (href.startsWith("http://") || href.startsWith("https://")) {
+      return;
+    }
+
+    // Internal page links - use editor.navigate
+    e.preventDefault();
+    const pageName = decodeURIComponent(href);
+    syscall("editor.navigate", pageName);
+  });
+
   loadHistory();
   loadCurrentAgent();
   userInput.focus();
