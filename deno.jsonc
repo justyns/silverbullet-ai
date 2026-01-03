@@ -3,7 +3,7 @@
   "tasks": {
     "build": "deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js -c deno.jsonc --debug --info silverbullet-ai.plug.yaml",
     "build-release": "deno run -A https://github.com/silverbulletmd/silverbullet/releases/download/edge/plug-compile.js -c deno.jsonc --info silverbullet-ai.plug.yaml && deno task dist",
-    "dist": "deno run --allow-read --allow-write scripts/build-dist.ts",
+    "dist": "deno run --allow-read --allow-write --allow-run scripts/build-dist.ts",
     "update-readme": "deno run --allow-read --allow-write scripts/update-readme.ts",
     "test": "deno test --coverage=cov_profile --allow-env",
     "test:e2e": "cd e2e-tests && npm install && npx playwright test",

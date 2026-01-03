@@ -1,4 +1,4 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write
+#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run
 /**
  * Build script to create dist files for GitHub releases.
  * Combines all library Space Lua files into a single file
@@ -12,7 +12,54 @@ const DIST_DIR = "dist";
 const LIBRARY_DIR = "silverbullet-ai";
 const PLUG_JS = "silverbullet-ai.plug.js";
 const PLUG_MD = "PLUG.md";
+const CHANGELOG_MD = "docs/Changelog.md";
 const COMBINED_LIBRARY = "silverbullet-ai-library.md";
+
+async function getVersion(): Promise<string> {
+  const command = new Deno.Command("git", {
+    args: ["describe", "--tags", "--always"],
+    stdout: "piped",
+    stderr: "piped",
+  });
+  const { stdout } = await command.output();
+  return new TextDecoder().decode(stdout).trim();
+}
+
+function extractRecentChangelog(changelog: string, version: string): string {
+  // Extract major.minor from version (e.g., "0.6" from "0.6.1" or "0.6.1-5-gabcdef")
+  const versionMatch = version.match(/^(\d+\.\d+)/);
+  if (!versionMatch) return "";
+  const minorPrefix = versionMatch[1];
+
+  const lines = changelog.split("\n");
+  const result: string[] = [];
+  let inMatchingVersion = false;
+
+  for (const line of lines) {
+    if (line.startsWith("## ") && line.includes("(")) {
+      // Check if this version header matches our minor version
+      const headerMatch = line.match(/^## (\d+\.\d+)/);
+      if (headerMatch) {
+        if (headerMatch[1] === minorPrefix) {
+          inMatchingVersion = true;
+        } else {
+          break;
+        }
+      }
+    }
+    if (inMatchingVersion) {
+      if (line.startsWith("---")) break;
+      // Demote ## headers to ### for proper nesting under "## Recent Changes"
+      if (line.startsWith("## ")) {
+        result.push("#" + line);
+      } else {
+        result.push(line);
+      }
+    }
+  }
+
+  return result.join("\n").trim();
+}
 
 interface LibraryFile {
   path: string;
@@ -82,9 +129,27 @@ Install by copying this file to your space, or use \`Library: Install\` with \`g
   await Deno.writeTextFile(join(DIST_DIR, COMBINED_LIBRARY), combinedContent);
   console.log(`✓ Created ${DIST_DIR}/${COMBINED_LIBRARY}`);
 
-  // Copy PLUG.md to dist
-  await Deno.copyFile(PLUG_MD, join(DIST_DIR, PLUG_MD));
-  console.log(`✓ Copied ${PLUG_MD}`);
+  // Generate PLUG.md with version and changelog
+  const version = await getVersion();
+  const plugMdContent = await Deno.readTextFile(PLUG_MD);
+  const changelogContent = await Deno.readTextFile(CHANGELOG_MD);
+  const recentChangelog = extractRecentChangelog(changelogContent, version);
+
+  const enhancedPlugMd = plugMdContent.trimEnd() + `
+
+## Version
+
+Current version: **${version}**
+
+## Recent Changes
+
+${recentChangelog}
+
+For the full changelog, see https://github.com/justyns/silverbullet-ai/releases
+`;
+
+  await Deno.writeTextFile(join(DIST_DIR, PLUG_MD), enhancedPlugMd);
+  console.log(`✓ Created ${PLUG_MD} (version: ${version})`);
 
   // Copy plug.js to dist
   await Deno.copyFile(PLUG_JS, join(DIST_DIR, PLUG_JS));

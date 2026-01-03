@@ -16,6 +16,10 @@ test?space*
 site/
 testspace*/
 dist/
+
+# Generated llms.txt files
+docs/llms.txt
+docs/llms-full.txt
 silverbullet
 *.diff
 sb-tui/
