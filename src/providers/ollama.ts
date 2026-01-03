@@ -2,6 +2,7 @@ import type { ChatMessage, ChatResponse, EmbeddingGenerationOptions, StreamChatO
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
+import * as cache from "../cache.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -52,8 +53,16 @@ export class OllamaProvider extends AbstractProvider {
 
   /**
    * Fetch model info from Ollama's /api/show endpoint.
+   * Results are cached per model name to avoid redundant API calls.
    */
   private async fetchModelInfo(modelName?: string): Promise<Record<string, unknown> | null> {
+    const model = modelName || this.modelName;
+    const cacheKey = `ollama:modelInfo:${this.baseUrl}:${model}`;
+    const cached = cache.getCache(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     try {
       const headers: HttpHeaders = {
         "Content-Type": "application/json",
@@ -68,7 +77,7 @@ export class OllamaProvider extends AbstractProvider {
         {
           method: "POST",
           headers: headers,
-          body: JSON.stringify({ model: modelName || this.modelName }),
+          body: JSON.stringify({ model: model }),
         },
       );
 
@@ -77,7 +86,9 @@ export class OllamaProvider extends AbstractProvider {
         return null;
       }
 
-      return await response.json();
+      const data = await response.json();
+      cache.setCache(cacheKey, data);
+      return data;
     } catch (error) {
       console.error("Error fetching model info:", error);
       return null;
