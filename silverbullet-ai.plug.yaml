@@ -105,8 +105,6 @@ functions:
     path: src/chat-panel.ts:openAIAssistant
     command:
       name: "AI: Open Assistant"
-      key: "Ctrl-Shift-a"
-      mac: "Cmd-Shift-a"
   openAIAssistantModal:
     path: src/chat-panel.ts:openAIAssistantModal
     command:
@@ -117,6 +115,8 @@ functions:
     path: src/chat-panel.ts:toggleAIAssistant
     command:
       name: "AI: Toggle Assistant Panel"
+      key: "Ctrl-Shift-a"
+      mac: "Cmd-Shift-a"
   startPanelChat:
     path: src/chat-panel.ts:startPanelChat
   getPanelChatChunk:

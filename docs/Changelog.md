@@ -5,6 +5,7 @@ This page is a brief overview of each version.
 ## 0.6.1 (2026-01-02)
 
 - Fix error caused by tool messages being enriched
+- ctrl+a+shift actually toggles the assistant panel now instead of only opening it
 
 ## 0.6.0 (2026-01-02)
 

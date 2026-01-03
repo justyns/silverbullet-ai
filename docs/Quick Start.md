@@ -44,7 +44,7 @@ See [[Configuration]] for all options, including [[Configuration/Chat Instructio
 
 Open a new note, run [[Commands/AI: Chat on current page]] or press ++ctrl+shift+enter++ (++cmd+shift+enter++ on Mac) to start a chat session.
 
-Or use [[Commands/AI: Open Assistant]] (++ctrl+shift+a++) for a side-panel chat that persists across pages.
+Or use [[Commands/AI: Toggle Assistant Panel]] (++ctrl+shift+a++) for a side-panel chat that persists across pages.
 
 And that's it! Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go further.
 

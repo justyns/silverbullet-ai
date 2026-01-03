@@ -505,6 +505,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     setTimeout(hideAutocomplete, 150);
   });
 
+  // Handle toggle shortcut (Ctrl/Cmd+Shift+A) when panel has focus
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "a") {
+      e.preventDefault();
+      closePanel();
+    }
+  });
+
   loadHistory();
   loadCurrentAgent();
   userInput.focus();

@@ -1,7 +1,5 @@
 Opens an interactive chat panel on the right side of the screen for conversing with the assistant.
 
-**Keyboard shortcut:** ++ctrl+shift+a++ (++cmd+shift+a++ on Mac)
-
 The Assistant panel provides:
 
 - Persistent chat sessions that survive page navigation
@@ -10,7 +8,7 @@ The Assistant panel provides:
 - Token usage tracking against the model's context limit
 - Export functionality to save chat history
 
-The panel can also be toggled with [[Commands/AI: Toggle Assistant Panel]].
+Use [[Commands/AI: Toggle Assistant Panel]] (++ctrl+shift+a++) to toggle the panel open/closed.
 
 ## Full-Screen Mode
 
