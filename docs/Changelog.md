@@ -2,7 +2,11 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.0 (Unreleased)
+## 0.6.1 (2026-01-02)
+
+- Fix error caused by tool messages being enriched
+
+## 0.6.0 (2026-01-02)
 
 - Added a side-panel for AI chat (`AI: Open Assistant` command)
   - Tool calls rendered as expandable blocks

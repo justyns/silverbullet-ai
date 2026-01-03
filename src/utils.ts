@@ -273,8 +273,9 @@ export async function enrichChatMessages(
   }
 
   for (const message of messages) {
-    if (message.role === "assistant" || message.role === "system") {
-      // Don't enrich assistant or system messages
+    if (message.role === "assistant" || message.role === "system" || message.role === "tool") {
+      // Don't enrich assistant, system, or tool messages
+      // Tool messages must immediately follow assistant messages with tool_calls per OpenAI API
       result.push({ message, attachments: [] });
       continue;
     }
