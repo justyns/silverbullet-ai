@@ -6,58 +6,45 @@ Run `Library: Install` and enter `ghr:justyns/silverbullet-ai/PLUG.md` (see [[In
 
 ## Configuration
 
-### 1. Set API Key
-
-Add your API key to your Space Lua configuration:
+Add your configuration to a Space Lua block. This example uses OpenAI, but see [[Providers]] for other options including self-hosted models with Ollama.
 
 ```lua
 config.set {
   ai = {
-    keys = {
-      OPENAI_API_KEY = "your-openai-key-here"
-    }
-  }
-}
-```
-
-### 2. Configure AI Models
-
-Configure one or more textModels, and optionally an image model and embeddings model. Example below is for OpenAI and DALL-E. You may also want to configure [[Configuration/Chat Instructions]] at this time. See [[Providers]] for examples other than OpenAI, including self-hosted ones.
-
-```lua
-config.set {
-  ai = {
-    keys = {
-      OPENAI_API_KEY = "your-openai-key-here"
+    providers = {
+      openai = {
+        apiKey = "your-openai-key-here",
+        preferredModels = {"gpt-4o", "gpt-4o-mini"}
+      }
     },
+    defaultTextModel = "openai:gpt-4o",
+    -- Optional: configure DALL-E for image generation
     imageModels = {
       {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"}
     },
-    textModels = {
-      {name = "gpt-4o", provider = "openai", modelName = "gpt-4o"},
-      {name = "gpt-4o-mini", provider = "openai", modelName = "gpt-4o-mini"}
-    },
-    embeddingModels = {
-      {name = "text-embedding-3-small", provider = "openai", modelName = "text-embedding-3-small"}
-    },
-    -- Chat section is optional, but may help provide better results
+    -- Optional: customize chat behavior
     chat = {
       userInformation = "I'm a software developer who likes taking notes.",
-      userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
+      userInstructions = "Please give short and concise responses."
     }
   }
 }
 ```
 
+With this configuration:
+
+- Models are fetched automatically from the provider's API
+- `preferredModels` appear first in the model picker (marked with ★)
+- `defaultTextModel` is auto-selected on startup
+- Run **"AI: Refresh Model List"** to update cached models after config changes
+
+See [[Configuration]] for all options, including [[Configuration/Chat Instructions]] and [[Configuration/Embedding Models]].
+
 ## Usage
 
-Run `AI: Select Text Model from Config`, choose one of the models you just configured.
+Open a new note, run [[Commands/AI: Chat on current page]] or press ++ctrl+shift+enter++ (++cmd+shift+enter++ on Mac) to start a chat session.
 
-> **note**: If you only have one model configured, it will be selected automatically.
-
-Open a new note, run [[Commands/AI: Chat on current page]] or press (CTRL|CMD)+SHIFT+ENTER to start a chat session.
-
-Or try searching with [[Commands/AI: Search]] after configuring an [[Configuration/Embedding Models|Embedding model]] and re-indexing the space.
+Or use [[Commands/AI: Open Assistant]] (++ctrl+shift+a++) for a side-panel chat that persists across pages.
 
 And that's it! Look at the other [[Commands]] available, as well as check out the [[Templated Prompts]] to go further.
 
