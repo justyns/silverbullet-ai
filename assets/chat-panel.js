@@ -85,11 +85,19 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         }
       }
 
+      const searchLower = searchTerm.toLowerCase();
       const seen = new Set();
       return allOptions
         .filter((opt) => {
           if (seen.has(opt.label)) return false;
           seen.add(opt.label);
+          if (searchTerm) {
+            const label = (opt.label || "").toLowerCase();
+            const displayLabel = (opt.displayLabel || "").toLowerCase();
+            if (!label.includes(searchLower) && !displayLabel.includes(searchLower)) {
+              return false;
+            }
+          }
           return true;
         })
         .sort((a, b) => (b.boost || 0) - (a.boost || 0))

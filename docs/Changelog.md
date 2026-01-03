@@ -8,6 +8,7 @@ This page is a brief overview of each version.
 - ctrl+a+shift actually toggles the assistant panel now instead of only opening it
 - Add JSON schema definitions for `ai.providers` and `ai.defaultTextModel` config
 - Clicking wiki-links in the assistant panel now navigates without page refresh
+- Auto-complete of page links should filter properly now
 
 ## 0.6.0 (2026-01-02)
 
