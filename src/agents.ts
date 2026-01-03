@@ -1,6 +1,7 @@
 import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, LuaToolDefinition } from "./types.ts";
 import { luaLongString } from "./utils.ts";
+import { chatSystemPrompt } from "./init.ts";
 
 /**
  * Discovers all AI agent templates from both Lua registry and page templates.
@@ -20,6 +21,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
         systemPrompt?: string;
         tools?: string[];
         toolsExclude?: string[];
+        inheritBasePrompt?: boolean;
       }
     >;
 
@@ -33,6 +35,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
             systemPrompt: agent.systemPrompt,
             tools: agent.tools,
             toolsExclude: agent.toolsExclude,
+            inheritBasePrompt: agent.inheritBasePrompt,
           },
         });
       }
@@ -120,6 +123,7 @@ export function filterToolsForAgent(
 
 /**
  * Builds the system prompt for an agent.
+ * By default, prepends the base system prompt (inheritBasePrompt defaults to true).
  * For page-based agents: combines frontmatter systemPrompt with page body content.
  * For Lua-registered agents: uses systemPrompt directly.
  * Wiki-links in body content are extracted as attachments.
@@ -127,16 +131,21 @@ export function filterToolsForAgent(
 export async function buildAgentSystemPrompt(
   agent: AIAgentTemplate,
 ): Promise<{ systemPrompt: string; attachments: Attachment[] }> {
-  const prompt = agent.aiagent.systemPrompt || "";
+  const agentPrompt = agent.aiagent.systemPrompt || "";
+  const inheritBase = agent.aiagent.inheritBasePrompt !== false;
+
+  // Start with base prompt if inheriting
+  let fullPrompt = inheritBase && chatSystemPrompt?.content
+    ? chatSystemPrompt.content + "\n\n" + agentPrompt
+    : agentPrompt;
 
   // Lua-registered agents don't have page content (no _pagePath)
   if (!agent._pagePath) {
-    return { systemPrompt: prompt, attachments: [] };
+    return { systemPrompt: fullPrompt, attachments: [] };
   }
 
   // Page-based agents may have body content with wiki-links
   let attachments: Attachment[] = [];
-  let fullPrompt = prompt;
 
   try {
     const pageContent = await space.readPage(agent._pagePath);

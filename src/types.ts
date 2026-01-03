@@ -159,6 +159,7 @@ export type AIAgentTemplate = {
     systemPrompt?: string;
     tools?: string[];
     toolsExclude?: string[];
+    inheritBasePrompt?: boolean;
   };
 };
 

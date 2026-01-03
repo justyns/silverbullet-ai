@@ -185,6 +185,11 @@ aiagent:
 | `systemPrompt` | string | The system prompt for the LLM |
 | `tools` | string[] | Whitelist - only these tools are available |
 | `toolsExclude` | string[] | Blacklist - these tools are removed |
+| `inheritBasePrompt` | boolean | Prepend base system prompt (default: true) |
+
+### Base Prompt Inheritance
+
+By default, agents inherit the base system prompt which includes SilverBullet markdown syntax, tool usage guidance, and the llms.txt documentation link. Set `inheritBasePrompt: false` to completely replace the base prompt with your own.
 
 ### Tool Filtering Precedence
 
