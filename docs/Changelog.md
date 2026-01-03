@@ -9,6 +9,7 @@ This page is a brief overview of each version.
 - Agents now inherit the base system prompt by default, but can be toggled off with `inheritBasePrompt`
 - Fix potential performance issue where `page:index` events caused unnecessary async work when embeddings are disabled
 - Fix potential performance issue where the config was re-read even when there were no changes
+- Parallelize model discovery and cache Ollama model info to avoid redundant API calls
 
 ## 0.6.1 (2026-01-02)
 

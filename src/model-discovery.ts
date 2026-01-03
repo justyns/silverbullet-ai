@@ -129,24 +129,24 @@ export async function getAllAvailableModels(): Promise<DiscoveredModel[]> {
     return [];
   }
 
-  const allModels: DiscoveredModel[] = [];
-
+  const promises: Promise<DiscoveredModel[]>[] = [];
   for (const [providerName, config] of Object.entries(providers)) {
     if (!config) continue;
-
     const providerType = getProviderType(providerName, config);
-    const models = await getModelsForProvider(providerName, config);
-    for (const modelId of models) {
-      allModels.push({
-        id: modelId,
-        name: modelId,
-        provider: providerName,
-        providerType: providerType,
-      });
-    }
+    promises.push(
+      getModelsForProvider(providerName, config).then((models) =>
+        models.map((modelId) => ({
+          id: modelId,
+          name: modelId,
+          provider: providerName,
+          providerType: providerType,
+        }))
+      ),
+    );
   }
 
-  return allModels;
+  const results = await Promise.all(promises);
+  return results.flat();
 }
 
 export async function refreshModelCacheForProvider(
@@ -166,13 +166,18 @@ export async function refreshAllModelCaches(): Promise<number> {
     return 0;
   }
 
-  let totalModels = 0;
+  const promises: Promise<string[]>[] = [];
   for (const [providerName, config] of Object.entries(providers)) {
     if (!config || config.fetchModels === false) continue;
-    const models = await discoverModelsForProvider(providerName, config);
-    totalModels += models.length;
+    promises.push(discoverModelsForProvider(providerName, config));
   }
-  return totalModels;
+
+  const results = await Promise.all(promises);
+  let total = 0;
+  for (const models of results) {
+    total += models.length;
+  }
+  return total;
 }
 
 /**
