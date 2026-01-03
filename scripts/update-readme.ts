@@ -28,14 +28,14 @@ async function updateReadme(tag: string) {
 
   // Update the tag in the README
   readmeContent = readmeContent.replace(
-    /- ghr:justyns\/silverbullet-ai\/[0-9.]+/,
-    `- ghr:justyns/silverbullet-ai/${tag}`,
+    /ghr:justyns\/silverbullet-ai@[0-9.]+\/PLUG\.md/g,
+    `ghr:justyns/silverbullet-ai@${tag}/PLUG.md`,
   );
 
   // Update the tag in the Installation.md
   installationDocContent = installationDocContent.replace(
-    /- ghr:justyns\/silverbullet-ai\/[0-9.]+/,
-    `- ghr:justyns/silverbullet-ai/${tag}`,
+    /ghr:justyns\/silverbullet-ai@[0-9.]+\/PLUG\.md/g,
+    `ghr:justyns/silverbullet-ai@${tag}/PLUG.md`,
   );
 
   // Parse plug YAML to get a list of functions/commands
