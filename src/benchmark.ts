@@ -604,6 +604,9 @@ Run the **AI: Run Benchmark** command to test your AI model's capabilities.
 `;
 }
 
+/**
+ * Runs the AI benchmark suite and navigates to the results page.
+ */
 export async function benchmarkCommand() {
   await runBenchmark();
   await editor.navigate(BENCHMARK_PAGE);

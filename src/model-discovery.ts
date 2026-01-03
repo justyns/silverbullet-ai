@@ -175,6 +175,9 @@ export async function refreshAllModelCaches(): Promise<number> {
   return totalModels;
 }
 
+/**
+ * Refreshes the cached model lists from all configured providers.
+ */
 export async function refreshModelListCommand(): Promise<void> {
   await editor.flashNotification("Refreshing model lists...", "info");
   try {

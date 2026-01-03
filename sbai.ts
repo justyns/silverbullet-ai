@@ -369,6 +369,9 @@ export async function selectEmbeddingModelFromConfig() {
   console.log(`Selected embedding model:`, selectedEmbeddingModel);
 }
 
+/**
+ * Prompts the user to select an AI agent from available agents.
+ */
 export async function selectAgentCommand() {
   const agent = await selectAgent();
   if (agent) {
@@ -377,6 +380,9 @@ export async function selectAgentCommand() {
   }
 }
 
+/**
+ * Clears the currently selected AI agent.
+ */
 export async function clearAgentCommand() {
   chatAgentState("clear");
   await editor.flashNotification("Agent cleared");

@@ -13,7 +13,7 @@ function extractDocsForFunction(functionPath: string): string {
   const parsed = parseFiles([`./${filePath}`]);
   // console.log("parsed", parsed);
   if (!parsed[functionName]) return "No documentation found.";
-  return parsed[functionName].description;
+  return parsed[functionName].description || "No documentation found.";
 }
 
 async function updateReadme(tag: string) {

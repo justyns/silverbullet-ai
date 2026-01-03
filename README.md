@@ -11,24 +11,19 @@ If you are new here, start with either the `AI: Chat on current page` command or
 ## Features
 
 <!-- start-features -->
+- **Interactive Chat**: Multi-turn conversations using the current note as the chat interface
+- **AI Assistant Panel**: Right-side chat panel for persistent conversations across pages
+- **RAG (Retrieval Augmented Generation)**: Automatic vector embedding search for relevant context
+- **Context Enrichment**: Wiki-link parsing, template expansion, and custom enrichment functions
+- **AI Agents**: Create specialized AI personas with custom system prompts, tool filtering, and page or Lua-based definitions
+- **AI Tools**: Built-in tools (read, create, update notes; search, navigate; execute Lua) with custom tool support and approval gates
+- **Templated Prompts**: Define custom prompts as pages or in Space Lua with multiple insertion modes
+- **Vector Embeddings**: Chunk-based embeddings stored in SilverBullet's datastore for semantic search
+- **Note Summaries**: *Experimental* - Generate and index page summaries
+- **Image Generation**: DALL-E integration with auto-upload and caption insertion
+- **Bundled Prompts**: Generate tags, suggest page names, generate frontmatter, enhance notes
+- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, any OpenAI-compatible API
 
-- **Summarize Note**: Summarizes the content of a note or selected text.
-- **Replace with Summary**: Replaces the selected text with its summary.
-- **Insert Summary**: Inserts a summary of the selected text or note at the cursor position.
-- **Call OpenAI with Note Context**: Sends the note or selected text to OpenAI based on a user-defined prompt.
-- **Interactive Chat**:  Have an interactive chat, utilizing the current note as the chat interface.
-  - **RAG (**R**etrieval **A**ugmented **G**eneration)**: Search local vector embeddings of all your notes for relevant context to your current chat query and provide it to the LLM.
-- **AI Assistant Panel**: Right-side chat panel for persistent conversations across pages.
-- **Templated Prompts**: Define custom notes as a templated prompt that can be rendered, sent to llm, and then inserted into the page.
-- **AI Agents**: Create specialized AI personas with custom system prompts, tool filtering, and page or Lua-based definitions.
-- **AI Tools**: Built-in tools (read, create, update notes; search, navigate; execute Lua) with custom tool support and approval gates.
-- **Generate Tags for Note**: Generates tags for the current note using AI.  Custom rules can also be specified to steer towards better tags.
-- **Generate and Insert Image using Dall-E**: Generates an image based on a prompt and inserts it into the note.
-- **Rename a note based on Note Context**: Sends the note, including enriched data, to the LLM and asks for a new note title.  Custom rules or examples can also be provided to generate better titles.
-- **Generate vector embeddings**: Chunks each page, generates vector embeddings of the text, and indexes those embeddings.  No external database required.
-- **Similarity search**: Allows doing a similarity search based on indexed embeddings.
-- **Note Summary generation and search**: **Experimental** generates a summary of each note, then generates embeddings and indexes that summary to be searched using a similarity/semantic search.
-- **FrontMatter generation**: **Experimental** extracts useful information from a note's context and generates frontmatter attributes for it.
 <!-- end-features -->
 
 ### Available commands
@@ -44,18 +39,23 @@ New responses are always appended to the end of the page.
 1. Page-based: Pass SlashCompletionOption with templatePage to read template from a page
 2. Direct: Pass SpaceLuaPromptOptions with template string directly
 - **AI: Select Text Model from Config**: Prompts the user to select a text/llm model from the configured models.
+Supports both legacy textModels config and new providers config with dynamic discovery.
 - **AI: Select Image Model from Config**: Prompts the user to select an image model from the configured models.
+Note: Image models must be configured in the legacy imageModels array.
 - **AI: Select Embedding Model from Config**: Prompts the user to select an embedding model from the configured models.
-- **AI: Select Agent**: undefined
-- **AI: Clear Agent**: undefined
+Note: Embedding models must be configured in the legacy embeddingModels array.
+- **AI: Refresh Model List**: Refreshes the cached model lists from all configured providers.
+- **AI: Select Agent**: Prompts the user to select an AI agent from available agents.
+- **AI: Clear Agent**: Clears the currently selected AI agent.
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
 isn't too helpful for most cases.
 - **AI: Search**: Ask the user for a search query, run the search, and navigate to the results page.
 Search results are provided by calculating the cosine similarity between the
 query embedding and each indexed embedding.
 - **AI: Connectivity Test**: Command to run connectivity tests and navigate to the results page.
-- **AI: Run Benchmark**: undefined
-- **AI: Open Assistant**: Opens the AI Assistant panel
+- **AI: Run Benchmark**: Runs the AI benchmark suite and navigates to the results page.
+- **AI: Open Assistant**: Opens the AI Assistant panel (side panel)
+- **AI: Open Assistant (Full Screen)**: Opens the AI Assistant as a full-screen modal (better for mobile)
 - **AI: Toggle Assistant Panel**: Toggles the AI Assistant panel
 
 <!-- end-commands-and-functions -->
@@ -69,150 +69,139 @@ After installing the plug, you can access its features through the command palet
 SilverBullet v2 uses Space Lua for configuration. Add a `space-lua` block to your `CONFIG` page:
 
 ```lua
+local openai_key = "sk-your-openai-key-here"
+
 config.set {
   ai = {
-    -- API keys
-    keys = {
-      OPENAI_API_KEY = "your-openai-key-here"
-    },
-
-    -- Configure one or more image models
-    imageModels = {
-      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
-      {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
-    },
-
-    -- Configure one or more text models
-    -- Provider may be openai, gemini, or ollama.
-    textModels = {
-      {name = "gpt-4-turbo", provider = "openai", modelName = "gpt-4-turbo"},
-      {name = "gpt-3-turbo", provider = "openai", modelName = "gpt-3.5-turbo"},
-      {
-        name = "ollama-llama3",
-        modelName = "llama3",
-        provider = "ollama",
+    providers = {
+      openai = {
+        apiKey = openai_key,
+        preferredModels = {"gpt-4o", "gpt-4o-mini"}
+      },
+      ollama = {
         baseUrl = "http://localhost:11434/v1",
-        requireAuth = false
+        useProxy = false,
+        preferredModels = {"llama3.2", "qwen2.5-coder"}
       }
     },
 
-    -- Chat section is optional, but may help provide better results
+    -- Optional: auto-select a default model on startup
+    defaultTextModel = "ollama:llama3.2",
+
+    -- Chat settings (optional)
     chat = {
       userInformation = "I'm a software developer who likes taking notes.",
-      userInstructions = "Please give short and concise responses. When providing code, do so in python unless requested otherwise."
+      userInstructions = "Please give short and concise responses."
     }
   }
 }
 ```
+
+With this configuration:
+
+- **"AI: Select Text Model"** shows all available models from each provider
+- **"AI: Refresh Model List"** updates the cached model lists
+- `preferredModels` appear first in the picker (marked with ★)
+
+#### Provider Options
+
+| Option | Description |
+|--------|-------------|
+| `apiKey` | API key for the provider |
+| `baseUrl` | Custom API endpoint |
+| `useProxy` | Use SilverBullet's proxy (default: true, set false for local services) |
+| `preferredModels` | Models shown first in picker |
+| `fetchModels` | Fetch models from API (default: true). Set false if API doesn't support it |
+| `provider` | Explicit provider type when key name doesn't match (e.g., `provider = "openai"` for OpenRouter) |
 
 #### Ollama
 
-To use Ollama locally, make sure you have it running first and the desired models downloaded:
-
 ```lua
 config.set {
   ai = {
-    textModels = {
-      {
-        name = "ollama-llama3",
-        modelName = "llama3",  -- Run `ollama list` to see available models
-        provider = "ollama",
+    providers = {
+      ollama = {
         baseUrl = "http://localhost:11434/v1",
-        requireAuth = false,
-        useProxy = false  -- Bypass SilverBullet's proxy for local requests
+        useProxy = false,
+        preferredModels = {"llama3.2", "qwen2.5-coder"}
       }
-    }
-  }
-}
-```
-
-**requireAuth**: When using Ollama and Chrome, requireAuth needs to be set to false so that the Authorization header isn't set. Otherwise you will get a CORS error.
-
-**useProxy**: Set to false to bypass SilverBullet's proxy and make requests directly to Ollama.
-
-#### Mistral.ai
-
-Mistral.ai is a hosted service that offers an openai-compatible api:
-
-```lua
-config.set {
-  ai = {
-    keys = {
-      MISTRAL_API_KEY = "your-mistral-key-here"
     },
-    textModels = {
-      {
-        name = "mistral-medium",
-        modelName = "mistral-medium",
-        provider = "openai",
-        baseUrl = "https://api.mistral.ai/v1",
-        secretName = "MISTRAL_API_KEY"
-      }
-    }
-  }
-}
-```
-
-#### Perplexity.ai
-
-Perplexity.ai is another hosted service that offers an openai-compatible api and [various models](https://docs.perplexity.ai/docs/model-cards):
-
-```lua
-config.set {
-  ai = {
-    keys = {
-      PERPLEXITY_API_KEY = "your-perplexity-key-here"
-    },
-    textModels = {
-      {
-        name = "sonar-medium-online",
-        modelName = "sonar-medium-online",
-        provider = "openai",
-        baseUrl = "https://api.perplexity.ai",
-        secretName = "PERPLEXITY_API_KEY"
-      }
-    }
+    defaultTextModel = "ollama:llama3.2"
   }
 }
 ```
 
 #### Google Gemini
 
-Google Gemini is supported as a text provider:
-
 ```lua
 config.set {
   ai = {
-    keys = {
-      GOOGLE_AI_STUDIO_KEY = "your-google-ai-studio-key-here"
-    },
-    textModels = {
-      {
-        name = "gemini-2.0-flash",
-        modelName = "gemini-2.0-flash",
-        provider = "gemini",
-        secretName = "GOOGLE_AI_STUDIO_KEY"
+    providers = {
+      gemini = {
+        apiKey = "your-google-ai-studio-key",
+        preferredModels = {"gemini-2.0-flash", "gemini-1.5-pro"}
       }
     }
   }
 }
 ```
 
-**Note**: Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey). AI Studio is not the same as the Gemini App (previously Bard).
+Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-#### Dall-E
+#### OpenRouter
 
-Dall-E can be configured for generating images:
+[OpenRouter](https://openrouter.ai/) provides access to many models via one API:
+
+```lua
+config.set {
+  ai = {
+    providers = {
+      openrouter = {
+        provider = "openai",  -- OpenRouter uses OpenAI-compatible API
+        apiKey = "your-openrouter-key",
+        baseUrl = "https://openrouter.ai/api/v1",
+        preferredModels = {"anthropic/claude-3.5-sonnet", "openai/gpt-4o"}
+      }
+    }
+  }
+}
+```
+
+#### Multiple Provider Instances
+
+You can configure multiple instances of the same provider type:
+
+```lua
+config.set {
+  ai = {
+    providers = {
+      ollamaLocal = {
+        provider = "ollama",
+        baseUrl = "http://localhost:11434/v1",
+        useProxy = false
+      },
+      ollamaServer = {
+        provider = "ollama",
+        baseUrl = "http://my-server:11434/v1",
+        useProxy = true
+      }
+    }
+  }
+}
+```
+
+#### Image Generation (DALL-E)
+
+Image models use a separate configuration:
 
 ```lua
 config.set {
   ai = {
     keys = {
-      OPENAI_API_KEY = "your-openai-key-here"
+      OPENAI_API_KEY = "your-openai-key"
     },
     imageModels = {
-      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"},
-      {name = "dall-e-2", modelName = "dall-e-2", provider = "dalle"}
+      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"}
     }
   }
 }
@@ -220,35 +209,28 @@ config.set {
 
 #### Chat Custom Instructions
 
-OpenAI introduced [custom instructions for ChatGPT](https://openai.com/blog/custom-instructions-for-chatgpt) to help improve responses. We emulate this by allowing a system prompt to be injected into each new chat session.
+The system prompt includes optional user information and instructions:
 
-The system prompt is rendered similar to the one below:
-
-Always added:
-> This is an interactive chat session with a user in a note-taking tool called SilverBullet.
-
-If **userInformation** is set:
-> The user has provided the following information about their self: **${ai.chat.userInformation}**
-
-If **userInstructions** is set:
-> The user has provided the following instructions for the chat, follow them as closely as possible: **${ai.chat.userInstructions}**
-
+```lua
+config.set {
+  ai = {
+    chat = {
+      userInformation = "I'm a software developer who likes taking notes.",
+      userInstructions = "Please give short and concise responses."
+    }
+  }
+}
+```
 
 ### Templated Prompts
 
-**NOTE:** All built-in prompts will be replaced with templated prompts eventually.
+You can use template notes to create custom prompts. Template notes must have:
 
-You can use template notes to create your own custom prompts to send to the LLM.
+- `tags` including `meta/template/aiPrompt`
+- `aiprompt` object with a `description` key
+- Optionally, `aiprompt.systemPrompt` to override the system prompt
 
-Template notes make use of all of the template language available to SilverBullet.
-
-To be a templated prompt, the note must have the following frontmatter:
-
-- `tags` must include `meta/template/aiPrompt`
-- `aiprompt` object must exist and have a `description` key
-- Optionally, `aiprompt.systemPrompt` can be specified to override the system prompt
-
-For example, here is a templated prompt to summarize the current note and insert the summary at the cursor:
+Example template to summarize the current note:
 
 ``` markdown
 ---
@@ -265,52 +247,27 @@ Everything below is the content of the note:
 ${readPage(@page.ref)}
 ```
 
-With the above note saved as `AI: Generate note summary`, you can run the `AI: Execute AI Prompt from Custom Template` command from the command palette, select the `AI: Generate note summary` template, and the summary will be streamed to the current cursor position.
-
-Another example prompt is to pull in remote pages and ask the llm to generate Space Lua code for you:
-
-```
----
-tags: meta/template/aiPrompt
-
-aiprompt:
-  description: "Describe the Space Lua functionality you want and generate it"
-  systemPrompt: "You are an expert Lua developer. Help the user develop new functionality for their personal note taking tool."
-  slashCommand: aiSpaceLua
----
-
-SilverBullet Space Lua documentation:
-
-${readPage([[!silverbullet.md/Space%20Lua]])}
-
-Using the above documentation, please create Space Lua code following the user's description in the note below. Output only valid markdown with a code block using space-lua. No explanations, code in a markdown space-lua block only.
-
-title: ${@page.name}
-Everything below is the content of the note:
-${readPage(@page.ref)}
-```
-
+Run `AI: Execute AI Prompt from Custom Template` to use your templates.
 
 ## Build
-To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
+
+To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then:
 
 ```shell
 deno task build
 ```
 
-Or to watch for changes and rebuild automatically
+Or to watch for changes:
 
 ```shell
 deno task watch
 ```
 
-Then, copy the resulting `.plug.js` file into your space's `_plug` folder. Or build and copy in one command:
+Copy the resulting `.plug.js` file into your space's `_plug` folder:
 
 ```shell
 deno task build && cp *.plug.js /my/space/_plug/
 ```
-
-SilverBullet will automatically sync and load the new version of the plug (or speed up this process by running the {[Sync: Now]} command).
 
 ## Installation
 
@@ -328,7 +285,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.5.0/PLUG.md
+ghr:justyns/silverbullet-ai@0.6.0/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
