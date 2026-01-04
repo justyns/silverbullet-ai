@@ -10,6 +10,7 @@ This page is a brief overview of each version.
 - Fix potential performance issue where `page:index` events caused unnecessary async work when embeddings are disabled
 - Fix potential performance issue where the config was re-read even when there were no changes
 - Parallelize model discovery and cache Ollama model info to avoid redundant API calls
+- Add new `Reindex All Embeddings` command
 
 ## 0.6.1 (2026-01-02)
 

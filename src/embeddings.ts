@@ -56,6 +56,68 @@ export async function shouldIndexSummaries() {
 }
 
 /**
+ * Reindex all embeddings for all indexable pages in the space.
+ * Shows progress notifications during the operation.
+ * Doesn't use the queue
+ */
+export async function reindexAllEmbeddings(): Promise<void> {
+  await initIfNeeded();
+
+  if (!await shouldIndexEmbeddings()) {
+    await editor.flashNotification(
+      "Embeddings indexing is disabled. Enable indexEmbeddings in config.",
+      "error",
+    );
+    return;
+  }
+
+  const allPages = await space.listPages();
+  const indexablePages = allPages.filter((page: { name: string }) => canIndexPage(page.name));
+  const total = indexablePages.length;
+
+  if (total === 0) {
+    await editor.flashNotification("No pages to index.", "info");
+    return;
+  }
+
+  await editor.flashNotification(`Starting embeddings reindex: ${total} pages`, "info");
+
+  const includeSummaries = await shouldIndexSummaries();
+  let indexed = 0;
+  let errors = 0;
+  let lastNotificationTime = Date.now();
+  const notificationInterval = 2000;
+
+  for (const page of indexablePages) {
+    try {
+      await indexEmbeddings(page.name);
+      if (includeSummaries) {
+        await indexSummary(page.name);
+      }
+      indexed++;
+    } catch (error) {
+      console.error(`Error indexing ${page.name}:`, error);
+      errors++;
+    }
+
+    const now = Date.now();
+    if (now - lastNotificationTime >= notificationInterval) {
+      await editor.flashNotification(
+        `Indexing embeddings: ${indexed}/${total} pages...`,
+        "info",
+      );
+      lastNotificationTime = now;
+    }
+  }
+
+  const errorMsg = errors > 0 ? ` (${errors} errors)` : "";
+  await editor.flashNotification(
+    `Embeddings reindex complete: ${indexed}/${total} pages indexed${errorMsg}`,
+    errors > 0 ? "error" : "info",
+  );
+}
+
+/**
  * Generate embeddings for each paragraph in a page, and then indexes
  * them.
  */

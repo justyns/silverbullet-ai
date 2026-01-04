@@ -87,6 +87,10 @@ functions:
     path: src/embeddings.ts:searchCommand
     command:
       name: "AI: Search"
+  reindexAllEmbeddings:
+    path: src/embeddings.ts:reindexAllEmbeddings
+    command:
+      name: "AI: Reindex All Embeddings"
   getConnectivityTestResults:
     path: src/connectivity.ts:getConnectivityTestResults
   connectivityTestCommand:
