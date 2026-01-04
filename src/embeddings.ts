@@ -8,7 +8,7 @@ import { log } from "./utils.ts";
 import { clientStore, editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 
-const searchPrefix = "🤖 ";
+const searchPrefix = "aisearch:";
 
 // Cache for search results - keyed by query
 const cachedSearchResults: Map<string, string> = new Map();
@@ -677,11 +677,16 @@ export async function runSearch(phrase: string): Promise<string> {
  * Used by the virtual page to display results.
  */
 export function getSearchResults(query: string): string {
-  const cached = cachedSearchResults.get(query);
+  const trimmedQuery = query.trim();
+  console.log(`getSearchResults called with query: "${trimmedQuery}"`);
+  console.log(`Cache keys: ${Array.from(cachedSearchResults.keys()).join(", ")}`);
+  const cached = cachedSearchResults.get(trimmedQuery);
   if (cached) {
+    console.log(`Returning cached results (${cached.length} chars)`);
     return cached;
   }
-  return `# Search results for "${query}"\n\n> ℹ️ No search results available.\n\nUse the **AI: Search** command to search.\n`;
+  console.log("Cache miss, returning fallback");
+  return `# Search results for "${trimmedQuery}"\n\n> ℹ️ No search results available.\n\nUse the **AI: Search** command to search.\n`;
 }
 
 /**

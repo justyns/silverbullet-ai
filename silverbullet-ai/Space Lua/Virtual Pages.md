@@ -1,6 +1,6 @@
 ---
 description: Virtual pages for AI features
-tags: space-lua
+tags: meta
 ---
 
 These define virtual pages that display cached results from AI operations.
@@ -31,9 +31,9 @@ virtualPage.define {
 
 ```space-lua
 virtualPage.define {
-  pattern = "🤖 (.+)",
-  run = function(query)
-    return system.invokeFunction("silverbullet-ai.getSearchResults", query)
+  pattern = "aisearch:(.+)",
+  run = function(q)
+    return system.invokeFunction("silverbullet-ai.getSearchResults", q)
   end
 }
 ```
