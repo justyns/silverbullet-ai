@@ -465,37 +465,42 @@ export async function initializeOpenAI(configure = true) {
     log("aiSettings unchanged", aiSettings);
   }
 
-  if (aiSettings.textModels.length === 1) {
-    // If there's only one text model, set it as the selected model
-    await setSelectedTextModel(aiSettings.textModels[0]);
-  }
-
-  // Handle defaultTextModel config (format: "provider:modelName")
-  if (aiSettings.defaultTextModel) {
-    const selectedModel = await getSelectedTextModel();
-    if (!selectedModel) {
+  // Set default model only if none is currently selected
+  const currentlySelectedModel = await getSelectedTextModel();
+  if (!currentlySelectedModel) {
+    if (aiSettings.defaultTextModel) {
       const defaultModel = parseDefaultModelString(aiSettings.defaultTextModel);
       if (defaultModel) {
         await setSelectedTextModel(defaultModel);
         log("Set default text model:", defaultModel);
       }
+    } else if (aiSettings.textModels.length === 1) {
+      await setSelectedTextModel(aiSettings.textModels[0]);
+      log("Set single configured text model as default");
     }
   }
 
-  if (aiSettings.imageModels.length === 1) {
-    // If there's only one image model, set it as the selected model
+  // Same logic for image models
+  const currentlySelectedImageModel = await getSelectedImageModel();
+  if (!currentlySelectedImageModel && aiSettings.imageModels.length === 1) {
     await setSelectedImageModel(aiSettings.imageModels[0]);
   }
 
-  if (aiSettings.embeddingModels.length === 1) {
-    // If there's only one embedding model, set it as the selected model
+  // Same logic for embedding models
+  const currentlySelectedEmbeddingModel = await getSelectedEmbeddingModel();
+  if (!currentlySelectedEmbeddingModel && aiSettings.embeddingModels.length === 1) {
     await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
   }
 
   if (configure) {
-    if (aiSettings.textModels.length > 0) {
+    // Always try to configure from clientStore, regardless of textModels array
+    const selectedModel = await getSelectedTextModel();
+    if (selectedModel) {
+      await configureSelectedModel(selectedModel);
+    } else if (aiSettings.textModels.length > 0) {
       await getAndConfigureModel();
     }
+
     if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
     }
