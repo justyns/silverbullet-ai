@@ -405,7 +405,7 @@ async function loadAndMergeSettings() {
     indexSummary: false,
     indexSummaryModelName: "",
     indexEmbeddingsExcludePages: [],
-    indexEmbeddingsExcludeStrings: ["**user**:"],
+    indexEmbeddingsExcludeStrings: ["user:", "assistant:", "**user**:", "**assistant**:"],
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",

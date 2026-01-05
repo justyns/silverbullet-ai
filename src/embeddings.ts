@@ -155,11 +155,14 @@ export async function indexEmbeddings(page: string) {
       continue;
     }
 
-    if (
-      aiSettings.indexEmbeddingsExcludeStrings.some((s) => paragraphText.includes(s))
-    ) {
-      // Some strings might appear in a ton of notes but aren't helpful for searching.
-      // This only excludes strings that are an exact match for a paragraph.
+    // Check if this is a role marker with no meaningful content
+    // e.g., "**assistant**:" or "**user**: " should be excluded, but "**user**: hello" should not
+    const isEmptyRoleMarker = aiSettings.indexEmbeddingsExcludeStrings.some((s) => {
+      if (!paragraphText.startsWith(s)) return false;
+      const contentAfterMarker = paragraphText.slice(s.length).trim();
+      return contentAfterMarker.length === 0;
+    });
+    if (isEmptyRoleMarker) {
       continue;
     }
 
@@ -178,7 +181,7 @@ export async function indexEmbeddings(page: string) {
       tag: "embedding",
     };
 
-    // log("Indexing embedding object", embeddingObject);
+    log("Indexing embedding object", embeddingObject);
     objects.push(embeddingObject);
   }
 
@@ -678,14 +681,10 @@ export async function runSearch(phrase: string): Promise<string> {
  */
 export function getSearchResults(query: string): string {
   const trimmedQuery = query.trim();
-  console.log(`getSearchResults called with query: "${trimmedQuery}"`);
-  console.log(`Cache keys: ${Array.from(cachedSearchResults.keys()).join(", ")}`);
   const cached = cachedSearchResults.get(trimmedQuery);
   if (cached) {
-    console.log(`Returning cached results (${cached.length} chars)`);
     return cached;
   }
-  console.log("Cache miss, returning fallback");
   return `# Search results for "${trimmedQuery}"\n\n> ℹ️ No search results available.\n\nUse the **AI: Search** command to search.\n`;
 }
 
