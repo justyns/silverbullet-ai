@@ -129,16 +129,10 @@ functions:
     path: src/chat-panel.ts:chatAgentState
   exportPanelChat:
     path: src/chat-panel.ts:exportPanelChat
-  getSessionTokenUsage:
-    path: src/chat-panel.ts:getSessionTokenUsage
+  getChatStatus:
+    path: src/chat-panel.ts:getChatStatus
   resetSessionTokenUsage:
     path: src/chat-panel.ts:resetSessionTokenUsage
-  loadTokenUsage:
-    path: src/chat-panel.ts:loadTokenUsage
-  getModelContextLimit:
-    path: src/chat-panel.ts:getModelContextLimit
-  getRagStatus:
-    path: src/chat-panel.ts:getRagStatus
   submitApproval:
     path: src/tools.ts:submitApproval
   requestWriteApproval:

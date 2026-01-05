@@ -25,60 +25,55 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     return n.toLocaleString();
   }
 
-  async function updateTokenDisplay() {
+  let lastRagEnabled = false;
+
+  async function updateChatStatus() {
     try {
-      const usage = await syscall(
+      const status = await syscall(
         "system.invokeFunction",
-        "silverbullet-ai.getSessionTokenUsage",
-      );
-      const limit = await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.getModelContextLimit",
+        "silverbullet-ai.getChatStatus",
       );
 
-      tokenCountEl.textContent = formatNumber(usage.total_tokens);
-      contextLimitEl.textContent = limit ? formatNumber(limit) : "--";
+      // Update token display
+      tokenCountEl.textContent = formatNumber(status.tokens.total_tokens);
+      contextLimitEl.textContent = status.model.contextLimit ? formatNumber(status.model.contextLimit) : "--";
 
       tokenDisplayEl.classList.remove("warning", "danger");
-      if (limit) {
-        const ratio = usage.total_tokens / limit;
+      if (status.model.contextLimit) {
+        const ratio = status.tokens.total_tokens / status.model.contextLimit;
         if (ratio > 0.9) {
           tokenDisplayEl.classList.add("danger");
         } else if (ratio > 0.75) {
           tokenDisplayEl.classList.add("warning");
         }
       }
-    } catch (e) {
-      console.error("Failed to update token display:", e);
-    }
-  }
 
-  async function updateRagStatus(searching = false) {
-    try {
-      const status = await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.getRagStatus",
-      );
-
+      // Update RAG status
+      lastRagEnabled = status.rag.enabled && status.rag.indexEnabled;
       ragIndicatorEl.classList.remove("enabled", "disabled", "searching");
 
-      if (searching && status.enabled && status.indexEnabled) {
-        ragIndicatorEl.classList.add("searching");
-        ragIndicatorEl.title = "Searching embeddings...";
-      } else if (status.enabled && status.indexEnabled) {
+      if (lastRagEnabled) {
         ragIndicatorEl.classList.add("enabled");
         ragIndicatorEl.title = "Embeddings search (RAG) enabled";
       } else {
         ragIndicatorEl.classList.add("disabled");
-        if (!status.indexEnabled) {
+        if (!status.rag.indexEnabled) {
           ragIndicatorEl.title = "Embeddings indexing disabled";
         } else {
           ragIndicatorEl.title = "Embeddings search disabled in chat";
         }
       }
     } catch (e) {
-      console.error("Failed to update RAG status:", e);
+      console.error("Failed to update chat status:", e);
       ragIndicatorEl.classList.add("disabled");
+    }
+  }
+
+  function setRagSearching() {
+    if (lastRagEnabled) {
+      ragIndicatorEl.classList.remove("enabled", "disabled");
+      ragIndicatorEl.classList.add("searching");
+      ragIndicatorEl.title = "Searching embeddings...";
     }
   }
 
@@ -239,12 +234,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       } else {
         chatData = { id: generateChatId(), messages: [] };
       }
-      // Load persisted token usage before updating display
-      await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.loadTokenUsage",
-      );
-      await updateTokenDisplay();
+      await updateChatStatus();
     } catch (e) {
       console.error("Failed to load chat history:", e);
     }
@@ -370,15 +360,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           }
           chatHistory.push({ role: "assistant", content: fullResponse });
           await saveHistory();
-          await updateTokenDisplay();
-          await updateRagStatus();
+          await updateChatStatus();
           break;
         } else if (result.status === "error") {
           isStreaming = false;
           messageEl.classList.remove("streaming");
           messageEl.textContent += "\n\n[Error: " +
             (result.error || "Unknown error") + "]";
-          await updateRagStatus();
+          await updateChatStatus();
           break;
         }
 
@@ -389,7 +378,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         isStreaming = false;
         messageEl.classList.remove("streaming");
         messageEl.textContent += "\n\n[Error: " + e.message + "]";
-        await updateRagStatus();
+        await updateChatStatus();
         break;
       }
     }
@@ -411,7 +400,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
     sendBtn.disabled = true;
     userInput.disabled = true;
-    updateRagStatus(true);
+    setRagSearching();
 
     const assistantEl = await renderMessage("assistant", "", true);
 
@@ -464,7 +453,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     } catch (e) {
       console.error("Failed to reset token usage:", e);
     }
-    await updateTokenDisplay();
+    await updateChatStatus();
     userInput.focus();
   }
 
@@ -629,6 +618,5 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   loadHistory();
   loadCurrentAgent();
-  updateRagStatus();
   userInput.focus();
 })();

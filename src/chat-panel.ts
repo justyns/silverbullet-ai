@@ -22,6 +22,7 @@ let sessionTokenUsage: Usage = {
   completion_tokens: 0,
   total_tokens: 0,
 };
+let tokenUsageLoaded = false;
 
 interface StreamBuffer {
   chunks: string[];
@@ -440,24 +441,6 @@ tags: aichat${agentRef ? `\nagent: "${agentRef}"` : ""}
 }
 
 /**
- * Returns the current session's token usage.
- */
-export function getSessionTokenUsage(): Usage {
-  return { ...sessionTokenUsage };
-}
-
-/**
- * Returns the current RAG (embeddings search) status for the chat panel.
- */
-export async function getRagStatus(): Promise<{ enabled: boolean; indexEnabled: boolean }> {
-  await initIfNeeded();
-  return {
-    enabled: aiSettings?.chat?.searchEmbeddings ?? false,
-    indexEnabled: aiSettings?.indexEmbeddings ?? false,
-  };
-}
-
-/**
  * Resets the session token usage (e.g., when starting a new chat).
  */
 export async function resetSessionTokenUsage(): Promise<void> {
@@ -466,6 +449,7 @@ export async function resetSessionTokenUsage(): Promise<void> {
     completion_tokens: 0,
     total_tokens: 0,
   };
+  tokenUsageLoaded = true;
   await saveTokenUsage();
 }
 
@@ -481,9 +465,10 @@ async function saveTokenUsage(): Promise<void> {
 }
 
 /**
- * Loads token usage from clientStore.
+ * Loads token usage from clientStore (called once on first getChatStatus call).
  */
-export async function loadTokenUsage(): Promise<void> {
+async function loadPersistedTokenUsage(): Promise<void> {
+  if (tokenUsageLoaded) return;
   try {
     const stored = await clientStore.get(TOKEN_USAGE_KEY) as Usage | null;
     if (stored) {
@@ -492,25 +477,56 @@ export async function loadTokenUsage(): Promise<void> {
   } catch (e) {
     console.error("Failed to load token usage:", e);
   }
+  tokenUsageLoaded = true;
 }
 
 /**
- * Gets the context window limit for the currently selected model.
+ * Gets the context window limit for a model.
  * First tries the provider's API (e.g., Ollama), then falls back to LiteLLM metadata.
  */
-export async function getModelContextLimit(): Promise<number | null> {
-  await initIfNeeded();
-  const model = await getSelectedTextModel();
-  if (!model?.modelName) {
-    return null;
-  }
-
-  // Try provider first (e.g., Ollama can query its own API)
-  const providerLimit = await currentAIProvider?.getContextLimit(model.modelName);
+async function getContextLimit(modelName: string): Promise<number | null> {
+  const providerLimit = await currentAIProvider?.getContextLimit(modelName);
   if (providerLimit) {
     return providerLimit;
   }
+  return lookupModelContextLimit(modelName);
+}
 
-  // Fall back to LiteLLM metadata lookup
-  return lookupModelContextLimit(model.modelName);
+export interface ChatStatus {
+  rag: {
+    enabled: boolean;
+    indexEnabled: boolean;
+  };
+  tokens: Usage;
+  model: {
+    name: string | null;
+    contextLimit: number | null;
+  };
+}
+
+/**
+ * Returns consolidated chat panel status including RAG, tokens, and model info.
+ */
+export async function getChatStatus(): Promise<ChatStatus> {
+  await initIfNeeded();
+  await loadPersistedTokenUsage();
+
+  const model = await getSelectedTextModel();
+  let contextLimit: number | null = null;
+
+  if (model?.modelName) {
+    contextLimit = await getContextLimit(model.modelName);
+  }
+
+  return {
+    rag: {
+      enabled: aiSettings?.chat?.searchEmbeddings ?? false,
+      indexEnabled: aiSettings?.indexEmbeddings ?? false,
+    },
+    tokens: { ...sessionTokenUsage },
+    model: {
+      name: model?.name ?? null,
+      contextLimit,
+    },
+  };
 }
