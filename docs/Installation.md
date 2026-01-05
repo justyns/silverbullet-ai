@@ -12,7 +12,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.6.1/PLUG.md
+ghr:justyns/silverbullet-ai@0.6.2/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.

@@ -52,6 +52,9 @@ isn't too helpful for most cases.
 - **AI: Search**: Ask the user for a search query, run the search, and navigate to the results page.
 Search results are provided by calculating the cosine similarity between the
 query embedding and each indexed embedding.
+- **AI: Reindex All Embeddings**: Reindex all embeddings for all indexable pages in the space.
+Shows progress notifications during the operation.
+Doesn't use the queue
 - **AI: Connectivity Test**: Command to run connectivity tests and navigate to the results page.
 - **AI: Run Benchmark**: Runs the AI benchmark suite and navigates to the results page.
 - **AI: Open Assistant**: Opens the AI Assistant panel (side panel)
@@ -285,7 +288,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.6.1/PLUG.md
+ghr:justyns/silverbullet-ai@0.6.2/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.

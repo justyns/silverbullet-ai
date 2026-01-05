@@ -2,7 +2,7 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.2 (Unreleased)
+## 0.6.2 (2025-01-05)
 
 - Improvements to default system prompt to use less tokens
 - Generate [/llms.txt](https://ai.silverbullet.md/llms.txt) and [/llms-full.txt](https://ai.silverbullet.md/llms-full.txt)
