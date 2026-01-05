@@ -14,6 +14,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const tokenDisplayEl = document.getElementById("token-display");
   const tokenCountEl = document.getElementById("token-count");
   const contextLimitEl = document.getElementById("context-limit");
+  const ragIndicatorEl = document.getElementById("rag-indicator");
 
   let chatHistory = [];
   let chatData = { id: null, messages: [] };
@@ -49,6 +50,35 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       }
     } catch (e) {
       console.error("Failed to update token display:", e);
+    }
+  }
+
+  async function updateRagStatus(searching = false) {
+    try {
+      const status = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.getRagStatus",
+      );
+
+      ragIndicatorEl.classList.remove("enabled", "disabled", "searching");
+
+      if (searching && status.enabled && status.indexEnabled) {
+        ragIndicatorEl.classList.add("searching");
+        ragIndicatorEl.title = "Searching embeddings...";
+      } else if (status.enabled && status.indexEnabled) {
+        ragIndicatorEl.classList.add("enabled");
+        ragIndicatorEl.title = "Embeddings search (RAG) enabled";
+      } else {
+        ragIndicatorEl.classList.add("disabled");
+        if (!status.indexEnabled) {
+          ragIndicatorEl.title = "Embeddings indexing disabled";
+        } else {
+          ragIndicatorEl.title = "Embeddings search disabled in chat";
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update RAG status:", e);
+      ragIndicatorEl.classList.add("disabled");
     }
   }
 
@@ -249,6 +279,51 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     return msgEl;
   }
 
+  function renderEmbeddingsContext(context) {
+    if (!context || !context.pages || context.pages.length === 0) {
+      return null;
+    }
+
+    const detailsEl = document.createElement("details");
+    detailsEl.className = "tool-call rag-context success";
+
+    const summaryEl = document.createElement("summary");
+    summaryEl.innerHTML =
+      `<span class="rag-icon">🔍</span> <span class="status">RAG</span> read_notes → ${context.pages.length} page${
+        context.pages.length > 1 ? "s" : ""
+      }`;
+    detailsEl.appendChild(summaryEl);
+
+    const contentEl = document.createElement("div");
+    contentEl.className = "context-details";
+
+    for (const page of context.pages) {
+      const itemEl = document.createElement("div");
+      itemEl.className = "context-item";
+
+      const linkEl = document.createElement("a");
+      linkEl.href = encodeURIComponent(page.name);
+      linkEl.textContent = page.name;
+      itemEl.appendChild(linkEl);
+
+      const simEl = document.createElement("span");
+      simEl.className = "similarity";
+      simEl.textContent = `${page.similarity}%`;
+      itemEl.appendChild(simEl);
+
+      if (page.excerpt) {
+        const excerptEl = document.createElement("blockquote");
+        excerptEl.textContent = page.excerpt;
+        itemEl.appendChild(excerptEl);
+      }
+
+      contentEl.appendChild(itemEl);
+    }
+
+    detailsEl.appendChild(contentEl);
+    return detailsEl;
+  }
+
   async function renderAllMessages() {
     messagesContainer.innerHTML = "";
 
@@ -296,12 +371,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           chatHistory.push({ role: "assistant", content: fullResponse });
           await saveHistory();
           await updateTokenDisplay();
+          await updateRagStatus();
           break;
         } else if (result.status === "error") {
           isStreaming = false;
           messageEl.classList.remove("streaming");
           messageEl.textContent += "\n\n[Error: " +
             (result.error || "Unknown error") + "]";
+          await updateRagStatus();
           break;
         }
 
@@ -312,6 +389,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         isStreaming = false;
         messageEl.classList.remove("streaming");
         messageEl.textContent += "\n\n[Error: " + e.message + "]";
+        await updateRagStatus();
         break;
       }
     }
@@ -333,6 +411,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
     sendBtn.disabled = true;
     userInput.disabled = true;
+    updateRagStatus(true);
 
     const assistantEl = await renderMessage("assistant", "", true);
 
@@ -346,6 +425,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       if (result.streamId) {
         currentStreamId = result.streamId;
         isStreaming = true;
+
+        if (result.embeddingsContext) {
+          const contextEl = renderEmbeddingsContext(result.embeddingsContext);
+          if (contextEl) {
+            messagesContainer.insertBefore(contextEl, assistantEl);
+          }
+        }
+
         pollForChunks(result.streamId, assistantEl);
       } else if (result.error) {
         assistantEl.classList.remove("streaming");
@@ -542,5 +629,6 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   loadHistory();
   loadCurrentAgent();
+  updateRagStatus();
   userInput.focus();
 })();

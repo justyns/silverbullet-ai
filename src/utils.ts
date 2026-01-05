@@ -334,18 +334,7 @@ export async function enrichChatMessages(
       }
     }
 
-    if (aiSettings?.chat?.searchEmbeddings && aiSettings?.indexEmbeddings) {
-      // Search local vector embeddings for relevant context
-      const searchResultsText = await searchEmbeddingsForChat(enrichedContent);
-      if (searchResultsText !== "No relevant pages found.") {
-        enrichedContent +=
-          `\n\nThe following pages were found to be relevant to the question. You can use them as context to answer the question. Only partial content is shown. Ask for the whole page if needed. Page name is between >> and <<.\n`;
-        enrichedContent += searchResultsText;
-      }
-    }
-
     if (aiSettings?.chat?.parseWikiLinks) {
-      // Parse wiki links and collect as attachments for THIS message
       const wikiResult = await enrichMessageWithWikiLinks(
         enrichedContent,
         wikiLinkSeenNames,
@@ -353,6 +342,32 @@ export async function enrichChatMessages(
       enrichedContent = wikiResult.content;
       wikiLinkSeenNames = wikiResult.seenNames || {};
       messageAttachments.push(...wikiResult.attachments);
+    }
+
+    if (aiSettings?.chat?.searchEmbeddings && aiSettings?.indexEmbeddings) {
+      const searchResults = await searchEmbeddingsForChat(message.content);
+
+      if (searchResults.context.totalResults > 0) {
+        const snippets = searchResults.results
+          .map((page) => `<snippet page="${page.name}">\n${page.content}\n</snippet>`)
+          .join("\n");
+
+        const truncatedQuery = message.content.length > 100
+          ? message.content.substring(0, 100) + "..."
+          : message.content;
+
+        messageAttachments.push({
+          name: truncatedQuery,
+          content: snippets,
+          type: "rag" as const,
+        });
+
+        messageAttachments.push({
+          name: "_embeddingsContext",
+          content: JSON.stringify(searchResults.context),
+          type: "embedding" as const,
+        });
+      }
     }
 
     if (aiSettings?.chat?.bakeMessages) {

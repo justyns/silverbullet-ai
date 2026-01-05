@@ -1,5 +1,13 @@
 import { asset, clientStore, editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
-import type { AIAgentTemplate, Attachment, ChatMessage, LuaToolDefinition, Tool, Usage } from "./types.ts";
+import type {
+  AIAgentTemplate,
+  Attachment,
+  ChatMessage,
+  EmbeddingsContext,
+  LuaToolDefinition,
+  Tool,
+  Usage,
+} from "./types.ts";
 import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
@@ -130,9 +138,14 @@ export async function toggleAIAssistant() {
  */
 export async function startPanelChat(
   messages: ChatMessage[],
-): Promise<{ streamId?: string; error?: string }> {
+): Promise<{ streamId?: string; error?: string; embeddingsContext?: EmbeddingsContext }> {
   try {
     await initIfNeeded();
+
+    if (!currentAIProvider) {
+      return { error: "No text model configured. Please add a text model in your config." };
+    }
+
     await initChatAgent();
 
     const streamId = `stream_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
@@ -205,29 +218,41 @@ export async function startPanelChat(
       content: systemContent,
     };
 
-    // Prepend context to the last user message, this should help with caching
     const cleanedMessages = await cleanMessagesForApi(messages);
+    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+
+    // Prepend page context after enrichment so RAG search uses original user content
     if (contextBlock) {
-      const lastUserIdx = cleanedMessages.findLastIndex((m) => m.role === "user");
+      const lastUserIdx = messagesWithAttachments.findLastIndex((m) => m.message.role === "user");
       if (lastUserIdx !== -1) {
-        cleanedMessages[lastUserIdx] = {
-          ...cleanedMessages[lastUserIdx],
-          content: `<context>\n${contextBlock}\n</context>\n\n${cleanedMessages[lastUserIdx].content}`,
-        };
+        messagesWithAttachments[lastUserIdx].message.content = `<context>\n${contextBlock}\n</context>\n\n${
+          messagesWithAttachments[lastUserIdx].message.content
+        }`;
       }
     }
 
-    // enrichChatMessages can return attachments related to the messaages
-    const { messagesWithAttachments } = await enrichChatMessages(
-      cleanedMessages,
-    );
+    let embeddingsContext: EmbeddingsContext | undefined;
+    for (const { attachments } of messagesWithAttachments) {
+      const contextAttachment = attachments.find((a) => a.name === "_embeddingsContext");
+      if (contextAttachment) {
+        try {
+          embeddingsContext = JSON.parse(contextAttachment.content);
+        } catch { /* ignore */ }
+        break;
+      }
+    }
+
+    const filteredMessagesWithAttachments = messagesWithAttachments.map(({ message, attachments }) => ({
+      message,
+      attachments: attachments.filter((a) => a.name !== "_embeddingsContext"),
+    }));
+
     const workingMessages = assembleMessagesWithAttachments(
       systemMessage,
-      messagesWithAttachments,
+      filteredMessagesWithAttachments,
       agentAttachments,
     );
 
-    // Run the tool loop in the background
     runToolLoop(streamId, workingMessages, tools, luaTools).catch(
       (error: Error) => {
         const buffer = streamBuffers.get(streamId);
@@ -238,7 +263,7 @@ export async function startPanelChat(
       },
     );
 
-    return { streamId };
+    return { streamId, embeddingsContext };
   } catch (error) {
     console.error("Error starting panel chat:", error);
     return { error: error instanceof Error ? error.message : String(error) };
@@ -419,6 +444,17 @@ tags: aichat${agentRef ? `\nagent: "${agentRef}"` : ""}
  */
 export function getSessionTokenUsage(): Usage {
   return { ...sessionTokenUsage };
+}
+
+/**
+ * Returns the current RAG (embeddings search) status for the chat panel.
+ */
+export async function getRagStatus(): Promise<{ enabled: boolean; indexEnabled: boolean }> {
+  await initIfNeeded();
+  return {
+    enabled: aiSettings?.chat?.searchEmbeddings ?? false,
+    indexEnabled: aiSettings?.indexEmbeddings ?? false,
+  };
 }
 
 /**

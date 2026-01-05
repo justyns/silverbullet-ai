@@ -137,6 +137,8 @@ functions:
     path: src/chat-panel.ts:loadTokenUsage
   getModelContextLimit:
     path: src/chat-panel.ts:getModelContextLimit
+  getRagStatus:
+    path: src/chat-panel.ts:getRagStatus
   submitApproval:
     path: src/tools.ts:submitApproval
   requestWriteApproval:

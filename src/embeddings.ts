@@ -1,6 +1,12 @@
 import type { IndexTreeEvent } from "@silverbulletmd/silverbullet/type/event";
 import type { MQMessage } from "@silverbulletmd/silverbullet/type/datastore";
-import type { AISummaryObject, CombinedEmbeddingResult, EmbeddingObject, EmbeddingResult } from "./types.ts";
+import type {
+  AISummaryObject,
+  CombinedEmbeddingResult,
+  EmbeddingObject,
+  EmbeddingResult,
+  EmbeddingsContext,
+} from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
@@ -557,27 +563,55 @@ export async function searchCombinedEmbeddings(
     .slice(0, numResults);
 }
 
+export type EmbeddingSearchResult = {
+  name: string;
+  content: string;
+};
+
+export type StructuredEmbeddingResults = {
+  results: EmbeddingSearchResult[];
+  context: EmbeddingsContext;
+};
+
 export async function searchEmbeddingsForChat(
   query: string | number[],
   numResults = 10,
-): Promise<string> {
+): Promise<StructuredEmbeddingResults> {
+  const emptyResult: StructuredEmbeddingResults = {
+    results: [],
+    context: { pages: [], totalResults: 0 },
+  };
+
   try {
     const searchResults = await searchCombinedEmbeddings(query, numResults);
-    let results = "";
-    if (searchResults.length > 0) {
-      for (const r of searchResults) {
-        results += `>>${r.page}<<\n`;
-        for (const child of r.children) {
-          results += `> ${child.text}\n\n`;
-        }
-      }
-    } else {
-      return "No relevant pages found.";
+
+    if (searchResults.length === 0) {
+      return emptyResult;
     }
-    return results;
+
+    const results: EmbeddingSearchResult[] = [];
+    const contextPages: EmbeddingsContext["pages"] = [];
+
+    for (const r of searchResults) {
+      const pageContent = r.children.map((child) => child.text).join("\n\n");
+      results.push({ name: r.page, content: pageContent });
+
+      const bestChild = r.children[0];
+      const similarity = r.score / r.children.length;
+      contextPages.push({
+        name: r.page,
+        similarity: Math.round(similarity * 100),
+        excerpt: bestChild?.text?.substring(0, 100) || "",
+      });
+    }
+
+    return {
+      results,
+      context: { pages: contextPages, totalResults: searchResults.length },
+    };
   } catch (error) {
     console.error("Error in searchEmbeddingsForChat:", error);
-    return "An error occurred during the search.";
+    return emptyResult;
   }
 }
 

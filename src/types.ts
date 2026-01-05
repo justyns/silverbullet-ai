@@ -82,6 +82,17 @@ export type CombinedEmbeddingResult = {
   children: EmbeddingResult[];
 };
 
+export type EmbeddingsContextItem = {
+  name: string;
+  similarity: number;
+  excerpt: string;
+};
+
+export type EmbeddingsContext = {
+  pages: EmbeddingsContextItem[];
+  totalResults: number;
+};
+
 // Tool definition in OpenAI format
 export type Tool = {
   type: "function";
@@ -120,7 +131,7 @@ export type ChatMessage = {
 export type Attachment = {
   name: string;
   content: string;
-  type: "note" | "url" | "embedding" | "custom";
+  type: "note" | "url" | "embedding" | "rag" | "custom";
 };
 
 export type EnrichmentResult = {

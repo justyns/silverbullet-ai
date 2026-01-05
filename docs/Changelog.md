@@ -12,6 +12,8 @@ This page is a brief overview of each version.
 - Parallelize model discovery and cache Ollama model info to avoid redundant API calls
 - Add new `Reindex All Embeddings` command
 - Fix Embeddings Search virtualpage
+- Fix error on chat panel when no text model selected
+- Add RAG status indicator in chat panel header, show embeddings context like tool calls, move them to their own messages
 
 ## 0.6.1 (2026-01-02)
 
