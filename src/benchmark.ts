@@ -5,6 +5,7 @@ import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts"
 import type { ToolExecutionResult } from "./tools.ts";
 import type { ModelConfig, Tool } from "./types.ts";
 import type { ProviderInterface } from "./interfaces/Provider.ts";
+import { renderProgressBar } from "./utils.ts";
 
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
@@ -558,13 +559,6 @@ type BenchmarkProgress = {
   testCount?: number;
   testName?: string;
 };
-
-function renderProgressBar(current: number, total: number, width = 20): string {
-  const filled = Math.round((current / total) * width);
-  const empty = width - filled;
-  const pct = Math.round((current / total) * 100);
-  return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${pct}%`;
-}
 
 function updateBenchmarkModal(progress: BenchmarkProgress): Promise<void> {
   const modelProgress = renderProgressBar(progress.modelIndex, progress.modelCount);

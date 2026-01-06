@@ -552,6 +552,22 @@ export type DiffLine = {
   line: string;
 };
 
+// --- Progress Bar Utility ---
+
+/**
+ * Renders an ASCII progress bar for display in modals.
+ * @param current - Current progress value (1-indexed typically)
+ * @param total - Total count
+ * @param width - Character width of the bar (default 20)
+ * @returns String like "[████████░░░░░░░░░░░░] 40%"
+ */
+export function renderProgressBar(current: number, total: number, width = 20): string {
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  const pct = Math.round((current / total) * 100);
+  return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${pct}%`;
+}
+
 /**
  * Computes a simple line-by-line diff between two strings.
  * Returns an array of diff lines with type indicators.
