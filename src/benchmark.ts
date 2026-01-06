@@ -247,8 +247,8 @@ const executionTests: ExecutionTest[] = [
     id: "notool",
     name: "No Tool",
     category: "execution",
-    prompt: "What is 2+2? Answer with just the number.",
-    verify: (calls) => calls.length === 0,
+    prompt: "What color is the sky on a clear day? Answer with just one word.",
+    verify: (calls, response) => calls.length === 0 && response.toLowerCase().includes("blue"),
     getNotes: (calls) => calls.length === 0 ? "Correct: no tools" : `Called: ${calls.map((c) => c.name).join(", ")}`,
   },
 ];
