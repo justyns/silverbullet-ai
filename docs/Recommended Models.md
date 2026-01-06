@@ -19,6 +19,7 @@ This page lists AI models and their compatibility with silverbullet-ai features,
 | gpt-5.2 | OpenAI | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 10/10 | |
 | qwen2.5:32b | Ollama | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 10/10 | |
 | qwen3:8b | Ollama | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 10/10 | |
+| qwen3:14b | Ollama | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | 10/10 | |
 | qwen2.5:14b | Ollama | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | 9/10 | |
 | qwen2.5:7b | Ollama | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | 9/10 | |
 | gpt-5 | OpenAI | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | 8/10 | API calls timed out repeatedly |

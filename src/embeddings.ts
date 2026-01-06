@@ -146,23 +146,32 @@ export async function indexEmbeddings(page: string) {
   // Splitting embeddings up by paragraph, but there could be better ways to do it
   //     ^ Some places suggest a sliding window so that each chunk has some overlap with the previous/next chunk
   //     ^ But in some limited testing, this seems to work alright only split by paragraph
-  const paragraphs = tree.children.filter((node) => node.type === "Paragraph");
-
   const objects: EmbeddingObject[] = [];
-
   const startTime = Date.now();
 
-  // TODO: Filter out images, or send images to a vision model to get a summary and index that instead
-  for (const paragraph of paragraphs) {
-    const paragraphText = renderToText(paragraph).trim();
+  // Track current header hierarchy (h1, h2, h3, etc.)
+  const currentHeaders: string[] = [];
 
-    // Skip empty paragraphs and lines with less than 10 characters (TODO: remove that limit?)
+  for (const node of tree.children) {
+    // Update header context when we encounter headings
+    if (node.type?.startsWith("ATXHeading")) {
+      const level = parseInt(node.type.slice(-1)) || 1;
+      const headerText = renderToText(node).trim();
+      currentHeaders.length = level;
+      currentHeaders[level - 1] = headerText;
+      continue;
+    }
+
+    if (node.type !== "Paragraph") {
+      continue;
+    }
+
+    const paragraphText = renderToText(node).trim();
+
     if (!paragraphText || paragraphText.length < 10) {
       continue;
     }
 
-    // Check if this is a role marker with no meaningful content
-    // e.g., "**assistant**:" or "**user**: " should be excluded, but "**user**: hello" should not
     const isEmptyRoleMarker = aiSettings.indexEmbeddingsExcludeStrings.some((s) => {
       if (!paragraphText.startsWith(s)) return false;
       const contentAfterMarker = paragraphText.slice(s.length).trim();
@@ -172,11 +181,22 @@ export async function indexEmbeddings(page: string) {
       continue;
     }
 
+    // Build contextual text with page title and headers for better retrieval
+    const contextParts = [`# ${page}`];
+    for (let i = 0; i < currentHeaders.length; i++) {
+      if (currentHeaders[i]) {
+        const hashes = "#".repeat(i + 1);
+        contextParts.push(`${hashes} ${currentHeaders[i]}`);
+      }
+    }
+    contextParts.push("", paragraphText);
+    const contextualText = contextParts.join("\n");
+
     const embedding = await currentEmbeddingProvider.generateEmbeddings({
-      text: paragraphText,
+      text: contextualText,
     });
 
-    const pos = paragraph.from ?? 0;
+    const pos = node.from ?? 0;
 
     const embeddingObject: EmbeddingObject = {
       ref: `${page}@${pos}`,
