@@ -8,8 +8,25 @@ import type { ProviderInterface } from "./interfaces/Provider.ts";
 
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
+const TEST_TIMEOUT_MS = 30000; // 30 seconds per test
 
-// --- Types ---
+function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`Timeout after ${ms}ms: ${operation}`));
+    }, ms);
+
+    promise
+      .then((result) => {
+        clearTimeout(timer);
+        resolve(result);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+}
 
 type TestStatus = "pass" | "warning" | "error";
 
@@ -50,8 +67,6 @@ type ModelResults = {
   passed: number;
   total: number;
 };
-
-// --- Capability Tests ---
 
 const capabilityTests: CapabilityTest[] = [
   {
@@ -152,7 +167,7 @@ const capabilityTests: CapabilityTest[] = [
         );
         return r.tool_calls?.length
           ? { status: "pass", notes: r.tool_calls[0].function.name }
-          : { status: "warning", notes: "No call made", details: r.content?.slice(0, 200) };
+          : { status: "error", notes: "No native support", details: r.content?.slice(0, 200) };
       } catch (e) {
         const err = String(e);
         return { status: "error", notes: err.slice(0, 50), details: err };
@@ -160,8 +175,6 @@ const capabilityTests: CapabilityTest[] = [
     },
   },
 ];
-
-// --- Execution Tests ---
 
 const executionTests: ExecutionTest[] = [
   {
@@ -239,8 +252,6 @@ const executionTests: ExecutionTest[] = [
     getNotes: (calls) => calls.length === 0 ? "Correct: no tools" : `Called: ${calls.map((c) => c.name).join(", ")}`,
   },
 ];
-
-// --- Multi-Model Selection ---
 
 type SelectionOption = {
   name: string;
@@ -422,13 +433,21 @@ async function runModelBenchmark(
           details: `Model capabilities: ${capabilitiesInfo}`,
         };
       } else if (test.category === "capability") {
-        result = await test.run(provider);
+        result = await withTimeout(
+          test.run(provider),
+          TEST_TIMEOUT_MS,
+          `capability test "${test.name}"`,
+        );
       } else {
         // Reset test page for modification tests
         if (test.id === "update" || test.id === "replace") {
           await setupTestPages();
         }
-        result = await runExecutionTest(test, provider);
+        result = await withTimeout(
+          runExecutionTest(test, provider),
+          TEST_TIMEOUT_MS,
+          `execution test "${test.name}"`,
+        );
       }
 
       results.set(test.id, result);
@@ -557,8 +576,6 @@ function showBenchmarkModal(modelCount: number): Promise<void> {
     </div>`,
   );
 }
-
-// --- Main Entry Points ---
 
 let cachedBenchmarkResults: string | null = null;
 
