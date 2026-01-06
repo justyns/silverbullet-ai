@@ -411,6 +411,7 @@ async function runExecutionTest(
 async function runModelBenchmark(
   model: ModelConfig,
   allTests: BenchmarkTest[],
+  onTestStart?: (testIndex: number, testName: string) => Promise<void>,
 ): Promise<ModelResults> {
   const provider = await configureSelectedModel(model);
   const results = new Map<string, TestResult>();
@@ -421,7 +422,12 @@ async function runModelBenchmark(
   const toolsSupported = capabilities === null || capabilities.includes("tools");
   const capabilitiesInfo = capabilities ? capabilities.join(", ") : "unknown";
 
+  let testIndex = 0;
   for (const test of allTests) {
+    if (onTestStart) {
+      await onTestStart(testIndex, test.name);
+    }
+
     try {
       let result: TestResult;
 
@@ -460,6 +466,8 @@ async function runModelBenchmark(
         details: err,
       });
     }
+
+    testIndex++;
   }
 
   return { model, results, passed, total: allTests.length };
@@ -542,7 +550,32 @@ function generateReport(tests: BenchmarkTest[], results: ModelResults[]): string
 
 // --- Modal Display ---
 
-function showBenchmarkModal(modelCount: number): Promise<void> {
+type BenchmarkProgress = {
+  modelIndex: number;
+  modelCount: number;
+  modelName: string;
+  testIndex?: number;
+  testCount?: number;
+  testName?: string;
+};
+
+function renderProgressBar(current: number, total: number, width = 20): string {
+  const filled = Math.round((current / total) * width);
+  const empty = width - filled;
+  const pct = Math.round((current / total) * 100);
+  return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${pct}%`;
+}
+
+function updateBenchmarkModal(progress: BenchmarkProgress): Promise<void> {
+  const modelProgress = renderProgressBar(progress.modelIndex, progress.modelCount);
+  const testProgress = progress.testIndex !== undefined && progress.testCount
+    ? renderProgressBar(progress.testIndex, progress.testCount)
+    : "";
+  const testLine = progress.testName
+    ? `<p style="margin: 8px 0 4px 0;">Test ${progress.testIndex} of ${progress.testCount}: <strong>${progress.testName}</strong></p>
+       <p style="font-family: monospace; margin: 0;">${testProgress}</p>`
+    : "";
+
   return editor.showPanel(
     "modal",
     20,
@@ -566,12 +599,13 @@ function showBenchmarkModal(modelCount: number): Promise<void> {
         width: 100%;
       }
       .ai-modal h3 { margin-top: 0; }
-      .ai-modal p { margin-bottom: 0; }
     </style>
     <div class="ai-modal-wrapper">
       <div class="ai-modal">
         <h3>🧪 Running AI Benchmark...</h3>
-        <p>Testing ${modelCount} model${modelCount > 1 ? "s" : ""}. This may take a moment.</p>
+        <p style="margin: 8px 0 4px 0;">Model ${progress.modelIndex} of ${progress.modelCount}: <strong>${progress.modelName}</strong></p>
+        <p style="font-family: monospace; margin: 0;">${modelProgress}</p>
+        ${testLine}
       </div>
     </div>`,
   );
@@ -589,20 +623,44 @@ export async function runBenchmark(): Promise<string> {
     return "";
   }
 
-  await showBenchmarkModal(models.length);
-
   const allTests: BenchmarkTest[] = [...capabilityTests, ...executionTests];
   const allResults: ModelResults[] = [];
+  const testCount = allTests.length;
 
   try {
     await setupTestPages();
 
-    for (const model of models) {
-      allResults.push(await runModelBenchmark(model, allTests));
+    for (let i = 0; i < models.length; i++) {
+      const model = models[i];
+
+      await updateBenchmarkModal({
+        modelIndex: i + 1,
+        modelCount: models.length,
+        modelName: model.name,
+      });
+
+      allResults.push(
+        await runModelBenchmark(model, allTests, async (testIdx, testName) => {
+          await updateBenchmarkModal({
+            modelIndex: i + 1,
+            modelCount: models.length,
+            modelName: model.name,
+            testIndex: testIdx + 1,
+            testCount,
+            testName,
+          });
+        }),
+      );
     }
 
     const report = generateReport(allTests, allResults);
     cachedBenchmarkResults = report;
+
+    await editor.flashNotification(
+      `Benchmark complete: ${models.length} model${models.length > 1 ? "s" : ""} tested`,
+      "info",
+    );
+
     return report;
   } finally {
     await editor.hidePanel("modal");

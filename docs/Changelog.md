@@ -5,6 +5,7 @@ This page is a brief overview of each version.
 ## 0.6.3 (Unreleased)
 
 - Embeddings now include page title and section headers
+- Benchmark command now shows progress
 
 ## 0.6.2 (2025-01-05)
 
