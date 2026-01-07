@@ -1,6 +1,6 @@
 import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, LuaToolDefinition } from "./types.ts";
-import { luaLongString } from "./utils.ts";
+import { isPathAllowed, luaLongString } from "./utils.ts";
 import { chatSystemPrompt } from "./init.ts";
 
 /**
@@ -178,6 +178,12 @@ export async function buildAgentSystemPrompt(
     }
   } catch (error) {
     console.error("Failed to read agent page:", error);
+  }
+
+  // Filter attachments based on allowedReadPaths
+  const allowedReadPaths = agent.aiagent.allowedReadPaths;
+  if (allowedReadPaths?.length) {
+    attachments = attachments.filter((a) => a.type !== "note" || isPathAllowed(a.name, allowedReadPaths));
   }
 
   return { systemPrompt: fullPrompt, attachments };

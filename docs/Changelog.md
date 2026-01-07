@@ -7,7 +7,7 @@ This page is a brief overview of each version.
 - Embeddings now include page title and section headers
 - Benchmark command now shows progress
 - Reuse SB's theming where possible so that the UI is more consistent
-- Add path-based permissions for agents (`allowedReadPaths`, `allowedWritePaths`) to restrict tool access to specific folders
+- Add path-based permissions for agents (`allowedReadPaths`, `allowedWritePaths`) to restrict tool access, wiki-link context, and current page context to specific folders
 
 ## 0.6.2 (2025-01-05)
 

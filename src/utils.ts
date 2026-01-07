@@ -14,6 +14,11 @@ export function log(...args: any[]) {
   console.log(...args);
 }
 
+export function isPathAllowed(page: string, allowedPaths: string[] | undefined): boolean {
+  if (!allowedPaths || allowedPaths.length === 0) return true;
+  return allowedPaths.some((prefix) => page === prefix || page.startsWith(prefix));
+}
+
 // Pattern to match ```toolcall\n{json}\n``` fenced code blocks
 const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
 

@@ -1,5 +1,5 @@
 import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
-import { computeSimpleDiff, type DiffLine } from "./utils.ts";
+import { computeSimpleDiff, type DiffLine, isPathAllowed } from "./utils.ts";
 import type {
   ChatMessage,
   ChatResponse,
@@ -10,11 +10,6 @@ import type {
   Usage,
 } from "./types.ts";
 import { aiSettings } from "./init.ts";
-
-function isPathAllowed(page: string, allowedPaths: string[] | undefined): boolean {
-  if (!allowedPaths || allowedPaths.length === 0) return true;
-  return allowedPaths.some((prefix) => page === prefix || page.startsWith(prefix));
-}
 
 function validatePathPermission(
   tool: LuaToolDefinition,

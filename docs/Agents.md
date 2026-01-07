@@ -249,7 +249,10 @@ ai.agents.journal = {
 ```
 
 **How it works:**
-- If `allowedReadPaths` is set, tools with `readPathParam` can only read pages starting with those prefixes
+- If `allowedReadPaths` is set:
+  - Tools with `readPathParam` can only read pages starting with those prefixes
+  - Wiki-links in the agent's page body are filtered (only allowed pages included as context)
+  - Current page content/selection only shown if the page is within allowed paths
 - If `allowedWritePaths` is set, tools with `writePathParam` can only write to pages starting with those prefixes
 - If not set, no path restrictions apply
 

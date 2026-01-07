@@ -9,7 +9,7 @@ import type {
   Usage,
 } from "./types.ts";
 import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
-import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages } from "./utils.ts";
+import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
 import { getModelContextLimit as lookupModelContextLimit } from "./model-metadata.ts";
@@ -170,8 +170,8 @@ export async function startPanelChat(
     let contextBlock = "";
     try {
       const currentPage = await editor.getCurrentPage();
-      const pageContent = await editor.getText();
-      const selection = await editor.getSelection();
+      const allowedReadPaths = currentChatAgent?.aiagent?.allowedReadPaths;
+      const pageAllowed = isPathAllowed(currentPage, allowedReadPaths);
 
       contextBlock = `Current page: ${currentPage}`;
       contextBlock += `\nCurrent date and time: ${new Date().toISOString()}`;
@@ -179,13 +179,19 @@ export async function startPanelChat(
         const agentName = currentChatAgent.aiagent.name || currentChatAgent.ref;
         contextBlock += `\nActive agent: ${agentName}`;
       }
-      if (selection && selection.text) {
-        contextBlock += `\nSelected text: "${selection.text}"`;
+
+      // Only include selection and content if page is within allowed paths
+      if (pageAllowed) {
+        const pageContent = await editor.getText();
+        const selection = await editor.getSelection();
+        if (selection && selection.text) {
+          contextBlock += `\nSelected text: "${selection.text}"`;
+        }
+        const truncatedContent = pageContent.length > 4000
+          ? pageContent.substring(0, 4000) + "\n...(truncated)"
+          : pageContent;
+        contextBlock += `\n\nPage content:\n${truncatedContent}`;
       }
-      const truncatedContent = pageContent.length > 4000
-        ? pageContent.substring(0, 4000) + "\n...(truncated)"
-        : pageContent;
-      contextBlock += `\n\nPage content:\n${truncatedContent}`;
     } catch (e) {
       console.log("Could not get page context:", e);
     }
