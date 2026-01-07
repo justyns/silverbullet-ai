@@ -10,6 +10,15 @@ import { showProgressModal } from "./utils.ts";
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
 const TEST_TIMEOUT_MS = 30000; // 30 seconds per test
+const BENCHMARK_ALLOWED_TOOLS = [
+  "read_note",
+  "list_pages",
+  "get_page_info",
+  "navigate",
+  "update_note",
+  "search_replace",
+  "create_note",
+];
 
 function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -366,7 +375,10 @@ async function runExecutionTest(
     await test.setup();
   }
 
-  const luaTools = await discoverTools();
+  const allLuaTools = await discoverTools();
+  const luaTools = new Map(
+    [...allLuaTools].filter(([name]) => BENCHMARK_ALLOWED_TOOLS.includes(name)),
+  );
   const tools = convertToOpenAITools(luaTools);
 
   const result = await runAgenticChat({
@@ -548,8 +560,13 @@ function generateReport(tests: BenchmarkTest[], results: ModelResults[]): string
 let cachedBenchmarkResults: string | null = null;
 
 export async function runBenchmark(): Promise<string> {
-  // Force config reload to pick up skipToolApproval changes
   await initializeOpenAI(false);
+
+  // Temporarily enable skipToolApproval for benchmark
+  const originalSkipApproval = aiSettings?.chat?.skipToolApproval ?? false;
+  if (aiSettings?.chat) {
+    aiSettings.chat.skipToolApproval = true;
+  }
 
   const models = await selectModelsForBenchmark();
   if (models.length === 0) {
@@ -593,6 +610,10 @@ export async function runBenchmark(): Promise<string> {
 
     return report;
   } finally {
+    // Restore original skipToolApproval setting
+    if (aiSettings?.chat) {
+      aiSettings.chat.skipToolApproval = originalSkipApproval;
+    }
     await editor.hidePanel("modal");
   }
 }
