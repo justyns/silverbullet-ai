@@ -6,6 +6,7 @@ This page is a brief overview of each version.
 
 - Embeddings now include page title and section headers
 - Benchmark command now shows progress
+- Reuse SB's theming where possible so that the UI is more consistent
 
 ## 0.6.2 (2025-01-05)
 

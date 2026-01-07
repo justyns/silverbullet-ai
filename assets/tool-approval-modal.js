@@ -1,3 +1,25 @@
+// Wait for SilverBullet CSS to load and inject custom Space Styles
+(async function initTheme() {
+  await Promise.race([
+    new Promise((resolve) => setTimeout(resolve, 75)),
+    new Promise((resolve) => {
+      const link = document.querySelector('link[href*="main.css"]');
+      if (link) link.onload = resolve;
+    }),
+  ]);
+
+  try {
+    const customStyles = await syscall("editor.getUiOption", "customStyles");
+    if (customStyles) {
+      const styleContainer = document.createElement("div");
+      styleContainer.innerHTML = customStyles;
+      document.head.appendChild(styleContainer);
+    }
+  } catch (e) {
+    console.warn("Could not load custom styles:", e);
+  }
+})();
+
 (function () {
   const toolNameEl = document.getElementById("tool-name");
   const argsListEl = document.getElementById("args-list");
@@ -31,7 +53,7 @@
 
     if (!args || Object.keys(args).length === 0) {
       argsListEl.innerHTML =
-        '<div class="arg-item"><span class="arg-value" style="color: var(--subtle);">No arguments</span></div>';
+        '<div class="arg-item"><span class="arg-value" style="color: var(--subtle-color);">No arguments</span></div>';
       return;
     }
 

@@ -1,37 +1,17 @@
+<link rel="stylesheet" href="/.client/main.css" />
 <style>
   :root {
-    --bg: #fff;
-    --text: #333;
-    --border: #ddd;
-    --btn-bg: #eee;
-    --btn-text: #333;
-    --btn-border: #ccc;
-    --accent: #464cfc;
-    --accent-text: #fff;
-    --subtle: #888;
-    --overlay-light: rgba(0, 0, 0, 0.05);
-    --overlay-medium: rgba(0, 0, 0, 0.1);
-    --code-font: "SF Mono", Monaco, "Cascadia Code", monospace;
-    --diff-add-bg: rgba(40, 167, 69, 0.15);
-    --diff-add-text: #2d6a4f;
-    --diff-remove-bg: rgba(220, 53, 69, 0.12);
-    --diff-remove-text: #9d3644;
-    --diff-same-bg: transparent;
+    --ai-diff-add-bg: rgba(40, 167, 69, 0.15);
+    --ai-diff-add-text: #2d6a4f;
+    --ai-diff-remove-bg: rgba(220, 53, 69, 0.12);
+    --ai-diff-remove-text: #9d3644;
   }
 
-  [data-theme="dark"] {
-    --bg: #1e1e1e;
-    --text: #d4d4d4;
-    --border: #444;
-    --btn-bg: #333;
-    --btn-text: #d4d4d4;
-    --btn-border: #555;
-    --overlay-light: rgba(255, 255, 255, 0.05);
-    --overlay-medium: rgba(255, 255, 255, 0.1);
-    --diff-add-bg: rgba(152, 195, 121, 0.15);
-    --diff-add-text: #a3be8c;
-    --diff-remove-bg: rgba(224, 108, 117, 0.15);
-    --diff-remove-text: #bf616a;
+  html[data-theme="dark"] {
+    --ai-diff-add-bg: rgba(152, 195, 121, 0.15);
+    --ai-diff-add-text: #a3be8c;
+    --ai-diff-remove-bg: rgba(224, 108, 117, 0.15);
+    --ai-diff-remove-text: #bf616a;
   }
 
   * {
@@ -40,11 +20,15 @@
     padding: 0;
   }
 
+  html,
+  body {
+    background: none !important;
+  }
+
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
-    background: transparent;
-    color: var(--text);
+    color: var(--modal-color);
     height: 100vh;
     display: flex;
     align-items: center;
@@ -55,7 +39,7 @@
   .modal-wrapper {
     width: 100%;
     max-width: 600px;
-    background: var(--bg);
+    background: var(--modal-background-color);
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
     overflow: hidden;
@@ -66,8 +50,8 @@
     align-items: center;
     gap: 8px;
     padding: 16px;
-    border-bottom: 1px solid var(--border);
-    background: var(--overlay-light);
+    border-bottom: 1px solid var(--modal-border-color);
+    background: var(--subtle-background-color);
   }
 
   .modal-header h3 {
@@ -93,13 +77,13 @@
   .args-section h4 {
     font-size: 12px;
     text-transform: uppercase;
-    color: var(--subtle);
+    color: var(--subtle-color);
     margin-bottom: 8px;
     letter-spacing: 0.5px;
   }
 
   .args-list {
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 6px;
     padding: 12px;
   }
@@ -108,7 +92,7 @@
     display: flex;
     gap: 8px;
     margin-bottom: 8px;
-    font-family: var(--code-font);
+    font-family: var(--editor-font);
     font-size: 13px;
     line-height: 1.4;
   }
@@ -118,7 +102,7 @@
   }
 
   .arg-name {
-    color: var(--accent);
+    color: var(--ui-accent-color);
     font-weight: 500;
     flex-shrink: 0;
   }
@@ -130,11 +114,11 @@
 
   .arg-value.truncated::after {
     content: "...";
-    color: var(--subtle);
+    color: var(--subtle-color);
   }
 
   .diff-section {
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--modal-border-color);
     padding-top: 16px;
   }
 
@@ -142,18 +126,18 @@
     cursor: pointer;
     font-size: 12px;
     text-transform: uppercase;
-    color: var(--subtle);
+    color: var(--subtle-color);
     letter-spacing: 0.5px;
     user-select: none;
   }
 
   .diff-section summary:hover {
-    color: var(--text);
+    color: var(--modal-color);
   }
 
   .diff-view {
     margin-top: 8px;
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 6px;
     overflow: hidden;
     max-height: 300px;
@@ -161,7 +145,7 @@
   }
 
   .diff-line {
-    font-family: var(--code-font);
+    font-family: var(--editor-font);
     font-size: 12px;
     padding: 2px 8px;
     white-space: pre-wrap;
@@ -169,30 +153,30 @@
   }
 
   .diff-line.add {
-    background: var(--diff-add-bg);
-    color: var(--diff-add-text);
+    background: var(--ai-diff-add-bg);
+    color: var(--ai-diff-add-text);
   }
 
   .diff-line.remove {
-    background: var(--diff-remove-bg);
-    color: var(--diff-remove-text);
+    background: var(--ai-diff-remove-bg);
+    color: var(--ai-diff-remove-text);
   }
 
   .diff-line.same {
-    background: var(--diff-same-bg);
-    color: var(--subtle);
+    background: transparent;
+    color: var(--subtle-color);
   }
 
   .diff-loading {
     padding: 16px;
     text-align: center;
-    color: var(--subtle);
+    color: var(--subtle-color);
   }
 
   .diff-empty {
     padding: 16px;
     text-align: center;
-    color: var(--subtle);
+    color: var(--subtle-color);
     font-style: italic;
   }
 
@@ -200,41 +184,20 @@
     display: flex;
     gap: 8px;
     padding: 16px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--modal-border-color);
     justify-content: flex-end;
   }
 
-  .btn {
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: 1px solid var(--btn-border);
-    background: var(--btn-bg);
-    color: var(--btn-text);
-    transition: opacity 0.15s;
-  }
-
-  .btn:hover {
-    opacity: 0.9;
-  }
-
-  .btn:focus {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
   .btn-approve {
-    background: #3d8b5f;
-    color: #fff;
-    border-color: #3d8b5f;
+    background: var(--ai-approve-bg, var(--ui-accent-color));
+    color: var(--ai-approve-text, var(--ui-accent-contrast-color));
+    border-color: var(--ai-approve-bg, var(--ui-accent-color));
   }
 
   .btn-reject {
-    background: #a84b55;
-    color: #fff;
-    border-color: #a84b55;
+    background: var(--ai-reject-bg, var(--button-background-color));
+    color: var(--ai-reject-text, var(--button-color));
+    border-color: var(--ai-reject-border, var(--button-border-color));
   }
 
   .keyboard-hint {
@@ -245,7 +208,7 @@
 
   .feedback-input {
     margin-top: 16px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--modal-border-color);
     padding-top: 16px;
   }
 
@@ -253,7 +216,7 @@
     display: block;
     font-size: 12px;
     text-transform: uppercase;
-    color: var(--subtle);
+    color: var(--subtle-color);
     margin-bottom: 8px;
     letter-spacing: 0.5px;
   }
@@ -262,10 +225,10 @@
     width: 100%;
     min-height: 50px;
     padding: 8px;
-    border: 1px solid var(--btn-border);
+    border: 1px solid var(--button-border-color);
     border-radius: 6px;
-    background: var(--bg);
-    color: var(--text);
+    background: var(--modal-background-color);
+    color: var(--modal-color);
     font-family: inherit;
     font-size: 13px;
     resize: vertical;
@@ -273,7 +236,7 @@
 
   .feedback-input textarea:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--ui-accent-color);
   }
 
   @media (max-width: 600px) {
@@ -289,7 +252,7 @@
   }
 </style>
 
-<div class="modal-wrapper">
+<div class="sb-modal-box modal-wrapper">
   <div class="modal-header">
     <span class="tool-icon">🔧</span>
     <h3 id="tool-name">Tool Name</h3>
@@ -310,18 +273,15 @@
 
     <div class="feedback-input">
       <label for="feedback-input">Rejection feedback (optional)</label>
-      <textarea
-        id="feedback-input"
-        placeholder="Explain what's wrong or what you'd prefer instead..."
-      ></textarea>
+      <textarea id="feedback-input" placeholder="Explain what's wrong or what you'd prefer instead..."></textarea>
     </div>
   </div>
 
   <div class="modal-footer">
-    <button class="btn btn-reject" id="reject-btn">
+    <button class="sb-button btn-reject" id="reject-btn">
       Reject <span class="keyboard-hint">(Esc)</span>
     </button>
-    <button class="btn btn-approve" id="approve-btn">
+    <button class="sb-button btn-approve" id="approve-btn">
       Approve <span class="keyboard-hint">(Enter)</span>
     </button>
   </div>

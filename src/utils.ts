@@ -552,8 +552,6 @@ export type DiffLine = {
   line: string;
 };
 
-// --- Progress Bar Utility ---
-
 /**
  * Renders an ASCII progress bar for display in modals.
  * @param current - Current progress value (1-indexed typically)
@@ -566,6 +564,84 @@ export function renderProgressBar(current: number, total: number, width = 20): s
   const empty = width - filled;
   const pct = Math.round((current / total) * 100);
   return `[${"█".repeat(filled)}${"░".repeat(empty)}] ${pct}%`;
+}
+
+export type ProgressModalOptions = {
+  title: string;
+  statusText?: string;
+  progress?: {
+    current: number;
+    total: number;
+    label?: string;
+    itemName?: string;
+  };
+  secondaryProgress?: {
+    current: number;
+    total: number;
+    label?: string;
+    itemName?: string;
+  };
+};
+
+export function showProgressModal(options: ProgressModalOptions): Promise<void> {
+  const progressHtml = options.progress
+    ? `<p style="margin: 8px 0 4px 0;">${
+      options.progress.label || "Progress"
+    } ${options.progress.current} of ${options.progress.total}${
+      options.progress.itemName ? `: <strong>${options.progress.itemName}</strong>` : ""
+    }</p>
+       <p style="font-family: monospace; margin: 0;">${
+      renderProgressBar(options.progress.current, options.progress.total)
+    }</p>`
+    : "";
+
+  const secondaryHtml = options.secondaryProgress
+    ? `<p style="margin: 8px 0 4px 0;">${
+      options.secondaryProgress.label || "Progress"
+    } ${options.secondaryProgress.current} of ${options.secondaryProgress.total}${
+      options.secondaryProgress.itemName ? `: <strong>${options.secondaryProgress.itemName}</strong>` : ""
+    }</p>
+       <p style="font-family: monospace; margin: 0;">${
+      renderProgressBar(options.secondaryProgress.current, options.secondaryProgress.total)
+    }</p>`
+    : "";
+
+  const statusHtml = options.statusText ? `<p>${options.statusText}</p>` : "";
+
+  return editor.showPanel(
+    "modal",
+    20,
+    `<style>
+      .ai-modal-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        padding: 10px;
+        box-sizing: border-box;
+      }
+      .ai-modal {
+        padding: 24px 32px;
+        text-align: center;
+        background: var(--root-background-color, Canvas);
+        color: var(--root-color, CanvasText);
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        max-width: 400px;
+        width: 100%;
+      }
+      .ai-modal h3 { margin-top: 0; }
+      .ai-modal p { margin-bottom: 0; }
+    </style>
+    <div class="ai-modal-wrapper">
+      <div class="ai-modal">
+        <h3>${options.title}</h3>
+        ${statusHtml}
+        ${progressHtml}
+        ${secondaryHtml}
+      </div>
+    </div>`,
+  );
 }
 
 /**

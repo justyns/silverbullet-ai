@@ -1,35 +1,6 @@
 <!-- TODO: I am not a UI person, plz feel free to help -->
+<link rel="stylesheet" href="/.client/main.css" />
 <style>
-  :root {
-    --bg: #fff;
-    --text: #333;
-    --border: #ddd;
-    --btn-bg: #eee;
-    --btn-text: #333;
-    --btn-border: #ccc;
-    --accent: #464cfc;
-    --accent-text: #fff;
-    --input-bg: #fff;
-    --msg-assistant-bg: #f0f0f0;
-    --subtle: #888;
-    --overlay-light: rgba(0, 0, 0, 0.05);
-    --overlay-medium: rgba(0, 0, 0, 0.1);
-    --code-font: "SF Mono", Monaco, "Cascadia Code", monospace;
-  }
-
-  [data-theme="dark"] {
-    --bg: #1e1e1e;
-    --text: #d4d4d4;
-    --border: #444;
-    --btn-bg: #333;
-    --btn-text: #d4d4d4;
-    --btn-border: #555;
-    --input-bg: #2d2d2d;
-    --msg-assistant-bg: #2d2d2d;
-    --overlay-light: rgba(255, 255, 255, 0.05);
-    --overlay-medium: rgba(255, 255, 255, 0.1);
-  }
-
   * {
     box-sizing: border-box;
     margin: 0;
@@ -39,8 +10,8 @@
   body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 14px;
-    background: var(--bg);
-    color: var(--text);
+    background: var(--root-background-color);
+    color: var(--root-color);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -57,7 +28,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 8px 12px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--modal-border-color);
   }
 
   .ai-chat-header h3 {
@@ -71,9 +42,9 @@
   }
 
   .ai-chat-actions button {
-    background: var(--btn-bg);
-    border: 1px solid var(--btn-border);
-    color: var(--btn-text);
+    background: var(--button-background-color);
+    border: 1px solid var(--button-border-color);
+    color: var(--button-color);
     padding: 4px 8px;
     border-radius: 4px;
     cursor: pointer;
@@ -92,9 +63,9 @@
 
   .token-display {
     font-size: 11px;
-    color: var(--subtle);
+    color: var(--subtle-color);
     padding: 2px 8px;
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 4px;
     cursor: help;
     white-space: nowrap;
@@ -112,9 +83,9 @@
 
   .rag-indicator {
     font-size: 11px;
-    color: var(--subtle);
+    color: var(--subtle-color);
     padding: 2px 8px;
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 4px;
     cursor: help;
     white-space: nowrap;
@@ -129,7 +100,7 @@
   }
 
   .rag-indicator.disabled {
-    color: var(--subtle);
+    color: var(--subtle-color);
     opacity: 0.6;
   }
 
@@ -161,7 +132,7 @@
   .tool-call.rag-context .context-item {
     margin-bottom: 8px;
     padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--modal-border-color);
   }
 
   .tool-call.rag-context .context-item:last-child {
@@ -171,7 +142,7 @@
   }
 
   .tool-call.rag-context .context-item a {
-    color: var(--accent);
+    color: var(--ui-accent-color);
     text-decoration: none;
     font-weight: 500;
   }
@@ -190,10 +161,10 @@
   .tool-call.rag-context .context-item blockquote {
     margin: 4px 0 0 0;
     padding: 4px 8px;
-    border-left: 2px solid var(--border);
-    color: var(--subtle);
+    border-left: 2px solid var(--modal-border-color);
+    color: var(--subtle-color);
     font-size: 12px;
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 0 4px 4px 0;
     white-space: pre-wrap;
     word-break: break-word;
@@ -218,15 +189,15 @@
 
   .message.user {
     align-self: flex-end;
-    background: var(--accent);
-    color: var(--accent-text);
+    background: var(--ui-accent-color);
+    color: var(--ui-accent-contrast-color);
     border-bottom-right-radius: 2px;
     white-space: pre-wrap;
   }
 
   .message.assistant {
     align-self: flex-start;
-    background: var(--msg-assistant-bg);
+    background: var(--subtle-background-color);
     border-bottom-left-radius: 2px;
   }
 
@@ -261,15 +232,15 @@
   }
 
   .message.assistant code {
-    background: var(--overlay-medium);
+    background: var(--subtle-background-color);
     padding: 2px 5px;
     border-radius: 3px;
-    font-family: var(--code-font);
+    font-family: var(--editor-font);
     font-size: 0.9em;
   }
 
   .message.assistant pre {
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     padding: 10px;
     border-radius: 6px;
     overflow-x: auto;
@@ -292,17 +263,17 @@
   }
 
   .message.assistant blockquote {
-    border-left: 3px solid var(--subtle);
+    border-left: 3px solid var(--subtle-color);
     margin: 8px 0;
     padding: 4px 12px;
-    color: var(--subtle);
-    background: var(--overlay-light);
+    color: var(--subtle-color);
+    background: var(--subtle-background-color);
     border-radius: 0 4px 4px 0;
     font-size: 0.9em;
   }
 
   .message.assistant a {
-    color: var(--accent);
+    color: var(--ui-accent-color);
     text-decoration: none;
   }
 
@@ -342,13 +313,13 @@
 
   .message.assistant th,
   .message.assistant td {
-    border: 1px solid var(--border);
+    border: 1px solid var(--modal-border-color);
     padding: 6px 10px;
     text-align: left;
   }
 
   .message.assistant th {
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
   }
 
   /* Input area */
@@ -356,7 +327,7 @@
     display: flex;
     gap: 8px;
     padding: 12px;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--modal-border-color);
   }
 
   .input-wrapper {
@@ -369,9 +340,9 @@
   }
 
   .ai-chat-input textarea {
-    background: var(--input-bg);
-    border: 1px solid var(--btn-border);
-    color: var(--text);
+    background: var(--text-field-background-color);
+    border: 1px solid var(--button-border-color);
+    color: var(--root-color);
     padding: 8px;
     border-radius: 4px;
     resize: none;
@@ -383,12 +354,12 @@
 
   .ai-chat-input textarea:focus {
     outline: none;
-    border-color: var(--accent);
+    border-color: var(--ui-accent-color);
   }
 
   .ai-chat-input button {
-    background: var(--accent);
-    color: var(--accent-text);
+    background: var(--ui-accent-color);
+    color: var(--ui-accent-contrast-color);
     border: none;
     padding: 8px 16px;
     border-radius: 4px;
@@ -401,8 +372,8 @@
   }
 
   .ai-chat-input button:disabled {
-    background: var(--btn-bg);
-    color: var(--subtle);
+    background: var(--button-background-color);
+    color: var(--subtle-color);
     cursor: not-allowed;
   }
 
@@ -414,8 +385,8 @@
     right: 0;
     max-height: 200px;
     overflow-y: auto;
-    background: var(--bg);
-    border: 1px solid var(--border);
+    background: var(--root-background-color);
+    border: 1px solid var(--modal-border-color);
     border-radius: 4px;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
     z-index: 100;
@@ -430,7 +401,7 @@
     padding: 8px 12px;
     cursor: pointer;
     font-size: 14px;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--modal-border-color);
   }
 
   .autocomplete-item:last-child {
@@ -439,8 +410,8 @@
 
   .autocomplete-item:hover,
   .autocomplete-item.selected {
-    background: var(--accent);
-    color: var(--accent-text);
+    background: var(--ui-accent-color);
+    color: var(--ui-accent-contrast-color);
   }
 
   .autocomplete-item .page-name {
@@ -449,13 +420,13 @@
 
   .autocomplete-item .detail {
     font-size: 12px;
-    color: var(--subtle);
+    color: var(--subtle-color);
     margin-left: 8px;
   }
 
   .autocomplete-item:hover .detail,
   .autocomplete-item.selected .detail {
-    color: var(--accent-text);
+    color: var(--ui-accent-contrast-color);
     opacity: 0.8;
   }
 
@@ -465,7 +436,7 @@
     align-items: center;
     justify-content: center;
     height: 100%;
-    color: var(--subtle);
+    color: var(--subtle-color);
     text-align: center;
     padding: 20px;
   }
@@ -477,16 +448,16 @@
   /* Tool call expandable blocks */
   .tool-call {
     margin: 4px 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--modal-border-color);
     border-radius: 6px;
     font-size: 13px;
-    background: var(--bg);
+    background: var(--root-background-color);
   }
 
   .tool-call summary {
     padding: 8px 12px;
     cursor: pointer;
-    background: var(--overlay-light);
+    background: var(--subtle-background-color);
     border-radius: 6px;
     list-style: none;
   }
@@ -508,12 +479,12 @@
   }
 
   .tool-call[open] summary {
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--modal-border-color);
     border-radius: 6px 6px 0 0;
   }
 
   .tool-call summary:hover {
-    background: var(--overlay-medium);
+    background: var(--subtle-background-color);
   }
 
   .tool-call .status {
@@ -530,7 +501,7 @@
 
   .tool-call .tool-details {
     padding: 8px 12px;
-    background: var(--bg);
+    background: var(--root-background-color);
     border-radius: 0 0 6px 6px;
   }
 
@@ -548,8 +519,8 @@
     white-space: pre-wrap;
     word-break: break-word;
     font-size: 12px;
-    color: var(--text);
-    background: var(--overlay-light);
+    color: var(--root-color);
+    background: var(--subtle-background-color);
     padding: 6px 8px;
     border-radius: 4px;
   }
@@ -560,8 +531,8 @@
     align-items: center;
     gap: 8px;
     padding: 6px 12px;
-    background: var(--overlay-light);
-    border-bottom: 1px solid var(--border);
+    background: var(--subtle-background-color);
+    border-bottom: 1px solid var(--modal-border-color);
     font-size: 13px;
   }
 
@@ -581,7 +552,7 @@
   .agent-indicator .clear-agent-btn {
     background: none;
     border: none;
-    color: var(--subtle);
+    color: var(--subtle-color);
     cursor: pointer;
     font-size: 14px;
     padding: 2px 6px;
@@ -589,8 +560,8 @@
   }
 
   .agent-indicator .clear-agent-btn:hover {
-    background: var(--overlay-medium);
-    color: var(--text);
+    background: var(--subtle-background-color);
+    color: var(--root-color);
   }
 
   /* Mobile responsive styles */

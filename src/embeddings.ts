@@ -10,7 +10,7 @@ import type {
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
-import { log } from "./utils.ts";
+import { log, showProgressModal } from "./utils.ts";
 import { clientStore, editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 
@@ -642,38 +642,10 @@ export async function runSearch(phrase: string): Promise<string> {
   await initIfNeeded();
 
   // Show modal while searching
-  await editor.showPanel(
-    "modal",
-    20,
-    `<style>
-      .ai-modal-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-      }
-      .ai-modal {
-        padding: 24px 32px;
-        text-align: center;
-        background: var(--editor-background-color, var(--root-background-color, Canvas));
-        color: var(--editor-text-color, var(--root-text-color, CanvasText));
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        max-width: 400px;
-        width: 100%;
-      }
-      .ai-modal h3 { margin-top: 0; }
-      .ai-modal p { margin-bottom: 0; }
-    </style>
-    <div class="ai-modal-wrapper">
-      <div class="ai-modal">
-        <h3>🤖 Searching...</h3>
-        <p>Searching for "${phrase}"</p>
-      </div>
-    </div>`,
-  );
+  await showProgressModal({
+    title: "🤖 Searching...",
+    statusText: `Searching for "${phrase}"`,
+  });
 
   const pageHeader = `# Search results for "${phrase}"`;
   let text = pageHeader + "\n\n";

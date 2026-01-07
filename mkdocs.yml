@@ -85,6 +85,7 @@ nav:
   - Configuration:
       - Configuration.md
       - Configuration
+  - Space Style.md
   - Templated Prompts.md
   - Bundled Prompts.md
   - Agents.md

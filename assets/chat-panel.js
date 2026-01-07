@@ -1,3 +1,25 @@
+// Wait for SilverBullet CSS to load and inject custom Space Styles
+(async function initTheme() {
+  await Promise.race([
+    new Promise((resolve) => setTimeout(resolve, 75)),
+    new Promise((resolve) => {
+      const link = document.querySelector('link[href*="main.css"]');
+      if (link) link.onload = resolve;
+    }),
+  ]);
+
+  try {
+    const customStyles = await syscall("editor.getUiOption", "customStyles");
+    if (customStyles) {
+      const styleContainer = document.createElement("div");
+      styleContainer.innerHTML = customStyles;
+      document.head.appendChild(styleContainer);
+    }
+  } catch (e) {
+    console.warn("Could not load custom styles:", e);
+  }
+})();
+
 // Needs to match the key in src/chat-panel.ts
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
@@ -96,6 +118,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         pageName: currentPage,
         linePrefix: "[[" + searchTerm,
         pos: searchTerm.length + 2,
+        parentNodes: [],
       };
       const results = await syscall(
         "event.dispatch",

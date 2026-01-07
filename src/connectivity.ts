@@ -10,49 +10,12 @@ import {
   initIfNeeded,
 } from "./init.ts";
 import type { Tool } from "./types.ts";
-import { renderProgressBar } from "./utils.ts";
+import { showProgressModal } from "./utils.ts";
 
 const connectivityTestPage = "🛰️ AI Connectivity Test";
 
 // Cache for test results - populated by runConnectivityTests, read by getConnectivityTestResults
 let cachedTestResults: string | null = null;
-
-function updateConnectivityModal(testIndex: number, testCount: number, testName: string): Promise<void> {
-  const progressBar = renderProgressBar(testIndex, testCount);
-
-  return editor.showPanel(
-    "modal",
-    20,
-    `<style>
-      .ai-modal-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-      }
-      .ai-modal {
-        padding: 24px 32px;
-        text-align: center;
-        background: var(--editor-background-color, var(--root-background-color, Canvas));
-        color: var(--editor-text-color, var(--root-text-color, CanvasText));
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        max-width: 400px;
-        width: 100%;
-      }
-      .ai-modal h3 { margin-top: 0; }
-    </style>
-    <div class="ai-modal-wrapper">
-      <div class="ai-modal">
-        <h3>🛰️ Running Connectivity Tests...</h3>
-        <p style="margin: 8px 0 4px 0;">Test ${testIndex} of ${testCount}: <strong>${testName}</strong></p>
-        <p style="font-family: monospace; margin: 0;">${progressBar}</p>
-      </div>
-    </div>`,
-  );
-}
 
 /**
  * Runs all connectivity tests and returns the markdown results.
@@ -146,14 +109,20 @@ Use these commands to select your models:
         showModelDetails(textModel, "Text Model", "💬");
 
         // Test 1: Provider Setup
-        await updateConnectivityModal(++currentTest, totalTests, "Provider Setup");
+        await showProgressModal({
+          title: "🛰️ Running Connectivity Tests...",
+          progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Provider Setup" },
+        });
         text += "### 🔌 Provider Setup\n\n";
         try {
           const provider = await configureSelectedModel(textModel);
           text += "> ✅ Provider successfully configured\n\n";
 
           // Test 2: Model Availability
-          await updateConnectivityModal(++currentTest, totalTests, "Model Availability");
+          await showProgressModal({
+            title: "🛰️ Running Connectivity Tests...",
+            progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Model Availability" },
+          });
           text += "### 📋 Model Availability\n\n";
           try {
             const availableModels = await provider.listModels();
@@ -173,7 +142,10 @@ Use these commands to select your models:
           text += "### 🔌 API Connectivity\n\n";
           try {
             // Test 3: Non-streaming API connectivity
-            await updateConnectivityModal(++currentTest, totalTests, "Non-Streaming API");
+            await showProgressModal({
+              title: "🛰️ Running Connectivity Tests...",
+              progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Non-Streaming API" },
+            });
             text += "#### 📡 Non-Streaming Test\n\n";
             const response = await provider.singleMessageChat(
               "This is a connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).",
@@ -190,7 +162,10 @@ Use these commands to select your models:
             }
 
             // Test 4: Streaming API connectivity
-            await updateConnectivityModal(++currentTest, totalTests, "Streaming API");
+            await showProgressModal({
+              title: "🛰️ Running Connectivity Tests...",
+              progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Streaming API" },
+            });
             text += "#### 📡 Streaming Test\n\n";
             try {
               const chunks: string[] = [];
@@ -237,7 +212,10 @@ Use these commands to select your models:
             }
 
             // Test 5: Structured output (JSON mode)
-            await updateConnectivityModal(++currentTest, totalTests, "JSON Output");
+            await showProgressModal({
+              title: "🛰️ Running Connectivity Tests...",
+              progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "JSON Output" },
+            });
             text += "#### 📡 Structured Output Test\n\n";
             try {
               const structuredResponse = await provider.chat(
@@ -275,7 +253,10 @@ Use these commands to select your models:
             }
 
             // Test 6: Structured output with JSON schema
-            await updateConnectivityModal(++currentTest, totalTests, "JSON Schema");
+            await showProgressModal({
+              title: "🛰️ Running Connectivity Tests...",
+              progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "JSON Schema" },
+            });
             text += "#### 📡 Structured Output Test (JSON Schema)\n\n";
             try {
               const schemaResponse = await provider.chat(
@@ -334,7 +315,10 @@ Use these commands to select your models:
             }
 
             // Test 7: Tool/function calling
-            await updateConnectivityModal(++currentTest, totalTests, "Tool Calling");
+            await showProgressModal({
+              title: "🛰️ Running Connectivity Tests...",
+              progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Tool Calling" },
+            });
             text += "#### 🔧 Tool Calling Test\n\n";
 
             // Check if model advertises tool support
@@ -423,14 +407,20 @@ Use these commands to select your models:
         showModelDetails(embeddingModel, "Embedding Model", "🔤");
 
         // Test 8 (or 1 if no text model): Embedding Provider Setup
-        await updateConnectivityModal(++currentTest, totalTests, "Embedding Provider");
+        await showProgressModal({
+          title: "🛰️ Running Connectivity Tests...",
+          progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Embedding Provider" },
+        });
         text += "### 🔌 Embedding Provider Setup\n\n";
         try {
           await configureSelectedEmbeddingModel(embeddingModel);
           text += "> ✅ Embedding provider successfully configured\n\n";
 
           // Test 9 (or 2 if no text model): Embedding Generation
-          await updateConnectivityModal(++currentTest, totalTests, "Embedding Generation");
+          await showProgressModal({
+            title: "🛰️ Running Connectivity Tests...",
+            progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "Embedding Generation" },
+          });
           text += "### 🧮 Embedding Generation\n\n";
           try {
             const testText = "This is a connectivity test.";

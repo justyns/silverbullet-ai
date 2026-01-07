@@ -5,7 +5,7 @@ import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts"
 import type { ToolExecutionResult } from "./tools.ts";
 import type { ModelConfig, Tool } from "./types.ts";
 import type { ProviderInterface } from "./interfaces/Provider.ts";
-import { renderProgressBar } from "./utils.ts";
+import { showProgressModal } from "./utils.ts";
 
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
@@ -343,8 +343,6 @@ async function pickMultipleModels(allModels: ModelConfig[]): Promise<ModelConfig
   return selected;
 }
 
-// --- Test Execution ---
-
 async function setupTestPages(): Promise<void> {
   const testContent = `# Test Page
 
@@ -474,8 +472,6 @@ async function runModelBenchmark(
   return { model, results, passed, total: allTests.length };
 }
 
-// --- Report Generation ---
-
 function statusToEmoji(status: TestStatus): string {
   switch (status) {
     case "pass":
@@ -549,62 +545,6 @@ function generateReport(tests: BenchmarkTest[], results: ModelResults[]): string
   return text;
 }
 
-// --- Modal Display ---
-
-type BenchmarkProgress = {
-  modelIndex: number;
-  modelCount: number;
-  modelName: string;
-  testIndex?: number;
-  testCount?: number;
-  testName?: string;
-};
-
-function updateBenchmarkModal(progress: BenchmarkProgress): Promise<void> {
-  const modelProgress = renderProgressBar(progress.modelIndex, progress.modelCount);
-  const testProgress = progress.testIndex !== undefined && progress.testCount
-    ? renderProgressBar(progress.testIndex, progress.testCount)
-    : "";
-  const testLine = progress.testName
-    ? `<p style="margin: 8px 0 4px 0;">Test ${progress.testIndex} of ${progress.testCount}: <strong>${progress.testName}</strong></p>
-       <p style="font-family: monospace; margin: 0;">${testProgress}</p>`
-    : "";
-
-  return editor.showPanel(
-    "modal",
-    20,
-    `<style>
-      .ai-modal-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100%;
-        padding: 10px;
-        box-sizing: border-box;
-      }
-      .ai-modal {
-        padding: 24px 32px;
-        text-align: center;
-        background: var(--editor-background-color, var(--root-background-color, Canvas));
-        color: var(--editor-text-color, var(--root-text-color, CanvasText));
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        max-width: 400px;
-        width: 100%;
-      }
-      .ai-modal h3 { margin-top: 0; }
-    </style>
-    <div class="ai-modal-wrapper">
-      <div class="ai-modal">
-        <h3>🧪 Running AI Benchmark...</h3>
-        <p style="margin: 8px 0 4px 0;">Model ${progress.modelIndex} of ${progress.modelCount}: <strong>${progress.modelName}</strong></p>
-        <p style="font-family: monospace; margin: 0;">${modelProgress}</p>
-        ${testLine}
-      </div>
-    </div>`,
-  );
-}
-
 let cachedBenchmarkResults: string | null = null;
 
 export async function runBenchmark(): Promise<string> {
@@ -627,21 +567,17 @@ export async function runBenchmark(): Promise<string> {
     for (let i = 0; i < models.length; i++) {
       const model = models[i];
 
-      await updateBenchmarkModal({
-        modelIndex: i + 1,
-        modelCount: models.length,
-        modelName: model.name,
+      await showProgressModal({
+        title: "🧪 Running AI Benchmark...",
+        progress: { current: i + 1, total: models.length, label: "Model", itemName: model.name },
       });
 
       allResults.push(
         await runModelBenchmark(model, allTests, async (testIdx, testName) => {
-          await updateBenchmarkModal({
-            modelIndex: i + 1,
-            modelCount: models.length,
-            modelName: model.name,
-            testIndex: testIdx + 1,
-            testCount,
-            testName,
+          await showProgressModal({
+            title: "🧪 Running AI Benchmark...",
+            progress: { current: i + 1, total: models.length, label: "Model", itemName: model.name },
+            secondaryProgress: { current: testIdx + 1, total: testCount, label: "Test", itemName: testName },
           });
         }),
       );
