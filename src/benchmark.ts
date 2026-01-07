@@ -3,7 +3,7 @@ import { aiSettings, configureSelectedModel, initializeOpenAI, parseDefaultModel
 import { getAllAvailableModels } from "./model-discovery.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import type { ToolExecutionResult } from "./tools.ts";
-import type { ModelConfig, Tool } from "./types.ts";
+import type { ModelConfig, PathPermissions, Tool } from "./types.ts";
 import type { ProviderInterface } from "./interfaces/Provider.ts";
 import { showProgressModal } from "./utils.ts";
 
@@ -19,6 +19,10 @@ const BENCHMARK_ALLOWED_TOOLS = [
   "search_replace",
   "create_note",
 ];
+const BENCHMARK_PERMISSIONS: PathPermissions = {
+  allowedReadPaths: [`${BENCHMARK_PAGE}/`],
+  allowedWritePaths: [`${BENCHMARK_PAGE}/`],
+};
 
 function withTimeout<T>(promise: Promise<T>, ms: number, operation: string): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -389,6 +393,7 @@ async function runExecutionTest(
     onToolCall: (name, args, execResult) => {
       toolCalls.push({ name, args, result: execResult });
     },
+    permissions: BENCHMARK_PERMISSIONS,
   });
 
   const passed = await test.verify(toolCalls, result.finalResponse);

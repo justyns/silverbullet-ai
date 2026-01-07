@@ -298,6 +298,12 @@ async function runToolLoop(
     onToolCall: (_toolName, _args, _result) => {
       // Tool calls are already formatted in toolCallsText and used below
     },
+    permissions: currentChatAgent?.aiagent
+      ? {
+        allowedReadPaths: currentChatAgent.aiagent.allowedReadPaths,
+        allowedWritePaths: currentChatAgent.aiagent.allowedWritePaths,
+      }
+      : undefined,
   });
 
   // Update usage to reflect current context size (not cumulative)

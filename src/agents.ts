@@ -22,6 +22,8 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
         tools?: string[];
         toolsExclude?: string[];
         inheritBasePrompt?: boolean;
+        allowedReadPaths?: string[];
+        allowedWritePaths?: string[];
       }
     >;
 
@@ -36,6 +38,8 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
             tools: agent.tools,
             toolsExclude: agent.toolsExclude,
             inheritBasePrompt: agent.inheritBasePrompt,
+            allowedReadPaths: agent.allowedReadPaths,
+            allowedWritePaths: agent.allowedWritePaths,
           },
         });
       }

@@ -1,7 +1,53 @@
 import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import { computeSimpleDiff, type DiffLine } from "./utils.ts";
-import type { ChatMessage, ChatResponse, LuaToolDefinition, StreamChatOptions, Tool, Usage } from "./types.ts";
+import type {
+  ChatMessage,
+  ChatResponse,
+  LuaToolDefinition,
+  PathPermissions,
+  StreamChatOptions,
+  Tool,
+  Usage,
+} from "./types.ts";
 import { aiSettings } from "./init.ts";
+
+function isPathAllowed(page: string, allowedPaths: string[] | undefined): boolean {
+  if (!allowedPaths || allowedPaths.length === 0) return true;
+  return allowedPaths.some((prefix) => page === prefix || page.startsWith(prefix));
+}
+
+function validatePathPermission(
+  tool: LuaToolDefinition,
+  args: Record<string, unknown>,
+  permissions: PathPermissions | undefined,
+): { allowed: true } | { allowed: false; error: string } {
+  if (!permissions) return { allowed: true };
+
+  const readParams = tool.readPathParam ? [tool.readPathParam].flat() : [];
+  const writeParams = tool.writePathParam ? [tool.writePathParam].flat() : [];
+
+  for (const paramName of readParams) {
+    const page = args[paramName];
+    if (typeof page === "string" && !isPathAllowed(page, permissions.allowedReadPaths)) {
+      return { allowed: false, error: `Read access denied for "${page}"` };
+    }
+  }
+
+  for (const paramName of writeParams) {
+    const page = args[paramName];
+    if (typeof page === "string") {
+      // Write operations also require read access (to get current content for diffs, etc.)
+      if (!isPathAllowed(page, permissions.allowedReadPaths)) {
+        return { allowed: false, error: `Read access denied for "${page}"` };
+      }
+      if (!isPathAllowed(page, permissions.allowedWritePaths)) {
+        return { allowed: false, error: `Write access denied for "${page}"` };
+      }
+    }
+  }
+
+  return { allowed: true };
+}
 
 const MAX_TOOL_ITERATIONS = 10;
 
@@ -126,7 +172,9 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
             return {
               description = tool.description,
               parameters = tool.parameters,
-              requiresApproval = tool.requiresApproval or false
+              requiresApproval = tool.requiresApproval or false,
+              readPathParam = tool.readPathParam,
+              writePathParam = tool.writePathParam
             }
           end
           return nil
@@ -134,6 +182,8 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
           description: string;
           parameters: LuaToolDefinition["parameters"];
           requiresApproval?: boolean;
+          readPathParam?: string;
+          writePathParam?: string;
         } | null;
 
         if (metadata && metadata.description && metadata.parameters) {
@@ -142,6 +192,8 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
             parameters: metadata.parameters,
             handler: name,
             requiresApproval: metadata.requiresApproval === true,
+            readPathParam: metadata.readPathParam,
+            writePathParam: metadata.writePathParam,
           });
           console.log(`Discovered tool: ${name}`);
         } else {
@@ -222,6 +274,7 @@ export async function executeTool(
   toolName: string,
   args: Record<string, unknown>,
   luaTools: Map<string, LuaToolDefinition>,
+  permissions?: PathPermissions,
 ): Promise<ToolExecutionResult> {
   const tool = luaTools.get(toolName);
 
@@ -230,6 +283,11 @@ export async function executeTool(
       success: false,
       error: `Unknown tool: ${toolName}`,
     };
+  }
+
+  const permCheck = validatePathPermission(tool, args, permissions);
+  if (!permCheck.allowed) {
+    return { success: false, error: permCheck.error };
   }
 
   try {
@@ -495,6 +553,7 @@ async function processToolCalls(
     args: Record<string, unknown>,
     result: ToolExecutionResult,
   ) => void,
+  permissions?: PathPermissions,
 ): Promise<{ toolCallsText: string; toolMessages: ChatMessage[] }> {
   let toolCallsText = "";
   const toolMessages: ChatMessage[] = [];
@@ -562,7 +621,7 @@ async function processToolCalls(
       }
     }
 
-    const result = await executeTool(toolName, args, luaTools);
+    const result = await executeTool(toolName, args, luaTools, permissions);
     const fullResult = result.success ? (result.result || "") : `Error: ${result.error}`;
 
     // Cache full result for later retrieval
@@ -618,6 +677,7 @@ export type AgenticChatOptions = {
     result: ToolExecutionResult,
   ) => void;
   maxIterations?: number;
+  permissions?: PathPermissions;
 };
 
 /**
@@ -656,6 +716,7 @@ export async function runAgenticChat(
     chatFunction,
     onToolCall,
     maxIterations = MAX_TOOL_ITERATIONS,
+    permissions,
   } = options;
 
   const workingMessages = [...messages];
@@ -692,6 +753,7 @@ export async function runAgenticChat(
         response.tool_calls,
         luaTools,
         onToolCall,
+        permissions,
       );
       toolCallsText += newText;
       workingMessages.push(...toolMessages);

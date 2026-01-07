@@ -88,6 +88,7 @@ end
 
 ai.tools.read_note = {
   description = "Read the content of a note. Optionally read only a specific section.",
+  readPathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -152,6 +153,7 @@ ai.tools.read_note = {
 
 ai.tools.list_pages = {
   description = "List pages in the space. Pages ending with / have subpages (e.g., 'Projects/' has children).",
+  readPathParam = "path",
   parameters = {
     type = "object",
     properties = {
@@ -232,6 +234,7 @@ ai.tools.list_pages = {
 
 ai.tools.get_page_info = {
   description = "Get metadata about a page including tags, last modified date, size, and subpage count",
+  readPathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -271,6 +274,7 @@ ai.tools.get_page_info = {
 
 ai.tools.update_note = {
   description = "Update a note's content. Can update the whole page, a specific section, or append/prepend to a section.",
+  writePathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -353,6 +357,7 @@ ai.tools.update_note = {
 
 ai.tools.search_replace = {
   description = "Find and replace text in a note. Use for targeted edits when you know the exact text to change.",
+  writePathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -451,6 +456,7 @@ ai.tools.search_replace = {
 
 ai.tools.create_note = {
   description = "Create a new note. Fails if the page already exists.",
+  writePathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -470,6 +476,7 @@ ai.tools.create_note = {
 
 ai.tools.navigate = {
   description = "Navigate to a page or position. Use to open pages for the user or jump to specific locations.",
+  readPathParam = "ref",
   parameters = {
     type = "object",
     properties = {
@@ -512,6 +519,7 @@ ai.tools.eval_lua = {
 ai.tools.update_frontmatter = {
   description = "Update frontmatter (YAML metadata) on a page. Can set or delete individual keys without affecting the rest of the page content.",
   requiresApproval = true,
+  writePathParam = "page",
   parameters = {
     type = "object",
     properties = {
@@ -576,6 +584,7 @@ ai.tools.update_frontmatter = {
 ai.tools.rename_note = {
   description = "Rename a page to a new name. This also updates all backlinks across the space to point to the new name.",
   requiresApproval = true,
+  writePathParam = {"oldPage", "newPage"},
   parameters = {
     type = "object",
     properties = {

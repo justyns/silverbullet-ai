@@ -159,6 +159,8 @@ export type LuaToolDefinition = {
   };
   handler: string; // Lua function reference
   requiresApproval?: boolean;
+  readPathParam?: string | string[];
+  writePathParam?: string | string[];
 };
 
 export type AIAgentTemplate = {
@@ -171,7 +173,14 @@ export type AIAgentTemplate = {
     tools?: string[];
     toolsExclude?: string[];
     inheritBasePrompt?: boolean;
+    allowedReadPaths?: string[];
+    allowedWritePaths?: string[];
   };
+};
+
+export type PathPermissions = {
+  allowedReadPaths?: string[];
+  allowedWritePaths?: string[];
 };
 
 export enum Provider {

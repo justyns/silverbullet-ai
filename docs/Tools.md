@@ -85,6 +85,8 @@ Each tool needs:
 - `parameters` - JSON Schema defining input parameters
 - `handler` - Function that receives `args` and returns a string result
 - `requiresApproval` - (optional) If `true`, user must confirm before the tool executes
+- `readPathParam` - (optional) Parameter name(s) containing page paths for read operations. Can be a string or array of strings. (used with agent path permissions)
+- `writePathParam` - (optional) Parameter name(s) containing page paths for write operations. Can be a string or array of strings. (used with agent path permissions)
 
 ## Requiring Approval
 
@@ -138,3 +140,52 @@ The `ai.writePage` function:
 All built-in editing tools (`update_note`, `update_frontmatter`, `create_note`, etc.) use `ai.writePage` internally to provide diff previews.
 
 There's nothing stopping you from bypassing this, so please be careful when making custom tools.
+
+## Path Permissions
+
+Tools can declare which parameter contains a page path for permission validation. When an agent has `allowedReadPaths` or `allowedWritePaths` configured, tools will be blocked from accessing pages outside those paths.
+
+### Declaring Path Parameters
+
+```lua
+ai.tools.my_reader = {
+  description = "Read data from a page",
+  readPathParam = "page",  -- This param will be validated against allowedReadPaths
+  parameters = {
+    type = "object",
+    properties = {
+      page = {type = "string", description = "The page to read"}
+    },
+    required = {"page"}
+  },
+  handler = function(args)
+    return space.readPage(args.page)
+  end
+}
+
+ai.tools.my_writer = {
+  description = "Write data to a page",
+  writePathParam = "page",  -- This param will be validated against allowedWritePaths
+  requiresApproval = true,
+  parameters = {
+    type = "object",
+    properties = {
+      page = {type = "string", description = "The page to write"}
+    },
+    required = {"page"}
+  },
+  handler = function(args)
+    ai.writePage(args.page, "content")
+    return "Written"
+  end
+}
+```
+
+### How It Works
+
+1. Agent defines `allowedReadPaths` and/or `allowedWritePaths` (see [[Agents]])
+2. When a tool is called, the validation checks if the path parameter starts with any allowed prefix
+3. If the path is not allowed, the tool returns an error instead of executing
+4. Write operations require **both** read and write access (since tools typically read content before modifying it)
+
+All built-in tools declare their path parameters, so they work with agent path permissions automatically.

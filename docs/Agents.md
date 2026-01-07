@@ -107,6 +107,28 @@ aiagent:
 
 This agent restricts tools to only the built-in read-only tools, preventing any page modifications.
 
+### Sandboxed Agent with Path Restrictions
+
+An agent that can only operate on pages within a specific folder:
+
+```yaml
+---
+tags: meta/template/aiAgent
+aiagent:
+  name: "Sandbox Agent"
+  description: "Can only access pages under Sandbox/"
+  systemPrompt: |
+    You help the user with notes in the Sandbox folder.
+    You cannot access or modify pages outside this area.
+  allowedReadPaths: ["Sandbox/"]
+  allowedWritePaths: ["Sandbox/"]
+---
+```
+
+This agent can read and write pages under `Sandbox/` but will get an error if it tries to access other pages via tools that support path permissions.
+
+> **Note:** Path permissions only apply to tools that declare `readPathParam` or `writePathParam`. Tools like `eval_lua` can bypass these restrictions. For a true sandbox, combine path permissions with a tool whitelist.
+
 ### Writing Assistant with Context
 
 An agent with additional context embedded from wiki-links:
@@ -186,6 +208,8 @@ aiagent:
 | `tools` | string[] | Whitelist - only these tools are available |
 | `toolsExclude` | string[] | Blacklist - these tools are removed |
 | `inheritBasePrompt` | boolean | Prepend base system prompt (default: true) |
+| `allowedReadPaths` | string[] | Path prefixes tools can read from (e.g., `["Journal/", "Notes/"]`) |
+| `allowedWritePaths` | string[] | Path prefixes tools can write to (e.g., `["Journal/"]`) |
 
 ### Base Prompt Inheritance
 
@@ -198,6 +222,38 @@ By default, agents inherit the base system prompt which includes SilverBullet ma
 - If both are set, `tools` takes precedence and `toolsExclude` is ignored
 
 **Tip:** Use `tools` (whitelist) for restrictive agents that should only have specific capabilities. Use `toolsExclude` (blacklist) when you want most tools but need to block a few dangerous ones like `eval_lua`.
+
+### Path Permissions
+
+Restrict which pages an agent can read from or write to using path prefixes:
+
+```yaml
+---
+tags: meta/template/aiAgent
+aiagent:
+  name: "Journal Assistant"
+  description: "Helps with journal entries only"
+  allowedReadPaths: ["Journal/", "Daily/"]
+  allowedWritePaths: ["Journal/"]
+---
+```
+
+Or in Lua:
+
+```lua
+ai.agents.journal = {
+  name = "Journal Assistant",
+  allowedReadPaths = {"Journal/", "Daily/"},
+  allowedWritePaths = {"Journal/"}
+}
+```
+
+**How it works:**
+- If `allowedReadPaths` is set, tools with `readPathParam` can only read pages starting with those prefixes
+- If `allowedWritePaths` is set, tools with `writePathParam` can only write to pages starting with those prefixes
+- If not set, no path restrictions apply
+
+This is useful for creating restricted agents that can only operate on specific areas of your space.
 
 ## Usage
 
