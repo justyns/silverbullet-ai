@@ -4,10 +4,12 @@ This page is a brief overview of each version.
 
 ## 0.6.3 (Unreleased)
 
-- Embeddings now include page title and section headers
+- Embeddings now include page title and section headers.  Requires re-indexing to take effect.
 - Benchmark command now shows progress
 - Reuse SB's theming where possible so that the UI is more consistent
 - Add path-based permissions for agents (`allowedReadPaths`, `allowedWritePaths`) to restrict tool access, wiki-link context, and current page context to specific folders
+- Add an explicit "AI: Refresh Config" command
+- Improve potential performance issue where we still do unncessary inits and datastore reads
 
 ## 0.6.2 (2025-01-05)
 

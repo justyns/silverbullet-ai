@@ -299,25 +299,19 @@ export async function queueEmbeddingGeneration(
 
   await initIfNeeded();
 
-  // After init, check again in case settings weren't loaded before
-  if (!aiSettings.indexEmbeddings) {
-    return;
-  }
+  if (!aiSettings.indexEmbeddings) return;
+  if (!canIndexPage(page)) return;
+  if (!tree.children) return;
 
-  if (!canIndexPage(page)) {
-    return;
-  }
+  const canIndex = currentEmbeddingProvider !== undefined &&
+    currentEmbeddingModel !== undefined &&
+    aiSettings.embeddingModels.length > 0;
 
-  if (!tree.children) {
-    return;
-  }
-
-  if (await shouldIndexEmbeddings()) {
+  if (canIndex) {
     await mq.send("aiEmbeddingsQueue", page);
-  }
-
-  if (await shouldIndexSummaries()) {
-    await mq.send("aiSummaryQueue", page);
+    if (aiSettings.indexSummary) {
+      await mq.send("aiSummaryQueue", page);
+    }
   }
 }
 

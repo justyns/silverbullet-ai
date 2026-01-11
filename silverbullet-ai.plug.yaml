@@ -39,6 +39,10 @@ functions:
     path: src/model-discovery.ts:refreshModelListCommand
     command:
       name: "AI: Refresh Model List"
+  refreshConfig:
+    path: src/init.ts:refreshConfig
+    command:
+      name: "AI: Refresh Config"
   selectAgent:
     path: sbai.ts:selectAgentCommand
     command:

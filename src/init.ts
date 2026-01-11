@@ -1,4 +1,4 @@
-import { clientStore, system } from "@silverbulletmd/silverbullet/syscalls";
+import { clientStore, editor, system } from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
 import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
@@ -34,15 +34,10 @@ export let currentImageModel: ImageModelConfig;
 export let currentEmbeddingModel: EmbeddingModelConfig;
 
 export async function initIfNeeded() {
-  if (!apiKey || !currentAIProvider || !aiSettings || !currentModel) {
-    await initializeOpenAI(true);
+  if (apiKey && currentAIProvider && aiSettings && currentModel) {
     return;
   }
-
-  const selectedModel = await getSelectedTextModel();
-  if (JSON.stringify(selectedModel) !== JSON.stringify(currentModel)) {
-    await initializeOpenAI(true);
-  }
+  await initializeOpenAI(true);
 }
 
 export async function getSelectedTextModel() {
@@ -441,6 +436,7 @@ async function loadAndMergeSettings() {
 }
 
 export async function initializeOpenAI(configure = true) {
+  // TODO: I should really rename this function...
   const newCombinedSettings = await loadAndMergeSettings();
 
   if (
@@ -451,7 +447,7 @@ export async function initializeOpenAI(configure = true) {
     aiSettings = newCombinedSettings;
     log("aiSettings updated to", aiSettings);
 
-    // Deprecation warning for legacy config
+    // Deprecation warning for legacy config, just to console for now
     if (
       aiSettings.textModels?.length > 0 &&
       !aiSettings.providers
@@ -537,4 +533,9 @@ For docs related to Space Lua scripts, configuration, or SilverBullet-specific q
     chatSystemPrompt.content +=
       `\nThe user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
   }
+}
+
+export async function refreshConfig() {
+  await initializeOpenAI(true);
+  await editor.flashNotification("AI config refreshed", "info");
 }
