@@ -2,7 +2,7 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.3 (Unreleased)
+## 0.6.3 (2025-01-10)
 
 - Embeddings now include page title and section headers.  Requires re-indexing to take effect.
 - Benchmark command now shows progress

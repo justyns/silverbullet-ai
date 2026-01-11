@@ -45,6 +45,7 @@ Note: Image models must be configured in the legacy imageModels array.
 - **AI: Select Embedding Model from Config**: Prompts the user to select an embedding model from the configured models.
 Note: Embedding models must be configured in the legacy embeddingModels array.
 - **AI: Refresh Model List**: Refreshes the cached model lists from all configured providers.
+- **AI: Refresh Config**: No documentation found.
 - **AI: Select Agent**: Prompts the user to select an AI agent from available agents.
 - **AI: Clear Agent**: Clears the currently selected AI agent.
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
@@ -288,7 +289,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.6.2/PLUG.md
+ghr:justyns/silverbullet-ai@0.6.3/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
