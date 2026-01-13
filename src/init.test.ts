@@ -30,6 +30,7 @@ const aiConfigSample = {
       name: "dall-e",
       provider: "dalle",
       modelName: "dall-e",
+      secretName: "OPENAI_API_KEY",
     },
   ],
   embeddingModels: [

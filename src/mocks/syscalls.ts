@@ -177,6 +177,11 @@ function setNestedValue(obj: any, path: string, value: any): void {
         delete indexedObjectsByTag[key];
       }
       break;
+    case "mock.clearClientStore":
+      for (const key in clientStore) {
+        delete clientStore[key];
+      }
+      break;
 
     default:
       throw Error(`Missing mock for: ${name}`);

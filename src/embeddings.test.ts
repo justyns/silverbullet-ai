@@ -98,6 +98,7 @@ Deno.test("shouldIndexSummaries returns false when indexSummary is disabled", as
 });
 
 Deno.test("shouldIndexEmbeddings returns false when no embedding models are configured", async () => {
+  await syscall("mock.clearClientStore");
   await syscall("mock.setConfig", "ai", aiConfigSampleNoEmbeddings);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
   await initializeOpenAI();
@@ -107,6 +108,7 @@ Deno.test("shouldIndexEmbeddings returns false when no embedding models are conf
 });
 
 Deno.test("shouldIndexSummaries returns false when no embedding models are configured", async () => {
+  await syscall("mock.clearClientStore");
   await syscall("mock.setConfig", "ai", aiConfigSampleNoEmbeddings);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
   await initializeOpenAI();
