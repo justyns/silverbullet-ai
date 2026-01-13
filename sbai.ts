@@ -28,19 +28,31 @@ import {
   currentImageProvider,
   getProviderConfig,
   getProviderDefaults,
+  getSelectedEmbeddingModel,
+  getSelectedImageModel,
+  getSelectedTextModel,
   initializeOpenAI,
   initIfNeeded,
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
 } from "./src/init.ts";
-import { getAllAvailableModels, refreshAllModelCaches } from "./src/model-discovery.ts";
+import {
+  formatModelHint,
+  getAllAvailableEmbeddingModels,
+  getAllAvailableImageModels,
+  getAllAvailableModels,
+  refreshAllModelCaches,
+  type DiscoveredModel,
+} from "./src/model-discovery.ts";
+import { parseDefaultEmbeddingModelString, parseDefaultImageModelString } from "./src/init.ts";
 import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
   enrichChatMessages,
   folderName,
+  showProgressModal,
 } from "./src/utils.ts";
 import {
   convertToOpenAITools,
@@ -134,6 +146,7 @@ type FilterOption = {
   description?: string;
   category?: string;
   hint?: string;
+  hintInactive?: boolean;
   orderId?: number;
   provider?: string; // Key name for display (e.g., "ollama-home")
   providerType?: string; // Actual provider type (e.g., "ollama")
@@ -152,6 +165,8 @@ export async function selectModelFromConfig() {
 
   const options: FilterOption[] = [];
   const hasProviders = aiSettings.providers && Object.keys(aiSettings.providers).length > 0;
+  const selectedModel = await getSelectedTextModel();
+  const selectedModelName = selectedModel?.modelName;
 
   // If providers config exists, use dynamic discovery
   if (hasProviders) {
@@ -162,6 +177,9 @@ export async function selectModelFromConfig() {
       const preferred = providerConfig.preferredModels || [];
       const preferredIndex = preferred.indexOf(model.id);
       const isPreferred = preferredIndex !== -1;
+      const isSelected = model.id === selectedModelName;
+      const metaHint = formatModelHint(model);
+      const hint = isPreferred ? `★ ${metaHint}`.trim() : metaHint || undefined;
 
       options.push({
         name: model.name,
@@ -169,7 +187,8 @@ export async function selectModelFromConfig() {
         provider: model.provider,
         providerType: model.providerType,
         modelName: model.id,
-        hint: isPreferred ? "★" : undefined,
+        hint,
+        hintInactive: !isSelected,
         orderId: isPreferred ? -500 + preferredIndex : 0,
       });
     }
@@ -183,6 +202,7 @@ export async function selectModelFromConfig() {
         (o) => o.provider === model.provider && o.modelName === model.modelName,
       );
       if (!exists) {
+        const isSelected = model.modelName === selectedModelName;
         options.push({
           name: model.name,
           description: model.description || `${model.modelName} on ${model.provider}`,
@@ -190,6 +210,7 @@ export async function selectModelFromConfig() {
           provider: model.provider,
           modelName: model.modelName,
           hint: "configured",
+          hintInactive: !isSelected,
           orderId: -1000, // Show configured models first
         });
       }
@@ -285,88 +306,282 @@ export async function selectModelFromConfig() {
 
 /**
  * Prompts the user to select an image model from the configured models.
- * Note: Image models must be configured in the legacy imageModels array.
+ * Supports both legacy imageModels config and new providers config with dynamic discovery.
  */
 export async function selectImageModelFromConfig() {
-  if (!aiSettings || !aiSettings.imageModels) {
+  if (!aiSettings) {
     await initializeOpenAI(false);
   }
 
-  if (!aiSettings.imageModels || aiSettings.imageModels.length === 0) {
+  const options: FilterOption[] = [];
+  const hasProviders = aiSettings.providers && Object.keys(aiSettings.providers).length > 0;
+  const selectedModel = await getSelectedImageModel();
+  const selectedModelName = selectedModel?.modelName;
+
+  // If providers config exists, use dynamic discovery
+  if (hasProviders) {
+    const discovered = await getAllAvailableImageModels();
+
+    for (const model of discovered) {
+      const providerConfig = getProviderConfig(model.provider);
+      const preferred = providerConfig.preferredModels || [];
+      const preferredIndex = preferred.indexOf(model.id);
+      const isPreferred = preferredIndex !== -1;
+      const isSelected = model.id === selectedModelName;
+      const metaHint = formatModelHint(model);
+      const hint = isPreferred ? `★ ${metaHint}`.trim() : metaHint || undefined;
+
+      options.push({
+        name: model.name,
+        category: model.provider,
+        provider: model.provider,
+        providerType: model.providerType,
+        modelName: model.id,
+        hint,
+        hintInactive: !isSelected,
+        orderId: isPreferred ? -500 + preferredIndex : 0,
+      });
+    }
+  }
+
+  // Also add legacy imageModels
+  if (aiSettings.imageModels?.length > 0) {
+    for (const model of aiSettings.imageModels) {
+      const exists = options.some(
+        (o) => o.provider === model.provider && o.modelName === model.modelName,
+      );
+      if (!exists) {
+        const isSelected = model.modelName === selectedModelName;
+        options.push({
+          name: model.name,
+          description: model.description || `${model.modelName} on ${model.provider}`,
+          category: model.provider,
+          provider: model.provider,
+          modelName: model.modelName,
+          hint: "configured",
+          hintInactive: !isSelected,
+          orderId: -1000,
+        });
+      }
+    }
+  }
+
+  // Sort by orderId (lower first)
+  options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
+
+  // Add utility options
+  options.push({
+    name: "Enter custom image model...",
+    category: "Other",
+    orderId: 1000,
+    isUtility: true,
+  });
+
+  if (hasProviders) {
+    options.push({
+      name: "Refresh model lists",
+      category: "Other",
+      orderId: 1001,
+      isUtility: true,
+    });
+  }
+
+  if (options.length === 0 || (options.length <= 2 && options.every((o) => o.isUtility))) {
     await editor.flashNotification(
-      "No image models configured. Add imageModels to your ai config.",
+      "No image models available. Configure imageModels or enable litellm metadata.",
       "error",
     );
     return;
   }
 
-  const imageModelOptions = aiSettings.imageModels.map((model) => ({
-    ...model,
-    name: model.name,
-    description: model.description || `${model.modelName} on ${model.provider}`,
-  }));
-  const selectedImageModel = await editor.filterBox(
-    "Select an image model",
-    imageModelOptions,
-  );
+  const selected = await editor.filterBox("Select an image model", options);
 
-  if (!selectedImageModel) {
+  if (!selected) {
     await editor.flashNotification("No image model selected.", "error");
     return;
   }
-  const selectedImageModelName = selectedImageModel.name;
-  await setSelectedImageModel(selectedImageModel as ImageModelConfig);
-  await configureSelectedImageModel(selectedImageModel as ImageModelConfig);
 
-  await editor.flashNotification(
-    `Selected image model: ${selectedImageModelName}`,
-  );
-  console.log(`Selected image model:`, selectedImageModel);
+  // Handle utility options
+  if (selected.name === "Refresh model lists") {
+    await editor.flashNotification("Refreshing model lists...", "info");
+    const count = await refreshAllModelCaches();
+    await editor.flashNotification(`Refreshed: ${count} models found`, "info");
+    return selectImageModelFromConfig();
+  }
+
+  if (selected.name === "Enter custom image model...") {
+    const customModel = await editor.prompt("Enter image model name (provider:model):");
+    if (!customModel) return;
+
+    const modelConfig = parseDefaultImageModelString(customModel);
+    if (!modelConfig) {
+      await editor.flashNotification("Invalid model format. Use provider:model", "error");
+      return;
+    }
+
+    await setSelectedImageModel(modelConfig);
+    await configureSelectedImageModel(modelConfig);
+    await editor.flashNotification(`Selected custom image model: ${modelConfig.modelName}`);
+    return;
+  }
+
+  // Build ImageModelConfig from selection
+  const providerType = selected.providerType || selected.provider || "dalle";
+  const defaults = getProviderDefaults(providerType);
+  const modelConfig: ImageModelConfig = {
+    name: selected.name,
+    description: selected.description || "",
+    modelName: selected.modelName || selected.name,
+    provider: (providerType === "openai" ? "dalle" : providerType) as any,
+    providerKey: selected.provider,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+  };
+
+  await setSelectedImageModel(modelConfig);
+  await configureSelectedImageModel(modelConfig);
+  await editor.flashNotification(`Selected image model: ${selected.name}`);
+  console.log(`Selected image model:`, modelConfig);
 }
 
 /**
  * Prompts the user to select an embedding model from the configured models.
- * Note: Embedding models must be configured in the legacy embeddingModels array.
+ * Supports both legacy embeddingModels config and new providers config with dynamic discovery.
  */
 export async function selectEmbeddingModelFromConfig() {
-  if (!aiSettings || !aiSettings.embeddingModels) {
+  if (!aiSettings) {
     await initializeOpenAI(false);
   }
 
-  if (!aiSettings.embeddingModels || aiSettings.embeddingModels.length === 0) {
+  const options: FilterOption[] = [];
+  const hasProviders = aiSettings.providers && Object.keys(aiSettings.providers).length > 0;
+  const selectedModel = await getSelectedEmbeddingModel();
+  const selectedModelName = selectedModel?.modelName;
+
+  // If providers config exists, use dynamic discovery
+  if (hasProviders) {
+    const discovered = await getAllAvailableEmbeddingModels();
+
+    for (const model of discovered) {
+      const providerConfig = getProviderConfig(model.provider);
+      const preferred = providerConfig.preferredModels || [];
+      const preferredIndex = preferred.indexOf(model.id);
+      const isPreferred = preferredIndex !== -1;
+      const isSelected = model.id === selectedModelName;
+      const metaHint = formatModelHint(model);
+      const hint = isPreferred ? `★ ${metaHint}`.trim() : metaHint || undefined;
+
+      options.push({
+        name: model.name,
+        category: model.provider,
+        provider: model.provider,
+        providerType: model.providerType,
+        modelName: model.id,
+        hint,
+        hintInactive: !isSelected,
+        orderId: isPreferred ? -500 + preferredIndex : 0,
+      });
+    }
+  }
+
+  // Also add legacy embeddingModels
+  if (aiSettings.embeddingModels?.length > 0) {
+    for (const model of aiSettings.embeddingModels) {
+      const exists = options.some(
+        (o) => o.provider === model.provider && o.modelName === model.modelName,
+      );
+      if (!exists) {
+        const isSelected = model.modelName === selectedModelName;
+        options.push({
+          name: model.name,
+          description: model.description || `${model.modelName} on ${model.provider}`,
+          category: model.provider,
+          provider: model.provider,
+          modelName: model.modelName,
+          hint: "configured",
+          hintInactive: !isSelected,
+          orderId: -1000,
+        });
+      }
+    }
+  }
+
+  // Sort by orderId (lower first)
+  options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
+
+  // Add utility options
+  options.push({
+    name: "Enter custom embedding model...",
+    category: "Other",
+    orderId: 1000,
+    isUtility: true,
+  });
+
+  if (hasProviders) {
+    options.push({
+      name: "Refresh model lists",
+      category: "Other",
+      orderId: 1001,
+      isUtility: true,
+    });
+  }
+
+  if (options.length === 0 || (options.length <= 2 && options.every((o) => o.isUtility))) {
     await editor.flashNotification(
-      "No embedding models configured. Add embeddingModels to your ai config.",
+      "No embedding models available. Configure embeddingModels or enable litellm metadata.",
       "error",
     );
     return;
   }
 
-  const embeddingModelOptions = aiSettings.embeddingModels.map((model) => ({
-    ...model,
-    name: model.name,
-    description: model.description || `${model.modelName} on ${model.provider}`,
-  }));
-  const selectedEmbeddingModel = await editor.filterBox(
-    "Select an embedding model",
-    embeddingModelOptions,
-  );
+  const selected = await editor.filterBox("Select an embedding model", options);
 
-  if (!selectedEmbeddingModel) {
+  if (!selected) {
     await editor.flashNotification("No embedding model selected.", "error");
     return;
   }
-  const selectedEmbeddingModelName = selectedEmbeddingModel.name;
-  await setSelectedEmbeddingModel(
-    selectedEmbeddingModel as EmbeddingModelConfig,
-  );
-  await configureSelectedEmbeddingModel(
-    selectedEmbeddingModel as EmbeddingModelConfig,
-  );
 
-  await editor.flashNotification(
-    `Selected embedding model: ${selectedEmbeddingModelName}`,
-  );
-  console.log(`Selected embedding model:`, selectedEmbeddingModel);
+  // Handle utility options
+  if (selected.name === "Refresh model lists") {
+    await editor.flashNotification("Refreshing model lists...", "info");
+    const count = await refreshAllModelCaches();
+    await editor.flashNotification(`Refreshed: ${count} models found`, "info");
+    return selectEmbeddingModelFromConfig();
+  }
+
+  if (selected.name === "Enter custom embedding model...") {
+    const customModel = await editor.prompt("Enter embedding model name (provider:model):");
+    if (!customModel) return;
+
+    const modelConfig = parseDefaultEmbeddingModelString(customModel);
+    if (!modelConfig) {
+      await editor.flashNotification("Invalid model format. Use provider:model", "error");
+      return;
+    }
+
+    await setSelectedEmbeddingModel(modelConfig);
+    await configureSelectedEmbeddingModel(modelConfig);
+    await editor.flashNotification(`Selected custom embedding model: ${modelConfig.modelName}`);
+    return;
+  }
+
+  // Build EmbeddingModelConfig from selection
+  const providerType = selected.providerType || selected.provider || "openai";
+  const defaults = getProviderDefaults(providerType);
+  const modelConfig: EmbeddingModelConfig = {
+    name: selected.name,
+    description: selected.description || "",
+    modelName: selected.modelName || selected.name,
+    provider: providerType as any,
+    providerKey: selected.provider,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+  };
+
+  await setSelectedEmbeddingModel(modelConfig);
+  await configureSelectedEmbeddingModel(modelConfig);
+  await editor.flashNotification(`Selected embedding model: ${selected.name}`);
+  console.log(`Selected embedding model:`, modelConfig);
 }
 
 /**
@@ -519,8 +734,9 @@ export async function streamChatOnPage() {
 export async function promptAndGenerateImage() {
   await initIfNeeded();
 
-  if (!aiSettings.imageModels || aiSettings.imageModels.length === 0) {
-    await editor.flashNotification("No image models available.", "error");
+  const selectedImageModel = await getSelectedImageModel();
+  if (!selectedImageModel && (!aiSettings.imageModels || aiSettings.imageModels.length === 0)) {
+    await editor.flashNotification("No image models available. Use 'AI: Select Image Model' first.", "error");
     return;
   }
 
@@ -540,7 +756,14 @@ export async function promptAndGenerateImage() {
       size: "1024x1024",
       quality: "hd",
     };
+
+    await showProgressModal({
+      title: "Generating Image",
+      statusText: "This may take a moment...",
+    });
+
     const imageData = await currentImageProvider.generateImage(imageOptions);
+    await editor.hidePanel("modal");
 
     if (imageData && imageData.data && imageData.data.length > 0) {
       const base64Image = imageData.data[0].b64_json;
@@ -568,8 +791,10 @@ export async function promptAndGenerateImage() {
       await editor.flashNotification("Failed to generate image.", "error");
     }
   } catch (error) {
+    await editor.hidePanel("modal");
     console.error("Error generating image with DALL·E:", error);
-    await editor.flashNotification("Error generating image.", "error");
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    await editor.flashNotification(`Image generation failed: ${msg}`, "error");
   }
 }
 

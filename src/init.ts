@@ -34,7 +34,14 @@ export let currentImageModel: ImageModelConfig;
 export let currentEmbeddingModel: EmbeddingModelConfig;
 
 export async function initIfNeeded() {
-  if (apiKey && currentAIProvider && aiSettings && currentModel) {
+  // text models (mostly)
+  const basicSetupDone = apiKey && currentAIProvider && aiSettings && currentModel;
+
+  // and embedding models if needed
+  const embeddingsNeedSetup = aiSettings?.indexEmbeddings &&
+    (!currentEmbeddingProvider || !currentEmbeddingModel);
+
+  if (basicSetupDone && !embeddingsNeedSetup) {
     return;
   }
   await initializeOpenAI(true);
@@ -100,6 +107,7 @@ const defaultProviderDefaults: ProviderDefaults = {
   baseUrl: "",
   requireAuth: true,
   useProxy: true,
+  showPricing: true,
 };
 
 export function getProviderDefaults(providerType: string): ProviderDefaults {
@@ -123,6 +131,60 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
     description: "",
     modelName: modelName,
     provider: providerType as Provider,
+    providerKey: providerKey,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+    baseUrl: providerConfig.baseUrl || defaults.baseUrl,
+    useProxy: providerConfig.useProxy ?? defaults.useProxy,
+  };
+}
+
+export function parseDefaultEmbeddingModelString(modelString: string): EmbeddingModelConfig | null {
+  const parts = modelString.split(":");
+  if (parts.length < 2) {
+    console.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
+    return null;
+  }
+  const providerKey = parts[0];
+  const modelName = parts.slice(1).join(":");
+  const providerConfig = getProviderConfig(providerKey);
+  const providerType = providerConfig.provider || providerKey;
+  const defaults = getProviderDefaults(providerType);
+
+  return {
+    name: modelName,
+    description: "",
+    modelName: modelName,
+    provider: providerType as EmbeddingProvider,
+    providerKey: providerKey,
+    secretName: "",
+    requireAuth: defaults.requireAuth,
+    baseUrl: providerConfig.baseUrl || defaults.baseUrl,
+    useProxy: providerConfig.useProxy ?? defaults.useProxy,
+  };
+}
+
+export function parseDefaultImageModelString(modelString: string): ImageModelConfig | null {
+  const parts = modelString.split(":");
+  if (parts.length < 2) {
+    console.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
+    return null;
+  }
+  const providerKey = parts[0];
+  const modelName = parts.slice(1).join(":");
+  const providerConfig = getProviderConfig(providerKey);
+  // Map "openai" to "dalle" for the ImageProvider enum
+  let providerType = providerConfig.provider || providerKey;
+  if (providerType.toLowerCase() === "openai") {
+    providerType = "dalle";
+  }
+  const defaults = getProviderDefaults(providerKey);
+
+  return {
+    name: modelName,
+    description: "",
+    modelName: modelName,
+    provider: providerType as ImageProvider,
     providerKey: providerKey,
     secretName: "",
     requireAuth: defaults.requireAuth,
@@ -344,23 +406,35 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
   if (!model) {
     throw new Error("No image model provided to configure");
   }
-  if (model.requireAuth) {
-    const newApiKey = await system.getConfig(
-      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
-    );
-    if (newApiKey !== apiKey) {
-      apiKey = newApiKey;
-      log("API key updated for image model");
-    }
-  }
-  if (model.requireAuth && !apiKey) {
+
+  // Use providerKey if available, else fall back to provider type
+  const configKey = model.providerKey || model.provider;
+  const providerConfig = getProviderConfig(configKey);
+  const resolvedApiKey = await resolveApiKey(configKey, model);
+
+  const requireAuth = model.requireAuth ?? true;
+
+  if (requireAuth && !resolvedApiKey) {
     throw new Error(
-      "AI API key is missing for image model. Please set it in your Space Lua config.",
+      `AI API key is missing for image provider "${model.provider}". ` +
+        "Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.",
     );
   }
 
-  currentImageModel = model;
-  setupImageProvider(model);
+  if (resolvedApiKey !== apiKey) {
+    apiKey = resolvedApiKey;
+    log("API key updated for image model");
+  }
+
+  // Apply provider config defaults to model
+  const effectiveModel: ImageModelConfig = {
+    ...model,
+    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
+    useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
+  };
+
+  currentImageModel = effectiveModel;
+  setupImageProvider(effectiveModel);
 }
 
 export async function configureSelectedEmbeddingModel(
@@ -370,23 +444,35 @@ export async function configureSelectedEmbeddingModel(
   if (!model) {
     throw new Error("No embedding model provided to configure");
   }
-  if (model.requireAuth) {
-    const newApiKey = await system.getConfig(
-      `ai.keys.${model.secretName || "OPENAI_API_KEY"}`,
-    );
-    if (newApiKey !== apiKey) {
-      apiKey = newApiKey;
-      log("API key updated for embedding model");
-    }
-  }
-  if (model.requireAuth && !apiKey) {
+
+  // Use providerKey if available, else fall back to provider type
+  const configKey = model.providerKey || model.provider;
+  const providerConfig = getProviderConfig(configKey);
+  const resolvedApiKey = await resolveApiKey(configKey, model);
+
+  const requireAuth = model.requireAuth ?? true;
+
+  if (requireAuth && !resolvedApiKey) {
     throw new Error(
-      "AI API key is missing for embedding model. Please set it in your Space Lua config.",
+      `AI API key is missing for embedding provider "${model.provider}". ` +
+        "Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.",
     );
   }
 
-  currentEmbeddingModel = model;
-  setupEmbeddingProvider(model);
+  if (resolvedApiKey !== apiKey) {
+    apiKey = resolvedApiKey;
+    log("API key updated for embedding model");
+  }
+
+  // Apply provider config defaults to model
+  const effectiveModel: EmbeddingModelConfig = {
+    ...model,
+    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
+    useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
+  };
+
+  currentEmbeddingModel = effectiveModel;
+  setupEmbeddingProvider(effectiveModel);
 }
 
 async function loadAndMergeSettings() {
@@ -478,14 +564,30 @@ export async function initializeOpenAI(configure = true) {
 
   // Same logic for image models
   const currentlySelectedImageModel = await getSelectedImageModel();
-  if (!currentlySelectedImageModel && aiSettings.imageModels.length === 1) {
-    await setSelectedImageModel(aiSettings.imageModels[0]);
+  if (!currentlySelectedImageModel) {
+    if (aiSettings.defaultImageModel) {
+      const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
+      if (defaultModel) {
+        await setSelectedImageModel(defaultModel);
+        log("Set default image model:", defaultModel);
+      }
+    } else if (aiSettings.imageModels.length === 1) {
+      await setSelectedImageModel(aiSettings.imageModels[0]);
+    }
   }
 
   // Same logic for embedding models
   const currentlySelectedEmbeddingModel = await getSelectedEmbeddingModel();
-  if (!currentlySelectedEmbeddingModel && aiSettings.embeddingModels.length === 1) {
-    await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
+  if (!currentlySelectedEmbeddingModel) {
+    if (aiSettings.defaultEmbeddingModel) {
+      const defaultModel = parseDefaultEmbeddingModelString(aiSettings.defaultEmbeddingModel);
+      if (defaultModel) {
+        await setSelectedEmbeddingModel(defaultModel);
+        log("Set default embedding model:", defaultModel);
+      }
+    } else if (aiSettings.embeddingModels.length === 1) {
+      await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
+    }
   }
 
   if (configure) {
@@ -497,11 +599,21 @@ export async function initializeOpenAI(configure = true) {
       await getAndConfigureModel();
     }
 
-    if (aiSettings.imageModels.length > 0) {
+    const selectedImageModel = await getSelectedImageModel();
+    if (selectedImageModel) {
+      await configureSelectedImageModel(selectedImageModel);
+    } else if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
     }
-    if (aiSettings.embeddingModels.length > 0) {
+
+    const selectedEmbeddingModel = await getSelectedEmbeddingModel();
+    if (selectedEmbeddingModel) {
+      await configureSelectedEmbeddingModel(selectedEmbeddingModel);
+    } else if (aiSettings.embeddingModels.length > 0) {
       await getAndConfigureEmbeddingModel();
+    } else if (!aiSettings.defaultEmbeddingModel) {
+      currentEmbeddingProvider = undefined as any;
+      currentEmbeddingModel = undefined as any;
     }
   }
 

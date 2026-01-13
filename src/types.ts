@@ -232,7 +232,9 @@ export type ProviderConfig = {
   baseUrl?: string;
   useProxy?: boolean;
   preferredModels?: string[];
-  fetchModels?: boolean; // Whether to fetch models from API (default: true)
+  excludeModels?: string[];
+  fetchModels?: boolean;
+  showPricing?: boolean;
 };
 
 export type ProvidersConfig = {
@@ -243,8 +245,10 @@ export type AISettings = {
   // New provider-centric config
   providers?: ProvidersConfig;
 
-  // Default model to use (format: "provider:modelName", e.g., "ollama:llama3.2")
+  // Default models to use (format: "provider:modelName", e.g., "ollama:llama3.2")
   defaultTextModel?: string;
+  defaultEmbeddingModel?: string;
+  defaultImageModel?: string;
 
   // Legacy model arrays (deprecated)
   textModels: ModelConfig[];
@@ -277,6 +281,7 @@ export type ImageModelConfig = {
   description: string;
   modelName: string;
   provider: ImageProvider;
+  providerKey?: string;
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
@@ -288,6 +293,7 @@ export type EmbeddingModelConfig = {
   description: string;
   modelName: string;
   provider: EmbeddingProvider;
+  providerKey?: string;
   secretName: string;
   requireAuth: boolean;
   baseUrl?: string;
