@@ -18,10 +18,11 @@ config.set {
       }
     },
     defaultTextModel = "openai:gpt-4o",
+    -- Optional: enable embeddings for semantic search
+    defaultEmbeddingModel = "openai:text-embedding-3-small",
+    indexEmbeddings = true,
     -- Optional: configure DALL-E for image generation
-    imageModels = {
-      {name = "dall-e-3", modelName = "dall-e-3", provider = "dalle"}
-    },
+    defaultImageModel = "openai:dall-e-3",
     -- Optional: customize chat behavior
     chat = {
       userInformation = "I'm a software developer who likes taking notes.",
@@ -35,10 +36,10 @@ With this configuration:
 
 - Models are fetched automatically from the provider's API
 - `preferredModels` appear first in the model picker (marked with ★)
-- `defaultTextModel` is auto-selected on startup
+- `defaultTextModel`, `defaultEmbeddingModel`, and `defaultImageModel` use the same API key
 - Run **"AI: Refresh Model List"** to update cached models after config changes
 
-See [[Configuration]] for all options, including [[Configuration/Chat Instructions]] and [[Configuration/Embedding Models]].
+See [[Configuration]] for all options, including [[Configuration/Chat Instructions]], [[Configuration/Embedding Models]], and [[Configuration/Image Models]].
 
 ## Usage
 

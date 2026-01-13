@@ -2,6 +2,14 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.6.4 (2025-01-13)
+
+- Image generation supports gpt-image models now
+- Support provider-based config for image and embedding models, now you can define a single provider and use it for text, images, and embeddings
+- Add new `defaultEmbeddingModel` and `defaultImageModel` config options
+- Support batch embedding generation for openai and ollama
+- Show pricing info for remote apis in the model picker
+
 ## 0.6.3 (2025-01-10)
 
 - Embeddings now include page title and section headers.  Requires re-indexing to take effect.
