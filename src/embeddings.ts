@@ -48,8 +48,7 @@ export async function shouldIndexEmbeddings() {
   await initIfNeeded();
   return aiSettings.indexEmbeddings &&
     currentEmbeddingProvider !== undefined &&
-    currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0;
+    currentEmbeddingModel !== undefined;
 }
 
 export async function shouldIndexSummaries() {
@@ -57,8 +56,7 @@ export async function shouldIndexSummaries() {
   return aiSettings.indexEmbeddings &&
     aiSettings.indexSummary &&
     currentEmbeddingProvider !== undefined &&
-    currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0;
+    currentEmbeddingModel !== undefined;
 }
 
 /**
@@ -146,8 +144,11 @@ export async function indexEmbeddings(page: string) {
   // Splitting embeddings up by paragraph, but there could be better ways to do it
   //     ^ Some places suggest a sliding window so that each chunk has some overlap with the previous/next chunk
   //     ^ But in some limited testing, this seems to work alright only split by paragraph
-  const objects: EmbeddingObject[] = [];
+  //     ^ We also add the page title and headers as context to each chunk
   const startTime = Date.now();
+
+  type ChunkInfo = { contextualText: string; paragraphText: string; pos: number };
+  const chunks: ChunkInfo[] = [];
 
   // Track current header hierarchy (h1, h2, h3, etc.)
   const currentHeaders: string[] = [];
@@ -191,25 +192,30 @@ export async function indexEmbeddings(page: string) {
     }
     contextParts.push("", paragraphText);
     const contextualText = contextParts.join("\n");
-
-    const embedding = await currentEmbeddingProvider.generateEmbeddings({
-      text: contextualText,
-    });
-
     const pos = node.from ?? 0;
 
-    const embeddingObject: EmbeddingObject = {
-      ref: `${page}@${pos}`,
-      page: page,
-      pos: pos,
-      embedding: embedding,
-      text: paragraphText,
-      tag: "embedding",
-    };
-
-    log("Indexing embedding object", embeddingObject);
-    objects.push(embeddingObject);
+    chunks.push({ contextualText, paragraphText, pos });
   }
+
+  if (chunks.length === 0) {
+    return;
+  }
+
+  // batch generate embeddings for all chunks
+  const texts = chunks.map((c) => c.contextualText);
+  const embeddings = await currentEmbeddingProvider.generateEmbeddingsBatch(texts);
+
+  // and shove them into one array to index
+  const objects: EmbeddingObject[] = chunks.map((chunk, i) => ({
+    ref: `${page}@${chunk.pos}`,
+    page: page,
+    pos: chunk.pos,
+    embedding: embeddings[i],
+    text: chunk.paragraphText,
+    tag: "embedding",
+  }));
+
+  // log("Indexing " + objects.length + " embeddings objects");
 
   await index.indexObjects(page, objects);
 
@@ -304,8 +310,7 @@ export async function queueEmbeddingGeneration(
   if (!tree.children) return;
 
   const canIndex = currentEmbeddingProvider !== undefined &&
-    currentEmbeddingModel !== undefined &&
-    aiSettings.embeddingModels.length > 0;
+    currentEmbeddingModel !== undefined;
 
   if (canIndex) {
     await mq.send("aiEmbeddingsQueue", page);

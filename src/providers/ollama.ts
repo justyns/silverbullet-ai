@@ -15,6 +15,7 @@ export class OllamaProvider extends AbstractProvider {
     baseUrl: "http://localhost:11434/v1",
     requireAuth: false,
     useProxy: true,
+    showPricing: false,
   };
 
   override name = "Ollama";
@@ -184,13 +185,19 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     super(apiKey, baseUrl, "Ollama", modelName, requireAuth, useProxy);
   }
 
-  // Ollama doesn't have an openai compatible api for embeddings yet, so it gets its own provider
+  // Use Ollama's newer /api/embed endpoint so we can do batch embeddings
+  // See: https://docs.ollama.com/capabilities/embeddings
   async _generateEmbeddings(
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
+    const embeddings = await this._generateEmbeddingsBatch([options.text]);
+    return embeddings[0];
+  }
+
+  override async _generateEmbeddingsBatch(texts: string[]): Promise<Array<Array<number>>> {
     const body = JSON.stringify({
       model: this.modelName,
-      prompt: options.text,
+      input: texts,
     });
 
     const headers: HttpHeaders = {
@@ -201,8 +208,9 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
+    // /api/embed is Ollama's native endpoint, not behind /v1
     const response = await this.fetch(
-      `${this.baseUrl}/api/embeddings`,
+      `${this.baseUrl.replace(/\/v1\/?/, "")}/api/embed`,
       { method: "POST", headers: headers, body: body },
     );
 
@@ -215,10 +223,10 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const data = await response.json();
-    if (!data || !data.embedding || data.embedding.length === 0) {
-      throw new Error("Invalid response from Ollama.");
+    if (!data || !data.embeddings || data.embeddings.length !== texts.length) {
+      throw new Error("Invalid response from Ollama embedding API.");
     }
 
-    return data.embedding;
+    return data.embeddings;
   }
 }
