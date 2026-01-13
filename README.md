@@ -41,11 +41,11 @@ New responses are always appended to the end of the page.
 - **AI: Select Text Model from Config**: Prompts the user to select a text/llm model from the configured models.
 Supports both legacy textModels config and new providers config with dynamic discovery.
 - **AI: Select Image Model from Config**: Prompts the user to select an image model from the configured models.
-Note: Image models must be configured in the legacy imageModels array.
+Supports both legacy imageModels config and new providers config with dynamic discovery.
 - **AI: Select Embedding Model from Config**: Prompts the user to select an embedding model from the configured models.
-Note: Embedding models must be configured in the legacy embeddingModels array.
-- **AI: Refresh Model List**: Refreshes the cached model lists from all configured providers.
-- **AI: Refresh Config**: No documentation found.
+Supports both legacy embeddingModels config and new providers config with dynamic discovery.
+- **AI: Refresh Model List**: Command to clear cache and refresh all model lists
+- **AI: Refresh Config**: Command to reload AI lua config and re-initialize providers
 - **AI: Select Agent**: Prompts the user to select an AI agent from available agents.
 - **AI: Clear Agent**: Clears the currently selected AI agent.
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but
@@ -289,7 +289,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.6.3/PLUG.md
+ghr:justyns/silverbullet-ai@0.6.4/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.

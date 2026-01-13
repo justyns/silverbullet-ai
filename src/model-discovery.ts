@@ -368,6 +368,9 @@ export async function refreshAllModelCaches(): Promise<number> {
   return total;
 }
 
+/**
+ * Command to clear cache and refresh all model lists
+ */
 export async function refreshModelListCommand(): Promise<void> {
   await initializeOpenAI(false);
   await editor.flashNotification("Refreshing model lists...", "info");

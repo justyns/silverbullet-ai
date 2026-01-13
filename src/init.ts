@@ -647,7 +647,10 @@ For docs related to Space Lua scripts, configuration, or SilverBullet-specific q
   }
 }
 
+/**
+ * Command to reload AI lua config and re-initialize providers
+ */
 export async function refreshConfig() {
   await initializeOpenAI(true);
-  await editor.flashNotification("AI config refreshed", "info");
+  await editor.flashNotification("AI config reloaded", "info");
 }
