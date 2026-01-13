@@ -654,3 +654,14 @@ export async function refreshConfig() {
   await initializeOpenAI(true);
   await editor.flashNotification("AI config reloaded", "info");
 }
+
+/**
+ * Command to clear selected models from clientStore and revert to defaults
+ */
+export async function resetSelectedModels() {
+  await clientStore.del("ai.selectedTextModel");
+  await clientStore.del("ai.selectedImageModel");
+  await clientStore.del("ai.selectedEmbeddingModel");
+  await initializeOpenAI(true);
+  await editor.flashNotification("Model selections reset to defaults", "info");
+}

@@ -9,6 +9,7 @@ This page is a brief overview of each version.
 - Add new `defaultEmbeddingModel` and `defaultImageModel` config options
 - Support batch embedding generation for openai and ollama
 - Show pricing info for remote apis in the model picker
+- Add new `AI: Reset Selected Models` command
 
 ## 0.6.3 (2025-01-10)
 

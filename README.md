@@ -46,6 +46,7 @@ Supports both legacy imageModels config and new providers config with dynamic di
 Supports both legacy embeddingModels config and new providers config with dynamic discovery.
 - **AI: Refresh Model List**: Command to clear cache and refresh all model lists
 - **AI: Refresh Config**: Command to reload AI lua config and re-initialize providers
+- **AI: Reset Selected Models**: Command to clear selected models from clientStore and revert to defaults
 - **AI: Select Agent**: Prompts the user to select an AI agent from available agents.
 - **AI: Clear Agent**: Clears the currently selected AI agent.
 - **AI: Test Embedding Generation**: Function to test generating embeddings.  Just puts the result in the current note, but

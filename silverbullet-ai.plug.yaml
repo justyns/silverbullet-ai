@@ -43,6 +43,10 @@ functions:
     path: src/init.ts:refreshConfig
     command:
       name: "AI: Refresh Config"
+  resetSelectedModels:
+    path: src/init.ts:resetSelectedModels
+    command:
+      name: "AI: Reset Selected Models"
   selectAgent:
     path: sbai.ts:selectAgentCommand
     command:
