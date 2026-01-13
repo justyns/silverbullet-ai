@@ -11,6 +11,7 @@ export type ProviderDefaults = {
   baseUrl: string;
   requireAuth: boolean;
   useProxy: boolean;
+  showPricing: boolean;
 };
 
 export interface ProviderInterface {

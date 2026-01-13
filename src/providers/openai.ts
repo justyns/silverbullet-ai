@@ -24,6 +24,7 @@ export class OpenAIProvider extends AbstractProvider {
     baseUrl: "https://api.openai.com/v1",
     requireAuth: true,
     useProxy: false,
+    showPricing: true,
   };
 
   override name = "OpenAI";
@@ -296,9 +297,15 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
   async _generateEmbeddings(
     options: EmbeddingGenerationOptions,
   ): Promise<Array<number>> {
+    const embeddings = await this._generateEmbeddingsBatch([options.text]);
+    return embeddings[0];
+  }
+
+  // Native batch support - /v1/embeddings accepts array input
+  override async _generateEmbeddingsBatch(texts: string[]): Promise<Array<Array<number>>> {
     const body = JSON.stringify({
       model: this.modelName,
-      input: options.text,
+      input: texts,
       encoding_format: "float",
     });
 
@@ -324,10 +331,13 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     }
 
     const data = await response.json();
-    if (!data || !data.data || data.data.length === 0) {
-      throw new Error("Invalid response from OpenAI.");
+    if (!data || !data.data || data.data.length !== texts.length) {
+      throw new Error("Invalid response from OpenAI embeddings API.");
     }
 
-    return data.data[0].embedding;
+    // OpenAI returns data sorted by index, extract embeddings in order
+    return data.data
+      .sort((a: { index: number }, b: { index: number }) => a.index - b.index)
+      .map((item: { embedding: number[] }) => item.embedding);
   }
 }

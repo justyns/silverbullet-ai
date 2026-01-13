@@ -9,8 +9,14 @@ export type ModelMetadata = {
   max_input_tokens?: number;
   max_output_tokens?: number;
   max_tokens?: number;
+  input_cost_per_token?: number;
+  output_cost_per_token?: number;
   litellm_provider?: string;
   mode?: string;
+  supports_vision?: boolean;
+  supports_function_calling?: boolean;
+  supports_tool_choice?: boolean;
+  supports_response_schema?: boolean;
 };
 
 type CacheData = {
@@ -28,16 +34,16 @@ const PROVIDER_PREFIXES = [
   "gemini/",
 ];
 
-function lookupModel(
+export function lookupModel(
   data: Record<string, ModelMetadata>,
   modelName: string,
 ): ModelMetadata | null {
-  // 1. Exact match
+  // Exact match
   if (data[modelName]) {
     return data[modelName];
   }
 
-  // 2. Try with provider prefixes
+  // Try with provider prefixes
   for (const prefix of PROVIDER_PREFIXES) {
     const prefixedName = `${prefix}${modelName}`;
     if (data[prefixedName]) {
@@ -45,7 +51,7 @@ function lookupModel(
     }
   }
 
-  // 3. Try normalized (strip date suffix like -2024-08-06)
+  // Try normalized (strip date suffix like -2024-08-06)
   const normalized = modelName.replace(/-\d{4}-\d{2}-\d{2}$/, "");
   if (normalized !== modelName) {
     if (data[normalized]) {
@@ -59,7 +65,14 @@ function lookupModel(
     }
   }
 
-  // 4. Try partial match (model name contains our search term)
+  // Try stripping Ollama-style tags (e.g., :latest, :7b-instruct)
+  const withoutTag = modelName.replace(/:[^/]+$/, "");
+  if (withoutTag !== modelName) {
+    const tagResult = lookupModel(data, withoutTag);
+    if (tagResult) return tagResult;
+  }
+
+  // Try partial match (model name contains our search term)
   const lowerModelName = modelName.toLowerCase();
   for (const key of Object.keys(data)) {
     const lowerKey = key.toLowerCase();

@@ -23,6 +23,7 @@ export class GeminiProvider extends AbstractProvider {
     baseUrl: "https://generativelanguage.googleapis.com",
     requireAuth: true,
     useProxy: true,
+    showPricing: true,
   };
 
   override name = "Gemini";
