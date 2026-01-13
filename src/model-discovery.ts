@@ -118,16 +118,14 @@ function metadataToCachedModel(
   }
 
   // Prefer native context limit when available
-  const maxInputTokens = nativeContextLimit
-    ?? metadata?.max_input_tokens
-    ?? metadata?.max_tokens
-    ?? undefined;
+  const maxInputTokens = nativeContextLimit ??
+    metadata?.max_input_tokens ??
+    metadata?.max_tokens ??
+    undefined;
   const maxOutputTokens = metadata?.max_output_tokens;
 
   // Prefer native capabilities for vision/tools when available
-  const supportsVision = hasNativeCapabilities
-    ? nativeCapabilities.includes("vision")
-    : metadata?.supports_vision;
+  const supportsVision = hasNativeCapabilities ? nativeCapabilities.includes("vision") : metadata?.supports_vision;
   const supportsFunctionCalling = hasNativeCapabilities
     ? nativeCapabilities.includes("tools")
     : metadata?.supports_function_calling;
@@ -157,12 +155,8 @@ async function getModelMetadataAndMode(
   modelId: string,
   showPricing: boolean = true,
 ): Promise<CachedModel> {
-  const nativeCapabilities = provider.getModelCapabilities
-    ? await provider.getModelCapabilities(modelId)
-    : null;
-  const nativeContextLimit = provider.getContextLimit
-    ? await provider.getContextLimit(modelId)
-    : null;
+  const nativeCapabilities = provider.getModelCapabilities ? await provider.getModelCapabilities(modelId) : null;
+  const nativeContextLimit = provider.getContextLimit ? await provider.getContextLimit(modelId) : null;
 
   const allMetadata = await fetchModelMetadata();
   const metadata = lookupModel(allMetadata, modelId);

@@ -555,6 +555,12 @@ export async function initializeOpenAI(configure = true) {
       if (defaultModel) {
         await setSelectedTextModel(defaultModel);
         log("Set default text model:", defaultModel);
+      } else {
+        console.error(
+          `[silverbullet-ai] Failed to parse defaultTextModel: "${aiSettings.defaultTextModel}". ` +
+            'Expected format: "provider:modelName" (e.g., "openai:gpt-4o", "ollama:llama3.2"). ' +
+            "Please check your config.",
+        );
       }
     } else if (aiSettings.textModels.length === 1) {
       await setSelectedTextModel(aiSettings.textModels[0]);
@@ -570,6 +576,11 @@ export async function initializeOpenAI(configure = true) {
       if (defaultModel) {
         await setSelectedImageModel(defaultModel);
         log("Set default image model:", defaultModel);
+      } else {
+        console.error(
+          `[silverbullet-ai] Failed to parse defaultImageModel: "${aiSettings.defaultImageModel}". ` +
+            'Expected format: "provider:modelName" (e.g., "openai:dall-e-3").',
+        );
       }
     } else if (aiSettings.imageModels.length === 1) {
       await setSelectedImageModel(aiSettings.imageModels[0]);
@@ -584,6 +595,11 @@ export async function initializeOpenAI(configure = true) {
       if (defaultModel) {
         await setSelectedEmbeddingModel(defaultModel);
         log("Set default embedding model:", defaultModel);
+      } else {
+        console.error(
+          `[silverbullet-ai] Failed to parse defaultEmbeddingModel: "${aiSettings.defaultEmbeddingModel}". ` +
+            'Expected format: "provider:modelName" (e.g., "openai:text-embedding-3-small").',
+        );
       }
     } else if (aiSettings.embeddingModels.length === 1) {
       await setSelectedEmbeddingModel(aiSettings.embeddingModels[0]);
@@ -597,6 +613,13 @@ export async function initializeOpenAI(configure = true) {
       await configureSelectedModel(selectedModel);
     } else if (aiSettings.textModels.length > 0) {
       await getAndConfigureModel();
+    } else if (aiSettings.defaultTextModel) {
+      // Fallback: try to configure defaultTextModel directly even if clientStore failed
+      const defaultModel = parseDefaultModelString(aiSettings.defaultTextModel);
+      if (defaultModel) {
+        await configureSelectedModel(defaultModel);
+        log("Configured default text model directly:", defaultModel);
+      }
     }
 
     const selectedImageModel = await getSelectedImageModel();
@@ -604,6 +627,12 @@ export async function initializeOpenAI(configure = true) {
       await configureSelectedImageModel(selectedImageModel);
     } else if (aiSettings.imageModels.length > 0) {
       await getAndConfigureImageModel();
+    } else if (aiSettings.defaultImageModel) {
+      const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
+      if (defaultModel) {
+        await configureSelectedImageModel(defaultModel);
+        log("Configured default image model directly:", defaultModel);
+      }
     }
 
     const selectedEmbeddingModel = await getSelectedEmbeddingModel();
@@ -611,7 +640,13 @@ export async function initializeOpenAI(configure = true) {
       await configureSelectedEmbeddingModel(selectedEmbeddingModel);
     } else if (aiSettings.embeddingModels.length > 0) {
       await getAndConfigureEmbeddingModel();
-    } else if (!aiSettings.defaultEmbeddingModel) {
+    } else if (aiSettings.defaultEmbeddingModel) {
+      const defaultModel = parseDefaultEmbeddingModelString(aiSettings.defaultEmbeddingModel);
+      if (defaultModel) {
+        await configureSelectedEmbeddingModel(defaultModel);
+        log("Configured default embedding model directly:", defaultModel);
+      }
+    } else {
       currentEmbeddingProvider = undefined as any;
       currentEmbeddingModel = undefined as any;
     }

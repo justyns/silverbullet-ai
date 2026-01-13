@@ -43,7 +43,6 @@ import {
   getAllAvailableImageModels,
   getAllAvailableModels,
   refreshAllModelCaches,
-  type DiscoveredModel,
 } from "./src/model-discovery.ts";
 import { parseDefaultEmbeddingModelString, parseDefaultImageModelString } from "./src/init.ts";
 import {
