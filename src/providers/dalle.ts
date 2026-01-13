@@ -17,6 +17,26 @@ export class DallEProvider extends AbstractImageProvider {
   ): Promise<any> {
     try {
       if (!apiKey) await initializeOpenAI();
+
+      // Build request body - gpt-image models use different parameters than dall-e
+      // See: https://platform.openai.com/docs/api-reference/images
+      const body: Record<string, unknown> = {
+        model: this.modelName,
+        prompt: options.prompt,
+        n: options.numImages,
+        size: options.size,
+      };
+      if (this.modelName.startsWith("gpt-image")) {
+        // gpt-image models use different quality values: low, medium, high, auto
+        // Map dall-e quality values: "hd" -> "high", "standard" -> "medium"
+        const qualityMap: Record<string, string> = { hd: "high", standard: "medium" };
+        body.quality = qualityMap[options.quality || ""] || options.quality || "high";
+      } else {
+        // dall-e models use response_format for base64
+        body.quality = options.quality;
+        body.response_format = "b64_json";
+      }
+
       const response = await this.fetch(
         `${this.baseUrl}/images/generations`,
         {
@@ -25,14 +45,7 @@ export class DallEProvider extends AbstractImageProvider {
             "Authorization": `Bearer ${this.apiKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            model: this.modelName,
-            prompt: options.prompt,
-            n: options.numImages,
-            size: options.size,
-            quality: options.quality,
-            response_format: "b64_json",
-          }),
+          body: JSON.stringify(body),
         },
       );
 
