@@ -33,24 +33,33 @@ const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 const TOKEN_USAGE_KEY = "ai.panelTokenUsage";
 const PANEL_STATE_KEY = "ai.panelOpen";
+const AGENT_KEY = "ai.panelAgent";
 
 /**
  * Helper to avoid exporting get/set/clear separately in the plug yaml
  * @param action - "get" returns current agent, "set" sets agent, "clear" clears agent
  * @param agent - Agent to set (only used with "set" action)
  */
-export function chatAgentState(
+export async function chatAgentState(
   action: "get" | "set" | "clear",
   agent?: AIAgentTemplate | null,
-): AIAgentTemplate | null | void {
+): Promise<AIAgentTemplate | null | void> {
   switch (action) {
     case "get":
+      if (!currentChatAgent) {
+        const stored = await clientStore.get(AGENT_KEY);
+        if (stored) {
+          currentChatAgent = stored as AIAgentTemplate;
+        }
+      }
       return currentChatAgent;
     case "set":
       currentChatAgent = agent ?? null;
+      await clientStore.set(AGENT_KEY, currentChatAgent);
       break;
     case "clear":
       currentChatAgent = null;
+      await clientStore.del(AGENT_KEY);
       break;
   }
 }

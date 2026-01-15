@@ -589,7 +589,7 @@ export async function selectEmbeddingModelFromConfig() {
 export async function selectAgentCommand() {
   const agent = await selectAgent();
   if (agent) {
-    chatAgentState("set", agent);
+    await chatAgentState("set", agent);
     await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
   }
 }
@@ -598,7 +598,7 @@ export async function selectAgentCommand() {
  * Clears the currently selected AI agent.
  */
 export async function clearAgentCommand() {
-  chatAgentState("clear");
+  await chatAgentState("clear");
   await editor.flashNotification("Agent cleared");
 }
 
