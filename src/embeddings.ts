@@ -616,10 +616,12 @@ export async function searchEmbeddingsForChat(
       results.push({ name: r.page, content: pageContent });
 
       const bestChild = r.children[0];
-      const similarity = r.score / r.children.length;
+      const childCount = r.children.length || 1;
+      const rawSimilarity = (r.score ?? 0) / childCount;
+      const similarity = Number.isFinite(rawSimilarity) ? Math.round(rawSimilarity * 100) : 0;
       contextPages.push({
         name: r.page,
-        similarity: Math.round(similarity * 100),
+        similarity,
         excerpt: bestChild?.text?.substring(0, 100) || "",
       });
     }
