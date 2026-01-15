@@ -7,6 +7,7 @@ import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
+import { inferProviderType } from "./model-discovery.ts";
 import type {
   AISettings,
   ChatMessage,
@@ -123,7 +124,7 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
   const providerKey = parts[0];
   const modelName = parts.slice(1).join(":");
   const providerConfig = getProviderConfig(providerKey);
-  const providerType = providerConfig.provider || providerKey;
+  const providerType = providerConfig.provider || inferProviderType(providerKey);
   const defaults = getProviderDefaults(providerType);
 
   return {
@@ -148,7 +149,7 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
   const providerKey = parts[0];
   const modelName = parts.slice(1).join(":");
   const providerConfig = getProviderConfig(providerKey);
-  const providerType = providerConfig.provider || providerKey;
+  const providerType = providerConfig.provider || inferProviderType(providerKey);
   const defaults = getProviderDefaults(providerType);
 
   return {
@@ -173,12 +174,11 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
   const providerKey = parts[0];
   const modelName = parts.slice(1).join(":");
   const providerConfig = getProviderConfig(providerKey);
-  // Map "openai" to "dalle" for the ImageProvider enum
-  let providerType = providerConfig.provider || providerKey;
+  let providerType = providerConfig.provider || inferProviderType(providerKey);
   if (providerType.toLowerCase() === "openai") {
     providerType = "dalle";
   }
-  const defaults = getProviderDefaults(providerKey);
+  const defaults = getProviderDefaults(providerType);
 
   return {
     name: modelName,

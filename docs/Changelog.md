@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.6.5 (unreleased)
+
+- Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
+
 ## 0.6.4 (2025-01-13)
 
 - Image generation supports gpt-image models now

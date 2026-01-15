@@ -45,7 +45,7 @@ type DiscoveryProvider = {
   getContextLimit?: (modelName: string) => Promise<number | null>;
 };
 
-function inferProviderType(keyName: string): string {
+export function inferProviderType(keyName: string): string {
   const lower = keyName.toLowerCase();
   if (lower.includes("ollama")) return "ollama";
   if (lower.includes("gemini")) return "gemini";
