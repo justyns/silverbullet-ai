@@ -117,6 +117,13 @@ export function getProviderDefaults(providerType: string): ProviderDefaults {
 }
 
 export function parseDefaultModelString(modelString: string): ModelConfig | null {
+  if (typeof modelString !== "string") {
+    console.error(
+      `[silverbullet-ai] defaultTextModel must be a string like "provider:modelName", ` +
+        `but got ${typeof modelString}. Check your config.`,
+    );
+    return null;
+  }
   const parts = modelString.split(":");
   if (parts.length < 2) {
     console.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
@@ -142,6 +149,13 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
 }
 
 export function parseDefaultEmbeddingModelString(modelString: string): EmbeddingModelConfig | null {
+  if (typeof modelString !== "string") {
+    console.error(
+      `[silverbullet-ai] defaultEmbeddingModel must be a string like "provider:modelName", ` +
+        `but got ${typeof modelString}. Check your config.`,
+    );
+    return null;
+  }
   const parts = modelString.split(":");
   if (parts.length < 2) {
     console.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
@@ -167,6 +181,13 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
 }
 
 export function parseDefaultImageModelString(modelString: string): ImageModelConfig | null {
+  if (typeof modelString !== "string") {
+    console.error(
+      `[silverbullet-ai] defaultImageModel must be a string like "provider:modelName", ` +
+        `but got ${typeof modelString}. Check your config.`,
+    );
+    return null;
+  }
   const parts = modelString.split(":");
   if (parts.length < 2) {
     console.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);

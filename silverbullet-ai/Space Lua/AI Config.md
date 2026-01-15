@@ -8,7 +8,7 @@ This page defines the JSON Schema for all silverbullet-ai configuration settings
 ### Configuration Schema
 
 ```space-lua
--- priority: 50
+-- priority: 100
 
 -- Namespace where the helper functions and stuff will go
 ai = {}
@@ -60,7 +60,17 @@ config.define("ai.providers", {
 })
 
 config.define("ai.defaultTextModel", {
-  description = "Default model to use on startup (format: 'provider:modelName')",
+  description = "Default text model to use on startup (format: 'provider:modelName')",
+  type = "string",
+})
+
+config.define("ai.defaultEmbeddingModel", {
+  description = "Default embedding model to use on startup (format: 'provider:modelName')",
+  type = "string",
+})
+
+config.define("ai.defaultImageModel", {
+  description = "Default image model to use on startup (format: 'provider:modelName')",
   type = "string",
 })
 
