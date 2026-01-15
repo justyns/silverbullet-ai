@@ -11,7 +11,8 @@ config.set {
       ollama = {
         baseUrl = "http://localhost:11434/v1",
         useProxy = false,  -- Bypass SilverBullet's proxy for local requests
-        preferredModels = {"llama3.2", "qwen2.5-coder"}
+        preferredModels = {"llama3.2", "qwen2.5-coder"},
+        timeout = 180000
       }
     },
     -- Optional: auto-select a default model on startup
@@ -86,6 +87,7 @@ config.set {
 
 - **useProxy**: Set to `false` to bypass SilverBullet's proxy and make requests directly from the client browser.  Useful if running ollama somewhere accessible by the client, but not by the silverbullet server.
 - **requireAuth**: Ollama defaults to `false`. Set to `true` if you have a reverse proxy providing authentication.
+- **timeout**: Request timeout in milliseconds. Default: 120000 (2 minutes). Increase this for large models that take a while to generate responses. For streaming requests, the timeout only applies to the initial connection - once the model starts responding, it can take as long as needed.
 
 ## Docker Configuration
 

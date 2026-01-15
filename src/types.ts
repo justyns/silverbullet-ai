@@ -235,6 +235,7 @@ export type ProviderConfig = {
   excludeModels?: string[];
   fetchModels?: boolean;
   showPricing?: boolean;
+  timeout?: number; // Request timeout in milliseconds
 };
 
 export type ProvidersConfig = {

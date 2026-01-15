@@ -8,8 +8,9 @@ export class DallEProvider extends AbstractImageProvider {
     modelName: string,
     baseUrl: string,
     useProxy: boolean = true,
+    timeout: number = 180000,
   ) {
-    super(apiKey, baseUrl, "DALL-E", modelName, true, useProxy);
+    super(apiKey, baseUrl, "DALL-E", modelName, true, useProxy, timeout);
   }
 
   async generateImage(

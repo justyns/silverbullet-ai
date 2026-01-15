@@ -20,7 +20,8 @@ config.set {
       },
       ollama = {
         baseUrl = "http://localhost:11434/v1",
-        preferredModels = {"llama3.2", "qwen2.5-coder"}
+        preferredModels = {"llama3.2", "qwen2.5-coder"},
+        timeout = 180000
       },
       gemini = {
         apiKey = "your-gemini-key",
@@ -65,6 +66,7 @@ With this configuration:
 | `useProxy` | Whether to use SilverBullet's proxy (default: true, set false for local services) |
 | `preferredModels` | Array of model names to show first in the picker |
 | `fetchModels` | Whether to fetch models from API (default: true). Set to `false` for APIs that don't support listing models - only `preferredModels` will be shown |
+| `timeout` | Request timeout in milliseconds. Defaults: OpenAI/Gemini: 60000 (60s), Ollama: 120000 (120s), Image generation: 180000 (180s). For streaming requests, timeout only applies to the initial connection - once data starts flowing, the request can take as long as needed. |
 
 ## Legacy Configuration (Deprecated)
 

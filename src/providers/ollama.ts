@@ -16,6 +16,7 @@ export class OllamaProvider extends AbstractProvider {
     requireAuth: false,
     useProxy: true,
     showPricing: false,
+    timeout: 120000,
   };
 
   override name = "Ollama";
@@ -28,8 +29,9 @@ export class OllamaProvider extends AbstractProvider {
     baseUrl: string,
     requireAuth: boolean,
     useProxy: boolean = true,
+    timeout: number = 120000,
   ) {
-    super("Ollama", apiKey, baseUrl, modelName, useProxy);
+    super("Ollama", apiKey, baseUrl, modelName, useProxy, timeout);
     this.requireAuth = requireAuth;
     this.openaiProvider = new OpenAIProvider(
       apiKey,
@@ -37,6 +39,7 @@ export class OllamaProvider extends AbstractProvider {
       baseUrl,
       requireAuth,
       useProxy,
+      timeout,
     );
   }
 
@@ -181,8 +184,9 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     baseUrl: string,
     requireAuth: boolean = false,
     useProxy: boolean = true,
+    timeout: number = 120000,
   ) {
-    super(apiKey, baseUrl, "Ollama", modelName, requireAuth, useProxy);
+    super(apiKey, baseUrl, "Ollama", modelName, requireAuth, useProxy, timeout);
   }
 
   // Use Ollama's newer /api/embed endpoint so we can do batch embeddings

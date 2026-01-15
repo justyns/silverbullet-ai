@@ -24,6 +24,7 @@ export class GeminiProvider extends AbstractProvider {
     requireAuth: true,
     useProxy: true,
     showPricing: true,
+    timeout: 60000,
   };
 
   override name = "Gemini";
@@ -32,9 +33,10 @@ export class GeminiProvider extends AbstractProvider {
     apiKey: string,
     modelName: string,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
     const baseUrl = "https://generativelanguage.googleapis.com";
-    super("Gemini", apiKey, baseUrl, modelName, useProxy);
+    super("Gemini", apiKey, baseUrl, modelName, useProxy, timeout);
   }
 
   async listModels(): Promise<any> {
@@ -133,8 +135,25 @@ export class GeminiProvider extends AbstractProvider {
         let fullContent = "";
         let usage: Usage | undefined;
 
+        // Timeout only applies to initial connection - cleared on first chunk
+        let timeoutId: number | undefined = setTimeout(() => {
+          source.close();
+          reject(
+            new Error(
+              `Streaming request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
+                `Increase timeout in provider config.`,
+            ),
+          );
+        }, this.timeout);
+
         source.addEventListener("message", (e: sseEvent) => {
           try {
+            // Clear timeout on first data - don't timeout while streaming
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = undefined;
+            }
+
             if (e.data === "[DONE]") {
               source.close();
               const response: ChatResponse = {
@@ -171,6 +190,10 @@ export class GeminiProvider extends AbstractProvider {
         });
 
         source.addEventListener("end", () => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+          }
           source.close();
           const response: ChatResponse = {
             content: fullContent,
@@ -183,6 +206,10 @@ export class GeminiProvider extends AbstractProvider {
         });
 
         source.addEventListener("error", (e: sseEvent) => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+          }
           console.error("SSE error:", e);
           source.close();
           reject(new Error(`SSE error: ${e.data}`));
@@ -259,8 +286,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     baseUrl: string = "https://generativelanguage.googleapis.com",
     requireAuth: boolean = true,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
-    super(apiKey, baseUrl, "Gemini", modelName, requireAuth, useProxy);
+    super(apiKey, baseUrl, "Gemini", modelName, requireAuth, useProxy, timeout);
   }
 
   async _generateEmbeddings(

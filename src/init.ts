@@ -109,6 +109,7 @@ const defaultProviderDefaults: ProviderDefaults = {
   requireAuth: true,
   useProxy: true,
   showPricing: true,
+  timeout: 60000,
 };
 
 export function getProviderDefaults(providerType: string): ProviderDefaults {
@@ -224,9 +225,10 @@ async function getAndConfigureEmbeddingModel() {
   await configureSelectedEmbeddingModel(selectedEmbeddingModel);
 }
 
-function setupImageProvider(model: ImageModelConfig) {
+function setupImageProvider(model: ImageModelConfig, timeout?: number) {
   const providerName = model.provider.toLowerCase();
   const useProxy = model.useProxy ?? true;
+  const effectiveTimeout = timeout ?? 180000;
   log("Provider name", providerName);
   switch (providerName) {
     case ImageProvider.DallE:
@@ -235,6 +237,7 @@ function setupImageProvider(model: ImageModelConfig) {
         model.modelName,
         model.baseUrl || "https://api.openai.com/v1",
         useProxy,
+        effectiveTimeout,
       );
       break;
     case ImageProvider.Mock:
@@ -250,9 +253,11 @@ function setupImageProvider(model: ImageModelConfig) {
   }
 }
 
-function setupAIProvider(model: ModelConfig) {
+function setupAIProvider(model: ModelConfig, timeout?: number) {
   const providerName = model.provider.toLowerCase();
   const useProxy = model.useProxy ?? true;
+  const defaults = getProviderDefaults(providerName);
+  const effectiveTimeout = timeout ?? defaults.timeout;
   switch (providerName) {
     case Provider.OpenAI:
       currentAIProvider = new OpenAIProvider(
@@ -261,10 +266,11 @@ function setupAIProvider(model: ModelConfig) {
         model.baseUrl || "https://api.openai.com/v1",
         model.requireAuth,
         useProxy,
+        effectiveTimeout,
       );
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName, useProxy);
+      currentAIProvider = new GeminiProvider(apiKey, model.modelName, useProxy, effectiveTimeout);
       break;
     case Provider.Ollama:
       currentAIProvider = new OllamaProvider(
@@ -273,6 +279,7 @@ function setupAIProvider(model: ModelConfig) {
         model.baseUrl || "http://localhost:11434/v1",
         model.requireAuth,
         useProxy,
+        effectiveTimeout,
       );
       break;
     case Provider.Mock:
@@ -291,9 +298,11 @@ function setupAIProvider(model: ModelConfig) {
   return currentAIProvider;
 }
 
-function setupEmbeddingProvider(model: EmbeddingModelConfig) {
+function setupEmbeddingProvider(model: EmbeddingModelConfig, timeout?: number) {
   const providerName = model.provider.toLowerCase();
   const useProxy = model.useProxy ?? true;
+  const defaults = getProviderDefaults(providerName);
+  const effectiveTimeout = timeout ?? defaults.timeout;
   switch (providerName) {
     case EmbeddingProvider.OpenAI:
       currentEmbeddingProvider = new OpenAIEmbeddingProvider(
@@ -302,6 +311,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         model.baseUrl || "https://api.openai.com/v1",
         model.requireAuth ?? true,
         useProxy,
+        effectiveTimeout,
       );
       break;
     case EmbeddingProvider.Gemini:
@@ -311,6 +321,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         undefined,
         model.requireAuth ?? true,
         useProxy,
+        effectiveTimeout,
       );
       break;
     case EmbeddingProvider.Ollama:
@@ -320,6 +331,7 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig) {
         model.baseUrl || "http://localhost:11434",
         model.requireAuth ?? false,
         useProxy,
+        effectiveTimeout,
       );
       break;
     case EmbeddingProvider.Mock:
@@ -397,8 +409,11 @@ export async function configureSelectedModel(model: ModelConfig) {
     useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
   };
 
+  // Get timeout from provider config
+  const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
+
   currentModel = effectiveModel;
-  return setupAIProvider(effectiveModel);
+  return setupAIProvider(effectiveModel, timeout);
 }
 
 export async function configureSelectedImageModel(model: ImageModelConfig) {
@@ -433,8 +448,11 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
   };
 
+  // Get timeout from provider config (default 180s for image generation)
+  const timeout = providerConfig.timeout ?? 180000;
+
   currentImageModel = effectiveModel;
-  setupImageProvider(effectiveModel);
+  setupImageProvider(effectiveModel, timeout);
 }
 
 export async function configureSelectedEmbeddingModel(
@@ -471,8 +489,11 @@ export async function configureSelectedEmbeddingModel(
     useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
   };
 
+  // Get timeout from provider config
+  const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
+
   currentEmbeddingModel = effectiveModel;
-  setupEmbeddingProvider(effectiveModel);
+  setupEmbeddingProvider(effectiveModel, timeout);
 }
 
 async function loadAndMergeSettings() {

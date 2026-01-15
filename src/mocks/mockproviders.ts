@@ -14,8 +14,9 @@ export class MockProvider extends AbstractProvider {
     apiKey: string,
     modelName: string,
     baseUrl: string = "http://localhost",
+    timeout: number = 60000,
   ) {
-    super(apiKey, baseUrl, "mock", modelName);
+    super("mock", apiKey, baseUrl, modelName, true, timeout);
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
@@ -64,8 +65,9 @@ export class MockImageProvider extends AbstractImageProvider {
     apiKey: string,
     modelName: string,
     baseUrl: string = "http://localhost",
+    timeout: number = 180000,
   ) {
-    super(apiKey, baseUrl, "mock", modelName);
+    super(apiKey, baseUrl, "mock", modelName, true, true, timeout);
   }
 
   generateImage(_options: ImageGenerationOptions): Promise<string> {
@@ -82,8 +84,9 @@ export class MockEmbeddingProvider extends AbstractEmbeddingProvider {
     apiKey: string,
     modelName: string,
     baseUrl: string = "http://localhost",
+    timeout: number = 60000,
   ) {
-    super(apiKey, baseUrl, "mock", modelName);
+    super(apiKey, baseUrl, "mock", modelName, true, true, timeout);
   }
 
   _generateEmbeddings(

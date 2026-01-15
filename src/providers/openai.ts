@@ -25,6 +25,7 @@ export class OpenAIProvider extends AbstractProvider {
     requireAuth: true,
     useProxy: false,
     showPricing: true,
+    timeout: 60000,
   };
 
   override name = "OpenAI";
@@ -36,8 +37,9 @@ export class OpenAIProvider extends AbstractProvider {
     baseUrl: string,
     requireAuth: boolean,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
-    super("OpenAI", apiKey, baseUrl, modelName, useProxy);
+    super("OpenAI", apiKey, baseUrl, modelName, useProxy, timeout);
     this.requireAuth = requireAuth;
   }
 
@@ -93,8 +95,25 @@ export class OpenAIProvider extends AbstractProvider {
           function: { name: string; arguments: string };
         }>();
 
+        // Timeout only applies to initial connection - cleared on first chunk
+        let timeoutId: number | undefined = setTimeout(() => {
+          source.close();
+          reject(
+            new Error(
+              `Streaming request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
+                `Increase timeout in provider config.`,
+            ),
+          );
+        }, this.timeout);
+
         source.addEventListener("message", (e: sseEvent) => {
           try {
+            // Clear timeout on first data - don't timeout while streaming
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = undefined;
+            }
+
             if (e.data === "[DONE]") {
               source.close();
 
@@ -165,6 +184,10 @@ export class OpenAIProvider extends AbstractProvider {
         });
 
         source.addEventListener("error", (e: sseEvent) => {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = undefined;
+          }
           console.error("SSE error:", e.data, e);
           source.close();
           reject(new Error(`SSE error: ${e.data}`));
@@ -290,8 +313,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     baseUrl: string,
     requireAuth: boolean = true,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
-    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth, useProxy);
+    super(apiKey, baseUrl, "OpenAI", modelName, requireAuth, useProxy, timeout);
   }
 
   async _generateEmbeddings(

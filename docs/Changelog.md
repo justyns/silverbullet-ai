@@ -5,6 +5,7 @@ This page is a brief overview of each version.
 ## 0.6.5 (unreleased)
 
 - Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
+- Add configurable `timeout` option per provider for slow models
 
 ## 0.6.4 (2025-01-13)
 

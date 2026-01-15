@@ -12,6 +12,7 @@ export interface EmbeddingProviderInterface {
   baseUrl: string;
   modelName: string;
   useProxy: boolean;
+  timeout: number;
   _generateEmbeddings: (
     options: EmbeddingGenerationOptions,
   ) => Promise<Array<number>>;
@@ -32,6 +33,7 @@ export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInte
   modelName: string;
   requireAuth: boolean;
   useProxy: boolean;
+  timeout: number;
 
   constructor(
     apiKey: string,
@@ -40,6 +42,7 @@ export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInte
     modelName: string,
     requireAuth: boolean = true,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
@@ -47,10 +50,25 @@ export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInte
     this.modelName = modelName;
     this.requireAuth = requireAuth;
     this.useProxy = useProxy;
+    this.timeout = timeout;
   }
 
-  protected fetch(url: string, options: RequestInit): Promise<Response> {
-    return this.useProxy ? fetch(url, options) : nativeFetch(url, options);
+  protected async fetch(url: string, options: RequestInit): Promise<Response> {
+    try {
+      const fetchFn = this.useProxy ? fetch : nativeFetch;
+      return await fetchFn(url, {
+        ...options,
+        signal: AbortSignal.timeout(this.timeout),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        throw new Error(
+          `Request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
+            `Increase timeout in provider config.`,
+        );
+      }
+      throw error;
+    }
   }
 
   abstract _generateEmbeddings(

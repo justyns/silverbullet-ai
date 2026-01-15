@@ -12,6 +12,7 @@ export type ProviderDefaults = {
   requireAuth: boolean;
   useProxy: boolean;
   showPricing: boolean;
+  timeout: number;
 };
 
 export interface ProviderInterface {
@@ -20,6 +21,7 @@ export interface ProviderInterface {
   baseUrl: string;
   modelName: string;
   useProxy: boolean;
+  timeout: number;
   streamChat: (options: StreamChatOptions) => Promise<ChatResponse>;
   chat: (
     messages: ChatMessage[],
@@ -47,6 +49,7 @@ export abstract class AbstractProvider implements ProviderInterface {
   baseUrl: string;
   modelName: string;
   useProxy: boolean;
+  timeout: number;
 
   constructor(
     name: string,
@@ -54,12 +57,14 @@ export abstract class AbstractProvider implements ProviderInterface {
     baseUrl: string,
     modelName: string,
     useProxy: boolean = true,
+    timeout: number = 60000,
   ) {
     this.name = name;
     this.apiKey = apiKey;
     this.baseUrl = baseUrl;
     this.modelName = modelName;
     this.useProxy = useProxy;
+    this.timeout = timeout;
   }
 
   abstract streamChat(options: StreamChatOptions): Promise<ChatResponse>;
@@ -96,8 +101,22 @@ export abstract class AbstractProvider implements ProviderInterface {
     return Promise.resolve(null);
   }
 
-  protected fetch(url: string, options: RequestInit): Promise<Response> {
-    return this.useProxy ? fetch(url, options) : nativeFetch(url, options);
+  protected async fetch(url: string, options: RequestInit): Promise<Response> {
+    try {
+      const fetchFn = this.useProxy ? fetch : nativeFetch;
+      return await fetchFn(url, {
+        ...options,
+        signal: AbortSignal.timeout(this.timeout),
+      });
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "TimeoutError") {
+        throw new Error(
+          `Request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
+            `Increase timeout in provider config.`,
+        );
+      }
+      throw error;
+    }
   }
 
   async streamChatIntoEditor(
