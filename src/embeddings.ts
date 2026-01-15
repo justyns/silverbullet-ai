@@ -612,13 +612,17 @@ export async function searchEmbeddingsForChat(
     const contextPages: EmbeddingsContext["pages"] = [];
 
     for (const r of searchResults) {
-      const pageContent = r.children.map((child) => child.text).join("\n\n");
-      results.push({ name: r.page, content: pageContent });
-
       const bestChild = r.children[0];
       const childCount = r.children.length || 1;
       const rawSimilarity = (r.score ?? 0) / childCount;
       const similarity = Number.isFinite(rawSimilarity) ? Math.round(rawSimilarity * 100) : 0;
+
+      if (similarity < 15) {
+        continue;
+      }
+
+      const pageContent = r.children.map((child) => child.text).join("\n\n");
+      results.push({ name: r.page, content: pageContent });
       contextPages.push({
         name: r.page,
         similarity,
@@ -628,7 +632,7 @@ export async function searchEmbeddingsForChat(
 
     return {
       results,
-      context: { pages: contextPages, totalResults: searchResults.length },
+      context: { pages: contextPages, totalResults: results.length },
     };
   } catch (error) {
     console.error("Error in searchEmbeddingsForChat:", error);
