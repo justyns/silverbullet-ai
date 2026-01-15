@@ -54,6 +54,10 @@ config.define("ai.providers", {
         type = "boolean",
         description = "Whether to fetch models from API (default: true)",
       },
+      timeout = {
+        type = "number",
+        description = "Request timeout in milliseconds. Defaults: OpenAI/Gemini 60000, Ollama 120000, Image 180000. For streaming, timeout only applies to initial connection.",
+      },
     },
     additionalProperties = false,
   },
