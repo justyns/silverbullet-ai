@@ -141,6 +141,12 @@ functions:
     path: src/chat-panel.ts:getChatStatus
   resetSessionTokenUsage:
     path: src/chat-panel.ts:resetSessionTokenUsage
+  toggleRagEnabled:
+    path: src/chat-panel.ts:toggleRagEnabled
+  restorePanelState:
+    path: src/chat-panel.ts:restorePanelState
+    events:
+      - editor:pageLoaded
   submitApproval:
     path: src/tools.ts:submitApproval
   requestWriteApproval:

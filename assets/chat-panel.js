@@ -30,13 +30,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const newChatBtn = document.getElementById("new-chat-btn");
   const exportBtn = document.getElementById("export-btn");
   const closeBtn = document.getElementById("close-btn");
-  const agentIndicator = document.getElementById("agent-indicator");
-  const agentNameEl = document.getElementById("agent-name");
+  const panelTitleEl = document.getElementById("panel-title");
   const clearAgentBtn = document.getElementById("clear-agent-btn");
   const tokenDisplayEl = document.getElementById("token-display");
   const tokenCountEl = document.getElementById("token-count");
   const contextLimitEl = document.getElementById("context-limit");
   const ragIndicatorEl = document.getElementById("rag-indicator");
+  const modelDisplayEl = document.getElementById("model-display");
+  const modelNameEl = document.getElementById("model-name");
 
   let chatHistory = [];
   let chatData = { id: null, messages: [] };
@@ -48,6 +49,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   }
 
   let lastRagEnabled = false;
+  let lastRagIndexEnabled = false;
 
   async function updateChatStatus() {
     try {
@@ -55,6 +57,12 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         "system.invokeFunction",
         "silverbullet-ai.getChatStatus",
       );
+
+      // Update model name
+      modelNameEl.textContent = status.model.name || "--";
+      modelDisplayEl.title = status.model.name
+        ? `Model: ${status.model.name} (click to change)`
+        : "Click to select a model";
 
       // Update token display
       tokenCountEl.textContent = formatNumber(status.tokens.total_tokens);
@@ -71,18 +79,19 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       }
 
       // Update RAG status
+      lastRagIndexEnabled = status.rag.indexEnabled;
       lastRagEnabled = status.rag.enabled && status.rag.indexEnabled;
       ragIndicatorEl.classList.remove("enabled", "disabled", "searching");
 
       if (lastRagEnabled) {
         ragIndicatorEl.classList.add("enabled");
-        ragIndicatorEl.title = "Embeddings search (RAG) enabled";
+        ragIndicatorEl.title = "RAG enabled (click to disable)";
       } else {
         ragIndicatorEl.classList.add("disabled");
         if (!status.rag.indexEnabled) {
-          ragIndicatorEl.title = "Embeddings indexing disabled";
+          ragIndicatorEl.title = "Embeddings indexing is disabled in config";
         } else {
-          ragIndicatorEl.title = "Embeddings search disabled in chat";
+          ragIndicatorEl.title = "RAG disabled (click to enable)";
         }
       }
     } catch (e) {
@@ -498,11 +507,16 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   function updateAgentIndicator(agent) {
     if (agent && agent.aiagent) {
-      agentNameEl.textContent = agent.aiagent.name ||
-        agent.ref.split("/").pop() || agent.ref;
-      agentIndicator.classList.remove("hidden");
+      const agentName = agent.aiagent.name || agent.ref.split("/").pop() || agent.ref;
+      panelTitleEl.textContent = agentName;
+      panelTitleEl.classList.add("has-agent");
+      panelTitleEl.title = "Click to change agent";
+      clearAgentBtn.classList.remove("hidden");
     } else {
-      agentIndicator.classList.add("hidden");
+      panelTitleEl.textContent = "AI Assistant";
+      panelTitleEl.classList.remove("has-agent");
+      panelTitleEl.title = "Click to select agent";
+      clearAgentBtn.classList.add("hidden");
     }
   }
 
@@ -598,6 +612,44 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   exportBtn.addEventListener("click", exportChat);
   closeBtn.addEventListener("click", closePanel);
   clearAgentBtn.addEventListener("click", clearAgent);
+
+  modelDisplayEl.addEventListener("click", async function () {
+    try {
+      await syscall("system.invokeCommand", "AI: Select Text Model from Config");
+      await updateChatStatus();
+    } catch (e) {
+      console.error("Failed to open model selector:", e);
+    }
+  });
+
+  ragIndicatorEl.addEventListener("click", async function () {
+    if (!lastRagIndexEnabled) {
+      await syscall(
+        "editor.flashNotification",
+        "Embeddings indexing is disabled. Enable 'indexEmbeddings' in AI config first.",
+        "error",
+      );
+      return;
+    }
+    try {
+      await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.toggleRagEnabled",
+      );
+      await updateChatStatus();
+    } catch (e) {
+      console.error("Failed to toggle RAG:", e);
+    }
+  });
+
+  panelTitleEl.addEventListener("click", async function () {
+    try {
+      await syscall("system.invokeCommand", "AI: Select Agent");
+      await loadCurrentAgent();
+    } catch (e) {
+      console.error("Failed to open agent selector:", e);
+    }
+  });
 
   document
     .getElementById("autocomplete-dropdown")

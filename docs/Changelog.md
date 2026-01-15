@@ -6,6 +6,10 @@ This page is a brief overview of each version.
 
 - Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
 - Add configurable `timeout` option per provider for slow models
+- Add model name to assistant chat header, click to change the model for the session
+- Click RAG icon to enable/disable embeddings search temporarily
+- Display agent name and click it to change to a different agent
+- Remember the state of the assistant chat panel and re-open it on page reload
 
 ## 0.6.4 (2025-01-13)
 

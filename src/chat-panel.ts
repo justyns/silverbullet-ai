@@ -32,6 +32,7 @@ interface StreamBuffer {
 const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 const TOKEN_USAGE_KEY = "ai.panelTokenUsage";
+const PANEL_STATE_KEY = "ai.panelOpen";
 
 /**
  * Helper to avoid exporting get/set/clear separately in the plug yaml
@@ -84,10 +85,9 @@ export async function openAIAssistant() {
     "silverbullet-ai",
     "assets/chat-panel.js",
   );
-  // Use panel size 1 instead of 2 for better mobile experience
-  // This gives more room to both the document and the chat panel
   await editor.showPanel("rhs", 1, html, script);
   isPanelOpen = true;
+  await clientStore.set(PANEL_STATE_KEY, true);
 }
 
 /**
@@ -110,6 +110,7 @@ export async function openAIAssistantModal() {
   );
   await editor.showPanel("modal", 20, html, script);
   isPanelOpen = true;
+  await clientStore.set(PANEL_STATE_KEY, true);
 }
 
 /**
@@ -119,6 +120,7 @@ export async function closeAIAssistant() {
   await editor.hidePanel("rhs");
   await editor.hidePanel("modal");
   isPanelOpen = false;
+  await clientStore.set(PANEL_STATE_KEY, false);
 }
 
 /**
@@ -541,4 +543,40 @@ export async function getChatStatus(): Promise<ChatStatus> {
       contextLimit,
     },
   };
+}
+
+/**
+ * Toggles the RAG (searchEmbeddings) setting for the current session
+ */
+export async function toggleRagEnabled(): Promise<void> {
+  if (!aiSettings) {
+    await editor.flashNotification("Settings not loaded", "error");
+    return;
+  }
+
+  if (!aiSettings.chat) {
+    aiSettings.chat = {};
+  }
+
+  const newValue = !(aiSettings.chat.searchEmbeddings ?? false);
+  aiSettings.chat.searchEmbeddings = newValue;
+
+  await editor.flashNotification(
+    newValue ? "RAG enabled (session only)" : "RAG disabled (session only)",
+    "info",
+  );
+}
+
+/**
+ * Re-opens the chat panel if it was o pen before
+ */
+export async function restorePanelState(): Promise<void> {
+  try {
+    const wasOpen = await clientStore.get(PANEL_STATE_KEY);
+    if (wasOpen) {
+      await openAIAssistant();
+    }
+  } catch (e) {
+    console.error("Failed to restore panel state:", e);
+  }
 }
