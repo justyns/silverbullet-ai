@@ -28,6 +28,7 @@ interface StreamBuffer {
   chunks: string[];
   status: "streaming" | "complete" | "error";
   error?: string;
+  statusMessage?: string;
 }
 const streamBuffers = new Map<string, StreamBuffer>();
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
@@ -312,8 +313,9 @@ async function runToolLoop(
     tools,
     luaTools,
     chatFunction: (msgs, t) => currentAIProvider.chat(msgs, t),
-    onToolCall: (_toolName, _args, _result) => {
-      // Tool calls are already formatted in toolCallsText and used below
+    onToolCall: (toolName, _args, result) => {
+      const status = result.success ? "✓" : "✗";
+      buffer.statusMessage = `${status} ${toolName}`;
     },
     permissions: currentChatAgent?.aiagent
       ? {
@@ -373,7 +375,7 @@ async function streamFinalResponse(
  */
 export function getPanelChatChunk(
   streamId: string,
-): { chunks: string[]; status: string; error?: string } {
+): { chunks: string[]; status: string; error?: string; statusMessage?: string } {
   const buffer = streamBuffers.get(streamId);
 
   if (!buffer) {
@@ -383,9 +385,10 @@ export function getPanelChatChunk(
   const chunks = [...buffer.chunks];
   buffer.chunks = [];
 
+  const statusMessage = buffer.statusMessage;
   if (buffer.status !== "streaming") {
+    buffer.statusMessage = undefined;
     setTimeout(() => {
-      // Clean up completed buffer
       streamBuffers.delete(streamId);
     }, 5000);
   }
@@ -394,6 +397,7 @@ export function getPanelChatChunk(
     chunks,
     status: buffer.status,
     error: buffer.error,
+    statusMessage,
   };
 }
 

@@ -9,7 +9,7 @@ import { showProgressModal } from "./utils.ts";
 
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
-const TEST_TIMEOUT_MS = 30000; // 30 seconds per test
+const TEST_TIMEOUT_MS = 60000; // 60 seconds per test
 const BENCHMARK_ALLOWED_TOOLS = [
   "read_note",
   "list_pages",

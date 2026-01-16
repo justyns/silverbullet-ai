@@ -381,6 +381,10 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
         }
 
+        if (result.statusMessage) {
+          userInput.placeholder = `🔧 ${result.statusMessage}`;
+        }
+
         if (result.status === "complete") {
           isStreaming = false;
           messageEl.classList.remove("streaming");
@@ -417,6 +421,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
     sendBtn.disabled = false;
     userInput.disabled = false;
+    userInput.placeholder = "Type a message...";
     userInput.focus();
   }
 

@@ -432,6 +432,8 @@ export async function configureSelectedModel(model: ModelConfig) {
 
   // Get timeout from provider config
   const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
+  log(`Provider config for "${configKey}":`, providerConfig);
+  log(`Using timeout: ${timeout}ms (${timeout / 1000}s)`);
 
   currentModel = effectiveModel;
   return setupAIProvider(effectiveModel, timeout);
