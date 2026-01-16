@@ -30,9 +30,6 @@ config.set {
       -- Dynamic context (Lua expression evaluated at chat time)
       customContext = [["Today is " .. os.date("%Y-%m-%d")]],
 
-      -- Custom enrichment functions to run on messages
-      customEnrichFunctions = {},
-
       -- Skip tool approval prompts (useful for benchmarks/automation)
       skipToolApproval = false
     }

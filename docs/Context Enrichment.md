@@ -30,8 +30,7 @@ config.set("ai", {
   chat = {
     parseWikiLinks = true,      -- Extract content from [[wiki-links]]
     searchEmbeddings = true,    -- Search indexed embeddings for context
-    bakeMessages = true,        -- Render templates/queries before sending
-    customEnrichFunctions = {}  -- List of custom function names
+    bakeMessages = true         -- Render templates/queries before sending
   }
 })
 ```

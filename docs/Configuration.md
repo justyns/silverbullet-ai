@@ -85,8 +85,6 @@ config.set {
     -- to true to provide the AI: Search command.
     -- Be sure to read the relevant documentation and warnings first.
     indexEmbeddings = false,
-    indexEmbeddingsExcludePages = {},
-    indexEmbeddingsExcludeStrings = {},
     indexSummaryModelName = "ollama-gemma2",
     indexSummary = false,
 
