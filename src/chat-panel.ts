@@ -10,7 +10,7 @@ import type {
 } from "./types.ts";
 import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
-import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
+import { convertToOpenAITools, discoverTools, formatReasoningBlock, runAgenticChat } from "./tools.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
 import { getModelContextLimit as lookupModelContextLimit } from "./model-metadata.ts";
 
@@ -26,6 +26,7 @@ let tokenUsageLoaded = false;
 
 interface StreamBuffer {
   chunks: string[];
+  reasoningChunks: string[];
   status: "streaming" | "complete" | "error";
   error?: string;
   statusMessage?: string;
@@ -165,6 +166,7 @@ export async function startPanelChat(
 
     streamBuffers.set(streamId, {
       chunks: [],
+      reasoningChunks: [],
       status: "streaming",
     });
 
@@ -325,17 +327,18 @@ async function runToolLoop(
       : undefined,
   });
 
-  // Update usage to reflect current context size (not cumulative)
-  if (result.usage) {
-    sessionTokenUsage.prompt_tokens = result.usage.prompt_tokens;
-    sessionTokenUsage.completion_tokens = result.usage.completion_tokens;
-    sessionTokenUsage.total_tokens = result.usage.total_tokens;
-    saveTokenUsage();
-  }
+  updateTokenUsage(result.usage);
 
   if (result.toolCallsText) {
     buffer.chunks.push(result.toolCallsText);
   }
+
+  // If reasoning exists and enabled, prepend as code block
+  if (result.finalReasoning && aiSettings?.chat?.showReasoning) {
+    const reasoningBlock = formatReasoningBlock(result.finalReasoning);
+    buffer.chunks.push(reasoningBlock);
+  }
+
   buffer.chunks.push(result.finalResponse);
   buffer.status = "complete";
 }
@@ -355,14 +358,16 @@ async function streamFinalResponse(
     onChunk: (chunk: string) => {
       buffer.chunks.push(chunk);
     },
+    onReasoningChunk: (chunk: string) => {
+      buffer.reasoningChunks.push(chunk);
+    },
     onComplete: (response) => {
-      // Update usage to reflect current context size (not cumulative)
-      if (response.usage) {
-        sessionTokenUsage.prompt_tokens = response.usage.prompt_tokens;
-        sessionTokenUsage.completion_tokens = response.usage.completion_tokens;
-        sessionTokenUsage.total_tokens = response.usage.total_tokens;
-        saveTokenUsage();
+      // If reasoning exists and enabled, prepend as code block
+      if (buffer.reasoningChunks.length > 0 && aiSettings?.chat?.showReasoning) {
+        const reasoningBlock = formatReasoningBlock(buffer.reasoningChunks.join(""));
+        buffer.chunks.unshift(reasoningBlock);
       }
+      updateTokenUsage(response.usage);
       buffer.status = "complete";
     },
   });
@@ -492,6 +497,17 @@ async function saveTokenUsage(): Promise<void> {
 }
 
 /**
+ * Updates session token usage from a response and persists it.
+ */
+function updateTokenUsage(usage: Usage | undefined): void {
+  if (!usage) return;
+  sessionTokenUsage.prompt_tokens = usage.prompt_tokens;
+  sessionTokenUsage.completion_tokens = usage.completion_tokens;
+  sessionTokenUsage.total_tokens = usage.total_tokens;
+  saveTokenUsage();
+}
+
+/**
  * Loads token usage from clientStore (called once on first getChatStatus call).
  */
 async function loadPersistedTokenUsage(): Promise<void> {
@@ -524,6 +540,9 @@ export interface ChatStatus {
     enabled: boolean;
     indexEnabled: boolean;
   };
+  reasoning: {
+    enabled: boolean;
+  };
   tokens: Usage;
   model: {
     name: string | null;
@@ -550,6 +569,9 @@ export async function getChatStatus(): Promise<ChatStatus> {
       enabled: aiSettings?.chat?.searchEmbeddings ?? false,
       indexEnabled: aiSettings?.indexEmbeddings ?? false,
     },
+    reasoning: {
+      enabled: aiSettings?.chat?.showReasoning ?? false,
+    },
     tokens: { ...sessionTokenUsage },
     model: {
       name: model?.name ?? null,
@@ -559,9 +581,13 @@ export async function getChatStatus(): Promise<ChatStatus> {
 }
 
 /**
- * Toggles the RAG (searchEmbeddings) setting for the current session
+ * Toggles a chat setting for the current session only.
  */
-export async function toggleRagEnabled(): Promise<void> {
+async function toggleChatSetting(
+  settingKey: "searchEmbeddings" | "showReasoning",
+  enabledMessage: string,
+  disabledMessage: string,
+): Promise<void> {
   if (!aiSettings) {
     await editor.flashNotification("Settings not loaded", "error");
     return;
@@ -571,12 +597,34 @@ export async function toggleRagEnabled(): Promise<void> {
     aiSettings.chat = {};
   }
 
-  const newValue = !(aiSettings.chat.searchEmbeddings ?? false);
-  aiSettings.chat.searchEmbeddings = newValue;
+  const newValue = !(aiSettings.chat[settingKey] ?? false);
+  aiSettings.chat[settingKey] = newValue;
 
   await editor.flashNotification(
-    newValue ? "RAG enabled (session only)" : "RAG disabled (session only)",
+    newValue ? enabledMessage : disabledMessage,
     "info",
+  );
+}
+
+/**
+ * Toggles the RAG (searchEmbeddings) setting for the current session
+ */
+export function toggleRagEnabled(): Promise<void> {
+  return toggleChatSetting(
+    "searchEmbeddings",
+    "RAG enabled (session only)",
+    "RAG disabled (session only)",
+  );
+}
+
+/**
+ * Toggles the reasoning display setting for the current session
+ */
+export function toggleReasoningEnabled(): Promise<void> {
+  return toggleChatSetting(
+    "showReasoning",
+    "Reasoning display enabled (session only)",
+    "Reasoning display disabled (session only)",
   );
 }
 

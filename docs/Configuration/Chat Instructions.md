@@ -31,7 +31,10 @@ config.set {
       customContext = [["Today is " .. os.date("%Y-%m-%d")]],
 
       -- Skip tool approval prompts (useful for benchmarks/automation)
-      skipToolApproval = false
+      skipToolApproval = false,
+
+      -- Show reasoning/thinking blocks from models that support it
+      showReasoning = true
     }
   }
 }
@@ -118,6 +121,24 @@ config.set {
 ```
 
 Now the assistant will know your location for weather queries, timezone for scheduling, etc.
+
+## Reasoning/Thinking Display
+
+Some models (like DeepSeek, Ollama models with `--think`, and OpenAI o1/o3) support "reasoning" or "thinking" output - the model's internal thought process before generating a response.
+
+When **showReasoning** is `true` (the default), these reasoning blocks are displayed as collapsible sections in both the Chat Panel and "Chat on Page" responses.
+
+```lua
+config.set {
+  ai = {
+    chat = {
+      showReasoning = true  -- Show reasoning/thinking blocks (default)
+    }
+  }
+}
+```
+
+The reasoning appears as a collapsible `reasoning` code block that can be expanded to see the model's thought process.
 
 **Example - Combine profile with date:**
 

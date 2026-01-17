@@ -22,6 +22,9 @@ export function isPathAllowed(page: string, allowedPaths: string[] | undefined):
 // Pattern to match ```toolcall\n{json}\n``` fenced code blocks
 const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
 
+// Pattern to match ```reasoning\n{content}\n``` fenced code blocks
+const REASONING_BLOCK_PATTERN = /```reasoning\n[\s\S]*?\n```\n?/g;
+
 export type ToolCallData = {
   id: string;
   name: string;
@@ -65,6 +68,18 @@ export function renderToolCallHtml(data: ToolCallData): string {
     ${argsHtml}
     <div class="tool-result"><strong>Result:</strong><pre>${escapedDisplay}</pre></div>
   </div>
+</details>`;
+}
+
+/**
+ * Renders reasoning/thinking content as a collapsible HTML block.
+ * Similar pattern to tool calls but with distinct styling.
+ */
+export function renderReasoningHtml(reasoning: string): string {
+  const escapedReasoning = escapeHtml(reasoning);
+  return `<details class="reasoning-block">
+  <summary>💭 <strong>Reasoning</strong></summary>
+  <div class="reasoning-content"><pre>${escapedReasoning}</pre></div>
 </details>`;
 }
 
@@ -139,7 +154,11 @@ export async function parseToolCallsFromContent(content: string): Promise<{
     }
   }
 
-  const strippedContent = content.replace(TOOL_CALL_WIDGET_PATTERN, "").trim();
+  // Strip both tool call and reasoning blocks from content
+  const strippedContent = content
+    .replace(TOOL_CALL_WIDGET_PATTERN, "")
+    .replace(REASONING_BLOCK_PATTERN, "")
+    .trim();
   return { strippedContent, toolMessages, toolCalls };
 }
 
@@ -173,13 +192,13 @@ export async function cleanMessagesForApi(
 }
 
 /**
- * Post-processes HTML to replace tool-call code blocks with rendered HTML widgets.
- * Styles are provided via Space Style (silverbullet-ai/Space Style/AI Tool Calls.md).
+ * Post-processes HTML to replace tool-call and reasoning code blocks with rendered HTML widgets.
+ * Styles are provided via Space Style.
  */
 export function postProcessToolCallHtml(html: string): string {
-  const pattern = /<pre data-lang="toolcall">([\s\S]*?)<\/pre>/g;
-
-  return html.replace(pattern, (_match, jsonContent) => {
+  // Process tool calls
+  const toolCallPattern = /<pre data-lang="toolcall">([\s\S]*?)<\/pre>/g;
+  html = html.replace(toolCallPattern, (_match, jsonContent) => {
     try {
       // SilverBullet's htmlEscape converts \n to <br>, convert back before parsing
       const withNewlines = jsonContent.replace(/<br>/g, "\n");
@@ -193,6 +212,20 @@ export function postProcessToolCallHtml(html: string): string {
       return _match;
     }
   });
+
+  // Process reasoning blocks
+  const reasoningPattern = /<pre data-lang="reasoning">([\s\S]*?)<\/pre>/g;
+  html = html.replace(reasoningPattern, (_match, content) => {
+    try {
+      const withNewlines = content.replace(/<br>/g, "\n");
+      const decoded = unescapeHtml(withNewlines);
+      return renderReasoningHtml(decoded);
+    } catch {
+      return _match;
+    }
+  });
+
+  return html;
 }
 
 /**

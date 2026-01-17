@@ -13,11 +13,21 @@ import type {
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
+import { aiSettings } from "../init.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
   "Authorization"?: string;
 };
+
+/**
+ * Extracts reasoning/thinking content from various provider response formats.
+ * Supports: Ollama (thinking), OpenAI (reasoning, reasoning_content)
+ */
+function extractReasoning(message: Record<string, unknown>): string | undefined {
+  const reasoning = message.thinking || message.reasoning || message.reasoning_content;
+  return typeof reasoning === "string" && reasoning ? reasoning : undefined;
+}
 
 export class OpenAIProvider extends AbstractProvider {
   static defaults: ProviderDefaults = {
@@ -30,6 +40,7 @@ export class OpenAIProvider extends AbstractProvider {
 
   override name = "OpenAI";
   requireAuth: boolean;
+  supportsThinking: boolean = false;
 
   constructor(
     apiKey: string,
@@ -44,7 +55,7 @@ export class OpenAIProvider extends AbstractProvider {
   }
 
   streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const { messages, tools, response_format, onChunk, onComplete } = options;
+    const { messages, tools, response_format, onChunk, onReasoningChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {
       try {
@@ -68,6 +79,11 @@ export class OpenAIProvider extends AbstractProvider {
           messages: messages,
         };
 
+        // Enable thinking mode for providers that support it (e.g., Ollama with qwq, deepseek-r1)
+        if (aiSettings?.chat?.showReasoning && this.supportsThinking) {
+          requestBody.think = true;
+        }
+
         if (tools && tools.length > 0) {
           requestBody.tools = tools;
           requestBody.tool_choice = "auto";
@@ -86,6 +102,7 @@ export class OpenAIProvider extends AbstractProvider {
 
         const source = new SSE(sseUrl, sseOptions);
         let fullContent = "";
+        let fullReasoning = "";
         let finishReason: string = "stop";
         let usage: Usage | undefined;
 
@@ -123,6 +140,7 @@ export class OpenAIProvider extends AbstractProvider {
 
               const response: ChatResponse = {
                 content: fullContent,
+                reasoning: fullReasoning || undefined,
                 tool_calls: toolCalls,
                 finish_reason: finishReason as "stop" | "tool_calls" | "length",
                 usage,
@@ -154,6 +172,16 @@ export class OpenAIProvider extends AbstractProvider {
               }
             }
 
+            // Handle reasoning/thinking content from delta or message
+            const reasoningChunk = extractReasoning(choice.delta || {}) ||
+              extractReasoning(data.message || {});
+            if (reasoningChunk) {
+              fullReasoning += reasoningChunk;
+              if (onReasoningChunk) {
+                onReasoningChunk(reasoningChunk);
+              }
+            }
+
             if (choice.delta?.tool_calls) {
               for (const tc of choice.delta.tool_calls) {
                 const idx = tc.index;
@@ -177,6 +205,26 @@ export class OpenAIProvider extends AbstractProvider {
 
             if (choice.finish_reason) {
               finishReason = choice.finish_reason;
+              // Ollama may not send [DONE], so complete on finish_reason
+              if (choice.finish_reason === "stop" || choice.finish_reason === "tool_calls") {
+                setTimeout(() => {
+                  source.close();
+                  const toolCalls = toolCallsAccumulator.size > 0
+                    ? Array.from(toolCallsAccumulator.values()) as ToolCall[]
+                    : undefined;
+
+                  const response: ChatResponse = {
+                    content: fullContent,
+                    reasoning: fullReasoning || undefined,
+                    tool_calls: toolCalls,
+                    finish_reason: finishReason as "stop" | "tool_calls" | "length",
+                    usage,
+                  };
+
+                  if (onComplete) onComplete(response);
+                  resolve(response);
+                }, 100);
+              }
             }
           } catch (error) {
             console.error("Error processing streaming message:", error, e.data);
@@ -251,6 +299,11 @@ export class OpenAIProvider extends AbstractProvider {
         messages: messages,
       };
 
+      // Enable thinking mode for providers that support it (e.g., Ollama with qwq, deepseek-r1)
+      if (aiSettings?.chat?.showReasoning && this.supportsThinking) {
+        requestBody.think = true;
+      }
+
       if (tools && tools.length > 0) {
         requestBody.tools = tools;
         requestBody.tool_choice = "auto";
@@ -286,6 +339,7 @@ export class OpenAIProvider extends AbstractProvider {
       const message = data.choices[0].message;
       return {
         content: message.content,
+        reasoning: extractReasoning(message),
         tool_calls: message.tool_calls as ToolCall[] | undefined,
         usage: data.usage
           ? {

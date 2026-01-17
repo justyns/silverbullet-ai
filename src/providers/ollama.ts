@@ -41,6 +41,7 @@ export class OllamaProvider extends AbstractProvider {
       useProxy,
       timeout,
     );
+    this.openaiProvider.supportsThinking = true;
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {

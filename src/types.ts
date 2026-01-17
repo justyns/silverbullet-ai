@@ -21,6 +21,7 @@ export type StreamChatOptions = {
   tools?: Tool[];
   response_format?: ResponseFormat;
   onChunk?: (chunk: string) => void;
+  onReasoningChunk?: (chunk: string) => void;
   onComplete?: (response: ChatResponse) => void;
   postProcessors?: string[];
 };
@@ -33,6 +34,7 @@ export type Usage = {
 
 export type ChatResponse = {
   content: string | null;
+  reasoning?: string;
   tool_calls?: ToolCall[];
   finish_reason?: "stop" | "tool_calls" | "length";
   usage?: Usage;
@@ -212,6 +214,7 @@ export type ChatSettings = {
   parseWikiLinks: boolean;
   bakeMessages: boolean;
   searchEmbeddings: boolean;
+  showReasoning: boolean;
   customEnrichFunctions: string[];
   enableTools: boolean;
   skipToolApproval: boolean;

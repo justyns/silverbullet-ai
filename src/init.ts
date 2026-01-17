@@ -540,6 +540,7 @@ async function loadAndMergeSettings() {
     bakeMessages: true,
     customEnrichFunctions: [],
     searchEmbeddings: false,
+    showReasoning: true,
     enableTools: true,
     skipToolApproval: false,
     defaultAgent: "",
@@ -569,12 +570,25 @@ export async function initializeOpenAI(configure = true) {
   // TODO: I should really rename this function...
   const newCombinedSettings = await loadAndMergeSettings();
 
+  // Preserve session-only toggle states across settings reloads
+  const sessionSearchEmbeddings = aiSettings?.chat?.searchEmbeddings;
+  const sessionShowReasoning = aiSettings?.chat?.showReasoning;
+
   if (
     !aiSettings ||
     JSON.stringify(aiSettings) !== JSON.stringify(newCombinedSettings)
   ) {
     log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
+
+    // Restore session-only toggles if they were set
+    if (sessionSearchEmbeddings !== undefined) {
+      aiSettings.chat.searchEmbeddings = sessionSearchEmbeddings;
+    }
+    if (sessionShowReasoning !== undefined) {
+      aiSettings.chat.showReasoning = sessionShowReasoning;
+    }
+
     log("aiSettings updated to", aiSettings);
 
     // Deprecation warning for legacy config, just to console for now

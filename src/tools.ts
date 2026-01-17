@@ -511,6 +511,14 @@ export function createToolCallWidget(
   return `\`\`\`toolcall\n${json}\n\`\`\``;
 }
 
+/**
+ * Formats reasoning/thinking content as a fenced code block.
+ * Uses ```reasoning syntax which triggers rendering as a collapsible block.
+ */
+export function formatReasoningBlock(reasoning: string): string {
+  return `\n\`\`\`reasoning\n${reasoning}\n\`\`\`\n`;
+}
+
 function parseToolCallArguments(
   json: string,
 ): { ok: true; args: Record<string, unknown> } | { ok: false; error: string } {
@@ -681,6 +689,7 @@ export type AgenticChatOptions = {
 export type AgenticChatResult = {
   messages: ChatMessage[];
   finalResponse: string;
+  finalReasoning?: string;
   toolCallsText: string;
   usage?: Usage;
 };
@@ -725,6 +734,7 @@ export async function runAgenticChat(
     return {
       messages: workingMessages,
       finalResponse: response.content || "",
+      finalReasoning: response.reasoning,
       toolCallsText: "",
       usage: response.usage,
     };
@@ -757,6 +767,7 @@ export async function runAgenticChat(
       return {
         messages: workingMessages,
         finalResponse: response.content || "",
+        finalReasoning: response.reasoning,
         toolCallsText,
         usage: totalUsage,
       };
@@ -781,6 +792,7 @@ export type StreamingAgenticChatOptions = {
   luaTools: Map<string, LuaToolDefinition>;
   streamFunction: (options: StreamChatOptions) => Promise<ChatResponse>;
   onChunk?: (chunk: string) => void;
+  onReasoningChunk?: (chunk: string) => void;
   onToolCall?: (
     toolName: string,
     args: Record<string, unknown>,
@@ -803,6 +815,7 @@ export async function runStreamingAgenticChat(
     luaTools,
     streamFunction,
     onChunk,
+    onReasoningChunk,
     onToolCall,
     maxIterations = MAX_TOOL_ITERATIONS,
   } = options;
@@ -811,6 +824,7 @@ export async function runStreamingAgenticChat(
   let toolCallsText = "";
   let iterations = 0;
   let fullResponse = "";
+  let fullReasoning = "";
   let totalUsage: Usage | undefined;
 
   // If no tools available, just stream once and return
@@ -819,10 +833,15 @@ export async function runStreamingAgenticChat(
       messages: workingMessages,
       tools: [],
       onChunk,
+      onReasoningChunk: (chunk) => {
+        fullReasoning += chunk;
+        if (onReasoningChunk) onReasoningChunk(chunk);
+      },
     });
     return {
       messages: workingMessages,
       finalResponse: result.content || "",
+      finalReasoning: fullReasoning || undefined,
       toolCallsText: "",
       usage: result.usage,
     };
@@ -836,6 +855,10 @@ export async function runStreamingAgenticChat(
       messages: workingMessages,
       tools,
       onChunk,
+      onReasoningChunk: (chunk) => {
+        fullReasoning += chunk;
+        if (onReasoningChunk) onReasoningChunk(chunk);
+      },
     });
     totalUsage = aggregateUsage(totalUsage, result.usage);
 
@@ -860,6 +883,7 @@ export async function runStreamingAgenticChat(
       return {
         messages: workingMessages,
         finalResponse: result.content || "",
+        finalReasoning: fullReasoning || undefined,
         toolCallsText,
         usage: totalUsage,
       };
@@ -871,6 +895,7 @@ export async function runStreamingAgenticChat(
     messages: workingMessages,
     finalResponse: fullResponse +
       "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
+    finalReasoning: fullReasoning || undefined,
     toolCallsText,
     usage: totalUsage,
   };

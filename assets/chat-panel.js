@@ -36,6 +36,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const tokenCountEl = document.getElementById("token-count");
   const contextLimitEl = document.getElementById("context-limit");
   const ragIndicatorEl = document.getElementById("rag-indicator");
+  const reasoningIndicatorEl = document.getElementById("reasoning-indicator");
   const modelDisplayEl = document.getElementById("model-display");
   const modelNameEl = document.getElementById("model-name");
 
@@ -50,6 +51,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   let lastRagEnabled = false;
   let lastRagIndexEnabled = false;
+  let lastReasoningEnabled = false;
 
   async function updateChatStatus() {
     try {
@@ -94,9 +96,21 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           ragIndicatorEl.title = "RAG disabled (click to enable)";
         }
       }
+
+      // Update reasoning status
+      lastReasoningEnabled = status.reasoning?.enabled ?? false;
+      reasoningIndicatorEl.classList.remove("enabled", "disabled");
+      if (lastReasoningEnabled) {
+        reasoningIndicatorEl.classList.add("enabled");
+        reasoningIndicatorEl.title = "Reasoning display enabled (click to disable)";
+      } else {
+        reasoningIndicatorEl.classList.add("disabled");
+        reasoningIndicatorEl.title = "Reasoning display disabled (click to enable)";
+      }
     } catch (e) {
       console.error("Failed to update chat status:", e);
       ragIndicatorEl.classList.add("disabled");
+      reasoningIndicatorEl.classList.add("disabled");
     }
   }
 
@@ -644,6 +658,18 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       await updateChatStatus();
     } catch (e) {
       console.error("Failed to toggle RAG:", e);
+    }
+  });
+
+  reasoningIndicatorEl.addEventListener("click", async function () {
+    try {
+      await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.toggleReasoningEnabled",
+      );
+      await updateChatStatus();
+    } catch (e) {
+      console.error("Failed to toggle reasoning:", e);
     }
   });
 

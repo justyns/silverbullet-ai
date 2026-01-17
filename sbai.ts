@@ -1,6 +1,7 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "@std/encoding/base64";
+import { escape as escapeHtml } from "@std/html/entities";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
@@ -57,6 +58,7 @@ import {
   convertToOpenAITools,
   createToolCallWidget,
   discoverTools,
+  formatReasoningBlock,
   runAgenticChat,
   runStreamingAgenticChat,
 } from "./src/tools.ts";
@@ -136,6 +138,47 @@ export function renderToolCallWidget(
     return { html };
   } catch (e) {
     console.error("Error rendering tool call widget:", e);
+    return null;
+  }
+}
+
+const REASONING_WIDGET_STYLES = `
+  .reasoning-widget { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; border-left: 3px solid #8b5cf6; }
+  @media (prefers-color-scheme: dark) { .reasoning-widget { background: #2d2d2d; color: #d4d4d4; } }
+  .reasoning-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .reasoning-title { font-weight: 600; color: #8b5cf6; }
+  .reasoning-content { display: none; margin-top: 8px; font-size: 12px; }
+  .reasoning-content.open { display: block; }
+  .reasoning-content pre { margin: 0; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
+  @media (prefers-color-scheme: dark) { .reasoning-content pre { background: rgba(255,255,255,0.05); } }
+`;
+
+/**
+ * Renders a reasoning fenced code block as an HTML widget.
+ * Called by SilverBullet when it encounters ```reasoning blocks.
+ */
+export function renderReasoningWidget(
+  bodyText: string,
+  _pageName: string,
+): CodeWidgetContent | null {
+  try {
+    const escapedContent = escapeHtml(bodyText);
+    const html = `
+      <style>${REASONING_WIDGET_STYLES}</style>
+      <div class="reasoning-widget">
+        <div class="reasoning-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
+          <span>💭</span>
+          <strong class="reasoning-title">Reasoning</strong>
+          <span style="color: #888;">▼</span>
+        </div>
+        <div class="reasoning-content">
+          <pre>${escapedContent}</pre>
+        </div>
+      </div>
+    `;
+    return { html };
+  } catch (e) {
+    console.error("Error rendering reasoning widget:", e);
     return null;
   }
 }
@@ -665,6 +708,8 @@ export async function streamChatOnPage() {
       let insertQueue = Promise.resolve();
       const loadingMessage = "🤔 Thinking … ";
       let stillLoading = true;
+      let fullReasoning = "";
+      const startOfResponse = cursorPos;
 
       // Insert loading indicator
       await editor.insertAtPos(loadingMessage, cursorPos);
@@ -688,12 +733,15 @@ export async function streamChatOnPage() {
             insertQueue = insertQueue.then(() => editor.insertAtPos(chunk, pos));
           }
         },
-        onToolCall: (name, args, result) => {
+        onReasoningChunk: (chunk) => {
+          fullReasoning += chunk;
+        },
+        onToolCall: (name, args, toolResult) => {
           const toolWidget = createToolCallWidget(
             name,
             args,
-            result.success,
-            result.success ? result.summary : result.error,
+            toolResult.success,
+            toolResult.success ? toolResult.summary : toolResult.error,
           );
           const toolLine = `\n${toolWidget}\n\n`;
 
@@ -713,6 +761,12 @@ export async function streamChatOnPage() {
 
       // Wait for all pending insertions to complete
       await insertQueue;
+
+      // If reasoning exists and enabled, prepend as code block
+      if (fullReasoning && aiSettings?.chat?.showReasoning) {
+        const reasoningBlock = formatReasoningBlock(fullReasoning);
+        await editor.insertAtPos(reasoningBlock, startOfResponse);
+      }
       return;
     }
 

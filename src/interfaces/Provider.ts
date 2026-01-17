@@ -2,6 +2,8 @@ import { editor, system } from "@silverbulletmd/silverbullet/syscalls";
 import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
 import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
 import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts";
+import { formatReasoningBlock } from "../tools.ts";
+import { aiSettings } from "../init.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
 // deno-lint-ignore no-explicit-any
@@ -129,6 +131,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     await editor.insertAtPos(loadingMessage, cursorPos);
     let stillLoading = true;
     let fullResponse = "";
+    let fullReasoning = "";
 
     const startOfResponse = cursorPos;
 
@@ -163,15 +166,27 @@ export abstract class AbstractProvider implements ProviderInterface {
       }
     };
 
+    const handleReasoningChunk = (chunk: string) => {
+      fullReasoning += chunk;
+    };
+
     const handleComplete = async (response: ChatResponse) => {
       const data = response.content || "";
       console.log("Response complete:", data);
-      const endOfResponse = startOfResponse + fullResponse.length;
+      let endOfResponse = startOfResponse + fullResponse.length;
       console.log("Start of response:", startOfResponse);
       console.log("End of response:", endOfResponse);
       console.log("Full response:", fullResponse);
       console.log("Post-processors:", postProcessors);
       let newData = fullResponse;
+
+      // If reasoning exists and enabled, prepend as code block
+      if (fullReasoning && aiSettings?.chat?.showReasoning) {
+        const reasoningBlock = formatReasoningBlock(fullReasoning);
+        await editor.insertAtPos(reasoningBlock, startOfResponse);
+        endOfResponse += reasoningBlock.length;
+        newData = reasoningBlock + newData;
+      }
 
       if (postProcessors) {
         const pageText = await editor.getText();
@@ -198,6 +213,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     await this.streamChat({
       ...options,
       onChunk: handleChunk,
+      onReasoningChunk: handleReasoningChunk,
       onComplete: handleComplete,
     });
   }

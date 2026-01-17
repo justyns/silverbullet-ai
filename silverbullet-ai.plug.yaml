@@ -143,6 +143,8 @@ functions:
     path: src/chat-panel.ts:resetSessionTokenUsage
   toggleRagEnabled:
     path: src/chat-panel.ts:toggleRagEnabled
+  toggleReasoningEnabled:
+    path: src/chat-panel.ts:toggleReasoningEnabled
   restorePanelState:
     path: src/chat-panel.ts:restorePanelState
     events:
@@ -158,3 +160,6 @@ functions:
   renderToolCallWidget:
     path: sbai.ts:renderToolCallWidget
     codeWidget: toolcall
+  renderReasoningWidget:
+    path: sbai.ts:renderReasoningWidget
+    codeWidget: reasoning

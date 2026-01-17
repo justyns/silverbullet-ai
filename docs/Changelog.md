@@ -10,6 +10,7 @@ This page is a brief overview of each version.
 - Click RAG icon to enable/disable embeddings search temporarily
 - Display agent name and click it to change to a different agent
 - Remember the state of the assistant chat panel and re-open it on page reload
+- Add support for displaying thinking/reasoning blocks with Ollama
 
 ## 0.6.4 (2025-01-13)
 
