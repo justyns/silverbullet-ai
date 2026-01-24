@@ -10,7 +10,8 @@ import type {
 } from "./types.ts";
 import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
-import { convertToOpenAITools, discoverTools, formatReasoningBlock, runAgenticChat } from "./tools.ts";
+import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
+import { formatReasoningBlock } from "./widgets.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
 import { getModelContextLimit as lookupModelContextLimit } from "./model-metadata.ts";
 

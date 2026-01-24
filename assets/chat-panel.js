@@ -39,6 +39,15 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   const reasoningIndicatorEl = document.getElementById("reasoning-indicator");
   const modelDisplayEl = document.getElementById("model-display");
   const modelNameEl = document.getElementById("model-name");
+  const overflowBtn = document.getElementById("overflow-btn");
+  const overflowMenu = document.getElementById("overflow-menu");
+  const overflowExportBtn = document.getElementById("overflow-export-btn");
+  const overflowRagBtn = document.getElementById("overflow-rag-btn");
+  const overflowReasoningBtn = document.getElementById("overflow-reasoning-btn");
+  const overflowNewChatBtn = document.getElementById("overflow-new-chat-btn");
+  const overflowModelNameEl = document.getElementById("overflow-model-name");
+  const overflowTokenCountEl = document.getElementById("overflow-token-count");
+  const overflowContextLimitEl = document.getElementById("overflow-context-limit");
 
   let chatHistory = [];
   let chatData = { id: null, messages: [] };
@@ -60,15 +69,21 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         "silverbullet-ai.getChatStatus",
       );
 
-      // Update model name
-      modelNameEl.textContent = status.model.name || "--";
+      // Update model name (header and overflow menu)
+      const modelName = status.model.name || "--";
+      modelNameEl.textContent = modelName;
+      overflowModelNameEl.textContent = modelName;
       modelDisplayEl.title = status.model.name
         ? `Model: ${status.model.name} (click to change)`
         : "Click to select a model";
 
-      // Update token display
-      tokenCountEl.textContent = formatNumber(status.tokens.total_tokens);
-      contextLimitEl.textContent = status.model.contextLimit ? formatNumber(status.model.contextLimit) : "--";
+      // Update token display (header and overflow menu)
+      const tokenCount = formatNumber(status.tokens.total_tokens);
+      const contextLimit = status.model.contextLimit ? formatNumber(status.model.contextLimit) : "--";
+      tokenCountEl.textContent = tokenCount;
+      contextLimitEl.textContent = contextLimit;
+      overflowTokenCountEl.textContent = tokenCount;
+      overflowContextLimitEl.textContent = contextLimit;
 
       tokenDisplayEl.classList.remove("warning", "danger");
       if (status.model.contextLimit) {
@@ -107,6 +122,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         reasoningIndicatorEl.classList.add("disabled");
         reasoningIndicatorEl.title = "Reasoning display disabled (click to enable)";
       }
+
+      // Update overflow menu toggle states
+      overflowRagBtn.classList.toggle("enabled", lastRagEnabled);
+      overflowReasoningBtn.classList.toggle("enabled", lastReasoningEnabled);
+      document.getElementById("overflow-rag-label").textContent = lastRagEnabled ? "RAG (on)" : "RAG (off)";
+      document.getElementById("overflow-reasoning-label").textContent = lastReasoningEnabled
+        ? "Reasoning (on)"
+        : "Reasoning (off)";
     } catch (e) {
       console.error("Failed to update chat status:", e);
       ragIndicatorEl.classList.add("disabled");
@@ -119,6 +142,32 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       ragIndicatorEl.classList.remove("enabled", "disabled");
       ragIndicatorEl.classList.add("searching");
       ragIndicatorEl.title = "Searching embeddings...";
+    }
+  }
+
+  async function toggleRag() {
+    if (!lastRagIndexEnabled) {
+      await syscall(
+        "editor.flashNotification",
+        "Embeddings indexing is disabled. Enable 'indexEmbeddings' in AI config first.",
+        "error",
+      );
+      return;
+    }
+    try {
+      await syscall("system.invokeFunction", "silverbullet-ai.toggleRagEnabled");
+      await updateChatStatus();
+    } catch (e) {
+      console.error("Failed to toggle RAG:", e);
+    }
+  }
+
+  async function toggleReasoning() {
+    try {
+      await syscall("system.invokeFunction", "silverbullet-ai.toggleReasoningEnabled");
+      await updateChatStatus();
+    } catch (e) {
+      console.error("Failed to toggle reasoning:", e);
     }
   }
 
@@ -632,6 +681,39 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   closeBtn.addEventListener("click", closePanel);
   clearAgentBtn.addEventListener("click", clearAgent);
 
+  // Overflow menu handlers
+  overflowBtn.addEventListener("click", function (e) {
+    e.stopPropagation();
+    overflowMenu.classList.toggle("hidden");
+  });
+
+  overflowExportBtn.addEventListener("click", function () {
+    overflowMenu.classList.add("hidden");
+    exportChat();
+  });
+
+  overflowNewChatBtn.addEventListener("click", function () {
+    overflowMenu.classList.add("hidden");
+    newChat();
+  });
+
+  overflowRagBtn.addEventListener("click", function () {
+    overflowMenu.classList.add("hidden");
+    toggleRag();
+  });
+
+  overflowReasoningBtn.addEventListener("click", function () {
+    overflowMenu.classList.add("hidden");
+    toggleReasoning();
+  });
+
+  // Close overflow menu when clicking outside
+  document.addEventListener("click", function (e) {
+    if (!overflowMenu.classList.contains("hidden") && !e.target.closest(".overflow-menu-container")) {
+      overflowMenu.classList.add("hidden");
+    }
+  });
+
   modelDisplayEl.addEventListener("click", async function () {
     try {
       await syscall("system.invokeCommand", "AI: Select Text Model from Config");
@@ -641,37 +723,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     }
   });
 
-  ragIndicatorEl.addEventListener("click", async function () {
-    if (!lastRagIndexEnabled) {
-      await syscall(
-        "editor.flashNotification",
-        "Embeddings indexing is disabled. Enable 'indexEmbeddings' in AI config first.",
-        "error",
-      );
-      return;
-    }
-    try {
-      await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.toggleRagEnabled",
-      );
-      await updateChatStatus();
-    } catch (e) {
-      console.error("Failed to toggle RAG:", e);
-    }
-  });
-
-  reasoningIndicatorEl.addEventListener("click", async function () {
-    try {
-      await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.toggleReasoningEnabled",
-      );
-      await updateChatStatus();
-    } catch (e) {
-      console.error("Failed to toggle reasoning:", e);
-    }
-  });
+  ragIndicatorEl.addEventListener("click", toggleRag);
+  reasoningIndicatorEl.addEventListener("click", toggleReasoning);
 
   panelTitleEl.addEventListener("click", async function () {
     try {

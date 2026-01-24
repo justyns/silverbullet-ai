@@ -1,6 +1,17 @@
 <!-- TODO: I am not a UI person, plz feel free to help -->
 <link rel="stylesheet" href="/.client/main.css" />
 <style>
+  :root {
+    --status-success-color: #22c55e;
+    --status-success-bg: rgba(34, 197, 94, 0.1);
+    --status-warning-color: #f59e0b;
+    --status-warning-bg: rgba(245, 158, 11, 0.1);
+    --status-danger-color: #ef4444;
+    --status-danger-bg: rgba(239, 68, 68, 0.1);
+    --status-reasoning-color: #8b5cf6;
+    --status-reasoning-bg: rgba(139, 92, 246, 0.1);
+  }
+
   * {
     box-sizing: border-box;
     margin: 0;
@@ -8,7 +19,7 @@
   }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: var(--ui-font, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif);
     font-size: 14px;
     background: var(--root-background-color);
     color: var(--root-color);
@@ -113,6 +124,93 @@
     padding: 4px 6px;
   }
 
+  /* Overflow menu container */
+  .overflow-menu-container {
+    position: relative;
+    display: none;
+  }
+
+  .overflow-btn {
+    font-size: 16px;
+    padding: 4px 8px;
+    line-height: 1;
+  }
+
+  .overflow-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 4px;
+    background: var(--root-background-color);
+    border: 1px solid var(--modal-border-color);
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    z-index: 100;
+    min-width: 150px;
+  }
+
+  .overflow-menu.hidden {
+    display: none;
+  }
+
+  .overflow-menu-item {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    text-align: left;
+    background: none;
+    border: none;
+    color: var(--root-color);
+    cursor: pointer;
+    font-size: 13px;
+  }
+
+  .overflow-menu-item:hover {
+    background: var(--subtle-background-color);
+  }
+
+  .overflow-menu-item.overflow-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .overflow-menu-item.overflow-toggle.enabled {
+    color: var(--status-success-color);
+  }
+
+  #overflow-reasoning-btn.enabled {
+    color: var(--status-reasoning-color);
+  }
+
+  .overflow-menu-item.overflow-toggle.enabled .toggle-icon::after {
+    content: " ✓";
+  }
+
+  .overflow-divider {
+    height: 1px;
+    background: var(--modal-border-color);
+    margin: 4px 0;
+  }
+
+  .overflow-menu-info {
+    padding: 8px 12px;
+    font-size: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: var(--subtle-color);
+  }
+
+  .overflow-menu-info #overflow-model-name {
+    font-weight: 500;
+    color: var(--root-color);
+  }
+
+  .overflow-menu-info .overflow-tokens {
+    font-size: 11px;
+  }
+
   .token-display {
     font-size: 11px;
     color: var(--subtle-color);
@@ -124,13 +222,13 @@
   }
 
   .token-display.warning {
-    color: #f59e0b;
-    background: rgba(245, 158, 11, 0.1);
+    color: var(--status-warning-color);
+    background: var(--status-warning-bg);
   }
 
   .token-display.danger {
-    color: #ef4444;
-    background: rgba(239, 68, 68, 0.1);
+    color: var(--status-danger-color);
+    background: var(--status-danger-bg);
   }
 
   .rag-indicator {
@@ -147,8 +245,8 @@
   }
 
   .rag-indicator.enabled {
-    color: #22c55e;
-    background: rgba(34, 197, 94, 0.1);
+    color: var(--status-success-color);
+    background: var(--status-success-bg);
   }
 
   .rag-indicator.disabled {
@@ -157,7 +255,7 @@
   }
 
   .rag-indicator.searching {
-    color: #22c55e;
+    color: var(--status-success-color);
     animation: rag-pulse 1.5s ease-in-out infinite;
   }
 
@@ -204,7 +302,7 @@
   }
 
   .tool-call.rag-context .context-item .similarity {
-    color: #22c55e;
+    color: var(--status-success-color);
     font-size: 11px;
     margin-left: 8px;
     font-weight: 500;
@@ -544,11 +642,11 @@
   }
 
   .tool-call.success .status {
-    color: #22c55e;
+    color: var(--status-success-color);
   }
 
   .tool-call.error .status {
-    color: #ef4444;
+    color: var(--status-danger-color);
   }
 
   .tool-call .tool-details {
@@ -581,7 +679,7 @@
   .reasoning-block {
     margin: 4px 0;
     border: 1px solid var(--modal-border-color);
-    border-left: 3px solid #8b5cf6;
+    border-left: 3px solid var(--status-reasoning-color);
     border-radius: 6px;
     font-size: 13px;
     background: var(--root-background-color);
@@ -590,7 +688,7 @@
   .reasoning-block summary {
     padding: 8px 12px;
     cursor: pointer;
-    background: rgba(139, 92, 246, 0.1);
+    background: var(--status-reasoning-bg);
     border-radius: 6px;
     list-style: none;
   }
@@ -645,8 +743,8 @@
   }
 
   .reasoning-indicator.enabled {
-    color: #8b5cf6;
-    background: rgba(139, 92, 246, 0.1);
+    color: var(--status-reasoning-color);
+    background: var(--status-reasoning-bg);
   }
 
   .reasoning-indicator.disabled {
@@ -752,6 +850,21 @@
       font-size: 10px;
     }
 
+    /* Hide header status elements - all moved to overflow menu */
+    .header-status {
+      display: none;
+    }
+
+    /* Hide New and Export buttons, show overflow menu */
+    .ai-chat-actions .new-btn,
+    .ai-chat-actions .export-btn {
+      display: none;
+    }
+
+    .overflow-menu-container {
+      display: block;
+    }
+
     .ai-chat-messages {
       padding: 6px;
       gap: 6px;
@@ -791,7 +904,7 @@
         <span id="model-name">--</span>
       </div>
       <div id="token-display" class="token-display" title="Tokens used / Context limit">
-        <span id="token-count">0</span> / <span id="context-limit">--</span>
+        <span id="token-count">0</span><span class="token-separator"> / </span><span id="context-limit">--</span>
       </div>
       <div id="rag-indicator" class="rag-indicator disabled" title="Embeddings search (RAG)">
         <span id="rag-icon">🔍</span>
@@ -803,8 +916,27 @@
       </div>
     </div>
     <div class="ai-chat-actions">
-      <button id="new-chat-btn" title="Start new conversation">New</button>
-      <button id="export-btn" title="Export to markdown">Export</button>
+      <button id="new-chat-btn" class="new-btn" title="Start new conversation">New</button>
+      <button id="export-btn" class="export-btn" title="Export to markdown">Export</button>
+      <div class="overflow-menu-container">
+        <button id="overflow-btn" class="overflow-btn" title="More actions">⋮</button>
+        <div id="overflow-menu" class="overflow-menu hidden">
+          <div id="overflow-model-info" class="overflow-menu-info">
+            <span id="overflow-model-name">--</span>
+            <span class="overflow-tokens"><span id="overflow-token-count">0</span> / <span id="overflow-context-limit">--</span></span>
+          </div>
+          <div class="overflow-divider"></div>
+          <button id="overflow-new-chat-btn" class="overflow-menu-item">New chat</button>
+          <button id="overflow-rag-btn" class="overflow-menu-item overflow-toggle">
+            <span class="toggle-icon">🔍</span> <span id="overflow-rag-label">RAG</span>
+          </button>
+          <button id="overflow-reasoning-btn" class="overflow-menu-item overflow-toggle">
+            <span class="toggle-icon">💭</span> <span id="overflow-reasoning-label">Reasoning</span>
+          </button>
+          <div class="overflow-divider"></div>
+          <button id="overflow-export-btn" class="overflow-menu-item">Export to markdown</button>
+        </div>
+      </div>
       <button id="close-btn" class="close-btn" title="Close panel">×</button>
     </div>
   </div>

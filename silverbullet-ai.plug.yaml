@@ -156,10 +156,10 @@ functions:
   getWriteDiff:
     path: src/tools.ts:getWriteDiff
   postProcessToolCallHtml:
-    path: src/utils.ts:postProcessToolCallHtml
+    path: src/widgets.ts:postProcessToolCallHtml
   renderToolCallWidget:
-    path: sbai.ts:renderToolCallWidget
+    path: src/widgets.ts:renderToolCallWidget
     codeWidget: toolcall
   renderReasoningWidget:
-    path: sbai.ts:renderReasoningWidget
+    path: src/widgets.ts:renderReasoningWidget
     codeWidget: reasoning

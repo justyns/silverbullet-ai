@@ -1,7 +1,6 @@
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
 import { decodeBase64 } from "@std/encoding/base64";
-import { escape as escapeHtml } from "@std/html/entities";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
@@ -10,14 +9,10 @@ import type {
   ModelConfig,
   ResponseFormat,
 } from "./src/types.ts";
-
-type CodeWidgetContent = {
-  html?: string;
-  script?: string;
-  width?: number;
-  height?: number;
-  url?: string;
-};
+import {
+  createToolCallWidget,
+  formatReasoningBlock,
+} from "./src/widgets.ts";
 import {
   aiSettings,
   chatSystemPrompt,
@@ -54,134 +49,9 @@ import {
   folderName,
   showProgressModal,
 } from "./src/utils.ts";
-import {
-  convertToOpenAITools,
-  createToolCallWidget,
-  discoverTools,
-  formatReasoningBlock,
-  runAgenticChat,
-  runStreamingAgenticChat,
-} from "./src/tools.ts";
+import { convertToOpenAITools, discoverTools, runAgenticChat, runStreamingAgenticChat } from "./src/tools.ts";
 import { chatAgentState } from "./src/chat-panel.ts";
 import { selectAgent } from "./src/agents.ts";
-
-/**
- * Renders a tool-call fenced code block as an HTML widget.
- * Called by SilverBullet when it encounters ```tool-call blocks.
- */
-export function renderToolCallWidget(
-  bodyText: string,
-  _pageName: string,
-): CodeWidgetContent | null {
-  try {
-    const data = JSON.parse(bodyText);
-    const { name, args, result, summary, success } = data;
-
-    const status = success ? "✓" : "✗";
-    const statusClass = success ? "success" : "error";
-
-    // Format arguments as key: value (matching assistant panel)
-    const argEntries = Object.entries(args || {});
-    const argsStr = argEntries.length > 0
-      ? argEntries.map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`).join("\n")
-      : "";
-
-    // Use summary (new format) with fallback to result (legacy format)
-    const displayText = summary ?? result ?? "";
-
-    const escapeHtmlStr = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-
-    const escapedResult = escapeHtmlStr(displayText);
-    const escapedArgs = escapeHtmlStr(argsStr);
-    const escapedName = escapeHtmlStr(name);
-
-    const html = `
-      <style>
-        .tool-call { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; }
-        @media (prefers-color-scheme: dark) { .tool-call { background: #2d2d2d; color: #d4d4d4; } }
-        .tool-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-        .tool-name { font-weight: 600; }
-        .tool-arrow { color: #888; }
-        .tool-status { font-size: 14px; }
-        .tool-status.success { color: #22c55e; }
-        .tool-status.error { color: #ef4444; }
-        .tool-details { display: none; margin-top: 8px; font-size: 12px; }
-        .tool-details.open { display: block; }
-        .tool-section { margin: 4px 0; }
-        .tool-section-title { font-weight: 500; color: #666; }
-        @media (prefers-color-scheme: dark) { .tool-section-title { color: #888; } }
-        .tool-section pre { margin: 2px 0; padding: 4px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-        @media (prefers-color-scheme: dark) { .tool-section pre { background: rgba(255,255,255,0.05); } }
-      </style>
-      <div class="tool-call">
-        <div class="tool-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
-          <span>🔧</span>
-          <strong class="tool-name">${escapedName}</strong>
-          <span class="tool-arrow">→</span>
-          <span class="tool-status ${statusClass}">${status}</span>
-        </div>
-        <div class="tool-details">
-          ${
-      escapedArgs
-        ? `<div class="tool-section"><div class="tool-section-title">Arguments:</div><pre>${escapedArgs}</pre></div>`
-        : ""
-    }
-          ${
-      escapedResult
-        ? `<div class="tool-section"><div class="tool-section-title">Result:</div><pre>${escapedResult}</pre></div>`
-        : ""
-    }
-        </div>
-      </div>
-    `;
-
-    return { html };
-  } catch (e) {
-    console.error("Error rendering tool call widget:", e);
-    return null;
-  }
-}
-
-const REASONING_WIDGET_STYLES = `
-  .reasoning-widget { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; border-left: 3px solid #8b5cf6; }
-  @media (prefers-color-scheme: dark) { .reasoning-widget { background: #2d2d2d; color: #d4d4d4; } }
-  .reasoning-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .reasoning-title { font-weight: 600; color: #8b5cf6; }
-  .reasoning-content { display: none; margin-top: 8px; font-size: 12px; }
-  .reasoning-content.open { display: block; }
-  .reasoning-content pre { margin: 0; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-  @media (prefers-color-scheme: dark) { .reasoning-content pre { background: rgba(255,255,255,0.05); } }
-`;
-
-/**
- * Renders a reasoning fenced code block as an HTML widget.
- * Called by SilverBullet when it encounters ```reasoning blocks.
- */
-export function renderReasoningWidget(
-  bodyText: string,
-  _pageName: string,
-): CodeWidgetContent | null {
-  try {
-    const escapedContent = escapeHtml(bodyText);
-    const html = `
-      <style>${REASONING_WIDGET_STYLES}</style>
-      <div class="reasoning-widget">
-        <div class="reasoning-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
-          <span>💭</span>
-          <strong class="reasoning-title">Reasoning</strong>
-          <span style="color: #888;">▼</span>
-        </div>
-        <div class="reasoning-content">
-          <pre>${escapedContent}</pre>
-        </div>
-      </div>
-    `;
-    return { html };
-  } catch (e) {
-    console.error("Error rendering reasoning widget:", e);
-    return null;
-  }
-}
 
 type FilterOption = {
   name: string;

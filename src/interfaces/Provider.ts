@@ -2,7 +2,7 @@ import { editor, system } from "@silverbulletmd/silverbullet/syscalls";
 import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
 import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
 import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts";
-import { formatReasoningBlock } from "../tools.ts";
+import { formatReasoningBlock } from "../widgets.ts";
 import { aiSettings } from "../init.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching

@@ -489,36 +489,6 @@ function formatToolCallDisplay(
   return `\`\`\`toolcall\n${json}\n\`\`\`\n`;
 }
 
-/**
- * Creates a tool call widget string for display in pages.
- * Uses fenced code block syntax which triggers the code widget for rendering.
- * Stores summary (not full result) to keep markdown compact.
- */
-export function createToolCallWidget(
-  toolName: string,
-  args: Record<string, unknown>,
-  success: boolean,
-  summary?: string,
-): string {
-  const data = {
-    id: `tool_${Date.now()}`,
-    name: toolName,
-    args,
-    summary: summary || "",
-    success,
-  };
-  const json = JSON.stringify(data);
-  return `\`\`\`toolcall\n${json}\n\`\`\``;
-}
-
-/**
- * Formats reasoning/thinking content as a fenced code block.
- * Uses ```reasoning syntax which triggers rendering as a collapsible block.
- */
-export function formatReasoningBlock(reasoning: string): string {
-  return `\n\`\`\`reasoning\n${reasoning}\n\`\`\`\n`;
-}
-
 function parseToolCallArguments(
   json: string,
 ): { ok: true; args: Record<string, unknown> } | { ok: false; error: string } {

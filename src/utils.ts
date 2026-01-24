@@ -1,5 +1,4 @@
 import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
-import { escape as escapeHtml, unescape as unescapeHtml } from "@std/html/entities";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
 import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
@@ -7,6 +6,11 @@ import { aiSettings } from "./init.ts";
 import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
+import {
+  parseToolCallJson,
+  REASONING_BLOCK_PATTERN,
+  TOOL_CALL_WIDGET_PATTERN,
+} from "./widgets.ts";
 
 export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
@@ -17,81 +21,6 @@ export function log(...args: any[]) {
 export function isPathAllowed(page: string, allowedPaths: string[] | undefined): boolean {
   if (!allowedPaths || allowedPaths.length === 0) return true;
   return allowedPaths.some((prefix) => page === prefix || page.startsWith(prefix));
-}
-
-// Pattern to match ```toolcall\n{json}\n``` fenced code blocks
-const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
-
-// Pattern to match ```reasoning\n{content}\n``` fenced code blocks
-const REASONING_BLOCK_PATTERN = /```reasoning\n[\s\S]*?\n```\n?/g;
-
-export type ToolCallData = {
-  id: string;
-  name: string;
-  args: Record<string, unknown>;
-  result?: string; // Legacy field (full result)
-  summary?: string; // New field (compact summary)
-  success: boolean;
-};
-
-/**
- * Renders a tool call as HTML with collapsible details
- * Shared between code widget and chat panel rendering
- */
-export function renderToolCallHtml(data: ToolCallData): string {
-  const status = data.success ? "✓" : "✗";
-  const statusClass = data.success ? "success" : "error";
-
-  // Build arguments section for details
-  const args = data.args || {};
-  const argEntries = Object.entries(args);
-  const argsHtml = argEntries.length > 0
-    ? `<div class="tool-args"><strong>Arguments:</strong><pre>${
-      escapeHtml(
-        argEntries
-          .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
-          .join("\n"),
-      )
-    }</pre></div>`
-    : "";
-
-  // Use summary (new format) with fallback to result (legacy format)
-  const displayText = data.summary ?? data.result ?? "";
-
-  const escapedDisplay = escapeHtml(displayText);
-
-  const escapedName = escapeHtml(data.name);
-
-  return `<details class="tool-call ${statusClass}">
-  <summary>🔧 <strong>${escapedName}</strong> → <span class="status">${status}</span></summary>
-  <div class="tool-details">
-    ${argsHtml}
-    <div class="tool-result"><strong>Result:</strong><pre>${escapedDisplay}</pre></div>
-  </div>
-</details>`;
-}
-
-/**
- * Renders reasoning/thinking content as a collapsible HTML block.
- * Similar pattern to tool calls but with distinct styling.
- */
-export function renderReasoningHtml(reasoning: string): string {
-  const escapedReasoning = escapeHtml(reasoning);
-  return `<details class="reasoning-block">
-  <summary>💭 <strong>Reasoning</strong></summary>
-  <div class="reasoning-content"><pre>${escapedReasoning}</pre></div>
-</details>`;
-}
-
-/**
- * Parses JSON tool call data from fenced code block content
- */
-function parseToolCallJson(json: string): ToolCallData | null {
-  try {
-    return JSON.parse(json) as ToolCallData;
-  } catch {
-    return null;
-  }
 }
 
 export async function parseToolCallsFromContent(content: string): Promise<{
@@ -189,43 +118,6 @@ export async function cleanMessagesForApi(
     }
   }
   return cleanedMessages;
-}
-
-/**
- * Post-processes HTML to replace tool-call and reasoning code blocks with rendered HTML widgets.
- * Styles are provided via Space Style.
- */
-export function postProcessToolCallHtml(html: string): string {
-  // Process tool calls
-  const toolCallPattern = /<pre data-lang="toolcall">([\s\S]*?)<\/pre>/g;
-  html = html.replace(toolCallPattern, (_match, jsonContent) => {
-    try {
-      // SilverBullet's htmlEscape converts \n to <br>, convert back before parsing
-      const withNewlines = jsonContent.replace(/<br>/g, "\n");
-      const decoded = unescapeHtml(withNewlines);
-      const data = parseToolCallJson(decoded);
-      if (data) {
-        return renderToolCallHtml(data);
-      }
-      return _match;
-    } catch {
-      return _match;
-    }
-  });
-
-  // Process reasoning blocks
-  const reasoningPattern = /<pre data-lang="reasoning">([\s\S]*?)<\/pre>/g;
-  html = html.replace(reasoningPattern, (_match, content) => {
-    try {
-      const withNewlines = content.replace(/<br>/g, "\n");
-      const decoded = unescapeHtml(withNewlines);
-      return renderReasoningHtml(decoded);
-    } catch {
-      return _match;
-    }
-  });
-
-  return html;
 }
 
 /**

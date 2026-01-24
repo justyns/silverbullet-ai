@@ -7,8 +7,8 @@ import {
   jsToLuaLiteral,
   luaLongString,
   parseToolCallsFromContent,
-  postProcessToolCallHtml,
 } from "./utils.ts";
+import { postProcessToolCallHtml } from "./widgets.ts";
 import { Attachment, MessageWithAttachments } from "./types.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";
