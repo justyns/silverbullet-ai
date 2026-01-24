@@ -45,6 +45,7 @@
     "@codemirror/legacy-modes/": "https://esm.sh/@codemirror/legacy-modes@6.5.1/",
     "@codemirror/lang-javascript": "https://esm.sh/@codemirror/lang-javascript@6.2.4?external=@codemirror/language,@codemirror/autocomplete,@codemirror/view,@codemirror/state,@codemirror/lint,@lezer/common,@lezer/lr,@lezer/javascript,@codemirror/commands&target=es2022",
     "style-mod": "https://esm.sh/style-mod@4.1.2",
-    "crelt": "https://esm.sh/crelt@1.0.6"
+    "crelt": "https://esm.sh/crelt@1.0.6",
+    "@huggingface/transformers": "https://esm.sh/@huggingface/transformers@3.5.1"
   }
 }

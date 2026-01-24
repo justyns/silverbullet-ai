@@ -6,6 +6,7 @@ import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
 import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
+import { TransformersEmbeddingProvider } from "./providers/transformers.ts";
 import { log } from "./utils.ts";
 import { inferProviderType } from "./model-discovery.ts";
 import type {
@@ -102,6 +103,7 @@ const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
   openai: OpenAIProvider,
   gemini: GeminiProvider,
   ollama: OllamaProvider,
+  transformers: TransformersEmbeddingProvider,
 };
 
 const defaultProviderDefaults: ProviderDefaults = {
@@ -360,6 +362,15 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl,
+      );
+      break;
+    case EmbeddingProvider.Transformers:
+      currentEmbeddingProvider = new TransformersEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl,
+        model.requireAuth ?? false,
+        useProxy,
       );
       break;
     default:

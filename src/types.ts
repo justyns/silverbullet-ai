@@ -203,6 +203,7 @@ export enum EmbeddingProvider {
   OpenAI = "openai",
   Gemini = "gemini",
   Ollama = "ollama",
+  Transformers = "transformers",
 
   Mock = "mock",
 }
