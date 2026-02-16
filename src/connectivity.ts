@@ -87,20 +87,27 @@ Use these commands to select your models:
 `;
     } else {
       const showModelDetails = (model: any, type: string, emoji: string) => {
+        // Validate that model has expected properties
+        const name = typeof model.name === "string" ? model.name : `[Invalid: ${typeof model.name}]`;
+        const modelName = typeof model.modelName === "string"
+          ? model.modelName
+          : `[Invalid: ${typeof model.modelName}]`;
+        const authSource = model.secretName
+          ? `\`${model.secretName}\` (legacy ai.keys)`
+          : `Provider config (${model.providerKey || model.provider})`;
+
         text += `## ${emoji} ${type} Configuration
 
 ### Model Details
 
 | Setting | Value |
 |---------|-------|
-| Name | ${model.name} |
+| Name | ${name} |
 | Description | ${model.description || "_No description provided_"} |
 | Provider | ${model.provider} |
-| Model Name | \`${model.modelName}\` |
+| Model Name | \`${modelName}\` |
 | Authentication | ${model.requireAuth ? "Required" : "Not Required"} |
-| Secret Name | ${model.secretName ? `\`${model.secretName}\`` : "_Not provided_"} |${
-          model.baseUrl ? `\n| API Endpoint | \`${model.baseUrl}\` |` : ""
-        }
+| Auth Source | ${authSource} |${model.baseUrl ? `\n| API Endpoint | \`${model.baseUrl}\` |` : ""}
 
 `;
       };

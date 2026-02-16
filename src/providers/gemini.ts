@@ -39,7 +39,7 @@ export class GeminiProvider extends AbstractProvider {
     super("Gemini", apiKey, baseUrl, modelName, useProxy, timeout);
   }
 
-  async listModels(): Promise<any> {
+  async listModels(): Promise<string[]> {
     const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
     try {
       const response = await this.fetch(apiUrl, { method: "GET" });
@@ -50,7 +50,9 @@ export class GeminiProvider extends AbstractProvider {
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
       const data = await response.json();
-      return data.models || [];
+      return (data.models || []).map((model: any) => {
+        return model.name.split("/")[1]; // Extract model name from full path (e.g. "models/gemini-2")
+      });
     } catch (error) {
       console.error("Failed to fetch models:", error);
       throw error;
