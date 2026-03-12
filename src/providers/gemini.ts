@@ -7,6 +7,7 @@ import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
 type HttpHeaders = {
   "Content-Type": string;
   "Authorization"?: string;
+  "x-goog-api-key"?: string;
 };
 
 type GeminiChatPart = {
@@ -40,9 +41,12 @@ export class GeminiProvider extends AbstractProvider {
   }
 
   async listModels(): Promise<any> {
-    const apiUrl = `${this.baseUrl}/v1beta/models?key=${this.apiKey}`;
+    const apiUrl = `${this.baseUrl}/v1beta/models`;
     try {
-      const response = await this.fetch(apiUrl, { method: "GET" });
+      const response = await this.fetch(apiUrl, {
+        method: "GET",
+        headers: { "x-goog-api-key": this.apiKey },
+      });
       if (!response.ok) {
         const errorBody = await response.json();
         console.error("HTTP response body: ", errorBody);
@@ -95,10 +99,11 @@ export class GeminiProvider extends AbstractProvider {
     return new Promise((resolve, reject) => {
       try {
         const rawUrl =
-          `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?key=${this.apiKey}&alt=sse`;
+          `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?alt=sse`;
 
         const headers: HttpHeaders = {
           "Content-Type": "application/json",
+          "x-goog-api-key": this.apiKey,
         };
 
         const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
@@ -249,10 +254,10 @@ export class GeminiProvider extends AbstractProvider {
     }
 
     const response = await this.fetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent?key=${this.apiKey}`,
+      `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
         body: JSON.stringify(requestBody),
       },
     );
@@ -309,8 +314,10 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
+    headers["x-goog-api-key"] = this.apiKey;
+
     const response = await this.fetch(
-      `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent?key=${this.apiKey}`,
+      `${this.baseUrl}/v1beta/models/${this.modelName}:embedContent`,
       { method: "POST", headers: headers, body: body },
     );
 

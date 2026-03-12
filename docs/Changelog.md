@@ -2,15 +2,33 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.5 (unreleased)
+## 1.0.2 (2026-03-12)
 
-- Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
+- Inject available tool list into AI system prompt so models know what tools they can use
+- Fix MCP initialized log message to use `[MCP]` prefix for consistency
+- Redact `apiKey` from provider config debug logs to avoid leaking secrets
+
+## 1.0.1 (2026-03-12)
+
+- Fix ReDoS vulnerability by forcing ajv >= 8.18.0
+- Fix dist build scripts so `plug.js` is in the correct location before packaging
+- Add MCP request/response logging for easier debugging
+- Fix `ai.chat` schema missing `showReasoning` property
+- Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
+
+## 1.0.0 (2026-03-12)
+
+- **BREAKING**: Build system migrated from Deno to Node.js/npm
+- Added MCP (Model Context Protocol) client support — connect AI to external tools and data sources via MCP servers
+- Add overflow menu in chat panel for small screen sizes
+- Correctly infer provider type in more cases, e.g. `ollamaLocal` → `ollama`
 - Add configurable `timeout` option per provider for slow models
 - Add model name to assistant chat header, click to change the model for the session
 - Click RAG icon to enable/disable embeddings search temporarily
-- Display agent name and click it to change to a different agent
+- Display agent name in chat header, click to change the active agent
 - Remember the state of the assistant chat panel and re-open it on page reload
 - Add support for displaying thinking/reasoning blocks with Ollama
+- Updated release workflow to publish to GitHub Releases automatically on version tags
 
 ## 0.6.4 (2025-01-13)
 

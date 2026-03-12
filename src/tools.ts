@@ -400,7 +400,7 @@ function requestToolApproval(
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<ApprovalResult> {
-  const approvalId = `approval_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  const approvalId = `approval_${Date.now()}_${crypto.randomUUID()}`;
 
   return new Promise((resolve) => {
     pendingApprovals.set(approvalId, { resolve, toolName, args });
@@ -469,7 +469,7 @@ export async function requestWriteApproval(
     return { success: true };
   }
 
-  const writeId = `write_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+  const writeId = `write_${Date.now()}_${crypto.randomUUID()}`;
 
   // Read current content and compute diff
   let currentContent = "";
