@@ -26,18 +26,18 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Verify formatting
-        run: deno fmt --check
-
-      - name: Run tests
-        run: deno task test
-
       - uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - name: Install npm dependencies
         run: npm install
+
+      - name: Verify formatting
+        run: deno fmt --check
+
+      - name: Run tests
+        run: deno task test
 
       - name: Build release
         run: npm run build:release
