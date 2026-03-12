@@ -235,6 +235,13 @@ export async function startPanelChat(
       systemContent = chatSystemPrompt.content;
     }
 
+    if (tools.length > 0) {
+      const toolList = [...luaTools.entries()]
+        .map(([name, def]) => `- ${name}: ${def.description}`)
+        .join("\n");
+      systemContent += `\n\nAvailable tools:\n${toolList}`;
+    }
+
     const systemMessage: ChatMessage = {
       role: "system",
       content: systemContent,
