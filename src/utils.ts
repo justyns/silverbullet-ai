@@ -1,16 +1,12 @@
 import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
-import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractAttributes } from "./lib/attribute.ts";
+import { extractFrontMatter } from "./lib/frontmatter.ts";
 import { aiSettings } from "./init.ts";
 import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
-import {
-  parseToolCallJson,
-  REASONING_BLOCK_PATTERN,
-  TOOL_CALL_WIDGET_PATTERN,
-} from "./widgets.ts";
+import { parseToolCallJson, REASONING_BLOCK_PATTERN, TOOL_CALL_WIDGET_PATTERN } from "./widgets.ts";
 
 export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 

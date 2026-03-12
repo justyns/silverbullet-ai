@@ -1,6 +1,8 @@
-import { editor, markdown, YAML } from "@silverbulletmd/silverbullet/syscalls";
+import { editor, markdown } from "@silverbulletmd/silverbullet/syscalls";
 import { collectNodesOfType, renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import type { FrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { stringify as yamlStringify } from "yaml";
+
+type FrontMatter = Record<string, any>;
 
 export async function getSelectedText() {
   const selectedRange = await editor.getSelection();
@@ -74,10 +76,10 @@ export async function updateFrontmatter(
   let updatedText: string;
   if (frontmatterNodes.length > 0) {
     const yamlNode = frontmatterNodes[0].children![1].children![0];
-    yamlNode.text = await YAML.stringify(frontMatter);
+    yamlNode.text = yamlStringify(frontMatter);
     updatedText = renderToText(tree);
   } else {
-    const yamlText = await YAML.stringify(frontMatter);
+    const yamlText = yamlStringify(frontMatter);
     updatedText = `---\n${yamlText}---\n${noteText}`;
   }
 

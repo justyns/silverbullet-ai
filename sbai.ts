@@ -1,6 +1,5 @@
-import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "./src/lib/frontmatter.ts";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
-import { decodeBase64 } from "@std/encoding/base64";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
   EmbeddingModelConfig,
@@ -9,10 +8,7 @@ import type {
   ModelConfig,
   ResponseFormat,
 } from "./src/types.ts";
-import {
-  createToolCallWidget,
-  formatReasoningBlock,
-} from "./src/widgets.ts";
+import { createToolCallWidget, formatReasoningBlock } from "./src/widgets.ts";
 import {
   aiSettings,
   chatSystemPrompt,
@@ -691,7 +687,7 @@ export async function promptAndGenerateImage() {
     if (imageData && imageData.data && imageData.data.length > 0) {
       const base64Image = imageData.data[0].b64_json;
       const revisedPrompt = imageData.data[0].revised_prompt;
-      const decodedImage = new Uint8Array(decodeBase64(base64Image));
+      const decodedImage = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
 
       // Generate a unique filename for the image
       const finalFileName = `dall-e-${Date.now()}.png`;

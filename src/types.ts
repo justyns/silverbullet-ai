@@ -159,10 +159,12 @@ export type LuaToolDefinition = {
     }>;
     required?: string[];
   };
-  handler: string; // Lua function reference
+  handler: string; // Lua function reference (unused for MCP tools)
   requiresApproval?: boolean;
   readPathParam?: string | string[];
   writePathParam?: string | string[];
+  /** If set, this tool is provided by the named MCP server rather than a Lua handler */
+  _mcpServerName?: string;
 };
 
 export type AIAgentTemplate = {
@@ -245,9 +247,27 @@ export type ProvidersConfig = {
   [key: string]: ProviderConfig | undefined;
 };
 
+export type MCPServerConfig = {
+  /** Base URL of the MCP server */
+  url: string;
+  /** "http" = MCP Streamable HTTP (2025-03-26); "sse" = legacy HTTP+SSE (2024-11-05). Default: "http" */
+  transport?: "http" | "sse";
+  /** Bearer token sent as Authorization header */
+  apiKey?: string;
+  /** Additional HTTP headers */
+  headers?: Record<string, string>;
+  /** Request timeout in ms. Default: 30000 */
+  timeout?: number;
+  /** Route requests through SilverBullet's proxy. Default: false */
+  useProxy?: boolean;
+};
+
 export type AISettings = {
   // New provider-centric config
   providers?: ProvidersConfig;
+
+  // MCP servers to connect to
+  mcpServers?: Record<string, MCPServerConfig>;
 
   // Default models to use (format: "provider:modelName", e.g., "ollama:llama3.2")
   defaultTextModel?: string;

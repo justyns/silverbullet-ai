@@ -54,6 +54,12 @@ one or more pages.
 |------|-------------|----------|
 | `eval_lua` | Execute a Lua expression and return the result | Yes |
 
+## MCP Tools
+
+Tools from external [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers are automatically merged with Space Lua tools once the servers are configured and connected. No extra steps are needed — MCP tools appear in all chat sessions and support the same agent filtering (whitelists / blacklists) as Lua tools.
+
+See **[[MCP]]** for full configuration details.
+
 ## Defining Custom Tools
 
 Ideally the built-in tools will remain slim and only provide core functionality.  Other libraries or users can add additional tools as needed.

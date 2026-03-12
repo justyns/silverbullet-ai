@@ -10,6 +10,7 @@ import type {
   Usage,
 } from "./types.ts";
 import { aiSettings } from "./init.ts";
+import { getMcpClients } from "./mcp-client.ts";
 
 function validatePathPermission(
   tool: LuaToolDefinition,
@@ -204,6 +205,52 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
     console.error("Error discovering tools:", e);
   }
 
+  // Merge in MCP tools
+  const mcpTools = await discoverMcpTools();
+  for (const [name, def] of mcpTools) {
+    if (tools.has(name)) {
+      console.warn(`MCP tool "${name}" conflicts with a Lua tool of the same name — skipping MCP version`);
+    } else {
+      tools.set(name, def);
+    }
+  }
+
+  return tools;
+}
+
+/**
+ * Discovers tools from all connected MCP servers and converts them to the
+ * LuaToolDefinition format (with _mcpServerName set so executeTool knows
+ * to route to MCP instead of Lua).
+ */
+async function discoverMcpTools(): Promise<Map<string, LuaToolDefinition>> {
+  const tools = new Map<string, LuaToolDefinition>();
+  const clients = getMcpClients();
+
+  if (clients.size === 0) return tools;
+
+  for (const [serverName, client] of clients) {
+    try {
+      const mcpToolList = await client.listTools();
+      for (const mcpTool of mcpToolList) {
+        tools.set(mcpTool.name, {
+          description: mcpTool.description ?? mcpTool.name,
+          parameters: {
+            type: "object",
+            properties: mcpTool.inputSchema?.properties ?? {},
+            required: mcpTool.inputSchema?.required ?? [],
+          },
+          handler: mcpTool.name, // unused for MCP tools but satisfies the type
+          requiresApproval: false,
+          _mcpServerName: serverName,
+        });
+      }
+      console.log(`[MCP] Discovered ${mcpToolList.length} tool(s) from "${serverName}"`);
+    } catch (e) {
+      console.error(`[MCP] Failed to list tools from "${serverName}":`, e);
+    }
+  }
+
   return tools;
 }
 
@@ -285,6 +332,28 @@ export async function executeTool(
     return { success: false, error: permCheck.error };
   }
 
+  // MCP tool — delegate to the MCP client
+  if (tool._mcpServerName) {
+    const client = getMcpClients().get(tool._mcpServerName);
+    if (!client) {
+      return {
+        success: false,
+        error: `MCP server "${tool._mcpServerName}" is not connected`,
+      };
+    }
+    try {
+      const resultStr = await client.callTool(toolName, args);
+      return { success: true, result: resultStr };
+    } catch (e) {
+      console.error(`[MCP] Error executing tool "${toolName}":`, e);
+      return {
+        success: false,
+        error: e instanceof Error ? e.message : String(e),
+      };
+    }
+  }
+
+  // Lua tool
   try {
     const luaArgs = toLuaLiteral(args);
     const toolNameLiteral = toLuaStringLiteral(toolName);

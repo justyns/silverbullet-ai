@@ -8,6 +8,7 @@ import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import { inferProviderType } from "./model-discovery.ts";
+import { initializeMcpClients } from "./mcp-client.ts";
 import type {
   AISettings,
   ChatMessage,
@@ -709,6 +710,11 @@ export async function initializeOpenAI(configure = true) {
       currentEmbeddingModel = undefined as any;
     }
   }
+
+  // Initialize MCP clients (re-runs on every config reload to pick up changes)
+  await initializeMcpClients(aiSettings.mcpServers).catch((e) => {
+    console.error("[MCP] initializeMcpClients error:", e);
+  });
 
   chatSystemPrompt = {
     role: "system",

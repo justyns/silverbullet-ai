@@ -1,4 +1,4 @@
-import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "./lib/frontmatter.ts";
 import { editor, index, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import type { SlashCompletionOption } from "@silverbulletmd/silverbullet/type/client";
 
