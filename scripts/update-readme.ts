@@ -8,6 +8,26 @@ if (!tag) {
   Deno.exit(1);
 }
 
+function getGitHubRepo(): string {
+  // GitHub Actions sets GITHUB_REPOSITORY as "owner/repo"
+  const envRepo = Deno.env.get("GITHUB_REPOSITORY");
+  if (envRepo) return envRepo;
+  // Local: parse from git remote URL (supports both HTTPS and SSH)
+  try {
+    const result = new Deno.Command("git", {
+      args: ["remote", "get-url", "origin"],
+      stdout: "piped",
+      stderr: "null",
+    }).outputSync();
+    const url = new TextDecoder().decode(result.stdout).trim();
+    const match = url.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
+    if (match) return match[1];
+  } catch {}
+  return "justyns/silverbullet-ai";
+}
+
+const githubRepo = getGitHubRepo();
+
 function extractDocsForFunction(functionPath: string): string {
   const [filePath, functionName] = functionPath.split(":");
   const parsed = parseFiles([`./${filePath}`]);
@@ -26,17 +46,15 @@ async function updateReadme(tag: string) {
   let installationDocContent = await Deno.readTextFile(installationDocPath);
   const featuresDocContent = await Deno.readTextFile(featuresDocPath);
 
+  const escapedRepo = githubRepo.replace("/", "\\/");
+  const ghrVersionedPattern = new RegExp(`ghr:${escapedRepo}@[0-9.]+\\/PLUG\\.md`, "g");
+  const ghrVersioned = `ghr:${githubRepo}@${tag}/PLUG.md`;
+
   // Update the tag in the README
-  readmeContent = readmeContent.replace(
-    /ghr:justyns\/silverbullet-ai@[0-9.]+\/PLUG\.md/g,
-    `ghr:justyns/silverbullet-ai@${tag}/PLUG.md`,
-  );
+  readmeContent = readmeContent.replace(ghrVersionedPattern, ghrVersioned);
 
   // Update the tag in the Installation.md
-  installationDocContent = installationDocContent.replace(
-    /ghr:justyns\/silverbullet-ai@[0-9.]+\/PLUG\.md/g,
-    `ghr:justyns/silverbullet-ai@${tag}/PLUG.md`,
-  );
+  installationDocContent = installationDocContent.replace(ghrVersionedPattern, ghrVersioned);
 
   // Parse plug YAML to get a list of functions/commands
   const plugYaml = yaml.parse(plugYamlContent);
