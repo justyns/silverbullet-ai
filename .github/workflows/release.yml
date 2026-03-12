@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: ["main"]
     tags:
       - "v*.*.*"
   workflow_dispatch:
@@ -38,10 +39,22 @@ jobs:
       - name: Create dist files
         run: npm run dist
 
+      - name: Determine tag name
+        id: tag
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            echo "name=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == refs/tags/* ]]; then
+            echo "name=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          else
+            VERSION=$(node -p "require('./package.json').version")
+            echo "name=v${VERSION}" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          tag_name: ${{ steps.tag.outputs.name }}
           generate_release_notes: true
           files: |
             dist/silverbullet-ai.plug.js
