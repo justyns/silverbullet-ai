@@ -30,6 +30,19 @@ function getVersion(): string {
   return execSync("git describe --tags --always").toString().trim();
 }
 
+function getGitHubRepo(): string {
+  // GitHub Actions sets GITHUB_REPOSITORY as "owner/repo"
+  const envRepo = process.env.GITHUB_REPOSITORY;
+  if (envRepo) return envRepo;
+  // Local: parse from git remote URL (supports both HTTPS and SSH)
+  try {
+    const remoteUrl = execSync("git remote get-url origin", { stdio: ["pipe", "pipe", "ignore"] }).toString().trim();
+    const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
+    if (match) return match[1];
+  } catch {}
+  return "justyns/silverbullet-ai";
+}
+
 function extractRecentChangelog(changelog: string, version: string): string {
   const versionMatch = version.match(/^(\d+\.\d+)/);
   if (!versionMatch) return "";
@@ -71,6 +84,9 @@ interface LibraryFile {
 async function main() {
   await emptyDir(DIST_DIR);
 
+  const githubRepo = getGitHubRepo();
+  const repoUrl = `https://github.com/${githubRepo}`;
+
   const libraryFiles: LibraryFile[] = [];
 
   for await (const entry of walk(LIBRARY_DIR)) {
@@ -98,7 +114,7 @@ tags:
 
 This file contains all the Space Lua code, widgets, and AI prompt templates for the silverbullet-ai plug.
 
-Install by copying this file to your space, or use \`Library: Install\` with \`ghr:justyns/silverbullet-ai/PLUG.md\`.
+Install by copying this file to your space, or use \`Library: Install\` with \`ghr:${githubRepo}/PLUG.md\`.
 
 `;
 
@@ -121,7 +137,18 @@ Install by copying this file to your space, or use \`Library: Install\` with \`g
   console.log(`✓ Created ${DIST_DIR}/${COMBINED_LIBRARY}`);
 
   const version = getVersion();
-  const plugMdContent = await readFile(PLUG_MD, "utf-8");
+  const [repoOwner, repoName] = githubRepo.split("/");
+  let plugMdContent = await readFile(PLUG_MD, "utf-8");
+  // Patch frontmatter fields to reflect the actual owner/repo
+  plugMdContent = plugMdContent
+    .replace(/^name: Library\/[^\n]+/m, `name: Library/${repoOwner}/${repoName}`)
+    .replace(/^author: [^\n]+/m, `author: ${repoOwner}`)
+    .replace(/^website: [^\n]+/m, `website: ${repoUrl}`);
+  // Patch any ghr: install references in the body
+  plugMdContent = plugMdContent.replace(
+    /ghr:[^/\s]+\/[^/\s]+\//g,
+    `ghr:${githubRepo}/`,
+  );
   const changelogContent = await readFile(CHANGELOG_MD, "utf-8");
   const recentChangelog = extractRecentChangelog(changelogContent, version);
 
@@ -135,7 +162,7 @@ Current version: **${version}**
 
 ${recentChangelog}
 
-For the full changelog, see https://github.com/justyns/silverbullet-ai/releases
+For the full changelog, see ${repoUrl}/releases
 `;
 
   await writeFile(join(DIST_DIR, PLUG_MD), enhancedPlugMd, "utf-8");
