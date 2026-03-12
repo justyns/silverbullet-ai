@@ -258,6 +258,10 @@ config.define("ai.chat", {
       type = "boolean",
       description = "Skip approval prompts for tools (useful for benchmarks)",
     },
+    showReasoning = {
+      type = "boolean",
+      description = "Show reasoning/thinking blocks from models that support it",
+    },
     defaultAgent = {
       type = "string",
       description = "Default agent to use (e.g., 'lua:general' for built-in, or page ref like 'Library/Agents/MyAgent')",
