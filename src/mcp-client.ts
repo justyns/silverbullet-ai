@@ -260,7 +260,7 @@ export class MCPClient {
     this.initialized = true;
 
     console.log(
-      `MCP "${this.serverName}" initialized (protocol: ${result?.protocolVersion ?? "unknown"})`,
+      `[MCP] "${this.serverName}" initialized (protocol: ${result?.protocolVersion ?? "unknown"})`,
     );
   }
 
