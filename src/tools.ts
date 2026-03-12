@@ -402,25 +402,31 @@ function requestToolApproval(
 ): Promise<ApprovalResult> {
   const approvalId = `approval_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     pendingApprovals.set(approvalId, { resolve, toolName, args });
 
     (async () => {
-      const html = await asset.readAsset(
-        "silverbullet-ai",
-        "assets/tool-approval-modal.html",
-      );
-      const script = await asset.readAsset(
-        "silverbullet-ai",
-        "assets/tool-approval-modal.js",
-      );
+      try {
+        const html = await asset.readAsset(
+          "silverbullet-ai",
+          "assets/tool-approval-modal.html",
+        );
+        const script = await asset.readAsset(
+          "silverbullet-ai",
+          "assets/tool-approval-modal.js",
+        );
 
-      const initScript = `
+        const initScript = `
         globalThis.toolApprovalData = ${JSON.stringify({ approvalId, toolName, args, hasDiffSupport: false })};
         ${script}
       `;
 
-      await editor.showPanel("modal", 20, html, initScript);
+        await editor.showPanel("modal", 20, html, initScript);
+      } catch (e) {
+        console.error("Error showing tool approval modal:", e);
+        pendingApprovals.delete(approvalId);
+        reject(e);
+      }
     })();
   });
 }
@@ -482,7 +488,7 @@ export async function requestWriteApproval(
 
   const diff = computeSimpleDiff(currentContent, newContent);
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     pendingWrites.set(writeId, {
       resolve: (result) => {
         if (result.approved) {
@@ -501,29 +507,35 @@ export async function requestWriteApproval(
     });
 
     (async () => {
-      const html = await asset.readAsset(
-        "silverbullet-ai",
-        "assets/tool-approval-modal.html",
-      );
-      const script = await asset.readAsset(
-        "silverbullet-ai",
-        "assets/tool-approval-modal.js",
-      );
+      try {
+        const html = await asset.readAsset(
+          "silverbullet-ai",
+          "assets/tool-approval-modal.html",
+        );
+        const script = await asset.readAsset(
+          "silverbullet-ai",
+          "assets/tool-approval-modal.js",
+        );
 
-      const initScript = `
+        const initScript = `
         globalThis.toolApprovalData = ${
-        JSON.stringify({
-          approvalId: writeId,
-          toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
-          args: { page, contentLength: newContent.length },
-          hasDiffSupport: true,
-          isWriteApproval: true,
-        })
-      };
+          JSON.stringify({
+            approvalId: writeId,
+            toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
+            args: { page, contentLength: newContent.length },
+            hasDiffSupport: true,
+            isWriteApproval: true,
+          })
+        };
         ${script}
       `;
 
-      await editor.showPanel("modal", 20, html, initScript);
+        await editor.showPanel("modal", 20, html, initScript);
+      } catch (e) {
+        console.error("Error showing write approval modal:", e);
+        pendingWrites.delete(writeId);
+        reject(e);
+      }
     })();
   });
 }
@@ -838,6 +850,7 @@ export type StreamingAgenticChatOptions = {
     result: ToolExecutionResult,
   ) => void;
   maxIterations?: number;
+  permissions?: PathPermissions;
 };
 
 /**
@@ -857,6 +870,7 @@ export async function runStreamingAgenticChat(
     onReasoningChunk,
     onToolCall,
     maxIterations = MAX_TOOL_ITERATIONS,
+    permissions,
   } = options;
 
   const workingMessages = [...messages];
@@ -912,6 +926,7 @@ export async function runStreamingAgenticChat(
         result.tool_calls,
         luaTools,
         onToolCall,
+        permissions,
       );
       toolCallsText += newText;
       workingMessages.push(...toolMessages);
