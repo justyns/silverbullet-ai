@@ -1,5 +1,6 @@
 import { buildProxyHeaders, buildProxyUrl } from "./utils.ts";
-import type { MCPServerConfig } from "./types.ts";
+import type { MCPOAuthConfig, MCPServerConfig } from "./types.ts";
+import { clearOAuthTokens, getValidAccessToken } from "./mcp-oauth.ts";
 
 export type { MCPServerConfig };
 
@@ -52,6 +53,7 @@ export class MCPClient {
   private headers: Record<string, string>;
   private timeout: number;
   private useProxy: boolean;
+  private oauthConfig?: MCPOAuthConfig;
   private requestId = 0;
   private sessionId?: string;
   private initialized = false;
@@ -62,11 +64,20 @@ export class MCPClient {
     this.transport = config.transport ?? "http";
     this.timeout = config.timeout ?? 30000;
     this.useProxy = config.useProxy ?? false;
+    this.oauthConfig = config.oauth;
     this.headers = {
       "Content-Type": "application/json",
-      ...(config.apiKey ? { "Authorization": `Bearer ${config.apiKey}` } : {}),
+      // Static apiKey — mutually exclusive with oauth
+      ...(config.apiKey && !config.oauth ? { "Authorization": `Bearer ${config.apiKey}` } : {}),
       ...(config.headers ?? {}),
     };
+  }
+
+  /** Returns an Authorization header with a fresh OAuth Bearer token, or {} */
+  private async getOAuthHeaders(): Promise<Record<string, string>> {
+    if (!this.oauthConfig) return {};
+    const token = await getValidAccessToken(this.serverName, this.url, this.oauthConfig);
+    return { "Authorization": `Bearer ${token}` };
   }
 
   private nextId(): number {
@@ -94,6 +105,7 @@ export class MCPClient {
 
     console.log(`[MCP] "${this.serverName}" → ${method}`, params !== undefined ? params : "");
 
+    const oauthHeaders = await this.getOAuthHeaders();
     let response: Response;
 
     if (this.transport === "sse") {
@@ -103,7 +115,7 @@ export class MCPClient {
       const url = this.buildFetchUrl(`/messages?sessionId=${this.sessionId}`);
       response = await fetch(url, {
         method: "POST",
-        headers: this.buildFetchHeaders(),
+        headers: this.buildFetchHeaders(oauthHeaders),
         body,
         signal: AbortSignal.timeout(this.timeout),
       });
@@ -112,10 +124,22 @@ export class MCPClient {
       const url = this.buildFetchUrl();
       response = await fetch(url, {
         method: "POST",
-        headers: this.buildFetchHeaders({ "Accept": "application/json, text/event-stream" }),
+        headers: this.buildFetchHeaders({
+          "Accept": "application/json, text/event-stream",
+          ...oauthHeaders,
+        }),
         body,
         signal: AbortSignal.timeout(this.timeout),
       });
+    }
+
+    if (response.status === 401 && this.oauthConfig) {
+      // Token was rejected — clear it so the next call triggers re-authorization
+      await clearOAuthTokens(this.serverName);
+      throw new Error(
+        `MCP "${this.serverName}" authorization failed (401). ` +
+          `Run "AI: Refresh Config" to re-authenticate.`,
+      );
     }
 
     if (!response.ok) {
@@ -189,8 +213,9 @@ export class MCPClient {
    */
   private async establishSseSession(): Promise<void> {
     const sseUrl = this.buildFetchUrl("/sse");
+    const oauthHeaders = await this.getOAuthHeaders();
     const response = await fetch(sseUrl, {
-      headers: this.buildFetchHeaders({ "Accept": "text/event-stream" }),
+      headers: this.buildFetchHeaders({ "Accept": "text/event-stream", ...oauthHeaders }),
       signal: AbortSignal.timeout(this.timeout),
     });
 

@@ -247,6 +247,25 @@ export type ProvidersConfig = {
   [key: string]: ProviderConfig | undefined;
 };
 
+export type MCPOAuthConfig = {
+  /**
+   * Pre-registered OAuth client ID. If omitted, dynamic client registration
+   * (RFC 7591) is attempted using the server's registration_endpoint.
+   */
+  clientId?: string;
+  /**
+   * OAuth authorization endpoint URL. If omitted, discovered via
+   * /.well-known/oauth-authorization-server on the MCP server's origin.
+   */
+  authorizationUrl?: string;
+  /**
+   * OAuth token endpoint URL. If omitted, discovered alongside authorizationUrl.
+   */
+  tokenUrl?: string;
+  /** OAuth scopes to request (space-separated). */
+  scopes?: string[];
+};
+
 export type MCPServerConfig = {
   /** Base URL of the MCP server */
   url: string;
@@ -260,6 +279,12 @@ export type MCPServerConfig = {
   timeout?: number;
   /** Route requests through SilverBullet's proxy. Default: false */
   useProxy?: boolean;
+  /**
+   * OAuth 2.1 configuration. When set, the plug will handle token acquisition
+   * (including PKCE) and automatically refresh tokens as needed.
+   * Cannot be combined with apiKey.
+   */
+  oauth?: MCPOAuthConfig;
 };
 
 export type AISettings = {

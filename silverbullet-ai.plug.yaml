@@ -163,3 +163,9 @@ functions:
   renderReasoningWidget:
     path: src/widgets.ts:renderReasoningWidget
     codeWidget: reasoning
+
+  # MCP OAuth 2.1 handlers (called from the OAuth modal panel JS)
+  handleMcpOAuthCallback:
+    path: src/mcp-oauth.ts:handleMcpOAuthCallback
+  closeMcpOAuthModal:
+    path: src/mcp-oauth.ts:closeMcpOAuthModal
