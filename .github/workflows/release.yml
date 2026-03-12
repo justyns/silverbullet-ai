@@ -32,8 +32,8 @@ jobs:
       - name: Run tests
         run: npm test
 
-      - name: Build release
-        run: npm run build:release
+      - name: Build
+        run: npm run build
 
       - name: Create dist files
         run: npm run dist
