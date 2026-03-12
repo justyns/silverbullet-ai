@@ -1,0 +1,141 @@
+<link rel="stylesheet" href="/.client/main.css" />
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html,
+  body {
+    background: none !important;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 14px;
+    color: var(--modal-color);
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-wrapper {
+    width: 100%;
+    max-width: 480px;
+    background: var(--modal-background-color);
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 16px;
+    border-bottom: 1px solid var(--modal-border-color);
+    background: var(--subtle-background-color);
+  }
+
+  .modal-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    flex: 1;
+  }
+
+  .modal-icon {
+    font-size: 20px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .server-name {
+    font-weight: 600;
+    color: var(--ui-accent-color);
+  }
+
+  .description {
+    margin-bottom: 16px;
+    line-height: 1.5;
+    color: var(--modal-color);
+  }
+
+  .status-box {
+    background: var(--subtle-background-color);
+    border-radius: 6px;
+    padding: 12px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .status-icon {
+    display: inline-block;
+    margin-right: 6px;
+  }
+
+  #status-text {
+    color: var(--subtle-color);
+  }
+
+  #status-text.waiting {
+    color: var(--modal-color);
+  }
+
+  #status-text.success {
+    color: var(--ui-accent-color);
+  }
+
+  #status-text.error {
+    color: #e05c5c;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 8px;
+    padding: 16px;
+    border-top: 1px solid var(--modal-border-color);
+    justify-content: flex-end;
+  }
+
+  .btn-open {
+    background: var(--ui-accent-color);
+    color: var(--ui-accent-contrast-color);
+    border-color: var(--ui-accent-color);
+  }
+
+  .btn-cancel {
+    background: var(--button-background-color);
+    color: var(--button-color);
+    border-color: var(--button-border-color);
+  }
+</style>
+
+<div class="sb-modal-box modal-wrapper">
+  <div class="modal-header">
+    <span class="modal-icon">🔐</span>
+    <h3>MCP Server Authentication</h3>
+  </div>
+
+  <div class="modal-body">
+    <p class="description">
+      The MCP server <span class="server-name" id="server-name"></span> requires authorization.
+      Click <strong>Authorize</strong> to open the login page in a new window.
+    </p>
+
+    <div class="status-box">
+      <span class="status-icon">⏳</span>
+      <span id="status-text">Waiting for authorization…</span>
+    </div>
+  </div>
+
+  <div class="modal-footer">
+    <button class="sb-button btn-cancel" id="cancel-btn">Cancel</button>
+    <button class="sb-button btn-open" id="authorize-btn">Authorize</button>
+  </div>
+</div>

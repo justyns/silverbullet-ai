@@ -61,6 +61,61 @@ After saving, run **`AI: Refresh Config`** to connect to the new servers. Check 
 | `headers` | object | — | Additional HTTP headers to include with every request. |
 | `timeout` | number | `30000` | Per-request timeout in milliseconds. |
 | `useProxy` | boolean | `false` | Route requests through SilverBullet's network proxy. |
+| `oauth` | object | — | OAuth 2.1 configuration (see below). Cannot be combined with `apiKey`. |
+
+## OAuth 2.1 authentication
+
+Some MCP servers require OAuth 2.1 (authorization code flow + PKCE) instead of a static API key. When `oauth` is set, silverbullet-ai will:
+
+1. Discover the authorization and token endpoints from `/.well-known/oauth-authorization-server` on the server's origin (or use the URLs you provide directly)
+2. Register a public OAuth client dynamically (RFC 7591) if no `clientId` is configured
+3. Open a popup window so you can log in — once redirected back, the authorization code is exchanged for tokens automatically
+4. Cache the access token and silently refresh it using the refresh token before it expires
+
+You will only be prompted to log in again when the refresh token itself expires (typically every 30 days, depending on the server).
+
+```lua
+config.set {
+  ai = {
+    mcpServers = {
+      my_server = {
+        url = "https://api.example.com/mcp",
+        oauth = {
+          -- Optional: pre-registered client ID.
+          -- Omit to use dynamic client registration.
+          clientId = "my-app-client-id",
+
+          -- Optional: override endpoint discovery.
+          -- Omit to auto-discover from /.well-known/oauth-authorization-server.
+          authorizationUrl = "https://auth.example.com/authorize",
+          tokenUrl = "https://auth.example.com/token",
+
+          -- Optional: OAuth scopes to request.
+          scopes = {"tools:read", "tools:write"},
+        }
+      }
+    }
+  }
+}
+```
+
+The minimal configuration (auto-discovery + dynamic registration) is just:
+
+```lua
+my_server = {
+  url = "https://api.example.com/mcp",
+  oauth = {}
+}
+```
+
+### OAuth configuration options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `clientId` | string | — | Pre-registered OAuth client ID. If omitted, dynamic client registration is attempted. |
+| `authorizationUrl` | string | — | Authorization endpoint URL. If omitted, discovered via `/.well-known/oauth-authorization-server`. |
+| `tokenUrl` | string | — | Token endpoint URL. If omitted, discovered alongside `authorizationUrl`. |
+| `scopes` | string[] | — | OAuth scopes to request. |
 
 ## Using MCP tools
 
