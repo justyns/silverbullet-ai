@@ -1,8 +1,10 @@
 """Mkdocs hooks and macros for plug documentation."""
 
 import logging
+import os
 import os.path
 import re
+import subprocess
 from pathlib import Path
 from urllib.parse import quote
 
@@ -38,6 +40,34 @@ SB_DOCS = [
     ("Object", "Object/attribute system"),
 ]
 DOC_ORDER = ["Quick Start", "Installation", "Configuration", "Templated Prompts", "Bundled Prompts", "Agents", "Tools", "Context Enrichment"]
+
+
+def _get_github_repo() -> str | None:
+    """Detect the GitHub owner/repo from environment or git remote."""
+    if repo := os.environ.get("GITHUB_REPOSITORY"):
+        return repo
+    try:
+        url = subprocess.check_output(
+            ["git", "remote", "get-url", "origin"], stderr=subprocess.DEVNULL
+        ).decode().strip()
+        m = re.search(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$", url)
+        if m:
+            return m.group(1)
+    except Exception:
+        pass
+    return None
+
+
+def on_config(config):
+    """Override repo_url and social links with the detected GitHub repository."""
+    repo = _get_github_repo()
+    if repo:
+        repo_url = f"https://github.com/{repo}"
+        config["repo_url"] = repo_url
+        for item in config.get("extra", {}).get("social", []):
+            if "github" in item.get("icon", ""):
+                item["link"] = repo_url
+    return config
 
 
 def strip_frontmatter(content: str) -> str:
