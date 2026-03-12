@@ -9,10 +9,7 @@ import type {
   ModelConfig,
   ResponseFormat,
 } from "./src/types.ts";
-import {
-  createToolCallWidget,
-  formatReasoningBlock,
-} from "./src/widgets.ts";
+import { createToolCallWidget, formatReasoningBlock } from "./src/widgets.ts";
 import {
   aiSettings,
   chatSystemPrompt,

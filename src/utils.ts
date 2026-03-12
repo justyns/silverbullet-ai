@@ -6,11 +6,7 @@ import { aiSettings } from "./init.ts";
 import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
-import {
-  parseToolCallJson,
-  REASONING_BLOCK_PATTERN,
-  TOOL_CALL_WIDGET_PATTERN,
-} from "./widgets.ts";
+import { parseToolCallJson, REASONING_BLOCK_PATTERN, TOOL_CALL_WIDGET_PATTERN } from "./widgets.ts";
 
 export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
