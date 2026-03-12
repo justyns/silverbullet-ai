@@ -29,11 +29,11 @@ export let chatSystemPrompt: ChatMessage;
 
 export let currentAIProvider: ProviderInterface;
 export let currentImageProvider: ImageProviderInterface;
-export let currentEmbeddingProvider: EmbeddingProviderInterface;
+export let currentEmbeddingProvider: EmbeddingProviderInterface | undefined;
 
 export let currentModel: ModelConfig;
 export let currentImageModel: ImageModelConfig;
-export let currentEmbeddingModel: EmbeddingModelConfig;
+export let currentEmbeddingModel: EmbeddingModelConfig | undefined;
 
 export async function initIfNeeded() {
   // text models (mostly)
@@ -706,8 +706,8 @@ export async function initializeOpenAI(configure = true) {
         log("Configured default embedding model directly:", defaultModel);
       }
     } else {
-      currentEmbeddingProvider = undefined as any;
-      currentEmbeddingModel = undefined as any;
+      currentEmbeddingProvider = undefined;
+      currentEmbeddingModel = undefined;
     }
   }
 
