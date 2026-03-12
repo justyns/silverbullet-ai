@@ -433,7 +433,8 @@ export async function configureSelectedModel(model: ModelConfig) {
 
   // Get timeout from provider config
   const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
-  log(`Provider config for "${configKey}":`, providerConfig);
+  const { apiKey: _redacted, ...safeProviderConfig } = providerConfig;
+  log(`Provider config for "${configKey}":`, safeProviderConfig);
   log(`Using timeout: ${timeout}ms (${timeout / 1000}s)`);
 
   currentModel = effectiveModel;
