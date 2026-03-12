@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to release (e.g. v1.2.3)"
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+        with:
+          deno-version: v2.x
+
+      - name: Verify formatting
+        run: deno fmt --check
+
+      - name: Run tests
+        run: deno task test
+
+      - name: Setup silverbullet
+        run: deno install -f --name silverbullet --unstable-kv --unstable-worker-options -A --global https://get.silverbullet.md
+
+      - name: Add Deno bin to PATH
+        run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
+
+      - name: Build release
+        run: deno task build-release
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          generate_release_notes: true
+          files: |
+            dist/silverbullet-ai.plug.js
+            dist/PLUG.md
+            dist/silverbullet-ai-library.md

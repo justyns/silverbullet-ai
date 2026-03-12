@@ -133,6 +133,34 @@ config.set {
 }
 ```
 
+## MCP Servers
+
+Connect to external [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) servers to add more tools to the assistant. Tools from connected servers are merged automatically with Space Lua tools and available in all chat sessions.
+
+```lua
+config.set {
+  ai = {
+    -- ... providers, defaultTextModel, etc.
+
+    mcpServers = {
+      brave_search = {
+        url = "http://localhost:3001"
+      },
+      my_api = {
+        url = "https://mcp.example.com",
+        apiKey = "secret",
+        transport = "sse",  -- use "sse" for older MCP servers
+        timeout = 60000
+      }
+    }
+  }
+}
+```
+
+Run **`AI: Refresh Config`** after changing `mcpServers` to reconnect all servers.
+
+See **[[MCP]]** for full documentation including supported transports, troubleshooting, and connecting stdio-based servers via a proxy.
+
 ## Configuration Options
 
 - **[[Configuration/Text Models]]** - Configure LLM providers for text generation
@@ -141,3 +169,4 @@ config.set {
 - **[[Configuration/Chat Instructions]]** - Customize chat behavior
 - **[[Configuration/Prompt Instructions]]** - Customize built-in command prompts
 - **[[Configuration/Custom Enrichment Functions]]** - Add custom context enrichment
+- **[[MCP]]** - Connect to MCP servers for additional tools

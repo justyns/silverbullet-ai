@@ -4,6 +4,7 @@
 - **Context Enrichment**: Wiki-link parsing, template expansion, and custom enrichment functions
 - **AI Agents**: Create specialized AI personas with custom system prompts, tool filtering, and page or Lua-based definitions
 - **AI Tools**: Built-in tools (read, create, update notes; search, navigate; execute Lua) with custom tool support and approval gates
+- **MCP Client**: Connect to any MCP (Model Context Protocol) server over HTTP or SSE to add external tools to the assistant
 - **Templated Prompts**: Define custom prompts as pages or in Space Lua with multiple insertion modes
 - **Vector Embeddings**: Chunk-based embeddings stored in SilverBullet's datastore for semantic search
 - **Note Summaries**: *Experimental* - Generate and index page summaries
