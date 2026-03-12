@@ -11,12 +11,12 @@
   },
   "dependencies": {
     "@silverbulletmd/silverbullet": ">=2.5.3",
-    "sse.js": "^2.2.0"
+    "sse.js": "^2.2.0",
+    "yaml": "^2.0.0"
   },
   "devDependencies": {
     "@lezer/markdown": "^1.0.0",
     "tsx": "^4.0.0",
-    "vitest": "^3.0.0",
-    "yaml": "^2.0.0"
+    "vitest": "^3.0.0"
   }
 }

@@ -106,6 +106,28 @@ export function formatReasoningBlock(reasoning: string): string {
 }
 
 /**
+ * SilverBullet code widget handler for ```toolcall blocks.
+ */
+export function renderToolCallWidget(
+  content: string,
+  _pageName: string,
+): { html: string } {
+  const data = parseToolCallJson(content);
+  if (!data) return { html: `<pre>${escapeHtml(content)}</pre>` };
+  return { html: renderToolCallHtml(data) };
+}
+
+/**
+ * SilverBullet code widget handler for ```reasoning blocks.
+ */
+export function renderReasoningWidget(
+  content: string,
+  _pageName: string,
+): { html: string } {
+  return { html: renderReasoningHtml(content) };
+}
+
+/**
  * Post-processes HTML to replace tool-call and reasoning code blocks with
  * rendered HTML widgets. Styles are provided via Space Style.
  */
