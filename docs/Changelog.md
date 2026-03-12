@@ -4,10 +4,13 @@ This page is a brief overview of each version.
 
 ## 0.6.5 (2026-03-13)
 
-- Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
-- Add configurable `timeout` option per provider for slow models
-- Add model name to assistant chat header, click to change the model for the session
-- Click RAG icon to enable/disable embeddings search temporarily
+- Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
+- Fix promise hang bugs and missing permissions in streaming agentic chat
+- Fix unsafe type casts that could cause runtime errors
+- Inject available tool list into AI system prompt so models know what tools they can use
+- Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
+- **BREAKING**: Build system migrated from Deno to Node.js/npm
+- Add release workflow to publish to GitHub Releases automatically on version tags
 - Display agent name and click it to change to a different agent
 - Persist agent selection in chat panel
 - Remember the state of the assistant chat panel and re-open it on page reload

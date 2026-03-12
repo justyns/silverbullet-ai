@@ -125,7 +125,7 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
@@ -157,7 +157,7 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
@@ -189,7 +189,7 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
