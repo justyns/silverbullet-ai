@@ -2,6 +2,12 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.0 (2026-03-12)
+
+- Document OAuth 2.1 config in Lua syntax in MCP.md
+- Add OAuth 2.1 support for MCP servers
+- Show current version from package.json in docs header
+
 ## 1.0.5 (2026-03-12)
 
 - Replace broken release.yml changelog step with dedicated branch workflow
