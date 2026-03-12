@@ -1,0 +1,82 @@
+name: Auto-update changelog on version bump
+
+on:
+  push:
+    branches-ignore:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  changelog:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6.3.0
+        with:
+          node-version: "24"
+
+      - name: Check for version bump and update changelog
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+
+          # Get the version on main
+          MAIN_VERSION=$(git show origin/main:package.json | node -e \
+            "let d=''; process.stdin.on('data',c=>d+=c).on('end',()=>console.log(JSON.parse(d).version))")
+
+          if [ "$VERSION" = "$MAIN_VERSION" ]; then
+            echo "No version bump detected ($VERSION), skipping"
+            exit 0
+          fi
+
+          echo "Version bumped: $MAIN_VERSION -> $VERSION"
+
+          # Skip if changelog already has an entry for this version
+          if grep -q "^## ${VERSION}" docs/Changelog.md; then
+            echo "Changelog already has entry for v${VERSION}, skipping"
+            exit 0
+          fi
+
+          DATE=$(date +%Y-%m-%d)
+
+          # Collect commits since the last tag, filtering out noise
+          PREV_TAG=$(git tag --sort=-version:refname | grep "^v" | head -1 || true)
+
+          if [ -n "$PREV_TAG" ]; then
+            COMMITS=$(git log "${PREV_TAG}..HEAD" --pretty=format:"- %s" --no-merges \
+              | grep -vE "^- (Bump version|Revert|Update changelog|Merge)" || true)
+          else
+            COMMITS=$(git log --pretty=format:"- %s" --no-merges \
+              | grep -vE "^- (Bump version|Revert|Update changelog|Merge)" || true)
+          fi
+
+          if [ -z "$COMMITS" ]; then
+            echo "No commits to add to changelog, skipping"
+            exit 0
+          fi
+
+          export VERSION DATE COMMITS
+          node << 'EOF'
+            const fs = require('fs');
+            const { VERSION, DATE, COMMITS } = process.env;
+            const entry = `## ${VERSION} (${DATE})\n\n${COMMITS}\n\n`;
+            const content = fs.readFileSync('docs/Changelog.md', 'utf8');
+            const idx = content.indexOf('\n## ');
+            const updated = idx === -1
+              ? content + entry
+              : content.slice(0, idx + 1) + entry + content.slice(idx + 1);
+            fs.writeFileSync('docs/Changelog.md', updated);
+            console.log(`Changelog updated for v${VERSION}`);
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/Changelog.md
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "Update changelog for v${VERSION}"
+          git push origin HEAD:${{ github.ref_name }}

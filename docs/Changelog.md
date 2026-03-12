@@ -2,6 +2,16 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.0.5 (2026-03-12)
+
+- Replace broken release.yml changelog step with dedicated branch workflow
+- Auto-update changelog on release, security fixes, and MCP improvements (#10)
+
+## 1.0.4 (2026-03-12)
+
+- Add `changelog-update.yml` workflow to auto-update `docs/Changelog.md` on PR branches when a version bump is detected
+- Fix `release.yml` changelog step that was failing due to branch protection on `main`
+
 ## 1.0.3 (2026-03-12)
 
 - Security: move Gemini API key from URL query params to `x-goog-api-key` header to prevent key exposure in logs and browser history
