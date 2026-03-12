@@ -58,8 +58,19 @@ def _get_github_repo() -> str | None:
     return None
 
 
+def _get_package_version() -> str | None:
+    """Read the version from package.json in the repo root."""
+    try:
+        import json
+        pkg_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "package.json")
+        with open(pkg_path) as f:
+            return json.load(f).get("version")
+    except Exception:
+        return None
+
+
 def on_config(config):
-    """Override repo_url and social links with the detected GitHub repository."""
+    """Override repo_url, social links, and repo_name with detected repo and current version."""
     repo = _get_github_repo()
     if repo:
         repo_url = f"https://github.com/{repo}"
@@ -67,6 +78,11 @@ def on_config(config):
         for item in config.get("extra", {}).get("social", []):
             if "github" in item.get("icon", ""):
                 item["link"] = repo_url
+
+    version = _get_package_version()
+    if version:
+        config["repo_name"] = f"silverbullet-ai v{version}"
+
     return config
 
 
