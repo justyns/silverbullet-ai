@@ -1,6 +1,5 @@
 {
   "imports": {
-    "esbuild": "npm:esbuild",
     "@std/assert": "jsr:@std/assert@^1.0.1",
     "@std/html/entities": "jsr:@std/html@^1.0.5/entities",
     "@std/yaml": "jsr:@std/yaml@^1.0.8",

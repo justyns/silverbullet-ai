@@ -20,20 +20,18 @@ jobs:
         with:
           deno-version: v2.x
 
-      - name: Install dependencies
-        run: deno install
-
       - name: Verify formatting
         run: deno fmt --check
 
       - name: Run tests
         run: deno task test
 
-      - name: Setup silverbullet
-        run: deno install -f --name silverbullet --unstable-kv --unstable-worker-options -A --global https://get.silverbullet.md
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
 
-      - name: Add Deno bin to PATH
-        run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
+      - name: Install npm dependencies
+        run: npm install
 
       - name: Build
-        run: deno task build
+        run: npm run build
