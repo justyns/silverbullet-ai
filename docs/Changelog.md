@@ -2,6 +2,14 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.0.3 (2026-03-12)
+
+- Security: move Gemini API key from URL query params to `x-goog-api-key` header to prevent key exposure in logs and browser history
+- Security: replace `Math.random()` with `crypto.randomUUID()` for tool/write approval IDs
+- Cache MCP tool list during `initialize()` so it is no longer fetched on every chat turn
+- Fix type safety: `currentEmbeddingProvider` and `currentEmbeddingModel` now correctly typed as `| undefined` instead of `as any`
+- Validate that the provider key is non-empty when parsing default model config strings
+
 ## 1.0.2 (2026-03-12)
 
 - Inject available tool list into AI system prompt so models know what tools they can use

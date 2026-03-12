@@ -55,6 +55,7 @@ export class MCPClient {
   private requestId = 0;
   private sessionId?: string;
   private initialized = false;
+  private cachedTools?: MCPTool[];
 
   constructor(public readonly serverName: string, config: MCPServerConfig) {
     this.url = config.url.replace(/\/$/, "");
@@ -250,7 +251,7 @@ export class MCPClient {
       await this.establishSseSession();
     }
 
-    const result = await this.sendRequest("initialize", {
+    const initResult = await this.sendRequest("initialize", {
       protocolVersion: "2024-11-05",
       capabilities: { roots: { listChanged: false } },
       clientInfo: { name: "silverbullet-ai", version: "1.0.0" },
@@ -259,16 +260,22 @@ export class MCPClient {
     await this.sendNotification("notifications/initialized");
     this.initialized = true;
 
-    console.log(
-      `[MCP] "${this.serverName}" initialized (protocol: ${result?.protocolVersion ?? "unknown"})`,
-    );
+    // Pre-fetch and cache the tool list so listTools() is free on every chat turn
+    try {
+      const toolsResult = await this.sendRequest("tools/list") as { tools?: MCPTool[] } | null;
+      this.cachedTools = toolsResult?.tools ?? [];
+      console.log(
+        `[MCP] "${this.serverName}" initialized (protocol: ${initResult?.protocolVersion ?? "unknown"}, tools: ${this.cachedTools.length})`,
+      );
+    } catch (e) {
+      this.cachedTools = [];
+      console.warn(`[MCP] "${this.serverName}" could not fetch tool list during init:`, e);
+    }
   }
 
   async listTools(): Promise<MCPTool[]> {
     if (!this.initialized) await this.initialize();
-
-    const result = await this.sendRequest("tools/list") as { tools?: MCPTool[] } | null;
-    return result?.tools ?? [];
+    return this.cachedTools ?? [];
   }
 
   async callTool(name: string, args: Record<string, unknown>): Promise<string> {
