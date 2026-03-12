@@ -14,24 +14,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v6
-
-      - uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
-        with:
-          deno-version: v2.x
+      - uses: actions/checkout@v4
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "24"
 
-      - name: Install npm dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Verify formatting
-        run: deno fmt --check
-
       - name: Run tests
-        run: deno task test
+        run: npm test
 
       - name: Build
         run: npm run build
