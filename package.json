@@ -5,7 +5,6 @@
   "type": "module",
   "scripts": {
     "build": "npx plug-compile silverbullet-ai.plug.yaml",
-    "build:release": "npx plug-compile silverbullet-ai.plug.yaml --dist dist/",
     "test": "vitest run",
     "dist": "tsx scripts/build-dist.ts"
   },
@@ -18,5 +17,8 @@
     "@lezer/markdown": "^1.0.0",
     "tsx": "^4.0.0",
     "vitest": "^3.0.0"
+  },
+  "overrides": {
+    "ajv": ">=8.18.0"
   }
 }

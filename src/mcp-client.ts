@@ -91,6 +91,8 @@ export class MCPClient {
     };
     const body = JSON.stringify(request);
 
+    console.log(`[MCP] "${this.serverName}" → ${method}`, params !== undefined ? params : "");
+
     let response: Response;
 
     if (this.transport === "sse") {
@@ -138,11 +140,13 @@ export class MCPClient {
     }
 
     if (json.error) {
+      console.error(`[MCP] "${this.serverName}" ← ${method} ERROR`, json.error);
       throw new Error(
         `MCP "${this.serverName}" [${json.error.code}]: ${json.error.message}`,
       );
     }
 
+    console.log(`[MCP] "${this.serverName}" ← ${method}`, json.result);
     return json.result;
   }
 
