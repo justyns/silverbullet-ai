@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
+const assertEquals = (actual: unknown, expected: unknown, _msg?: string) => expect(actual).toEqual(expected);
 import "./mocks/syscalls.ts";
 import {
   assembleMessagesWithAttachments,
@@ -13,7 +14,7 @@ import { Attachment, MessageWithAttachments } from "./types.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { ChatMessage } from "./types.ts";
 
-Deno.test("convertPageToMessages should convert page text to chat messages", async () => {
+test("convertPageToMessages should convert page text to chat messages", async () => {
   try {
     const chatSample = `
 **user**: Hello
@@ -44,7 +45,7 @@ Deno.test("convertPageToMessages should convert page text to chat messages", asy
   }
 });
 
-Deno.test("convertPageToMessages should handle starting with a system message", async () => {
+test("convertPageToMessages should handle starting with a system message", async () => {
   try {
     const chatSample = `
 
@@ -78,7 +79,7 @@ Deno.test("convertPageToMessages should handle starting with a system message", 
   }
 });
 
-Deno.test("convertPageToMessages should handle text without user/assistant roles", async () => {
+test("convertPageToMessages should handle text without user/assistant roles", async () => {
   try {
     const chatSample = `
 
@@ -109,7 +110,7 @@ Bar
   }
 });
 
-Deno.test("parseToolCallsFromContent should extract tool calls from content", async () => {
+test("parseToolCallsFromContent should extract tool calls from content", async () => {
   const toolCallJson = JSON.stringify({
     id: "tool_123",
     name: "read_note",
@@ -130,7 +131,7 @@ Deno.test("parseToolCallsFromContent should extract tool calls from content", as
   assertEquals(result.toolMessages[0].tool_call_id, "tool_123");
 });
 
-Deno.test("parseToolCallsFromContent should handle content without tool calls", async () => {
+test("parseToolCallsFromContent should handle content without tool calls", async () => {
   const content = "Just some regular text without any tool calls";
 
   const result = await parseToolCallsFromContent(content);
@@ -140,7 +141,7 @@ Deno.test("parseToolCallsFromContent should handle content without tool calls", 
   assertEquals(result.toolMessages.length, 0);
 });
 
-Deno.test("parseToolCallsFromContent should handle multiple tool calls", async () => {
+test("parseToolCallsFromContent should handle multiple tool calls", async () => {
   const toolCall1 = JSON.stringify({
     id: "tool_1",
     name: "read_note",
@@ -165,7 +166,7 @@ Deno.test("parseToolCallsFromContent should handle multiple tool calls", async (
   assertEquals(result.toolCalls[1].function.name, "list_pages");
 });
 
-Deno.test("cleanMessagesForApi should process assistant messages with tool calls", async () => {
+test("cleanMessagesForApi should process assistant messages with tool calls", async () => {
   const toolCallJson = JSON.stringify({
     id: "tool_123",
     name: "read_note",
@@ -191,7 +192,7 @@ Deno.test("cleanMessagesForApi should process assistant messages with tool calls
   assertEquals(result[2].tool_call_id, "tool_123");
 });
 
-Deno.test("cleanMessagesForApi should pass through messages without tool calls", async () => {
+test("cleanMessagesForApi should pass through messages without tool calls", async () => {
   const messages: ChatMessage[] = [
     { role: "user", content: "Hello" },
     { role: "assistant", content: "Hi there!" },
@@ -204,7 +205,7 @@ Deno.test("cleanMessagesForApi should pass through messages without tool calls",
   assertEquals(result[1].content, "Hi there!");
 });
 
-Deno.test("postProcessToolCallHtml should convert tool-call code blocks to HTML", () => {
+test("postProcessToolCallHtml should convert tool-call code blocks to HTML", () => {
   const toolData = JSON.stringify({
     id: "tool_1",
     name: "read_note",
@@ -223,7 +224,7 @@ Deno.test("postProcessToolCallHtml should convert tool-call code blocks to HTML"
   assertEquals(result.includes("<style>"), false);
 });
 
-Deno.test("postProcessToolCallHtml should pass through HTML without tool calls", () => {
+test("postProcessToolCallHtml should pass through HTML without tool calls", () => {
   const html = "<p>Regular HTML content</p>";
 
   const result = postProcessToolCallHtml(html);
@@ -231,7 +232,7 @@ Deno.test("postProcessToolCallHtml should pass through HTML without tool calls",
   assertEquals(result, html);
 });
 
-Deno.test("postProcessToolCallHtml should handle <br> tags in JSON (SilverBullet escaping)", () => {
+test("postProcessToolCallHtml should handle <br> tags in JSON (SilverBullet escaping)", () => {
   // SilverBullet's htmlEscape converts \n to <br>, simulate that
   const toolData =
     `{<br>"id": "tool_1",<br>"name": "read_note",<br>"args": { "page": "Test" },<br>"result": "Content",<br>"success": true<br>}`;
@@ -246,7 +247,7 @@ Deno.test("postProcessToolCallHtml should handle <br> tags in JSON (SilverBullet
 
 // Tests for assembleMessagesWithAttachments
 
-Deno.test("assembleMessagesWithAttachments should assemble messages without attachments", () => {
+test("assembleMessagesWithAttachments should assemble messages without attachments", () => {
   const systemMessage: ChatMessage = {
     role: "system",
     content: "You are helpful.",
@@ -268,7 +269,7 @@ Deno.test("assembleMessagesWithAttachments should assemble messages without atta
   assertEquals(result[2].role, "assistant");
 });
 
-Deno.test("assembleMessagesWithAttachments should insert attachments before their source message", () => {
+test("assembleMessagesWithAttachments should insert attachments before their source message", () => {
   const systemMessage: ChatMessage = {
     role: "system",
     content: "You are helpful.",
@@ -299,7 +300,7 @@ Deno.test("assembleMessagesWithAttachments should insert attachments before thei
   assertEquals(result[2].content, "Check [[PageA]]");
 });
 
-Deno.test("assembleMessagesWithAttachments should place agent attachments after system message", () => {
+test("assembleMessagesWithAttachments should place agent attachments after system message", () => {
   const systemMessage: ChatMessage = {
     role: "system",
     content: "You are helpful.",
@@ -327,7 +328,7 @@ Deno.test("assembleMessagesWithAttachments should place agent attachments after 
   assertEquals(result[2].content, "Hello");
 });
 
-Deno.test("assembleMessagesWithAttachments should preserve cache-friendly ordering", () => {
+test("assembleMessagesWithAttachments should preserve cache-friendly ordering", () => {
   // Simulates Turn 2: user1 referenced PageA, user2 references PageB
   // Expected order: [system, A-context, user1, assistant1, B-context, user2]
   const systemMessage: ChatMessage = { role: "system", content: "System" };
@@ -371,7 +372,7 @@ Deno.test("assembleMessagesWithAttachments should preserve cache-friendly orderi
   assertEquals(result[5].content, "Now check [[PageB]]"); // user2
 });
 
-Deno.test("assembleMessagesWithAttachments should handle multiple attachments per message", () => {
+test("assembleMessagesWithAttachments should handle multiple attachments per message", () => {
   const systemMessage: ChatMessage = { role: "system", content: "System" };
   const attachments: Attachment[] = [
     { name: "Page1", content: "Content 1", type: "note" },
@@ -396,57 +397,57 @@ Deno.test("assembleMessagesWithAttachments should handle multiple attachments pe
   assertEquals(result[3].content, "Check [[Page1]] and [[Page2]]");
 });
 
-Deno.test("luaLongString should escape simple strings", () => {
+test("luaLongString should escape simple strings", () => {
   assertEquals(luaLongString("hello"), "[[hello]]");
 });
 
-Deno.test("luaLongString should handle strings with wiki-links", () => {
+test("luaLongString should handle strings with wiki-links", () => {
   // Wiki-links contain ]] so we need level 1
   const result = luaLongString("Check [[PageName]] here");
   assertEquals(result, "[=[Check [[PageName]] here]=]");
 });
 
-Deno.test("luaLongString should increase level when content contains ]]", () => {
+test("luaLongString should increase level when content contains ]]", () => {
   const result = luaLongString("text with ]] inside");
   assertEquals(result, "[=[text with ]] inside]=]");
 });
 
-Deno.test("luaLongString should handle nested levels", () => {
+test("luaLongString should handle nested levels", () => {
   const result = luaLongString("has ]] and ]=] both");
   assertEquals(result, "[==[has ]] and ]=] both]==]");
 });
 
 // Tests for jsToLuaLiteral
 
-Deno.test("jsToLuaLiteral should convert null and undefined to nil", () => {
+test("jsToLuaLiteral should convert null and undefined to nil", () => {
   assertEquals(jsToLuaLiteral(null), "nil");
   assertEquals(jsToLuaLiteral(undefined), "nil");
 });
 
-Deno.test("jsToLuaLiteral should convert booleans", () => {
+test("jsToLuaLiteral should convert booleans", () => {
   assertEquals(jsToLuaLiteral(true), "true");
   assertEquals(jsToLuaLiteral(false), "false");
 });
 
-Deno.test("jsToLuaLiteral should convert numbers", () => {
+test("jsToLuaLiteral should convert numbers", () => {
   assertEquals(jsToLuaLiteral(42), "42");
   assertEquals(jsToLuaLiteral(3.14), "3.14");
   assertEquals(jsToLuaLiteral(-100), "-100");
   assertEquals(jsToLuaLiteral(0), "0");
 });
 
-Deno.test("jsToLuaLiteral should convert Infinity and NaN to nil", () => {
+test("jsToLuaLiteral should convert Infinity and NaN to nil", () => {
   assertEquals(jsToLuaLiteral(Infinity), "nil");
   assertEquals(jsToLuaLiteral(-Infinity), "nil");
   assertEquals(jsToLuaLiteral(NaN), "nil");
 });
 
-Deno.test("jsToLuaLiteral should convert simple strings", () => {
+test("jsToLuaLiteral should convert simple strings", () => {
   assertEquals(jsToLuaLiteral("hello"), '"hello"');
   assertEquals(jsToLuaLiteral(""), '""');
 });
 
-Deno.test("jsToLuaLiteral should escape special characters in strings", () => {
+test("jsToLuaLiteral should escape special characters in strings", () => {
   assertEquals(jsToLuaLiteral('say "hi"'), '"say \\"hi\\""');
   assertEquals(jsToLuaLiteral("line1\nline2"), '"line1\\nline2"');
   assertEquals(jsToLuaLiteral("tab\there"), '"tab\\there"');
@@ -454,43 +455,43 @@ Deno.test("jsToLuaLiteral should escape special characters in strings", () => {
   assertEquals(jsToLuaLiteral("return\rhere"), '"return\\rhere"');
 });
 
-Deno.test("jsToLuaLiteral should convert arrays", () => {
+test("jsToLuaLiteral should convert arrays", () => {
   assertEquals(jsToLuaLiteral([]), "{}");
   assertEquals(jsToLuaLiteral([1, 2, 3]), "{1, 2, 3}");
   assertEquals(jsToLuaLiteral(["a", "b"]), '{"a", "b"}');
 });
 
-Deno.test("jsToLuaLiteral should convert nested arrays", () => {
+test("jsToLuaLiteral should convert nested arrays", () => {
   assertEquals(jsToLuaLiteral([[1, 2], [3, 4]]), "{{1, 2}, {3, 4}}");
 });
 
-Deno.test("jsToLuaLiteral should convert objects with valid identifier keys", () => {
+test("jsToLuaLiteral should convert objects with valid identifier keys", () => {
   assertEquals(jsToLuaLiteral({ name: "Pete" }), '{name="Pete"}');
   assertEquals(jsToLuaLiteral({ a: 1, b: 2 }), "{a=1, b=2}");
   assertEquals(jsToLuaLiteral({ _private: true }), "{_private=true}");
 });
 
-Deno.test("jsToLuaLiteral should use bracket notation for non-identifier keys", () => {
+test("jsToLuaLiteral should use bracket notation for non-identifier keys", () => {
   assertEquals(jsToLuaLiteral({ "my-key": 1 }), '{["my-key"]=1}');
   assertEquals(jsToLuaLiteral({ "123": "num" }), '{["123"]="num"}');
   assertEquals(jsToLuaLiteral({ "has space": true }), '{["has space"]=true}');
 });
 
-Deno.test("jsToLuaLiteral should handle nested objects", () => {
+test("jsToLuaLiteral should handle nested objects", () => {
   assertEquals(jsToLuaLiteral({ a: { b: 1 } }), "{a={b=1}}");
   assertEquals(jsToLuaLiteral({ page: { name: "Test", ref: "Test" } }), '{page={name="Test", ref="Test"}}');
 });
 
-Deno.test("jsToLuaLiteral should handle mixed arrays and objects", () => {
+test("jsToLuaLiteral should handle mixed arrays and objects", () => {
   assertEquals(jsToLuaLiteral({ items: [1, 2] }), "{items={1, 2}}");
   assertEquals(jsToLuaLiteral([{ a: 1 }, { b: 2 }]), "{{a=1}, {b=2}}");
 });
 
-Deno.test("jsToLuaLiteral should handle empty objects", () => {
+test("jsToLuaLiteral should handle empty objects", () => {
   assertEquals(jsToLuaLiteral({}), "{}");
 });
 
-Deno.test("jsToLuaLiteral should handle complex nested structures", () => {
+test("jsToLuaLiteral should handle complex nested structures", () => {
   const complex = {
     page: { name: "work/AICompany", size: 117 },
     currentLineNumber: 7,

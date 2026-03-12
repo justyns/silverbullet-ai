@@ -1,4 +1,4 @@
-import { parse as parseYAML } from "@std/yaml";
+import { parse as parseYAML } from "yaml";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 import { parser } from "@lezer/markdown";
 
