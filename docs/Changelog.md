@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.4 (2026-03-13)
+
+- Fix model metadata lookup picking wrong provider for Mistral models
+
 ## 1.1.3 (2026-03-13)
 
 - Fix Mistral model metadata lookup returning incorrect context window size
