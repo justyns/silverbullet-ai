@@ -63,9 +63,7 @@ const REASONING_WIDGET_STYLES = `
 
 function formatToolArgs(args: Record<string, unknown>): string {
   const entries = Object.entries(args);
-  return entries.length > 0
-    ? entries.map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`).join("\n")
-    : "";
+  return entries.length > 0 ? entries.map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`).join("\n") : "";
 }
 
 // Widget creation (for inserting into pages)
