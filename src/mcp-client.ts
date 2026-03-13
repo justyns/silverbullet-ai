@@ -126,11 +126,16 @@ export class MCPClient {
         method: "POST",
         headers: this.buildFetchHeaders({
           "Accept": "application/json, text/event-stream",
+          ...(this.sessionId ? { "Mcp-Session-Id": this.sessionId } : {}),
           ...oauthHeaders,
         }),
         body,
         signal: AbortSignal.timeout(this.timeout),
       });
+
+      // Capture session ID returned by the server on initialize
+      const sid = response.headers.get("Mcp-Session-Id");
+      if (sid) this.sessionId = sid;
     }
 
     if (response.status === 401 && this.oauthConfig) {
