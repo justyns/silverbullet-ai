@@ -32,6 +32,7 @@ const PROVIDER_PREFIXES = [
   "vertex_ai/",
   "ollama/",
   "gemini/",
+  "mistral/",
 ];
 
 export function lookupModel(
