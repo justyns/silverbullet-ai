@@ -2,15 +2,24 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.5 (unreleased)
+## 0.6.5 (2026-03-13)
 
 - Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
 - Add configurable `timeout` option per provider for slow models
 - Add model name to assistant chat header, click to change the model for the session
 - Click RAG icon to enable/disable embeddings search temporarily
 - Display agent name and click it to change to a different agent
+- Persist agent selection in chat panel
 - Remember the state of the assistant chat panel and re-open it on page reload
 - Add support for displaying thinking/reasoning blocks with Ollama
+- Show tool call status in input placeholder text
+- Add overflow menu for small screen sizes on mobile
+- Fix Gemini model name extraction
+- Fix connectivity tester to surface keys from newer `apiKey` config format
+- Discard embeddings results with similarity score below 15
+- Fix null similarity score handling
+- Add missing JSON schema definitions and validate additional config options
+- Remove invalid config examples from docs
 
 ## 0.6.4 (2025-01-13)
 
