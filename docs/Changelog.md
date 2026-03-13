@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.4 (2026-03-13)
+
+- Fix model metadata lookup picking wrong provider for Mistral models
+
 ## 1.1.2 (2026-03-13)
 
 - Support Mcp-Session-Id for Streamable HTTP transport
