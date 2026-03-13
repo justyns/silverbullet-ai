@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.1 (2026-03-13)
+
+- Fix OAuth redirect_uri=null in SilverBullet modal panels
+
 ## 1.0.5 (2026-03-12)
 
 - Replace broken release.yml changelog step with dedicated branch workflow
