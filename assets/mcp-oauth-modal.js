@@ -38,7 +38,16 @@
   }
 
   function openAuthPopup() {
-    const redirectUri = window.location.origin;
+    // In SilverBullet modal panels (srcdoc iframes), window.location.origin is
+    // the string "null". Use the parent frame's origin instead.
+    let redirectUri = window.location.origin;
+    if (redirectUri === "null" || !redirectUri) {
+      try {
+        redirectUri = window.parent.location.origin;
+      } catch (_e) {
+        // cross-origin parent — keep the fallback
+      }
+    }
     const authUrl = authUrlBase + "&redirect_uri=" + encodeURIComponent(redirectUri);
 
     const popup = window.open(
