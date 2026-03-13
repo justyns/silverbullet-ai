@@ -153,13 +153,14 @@ function metadataToCachedModel(
 async function getModelMetadataAndMode(
   provider: DiscoveryProvider,
   modelId: string,
+  providerName: string,
   showPricing: boolean = true,
 ): Promise<CachedModel> {
   const nativeCapabilities = provider.getModelCapabilities ? await provider.getModelCapabilities(modelId) : null;
   const nativeContextLimit = provider.getContextLimit ? await provider.getContextLimit(modelId) : null;
 
   const allMetadata = await fetchModelMetadata();
-  const metadata = lookupModel(allMetadata, modelId);
+  const metadata = lookupModel(allMetadata, modelId, providerName);
 
   return metadataToCachedModel(modelId, metadata, nativeCapabilities, nativeContextLimit, showPricing);
 }
@@ -189,7 +190,7 @@ export async function discoverModelsForProvider(
 
     for (const id of modelIds) {
       try {
-        const model = await getModelMetadataAndMode(provider, id, showPricing);
+        const model = await getModelMetadataAndMode(provider, id, providerName, showPricing);
         models.push(model);
       } catch (error) {
         console.error(`Failed to get metadata for ${id}:`, error);
