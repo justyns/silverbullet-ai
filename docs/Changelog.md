@@ -6,6 +6,12 @@ This page is a brief overview of each version.
 
 - Fix OAuth redirect_uri=null in SilverBullet modal panels
 
+## 1.1.0 (2026-03-12)
+
+- Document OAuth 2.1 config in Lua syntax in MCP.md
+- Add OAuth 2.1 support for MCP servers
+- Show current version from package.json in docs header
+
 ## 1.0.5 (2026-03-12)
 
 - Replace broken release.yml changelog step with dedicated branch workflow
