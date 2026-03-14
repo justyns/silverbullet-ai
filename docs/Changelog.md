@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.7 (2026-03-14)
+
+- Add MistralProvider with tool_choice: "any" for reliable MCP tool calls
+
 ## 1.1.6 (2026-03-14)
 
 - Always re-register OAuth client when no explicit clientId is configured

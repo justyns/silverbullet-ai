@@ -4,7 +4,7 @@ import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
 import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
 import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
 import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.ts";
-import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
+import { MistralProvider, OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import { inferProviderType } from "./model-discovery.ts";
@@ -103,6 +103,7 @@ const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
   openai: OpenAIProvider,
   gemini: GeminiProvider,
   ollama: OllamaProvider,
+  mistral: MistralProvider,
 };
 
 const defaultProviderDefaults: ProviderDefaults = {
@@ -299,6 +300,16 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
+        model.requireAuth,
+        useProxy,
+        effectiveTimeout,
+      );
+      break;
+    case Provider.Mistral:
+      currentAIProvider = new MistralProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "https://api.mistral.ai/v1",
         model.requireAuth,
         useProxy,
         effectiveTimeout,
