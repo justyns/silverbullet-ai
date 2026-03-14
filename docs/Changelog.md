@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.5 (2026-03-14)
+
+- Fix MCP OAuth dynamic client registration using wrong redirect URI
+
 ## 1.1.2 (2026-03-13)
 
 - Support Mcp-Session-Id for Streamable HTTP transport
