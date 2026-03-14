@@ -1,5 +1,5 @@
 import { clientStore, editor } from "@silverbulletmd/silverbullet/syscalls";
-import { OpenAIProvider } from "./providers/openai.ts";
+import { MistralProvider, OpenAIProvider } from "./providers/openai.ts";
 import { GeminiProvider } from "./providers/gemini.ts";
 import { OllamaProvider } from "./providers/ollama.ts";
 import type { ProviderConfig, ProvidersConfig } from "./types.ts";
@@ -50,6 +50,7 @@ export function inferProviderType(keyName: string): string {
   if (lower.includes("ollama")) return "ollama";
   if (lower.includes("gemini")) return "gemini";
   if (lower.includes("openai") || lower.includes("openrouter")) return "openai";
+  if (lower.includes("mistral")) return "mistral";
   return lower;
 }
 
@@ -75,6 +76,8 @@ function createProviderForDiscovery(
       return new GeminiProvider(apiKey, "", useProxy);
     case "ollama":
       return new OllamaProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
+    case "mistral":
+      return new MistralProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
     default:
       return null;
   }

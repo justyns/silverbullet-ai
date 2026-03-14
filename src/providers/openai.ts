@@ -41,6 +41,7 @@ export class OpenAIProvider extends AbstractProvider {
   override name = "OpenAI";
   requireAuth: boolean;
   supportsThinking: boolean = false;
+  toolChoiceValue: string = "auto";
 
   constructor(
     apiKey: string,
@@ -86,7 +87,7 @@ export class OpenAIProvider extends AbstractProvider {
 
         if (tools && tools.length > 0) {
           requestBody.tools = tools;
-          requestBody.tool_choice = "auto";
+          requestBody.tool_choice = this.toolChoiceValue;
         }
 
         if (response_format) {
@@ -306,7 +307,7 @@ export class OpenAIProvider extends AbstractProvider {
 
       if (tools && tools.length > 0) {
         requestBody.tools = tools;
-        requestBody.tool_choice = "auto";
+        requestBody.tool_choice = this.toolChoiceValue;
       }
 
       if (response_format) {
@@ -418,4 +419,21 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       .sort((a: { index: number }, b: { index: number }) => a.index - b.index)
       .map((item: { embedding: number[] }) => item.embedding);
   }
+}
+
+/**
+ * Mistral provider — OpenAI-compatible API but requires tool_choice: "any"
+ * (instead of "auto") to reliably trigger tool calls.
+ */
+export class MistralProvider extends OpenAIProvider {
+  static override defaults: ProviderDefaults = {
+    baseUrl: "https://api.mistral.ai/v1",
+    requireAuth: true,
+    useProxy: false,
+    showPricing: true,
+    timeout: 60000,
+  };
+
+  override name = "Mistral";
+  override toolChoiceValue = "any";
 }
