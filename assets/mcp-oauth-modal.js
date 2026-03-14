@@ -29,6 +29,9 @@
   let serverName = null;
   let authUrlBase = null;
   let state = null;
+  let registrationEndpoint = null;
+  let authorizationEndpoint = null;
+  let authParamsBase = null;
   let pollInterval = null;
   let cancelled = false;
 
@@ -37,7 +40,7 @@
     statusTextEl.className = type || "";
   }
 
-  function openAuthPopup() {
+  async function openAuthPopup() {
     // In SilverBullet modal panels (srcdoc iframes), window.location.origin is
     // the string "null". Use the parent frame's origin instead.
     let redirectUri = window.location.origin;
@@ -48,7 +51,30 @@
         // cross-origin parent — keep the fallback
       }
     }
-    const authUrl = authUrlBase + "&redirect_uri=" + encodeURIComponent(redirectUri);
+
+    let authUrl;
+    if (registrationEndpoint) {
+      // Dynamic registration deferred to here so we can pass the correct redirectUri
+      setStatus("Registering client with server…", "waiting");
+      authorizeBtn.disabled = true;
+      try {
+        const clientId = await syscall(
+          "system.invokeFunction",
+          "silverbullet-ai.registerAndStoreMcpOAuthClient",
+          serverName,
+          registrationEndpoint,
+          redirectUri,
+          state,
+        );
+        authUrl = `${authorizationEndpoint}?${authParamsBase}&client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}`;
+      } catch (e) {
+        setStatus("Client registration failed: " + (e.message || String(e)), "error");
+        authorizeBtn.disabled = false;
+        return;
+      }
+    } else {
+      authUrl = authUrlBase + "&redirect_uri=" + encodeURIComponent(redirectUri);
+    }
 
     const popup = window.open(
       authUrl,
@@ -146,8 +172,11 @@
 
   function init(data) {
     serverName = data.serverName;
-    authUrlBase = data.authUrlBase;
     state = data.state;
+    authUrlBase = data.authUrlBase ?? null;
+    registrationEndpoint = data.registrationEndpoint ?? null;
+    authorizationEndpoint = data.authorizationEndpoint ?? null;
+    authParamsBase = data.authParamsBase ?? null;
     serverNameEl.textContent = serverName;
   }
 

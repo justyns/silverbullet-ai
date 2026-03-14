@@ -169,3 +169,9 @@ functions:
     path: src/mcp-oauth.ts:handleMcpOAuthCallback
   closeMcpOAuthModal:
     path: src/mcp-oauth.ts:closeMcpOAuthModal
+  registerAndStoreMcpOAuthClient:
+    path: src/mcp-oauth.ts:registerAndStoreMcpOAuthClient
+  resetMcpOAuthCommand:
+    path: src/mcp-oauth.ts:resetMcpOAuthCommand
+    command:
+      name: "AI: Reset MCP OAuth credentials"

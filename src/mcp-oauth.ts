@@ -147,6 +147,15 @@ export async function clearOAuthTokens(serverName: string): Promise<void> {
 }
 
 /**
+ * Clears both the stored token and the registered client for a server,
+ * forcing a full re-registration on the next connection attempt.
+ */
+export async function clearOAuthClient(serverName: string): Promise<void> {
+  await clientStore.del(TOKEN_KEY(serverName));
+  await clientStore.del(CLIENT_KEY(serverName));
+}
+
+/**
  * Called by the OAuth modal JS when it receives the authorization code.
  * Exchanges the code for tokens, stores them, and resolves the pending flow.
  */
@@ -263,18 +272,25 @@ async function discoverMetadata(
   return meta;
 }
 
+async function getExistingClient(
+  serverName: string,
+  oauthConfig: MCPOAuthConfig,
+): Promise<StoredClient | null> {
+  if (oauthConfig.clientId) {
+    return { clientId: oauthConfig.clientId };
+  }
+  return await clientStore.get(CLIENT_KEY(serverName)) as StoredClient | null;
+}
+
+// Used by getValidAccessToken during token refresh (clientId must already be known)
 async function getOrRegisterClient(
   serverName: string,
   serverUrl: string,
   oauthConfig: MCPOAuthConfig,
   metadata: OAuthServerMetadata,
 ): Promise<StoredClient> {
-  if (oauthConfig.clientId) {
-    return { clientId: oauthConfig.clientId };
-  }
-
-  const stored = await clientStore.get(CLIENT_KEY(serverName)) as StoredClient | null;
-  if (stored) return stored;
+  const existing = await getExistingClient(serverName, oauthConfig);
+  if (existing) return existing;
 
   if (!metadata.registration_endpoint) {
     throw new Error(
@@ -282,6 +298,7 @@ async function getOrRegisterClient(
     );
   }
 
+  // Fallback: register with server origin (only reached during refresh, redirect_uri already matched)
   const origin = new URL(serverUrl).origin;
   const response = await fetch(metadata.registration_endpoint, {
     method: "POST",
@@ -291,7 +308,7 @@ async function getOrRegisterClient(
       redirect_uris: [origin],
       grant_types: ["authorization_code", "refresh_token"],
       response_types: ["code"],
-      token_endpoint_auth_method: "none", // Public client — PKCE only
+      token_endpoint_auth_method: "none",
     }),
     signal: AbortSignal.timeout(10_000),
   });
@@ -307,6 +324,53 @@ async function getOrRegisterClient(
   const client: StoredClient = { clientId: reg.client_id, clientSecret: reg.client_secret };
   await clientStore.set(CLIENT_KEY(serverName), client);
   return client;
+}
+
+/**
+ * Called from the OAuth modal JS to register a new OAuth client using the
+ * correct redirect URI (window.location.origin from the browser).
+ * Stores the resulting clientId and updates the PKCE entry for the given state.
+ */
+export async function registerAndStoreMcpOAuthClient(
+  serverName: string,
+  registrationEndpoint: string,
+  redirectUri: string,
+  state: string,
+): Promise<string> {
+  const response = await fetch(registrationEndpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      client_name: "SilverBullet AI",
+      redirect_uris: [redirectUri],
+      grant_types: ["authorization_code", "refresh_token"],
+      response_types: ["code"],
+      token_endpoint_auth_method: "none",
+    }),
+    signal: AbortSignal.timeout(10_000),
+  });
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `Dynamic client registration failed: HTTP ${response.status}: ${text.slice(0, 200)}`,
+    );
+  }
+
+  const reg = await response.json() as { client_id: string; client_secret?: string };
+  await clientStore.set(CLIENT_KEY(serverName), {
+    clientId: reg.client_id,
+    clientSecret: reg.client_secret,
+  });
+
+  // Update the PKCE entry so handleMcpOAuthCallback has the correct clientId
+  const pkce = await clientStore.get(PKCE_KEY(state)) as StoredPKCE | null;
+  if (pkce) {
+    pkce.clientId = reg.client_id;
+    await clientStore.set(PKCE_KEY(state), pkce);
+  }
+
+  return reg.client_id;
 }
 
 async function exchangeRefreshToken(
@@ -339,31 +403,63 @@ async function triggerOAuthFlow(
   oauthConfig: MCPOAuthConfig,
 ): Promise<string> {
   const metadata = await discoverMetadata(serverUrl, oauthConfig);
-  const clientInfo = await getOrRegisterClient(serverName, serverUrl, oauthConfig, metadata);
+  const existingClient = await getExistingClient(serverName, oauthConfig);
 
   const { verifier, challenge } = await generatePKCE();
   const state = crypto.randomUUID().replace(/-/g, "");
 
-  // Persist the PKCE state so the callback can complete the exchange
+  // Persist the PKCE state so the callback can complete the exchange.
+  // clientId may be empty string when dynamic registration is deferred to the
+  // modal — registerAndStoreMcpOAuthClient will fill it in before the callback.
   const pkce: StoredPKCE = {
     codeVerifier: verifier,
     serverName,
     tokenEndpoint: metadata.token_endpoint,
-    clientId: clientInfo.clientId,
+    clientId: existingClient?.clientId ?? "",
   };
   await clientStore.set(PKCE_KEY(state), pkce);
 
-  // Build the authorization URL base (redirect_uri appended by the modal JS
-  // because only the browser knows window.location.origin)
-  const authParams = new URLSearchParams({
-    response_type: "code",
-    client_id: clientInfo.clientId,
-    state,
-    code_challenge: challenge,
-    code_challenge_method: "S256",
-    ...(oauthConfig.scopes?.length ? { scope: oauthConfig.scopes.join(" ") } : {}),
-  });
-  const authUrlBase = `${metadata.authorization_endpoint}?${authParams.toString()}`;
+  let modalData: Record<string, unknown>;
+
+  if (existingClient) {
+    // clientId already known — build the full auth URL now (redirect_uri
+    // appended by the modal because only the browser knows window.location.origin)
+    const authParams = new URLSearchParams({
+      response_type: "code",
+      client_id: existingClient.clientId,
+      state,
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+      ...(oauthConfig.scopes?.length ? { scope: oauthConfig.scopes.join(" ") } : {}),
+    });
+    modalData = {
+      serverName,
+      state,
+      authUrlBase: `${metadata.authorization_endpoint}?${authParams.toString()}`,
+    };
+  } else if (metadata.registration_endpoint) {
+    // No clientId yet — defer dynamic registration to the modal so that
+    // window.location.origin (the SilverBullet app URL) is used as the
+    // redirect_uri, not the MCP server's origin.
+    const authParams = new URLSearchParams({
+      response_type: "code",
+      state,
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+      ...(oauthConfig.scopes?.length ? { scope: oauthConfig.scopes.join(" ") } : {}),
+    });
+    modalData = {
+      serverName,
+      state,
+      registrationEndpoint: metadata.registration_endpoint,
+      authorizationEndpoint: metadata.authorization_endpoint,
+      authParamsBase: authParams.toString(),
+    };
+  } else {
+    throw new Error(
+      `MCP OAuth "${serverName}": no clientId configured and server does not support dynamic client registration`,
+    );
+  }
 
   return new Promise((resolve, reject) => {
     pendingFlows.set(serverName, { resolve, reject });
@@ -374,7 +470,7 @@ async function triggerOAuthFlow(
         const script = await asset.readAsset("silverbullet-ai", "assets/mcp-oauth-modal.js");
 
         const initScript = `
-          globalThis.mcpOAuthData = ${JSON.stringify({ serverName, authUrlBase, state })};
+          globalThis.mcpOAuthData = ${JSON.stringify(modalData)};
           ${script}
         `;
 
@@ -399,4 +495,25 @@ function toStoredToken(
       : undefined,
     tokenType: tokenResponse.token_type ?? "Bearer",
   };
+}
+
+/**
+ * Command: lets the user pick a connected MCP server and clears its stored
+ * OAuth token and client registration, forcing a fresh auth flow on next use.
+ */
+export async function resetMcpOAuthCommand(): Promise<void> {
+  const { getMcpClients } = await import("./mcp-client.ts");
+  const clients = getMcpClients();
+
+  if (clients.size === 0) {
+    await editor.flashNotification("No MCP servers are currently connected.", "error");
+    return;
+  }
+
+  const options = Array.from(clients.keys()).map((name) => ({ name, description: name }));
+  const selected = await editor.filterBox("Reset MCP OAuth — select server", options);
+  if (!selected) return;
+
+  await clearOAuthClient(selected.name);
+  await editor.flashNotification(`OAuth credentials cleared for "${selected.name}". Reconnect to re-authenticate.`, "info");
 }
