@@ -9,7 +9,7 @@ config.set {
   ai = {
     providers = {
       mistral = {
-        provider = "openai",  -- Mistral uses OpenAI-compatible API
+        provider = "mistral",  -- Use "mistral" for correct tool_choice behavior
         apiKey = mistral_key,
         baseUrl = "https://api.mistral.ai/v1",
         preferredModels = {"mistral-large-latest", "mistral-medium"}
@@ -55,7 +55,7 @@ config.set {
 
 | Option | Description |
 |--------|-------------|
-| `provider` | Must be `"openai"` (Mistral uses OpenAI-compatible API) |
+| `provider` | Use `"mistral"` (recommended) or `"openai"`. Using `"mistral"` enables correct `tool_choice` behavior for MCP/tool calls. |
 | `apiKey` | Your Mistral API key |
 | `baseUrl` | Must be `"https://api.mistral.ai/v1"` |
 | `preferredModels` | Array of model names to show first in the picker |
