@@ -188,7 +188,7 @@ export async function startPanelChat(
       const allowedReadPaths = currentChatAgent?.aiagent?.allowedReadPaths;
       const pageAllowed = isPathAllowed(currentPage, allowedReadPaths);
 
-      contextBlock = `Current page: ${currentPage}`;
+      contextBlock = `Current SilverBullet page: ${currentPage}`;
       contextBlock += `\nCurrent date and time: ${new Date().toISOString()}`;
       if (currentChatAgent) {
         const agentName = currentChatAgent.aiagent.name || currentChatAgent.ref;
