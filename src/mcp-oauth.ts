@@ -403,7 +403,15 @@ async function triggerOAuthFlow(
   oauthConfig: MCPOAuthConfig,
 ): Promise<string> {
   const metadata = await discoverMetadata(serverUrl, oauthConfig);
-  const existingClient = await getExistingClient(serverName, oauthConfig);
+
+  // Only trust a clientId that was explicitly provided in config. Cached
+  // dynamic registrations are intentionally ignored here: we can't know which
+  // redirect_uri they were registered with, so reusing them risks a mismatch.
+  // The modal always re-registers with window.location.origin when no explicit
+  // clientId is present. (Token refresh uses the cached clientId separately.)
+  const explicitClient: StoredClient | null = oauthConfig.clientId
+    ? { clientId: oauthConfig.clientId }
+    : null;
 
   const { verifier, challenge } = await generatePKCE();
   const state = crypto.randomUUID().replace(/-/g, "");
@@ -415,18 +423,18 @@ async function triggerOAuthFlow(
     codeVerifier: verifier,
     serverName,
     tokenEndpoint: metadata.token_endpoint,
-    clientId: existingClient?.clientId ?? "",
+    clientId: explicitClient?.clientId ?? "",
   };
   await clientStore.set(PKCE_KEY(state), pkce);
 
   let modalData: Record<string, unknown>;
 
-  if (existingClient) {
-    // clientId already known — build the full auth URL now (redirect_uri
+  if (explicitClient) {
+    // Explicit clientId configured — build the full auth URL now (redirect_uri
     // appended by the modal because only the browser knows window.location.origin)
     const authParams = new URLSearchParams({
       response_type: "code",
-      client_id: existingClient.clientId,
+      client_id: explicitClient.clientId,
       state,
       code_challenge: challenge,
       code_challenge_method: "S256",

@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.6 (2026-03-14)
+
+- Always re-register OAuth client when no explicit clientId is configured
+
 ## 1.1.5 (2026-03-14)
 
 - Fix MCP OAuth dynamic client registration using wrong redirect URI
