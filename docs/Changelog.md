@@ -6,6 +6,14 @@ This page is a brief overview of each version.
 
 - Fix MCP OAuth dynamic client registration using wrong redirect URI
 
+## 1.1.4 (2026-03-13)
+
+- Fix model metadata lookup picking wrong provider for Mistral models
+
+## 1.1.3 (2026-03-13)
+
+- Fix Mistral model metadata lookup returning incorrect context window size
+
 ## 1.1.2 (2026-03-13)
 
 - Support Mcp-Session-Id for Streamable HTTP transport
