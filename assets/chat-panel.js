@@ -596,6 +596,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         "get",
       );
       updateAgentIndicator(agent);
+      await updateChatStatus();
     } catch (e) {
       console.error("Failed to load current agent:", e);
     }
@@ -609,6 +610,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
         "clear",
       );
       updateAgentIndicator(null);
+      await updateChatStatus();
     } catch (e) {
       console.error("Failed to clear agent:", e);
     }
