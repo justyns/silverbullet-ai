@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.1.9 (2026-03-15)
+
+- Add unit tests for providers, model-discovery, model-metadata, and agents
+
 ## 1.1.7 (2026-03-14)
 
 - Add MistralProvider with tool_choice: "any" for reliable MCP tool calls
