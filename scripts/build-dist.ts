@@ -1,12 +1,6 @@
-#!/usr/bin/env -S deno run --allow-read --allow-write --allow-run
-/**
- * Build script to create dist files for GitHub releases.
- * Combines all library Space Lua files into a single file
- */
-
-import { walk } from "@std/fs/walk";
-import { emptyDir } from "@std/fs/empty-dir";
-import { join } from "@std/path";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { join } from "node:path";
+import { execSync } from "node:child_process";
 
 const DIST_DIR = "dist";
 const LIBRARY_DIR = "silverbullet-ai";
@@ -15,18 +9,41 @@ const PLUG_MD = "PLUG.md";
 const CHANGELOG_MD = "docs/Changelog.md";
 const COMBINED_LIBRARY = "silverbullet-ai-library.md";
 
-async function getVersion(): Promise<string> {
-  const command = new Deno.Command("git", {
-    args: ["describe", "--tags", "--always"],
-    stdout: "piped",
-    stderr: "piped",
-  });
-  const { stdout } = await command.output();
-  return new TextDecoder().decode(stdout).trim();
+async function* walk(dir: string): AsyncGenerator<{ path: string }> {
+  const entries = await readdir(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      yield* walk(fullPath);
+    } else {
+      yield { path: fullPath };
+    }
+  }
+}
+
+async function emptyDir(dir: string) {
+  await rm(dir, { recursive: true, force: true });
+  await mkdir(dir, { recursive: true });
+}
+
+function getVersion(): string {
+  return execSync("git describe --tags --always").toString().trim();
+}
+
+function getGitHubRepo(): string {
+  // GitHub Actions sets GITHUB_REPOSITORY as "owner/repo"
+  const envRepo = process.env.GITHUB_REPOSITORY;
+  if (envRepo) return envRepo;
+  // Local: parse from git remote URL (supports both HTTPS and SSH)
+  try {
+    const remoteUrl = execSync("git remote get-url origin", { stdio: ["pipe", "pipe", "ignore"] }).toString().trim();
+    const match = remoteUrl.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
+    if (match) return match[1];
+  } catch {}
+  return "justyns/silverbullet-ai";
 }
 
 function extractRecentChangelog(changelog: string, version: string): string {
-  // Extract major.minor from version (e.g., "0.6" from "0.6.1" or "0.6.1-5-gabcdef")
   const versionMatch = version.match(/^(\d+\.\d+)/);
   if (!versionMatch) return "";
   const minorPrefix = versionMatch[1];
@@ -37,7 +54,6 @@ function extractRecentChangelog(changelog: string, version: string): string {
 
   for (const line of lines) {
     if (line.startsWith("## ") && line.includes("(")) {
-      // Check if this version header matches our minor version
       const headerMatch = line.match(/^## (\d+\.\d+)/);
       if (headerMatch) {
         if (headerMatch[1] === minorPrefix) {
@@ -49,7 +65,6 @@ function extractRecentChangelog(changelog: string, version: string): string {
     }
     if (inMatchingVersion) {
       if (line.startsWith("---")) break;
-      // Demote ## headers to ### for proper nesting under "## Recent Changes"
       if (line.startsWith("## ")) {
         result.push("#" + line);
       } else {
@@ -69,32 +84,27 @@ interface LibraryFile {
 async function main() {
   await emptyDir(DIST_DIR);
 
-  // Collect all library files
+  const githubRepo = getGitHubRepo();
+  const repoUrl = `https://github.com/${githubRepo}`;
+
   const libraryFiles: LibraryFile[] = [];
 
-  for await (const entry of walk(LIBRARY_DIR, { includeDirs: false })) {
+  for await (const entry of walk(LIBRARY_DIR)) {
     const relativePath = entry.path.replace(`${LIBRARY_DIR}/`, "");
-    const content = await Deno.readTextFile(entry.path);
-    libraryFiles.push({
-      path: relativePath,
-      content: content,
-    });
+    const content = await readFile(entry.path, "utf-8");
+    libraryFiles.push({ path: relativePath, content });
   }
 
-  // Sort for consistent ordering - put Space Lua config first
   libraryFiles.sort((a, b) => {
-    // Prioritize Space Lua files, then sort alphabetically
     const aIsSpaceLua = a.path.startsWith("Space Lua/");
     const bIsSpaceLua = b.path.startsWith("Space Lua/");
     if (aIsSpaceLua && !bIsSpaceLua) return -1;
     if (!aIsSpaceLua && bIsSpaceLua) return 1;
-    // Put AI Config first within Space Lua
     if (a.path.includes("AI Config")) return -1;
     if (b.path.includes("AI Config")) return 1;
     return a.path.localeCompare(b.path);
   });
 
-  // Build combined library file
   let combinedContent = `---
 tags:
 - meta
@@ -104,16 +114,14 @@ tags:
 
 This file contains all the Space Lua code, widgets, and AI prompt templates for the silverbullet-ai plug.
 
-Install by copying this file to your space, or use \`Library: Install\` with \`ghr:justyns/silverbullet-ai/PLUG.md\`.
+Install by copying this file to your space, or use \`Library: Install\` with \`ghr:${githubRepo}/PLUG.md\`.
 
 `;
 
   for (const file of libraryFiles) {
-    // Clean heading: remove .md extension, replace / with " / "
     const heading = file.path.replace(/\.md$/, "").replace(/\//g, " / ");
     combinedContent += `## ${heading}\n\n`;
 
-    // Strip frontmatter from individual files but keep the content
     let fileContent = file.content;
     if (fileContent.startsWith("---")) {
       const endOfFrontmatter = fileContent.indexOf("---", 3);
@@ -125,14 +133,23 @@ Install by copying this file to your space, or use \`Library: Install\` with \`g
     combinedContent += fileContent + "\n\n";
   }
 
-  // Write combined library file
-  await Deno.writeTextFile(join(DIST_DIR, COMBINED_LIBRARY), combinedContent);
+  await writeFile(join(DIST_DIR, COMBINED_LIBRARY), combinedContent, "utf-8");
   console.log(`✓ Created ${DIST_DIR}/${COMBINED_LIBRARY}`);
 
-  // Generate PLUG.md with version and changelog
-  const version = await getVersion();
-  const plugMdContent = await Deno.readTextFile(PLUG_MD);
-  const changelogContent = await Deno.readTextFile(CHANGELOG_MD);
+  const version = getVersion();
+  const [repoOwner, repoName] = githubRepo.split("/");
+  let plugMdContent = await readFile(PLUG_MD, "utf-8");
+  // Patch frontmatter fields to reflect the actual owner/repo
+  plugMdContent = plugMdContent
+    .replace(/^name: Library\/[^\n]+/m, `name: Library/${repoOwner}/${repoName}`)
+    .replace(/^author: [^\n]+/m, `author: ${repoOwner}`)
+    .replace(/^website: [^\n]+/m, `website: ${repoUrl}`);
+  // Patch any ghr: install references in the body
+  plugMdContent = plugMdContent.replace(
+    /ghr:[^/\s]+\/[^/\s]+\//g,
+    `ghr:${githubRepo}/`,
+  );
+  const changelogContent = await readFile(CHANGELOG_MD, "utf-8");
   const recentChangelog = extractRecentChangelog(changelogContent, version);
 
   const enhancedPlugMd = plugMdContent.trimEnd() + `
@@ -145,14 +162,13 @@ Current version: **${version}**
 
 ${recentChangelog}
 
-For the full changelog, see https://github.com/justyns/silverbullet-ai/releases
+For the full changelog, see ${repoUrl}/releases
 `;
 
-  await Deno.writeTextFile(join(DIST_DIR, PLUG_MD), enhancedPlugMd);
+  await writeFile(join(DIST_DIR, PLUG_MD), enhancedPlugMd, "utf-8");
   console.log(`✓ Created ${PLUG_MD} (version: ${version})`);
 
-  // Copy plug.js to dist
-  await Deno.copyFile(PLUG_JS, join(DIST_DIR, PLUG_JS));
+  await copyFile(PLUG_JS, join(DIST_DIR, PLUG_JS));
   console.log(`✓ Copied ${PLUG_JS}`);
 
   console.log(`\nDist files ready in ${DIST_DIR}/`);

@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
+const assertEquals = (actual: unknown, expected: unknown, _msg?: string) => expect(actual).toEqual(expected);
 import "./mocks/syscalls.ts";
 import { aiSettings, getAndConfigureModel, initializeOpenAI } from "./init.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
@@ -54,7 +55,7 @@ const secretsConfigSample = {
   "OPENAI_API_KEY": "bar",
 };
 
-Deno.test("initializeOpenAI should set aiSettings correctly", async () => {
+test("initializeOpenAI should set aiSettings correctly", async () => {
   try {
     await syscall("mock.setConfig", "ai", aiConfigSample);
     await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -78,7 +79,7 @@ Deno.test("initializeOpenAI should set aiSettings correctly", async () => {
   }
 });
 
-Deno.test("initializeOpenAI should configure the selected model", async () => {
+test("initializeOpenAI should configure the selected model", async () => {
   try {
     await syscall("mock.setConfig", "ai", aiConfigSample);
     await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -98,7 +99,7 @@ Deno.test("initializeOpenAI should configure the selected model", async () => {
   }
 });
 
-Deno.test("initializeOpenAI should set image models correctly", async () => {
+test("initializeOpenAI should set image models correctly", async () => {
   try {
     await syscall("mock.setConfig", "ai", aiConfigSample);
     await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -122,7 +123,7 @@ Deno.test("initializeOpenAI should set image models correctly", async () => {
   }
 });
 
-Deno.test("initializeOpenAI should set embedding models correctly", async () => {
+test("initializeOpenAI should set embedding models correctly", async () => {
   try {
     await syscall("mock.setConfig", "ai", aiConfigSample);
     await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -146,7 +147,7 @@ Deno.test("initializeOpenAI should set embedding models correctly", async () => 
   }
 });
 
-Deno.test("initializeOpenAI should handle missing settings gracefully", async () => {
+test("initializeOpenAI should handle missing settings gracefully", async () => {
   try {
     await syscall("mock.setConfig", "ai", {});
     await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -165,7 +166,7 @@ Deno.test("initializeOpenAI should handle missing settings gracefully", async ()
   }
 });
 
-Deno.test("initializeOpenAI should throw an error if the API key is empty", async () => {
+test("initializeOpenAI should throw an error if the API key is empty", async () => {
   try {
     const emptySecrets = {
       "OPENAI_API_KEY": "",
@@ -186,7 +187,7 @@ Deno.test("initializeOpenAI should throw an error if the API key is empty", asyn
   }
 });
 
-Deno.test("initializeOpenAI should throw an error if the API secret is missing", async () => {
+test("initializeOpenAI should throw an error if the API secret is missing", async () => {
   try {
     const emptySecrets = {};
     await syscall("mock.setConfig", "ai", aiConfigSample);
@@ -205,10 +206,7 @@ Deno.test("initializeOpenAI should throw an error if the API secret is missing",
   }
 });
 
-Deno.test(
-  "initializeOpenAI should throw an error if secrets page does not exist",
-  { sanitizeOps: false, sanitizeResources: false },
-  async () => {
+test("initializeOpenAI should throw an error if secrets page does not exist", async () => {
     try {
       await syscall("mock.setConfig", "ai", aiConfigSample);
       await initializeOpenAI();

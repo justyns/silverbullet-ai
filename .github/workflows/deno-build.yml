@@ -1,4 +1,4 @@
-name: Deno build test and push
+name: Build and Test
 
 on:
   push:
@@ -7,55 +7,24 @@ on:
     branches: ["main"]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Setup repo
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
-      - name: Setup Deno
-        # uses: denoland/setup-deno@v1
-        uses: denoland/setup-deno@e95548e56dfa95d4e1a28d6f422fafe75c4c26fb # v2.0.3
+      - uses: actions/setup-node@v6.3.0
         with:
-          deno-version: v2.x
+          node-version: "24"
 
-      - name: Verify formatting
-        run: deno fmt --check
+      - name: Install dependencies
+        run: npm install
 
-      - name: Run Deno test
-        run: deno task test
+      - name: Run tests
+        run: npm test
 
-      - name: Coverage
-        run: deno coverage --lcov cov_profile/ > cov.lcov
-
-      #   - name: Run linter
-      #     run: deno lint
-
-      - name: Setup silverbullet
-        run: deno install -f --name silverbullet  --unstable-kv --unstable-worker-options -A --global https://get.silverbullet.md
-
-      - name: Add Deno bin to PATH
-        run: echo "$HOME/.deno/bin" >> $GITHUB_PATH
-
-      - name: Verify PATH
-        run: echo $PATH
-
-      - name: Silverbullet version
-        run: silverbullet --version
-
-      - name: Run Deno build task
-        run: deno task build-release
-
-      - name: Commit and push if on main
-        if: github.ref == 'refs/heads/main'
-        run: |
-          git config --global user.name 'GitHub Actions'
-          git config --global user.email 'actions@github.com'
-          # TODO: Not keeping this in git anymore, probably?  Add to release instead?
-          # git add silverbullet-ai.plug.js || true
-          # git commit -m "Auto update silverbullet-ai.plug.js [skip ci]" || true
-          # git push
+      - name: Build
+        run: npm run build

@@ -1,5 +1,5 @@
 import { clientStore, editor } from "@silverbulletmd/silverbullet/syscalls";
-import { OpenAIProvider } from "./providers/openai.ts";
+import { MistralProvider, OpenAIProvider } from "./providers/openai.ts";
 import { GeminiProvider } from "./providers/gemini.ts";
 import { OllamaProvider } from "./providers/ollama.ts";
 import type { ProviderConfig, ProvidersConfig } from "./types.ts";
@@ -50,6 +50,7 @@ export function inferProviderType(keyName: string): string {
   if (lower.includes("ollama")) return "ollama";
   if (lower.includes("gemini")) return "gemini";
   if (lower.includes("openai") || lower.includes("openrouter")) return "openai";
+  if (lower.includes("mistral")) return "mistral";
   return lower;
 }
 
@@ -75,6 +76,8 @@ function createProviderForDiscovery(
       return new GeminiProvider(apiKey, "", useProxy);
     case "ollama":
       return new OllamaProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
+    case "mistral":
+      return new MistralProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
     default:
       return null;
   }
@@ -153,13 +156,14 @@ function metadataToCachedModel(
 async function getModelMetadataAndMode(
   provider: DiscoveryProvider,
   modelId: string,
+  providerName: string,
   showPricing: boolean = true,
 ): Promise<CachedModel> {
   const nativeCapabilities = provider.getModelCapabilities ? await provider.getModelCapabilities(modelId) : null;
   const nativeContextLimit = provider.getContextLimit ? await provider.getContextLimit(modelId) : null;
 
   const allMetadata = await fetchModelMetadata();
-  const metadata = lookupModel(allMetadata, modelId);
+  const metadata = lookupModel(allMetadata, modelId, providerName);
 
   return metadataToCachedModel(modelId, metadata, nativeCapabilities, nativeContextLimit, showPricing);
 }
@@ -189,7 +193,7 @@ export async function discoverModelsForProvider(
 
     for (const id of modelIds) {
       try {
-        const model = await getModelMetadataAndMode(provider, id, showPricing);
+        const model = await getModelMetadataAndMode(provider, id, providerName, showPricing);
         models.push(model);
       } catch (error) {
         console.error(`Failed to get metadata for ${id}:`, error);

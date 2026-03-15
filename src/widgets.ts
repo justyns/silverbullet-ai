@@ -1,18 +1,15 @@
-/**
- * Widget rendering for tool calls and reasoning blocks.
- * Consolidates all widget-related code for code widgets and HTML rendering.
- */
-import { escape as escapeHtml, unescape as unescapeHtml } from "@std/html/entities";
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
 
-// Types
+function unescapeHtml(str: string): string {
+  return str.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+}
 
-export type CodeWidgetContent = {
-  html?: string;
-  script?: string;
-  width?: number;
-  height?: number;
-  url?: string;
-};
+export const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
+
+// Pattern to match ```reasoning\n{content}\n``` fenced code blocks
+export const REASONING_BLOCK_PATTERN = /```reasoning\n[\s\S]*?\n```\n?/g;
 
 export type ToolCallData = {
   id: string;
@@ -23,82 +20,6 @@ export type ToolCallData = {
   success: boolean;
 };
 
-// Patterns for matching widget code blocks
-
-export const TOOL_CALL_WIDGET_PATTERN = /```toolcall\n([\s\S]*?)\n```/g;
-export const REASONING_BLOCK_PATTERN = /```reasoning\n[\s\S]*?\n```\n?/g;
-
-// Styles for code widgets (embedded in widget HTML)
-
-const TOOL_CALL_WIDGET_STYLES = `
-  .tool-call { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; }
-  @media (prefers-color-scheme: dark) { .tool-call { background: #2d2d2d; color: #d4d4d4; } }
-  .tool-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .tool-name { font-weight: 600; }
-  .tool-arrow { color: #888; }
-  .tool-status { font-size: 14px; }
-  .tool-status.success { color: #22c55e; }
-  .tool-status.error { color: #ef4444; }
-  .tool-details { display: none; margin-top: 8px; font-size: 12px; }
-  .tool-details.open { display: block; }
-  .tool-section { margin: 4px 0; }
-  .tool-section-title { font-weight: 500; color: #666; }
-  @media (prefers-color-scheme: dark) { .tool-section-title { color: #888; } }
-  .tool-section pre { margin: 2px 0; padding: 4px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-  @media (prefers-color-scheme: dark) { .tool-section pre { background: rgba(255,255,255,0.05); } }
-`;
-
-const REASONING_WIDGET_STYLES = `
-  .reasoning-widget { font-family: system-ui, sans-serif; font-size: 13px; padding: 8px; background: #f5f5f5; border-radius: 6px; margin: 4px 0; border-left: 3px solid #8b5cf6; }
-  @media (prefers-color-scheme: dark) { .reasoning-widget { background: #2d2d2d; color: #d4d4d4; } }
-  .reasoning-header { display: flex; align-items: center; gap: 6px; cursor: pointer; }
-  .reasoning-title { font-weight: 600; color: #8b5cf6; }
-  .reasoning-content { display: none; margin-top: 8px; font-size: 12px; }
-  .reasoning-content.open { display: block; }
-  .reasoning-content pre { margin: 0; padding: 8px; background: rgba(0,0,0,0.05); border-radius: 4px; overflow-x: auto; white-space: pre-wrap; }
-  @media (prefers-color-scheme: dark) { .reasoning-content pre { background: rgba(255,255,255,0.05); } }
-`;
-
-// Shared helpers
-
-function formatToolArgs(args: Record<string, unknown>): string {
-  const entries = Object.entries(args);
-  return entries.length > 0 ? entries.map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`).join("\n") : "";
-}
-
-// Widget creation (for inserting into pages)
-
-/**
- * Creates a tool call widget string for display in pages.
- * Uses fenced code block syntax which triggers the code widget for rendering.
- * Stores summary (not full result) to keep markdown compact.
- */
-export function createToolCallWidget(
-  toolName: string,
-  args: Record<string, unknown>,
-  success: boolean,
-  summary?: string,
-): string {
-  const data = {
-    id: `tool_${Date.now()}`,
-    name: toolName,
-    args,
-    summary: summary ?? "",
-    success,
-  };
-  return `\`\`\`toolcall\n${JSON.stringify(data)}\n\`\`\``;
-}
-
-/**
- * Formats reasoning/thinking content as a fenced code block.
- * Uses ```reasoning syntax which triggers rendering as a collapsible block.
- */
-export function formatReasoningBlock(reasoning: string): string {
-  return `\n\`\`\`reasoning\n${reasoning}\n\`\`\`\n`;
-}
-
-// HTML rendering (for chat panel and post-processing)
-
 /**
  * Renders a tool call as HTML with collapsible details.
  * Shared between code widget and chat panel rendering.
@@ -107,9 +28,16 @@ export function renderToolCallHtml(data: ToolCallData): string {
   const status = data.success ? "✓" : "✗";
   const statusClass = data.success ? "success" : "error";
 
-  const argsStr = formatToolArgs(data.args || {});
-  const argsHtml = argsStr
-    ? `<div class="tool-args"><strong>Arguments:</strong><pre>${escapeHtml(argsStr)}</pre></div>`
+  const args = data.args || {};
+  const argEntries = Object.entries(args);
+  const argsHtml = argEntries.length > 0
+    ? `<div class="tool-args"><strong>Arguments:</strong><pre>${
+      escapeHtml(
+        argEntries
+          .map(([k, v]) => `${k}: ${JSON.stringify(v, null, 2)}`)
+          .join("\n"),
+      )
+    }</pre></div>`
     : "";
 
   // Use summary (new format) with fallback to result (legacy format)
@@ -128,7 +56,6 @@ export function renderToolCallHtml(data: ToolCallData): string {
 
 /**
  * Renders reasoning/thinking content as a collapsible HTML block.
- * Similar pattern to tool calls but with distinct styling.
  */
 export function renderReasoningHtml(reasoning: string): string {
   const escapedReasoning = escapeHtml(reasoning);
@@ -139,7 +66,7 @@ export function renderReasoningHtml(reasoning: string): string {
 }
 
 /**
- * Parses JSON tool call data from fenced code block content
+ * Parses JSON tool call data from fenced code block content.
  */
 export function parseToolCallJson(json: string): ToolCallData | null {
   try {
@@ -150,8 +77,59 @@ export function parseToolCallJson(json: string): ToolCallData | null {
 }
 
 /**
- * Post-processes HTML to replace tool-call and reasoning code blocks with rendered HTML widgets.
- * Styles are provided via Space Style.
+ * Renders a tool-call fenced code block as a markdown widget string.
+ * Called by SilverBullet when it encounters ```toolcall blocks.
+ */
+export function createToolCallWidget(
+  toolName: string,
+  args: Record<string, unknown>,
+  success: boolean,
+  summary?: string,
+): string {
+  const data = {
+    id: `tool_${Date.now()}`,
+    name: toolName,
+    args,
+    summary: summary || "",
+    success,
+  };
+  const json = JSON.stringify(data);
+  return `\`\`\`toolcall\n${json}\n\`\`\``;
+}
+
+/**
+ * Formats reasoning/thinking content as a fenced code block.
+ * Uses ```reasoning syntax which triggers rendering as a collapsible block.
+ */
+export function formatReasoningBlock(reasoning: string): string {
+  return `\n\`\`\`reasoning\n${reasoning}\n\`\`\`\n`;
+}
+
+/**
+ * SilverBullet code widget handler for ```toolcall blocks.
+ */
+export function renderToolCallWidget(
+  content: string,
+  _pageName: string,
+): { html: string } {
+  const data = parseToolCallJson(content);
+  if (!data) return { html: `<pre>${escapeHtml(content)}</pre>` };
+  return { html: renderToolCallHtml(data) };
+}
+
+/**
+ * SilverBullet code widget handler for ```reasoning blocks.
+ */
+export function renderReasoningWidget(
+  content: string,
+  _pageName: string,
+): { html: string } {
+  return { html: renderReasoningHtml(content) };
+}
+
+/**
+ * Post-processes HTML to replace tool-call and reasoning code blocks with
+ * rendered HTML widgets. Styles are provided via Space Style.
  */
 export function postProcessToolCallHtml(html: string): string {
   // Process tool calls
@@ -159,8 +137,13 @@ export function postProcessToolCallHtml(html: string): string {
   html = html.replace(toolCallPattern, (_match, jsonContent) => {
     try {
       // SilverBullet's htmlEscape converts \n to <br>, convert back before parsing
-      const data = parseToolCallJson(unescapeHtml(jsonContent.replace(/<br>/g, "\n")));
-      return data ? renderToolCallHtml(data) : _match;
+      const withNewlines = jsonContent.replace(/<br>/g, "\n");
+      const decoded = unescapeHtml(withNewlines);
+      const data = parseToolCallJson(decoded);
+      if (data) {
+        return renderToolCallHtml(data);
+      }
+      return _match;
     } catch {
       return _match;
     }
@@ -170,92 +153,13 @@ export function postProcessToolCallHtml(html: string): string {
   const reasoningPattern = /<pre data-lang="reasoning">([\s\S]*?)<\/pre>/g;
   html = html.replace(reasoningPattern, (_match, content) => {
     try {
-      return renderReasoningHtml(unescapeHtml(content.replace(/<br>/g, "\n")));
+      const withNewlines = content.replace(/<br>/g, "\n");
+      const decoded = unescapeHtml(withNewlines);
+      return renderReasoningHtml(decoded);
     } catch {
       return _match;
     }
   });
 
   return html;
-}
-
-// Code widget renderers (called by SilverBullet)
-
-/**
- * Renders a tool-call fenced code block as an HTML widget.
- * Called by SilverBullet when it encounters ```tool-call blocks.
- */
-export function renderToolCallWidget(
-  bodyText: string,
-  _pageName: string,
-): CodeWidgetContent | null {
-  try {
-    const data = JSON.parse(bodyText) as ToolCallData;
-    const { name, args, result, summary, success } = data;
-
-    const status = success ? "✓" : "✗";
-    const statusClass = success ? "success" : "error";
-
-    const argsStr = formatToolArgs(args || {});
-    // Use summary (new format) with fallback to result (legacy format)
-    const displayText = summary ?? result ?? "";
-
-    const escapedResult = escapeHtml(displayText);
-    const escapedArgs = escapeHtml(argsStr);
-    const escapedName = escapeHtml(name);
-
-    const html = `
-      <style>${TOOL_CALL_WIDGET_STYLES}</style>
-      <div class="tool-call">
-        <div class="tool-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
-          <span>🔧</span>
-          <strong class="tool-name">${escapedName}</strong>
-          <span class="tool-arrow">→</span>
-          <span class="tool-status ${statusClass}">${status}</span>
-        </div>
-        <div class="tool-details">
-          ${
-      escapedArgs
-        ? `<div class="tool-section"><div class="tool-section-title">Arguments:</div><pre>${escapedArgs}</pre></div>`
-        : ""
-    }
-          ${
-      escapedResult
-        ? `<div class="tool-section"><div class="tool-section-title">Result:</div><pre>${escapedResult}</pre></div>`
-        : ""
-    }
-        </div>
-      </div>
-    `;
-
-    return { html };
-  } catch (e) {
-    console.error("Error rendering tool call widget:", e);
-    return null;
-  }
-}
-
-/**
- * Renders a reasoning fenced code block as an HTML widget.
- * Called by SilverBullet when it encounters ```reasoning blocks.
- */
-export function renderReasoningWidget(
-  bodyText: string,
-  _pageName: string,
-): CodeWidgetContent | null {
-  const escapedContent = escapeHtml(bodyText);
-  const html = `
-    <style>${REASONING_WIDGET_STYLES}</style>
-    <div class="reasoning-widget">
-      <div class="reasoning-header" onclick="this.nextElementSibling.classList.toggle('open'); setTimeout(updateHeight, 10);">
-        <span>💭</span>
-        <strong class="reasoning-title">Reasoning</strong>
-        <span style="color: #888;">▼</span>
-      </div>
-      <div class="reasoning-content">
-        <pre>${escapedContent}</pre>
-      </div>
-    </div>
-  `;
-  return { html };
 }

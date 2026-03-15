@@ -235,6 +235,13 @@ export async function startPanelChat(
       systemContent = chatSystemPrompt.content;
     }
 
+    if (tools.length > 0) {
+      const toolList = [...luaTools.entries()]
+        .map(([name, def]) => `- ${name}: ${def.description}`)
+        .join("\n");
+      systemContent += `\n\nAvailable tools:\n${toolList}`;
+    }
+
     const systemMessage: ChatMessage = {
       role: "system",
       content: systemContent,
@@ -528,12 +535,12 @@ async function loadPersistedTokenUsage(): Promise<void> {
  * Gets the context window limit for a model.
  * First tries the provider's API (e.g., Ollama), then falls back to LiteLLM metadata.
  */
-async function getContextLimit(modelName: string): Promise<number | null> {
+async function getContextLimit(modelName: string, providerHint?: string): Promise<number | null> {
   const providerLimit = await currentAIProvider?.getContextLimit(modelName);
   if (providerLimit) {
     return providerLimit;
   }
-  return lookupModelContextLimit(modelName);
+  return lookupModelContextLimit(modelName, providerHint);
 }
 
 export interface ChatStatus {
@@ -562,7 +569,7 @@ export async function getChatStatus(): Promise<ChatStatus> {
   let contextLimit: number | null = null;
 
   if (model?.modelName) {
-    contextLimit = await getContextLimit(model.modelName);
+    contextLimit = await getContextLimit(model.modelName, model.providerKey);
   }
 
   return {

@@ -189,6 +189,7 @@ export enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
   Ollama = "ollama",
+  Mistral = "mistral",
 
   Mock = "mock",
 }

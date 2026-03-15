@@ -1,4 +1,5 @@
-import { assertEquals } from "@std/assert";
+import { expect, test } from "vitest";
+const assertEquals = (actual: unknown, expected: unknown, _msg?: string) => expect(actual).toEqual(expected);
 import "./mocks/syscalls.ts";
 import { syscall } from "./mocks/syscalls.ts";
 import { aiSettings, initializeOpenAI } from "./init.ts";
@@ -48,7 +49,7 @@ const secretsConfigSample = {
   "OPENAI_API_KEY": "bar",
 };
 
-Deno.test("canIndexPage respects aiSettings.indexEmbeddingsExcludePages", async () => {
+test("canIndexPage respects aiSettings.indexEmbeddingsExcludePages", async () => {
   await syscall("mock.setConfig", "ai", aiConfigSample);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
   await initializeOpenAI();
@@ -59,7 +60,7 @@ Deno.test("canIndexPage respects aiSettings.indexEmbeddingsExcludePages", async 
   assertEquals(canIndexPage("Library/SomePage"), false);
 });
 
-Deno.test("shouldIndexEmbeddings returns true when conditions are met", async () => {
+test("shouldIndexEmbeddings returns true when conditions are met", async () => {
   await syscall("mock.setConfig", "ai", aiConfigSample);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
   await initializeOpenAI();
@@ -68,7 +69,7 @@ Deno.test("shouldIndexEmbeddings returns true when conditions are met", async ()
   assertEquals(result, true);
 });
 
-Deno.test("shouldIndexEmbeddings returns false when indexEmbeddings is disabled", async () => {
+test("shouldIndexEmbeddings returns false when indexEmbeddings is disabled", async () => {
   const modifiedConfig = { ...aiConfigSample, indexEmbeddings: false };
   await syscall("mock.setConfig", "ai", modifiedConfig);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -78,7 +79,7 @@ Deno.test("shouldIndexEmbeddings returns false when indexEmbeddings is disabled"
   assertEquals(result, false);
 });
 
-Deno.test("shouldIndexSummaries returns true when conditions are met", async () => {
+test("shouldIndexSummaries returns true when conditions are met", async () => {
   const modifiedConfig = { ...aiConfigSample, indexSummary: true };
   await syscall("mock.setConfig", "ai", modifiedConfig);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -88,7 +89,7 @@ Deno.test("shouldIndexSummaries returns true when conditions are met", async () 
   assertEquals(result, true);
 });
 
-Deno.test("shouldIndexSummaries returns false when indexSummary is disabled", async () => {
+test("shouldIndexSummaries returns false when indexSummary is disabled", async () => {
   await syscall("mock.setConfig", "ai", aiConfigSample);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
   await initializeOpenAI();
@@ -97,7 +98,7 @@ Deno.test("shouldIndexSummaries returns false when indexSummary is disabled", as
   assertEquals(result, false);
 });
 
-Deno.test("shouldIndexEmbeddings returns false when no embedding models are configured", async () => {
+test("shouldIndexEmbeddings returns false when no embedding models are configured", async () => {
   await syscall("mock.clearClientStore");
   await syscall("mock.setConfig", "ai", aiConfigSampleNoEmbeddings);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
@@ -107,7 +108,7 @@ Deno.test("shouldIndexEmbeddings returns false when no embedding models are conf
   assertEquals(result, false);
 });
 
-Deno.test("shouldIndexSummaries returns false when no embedding models are configured", async () => {
+test("shouldIndexSummaries returns false when no embedding models are configured", async () => {
   await syscall("mock.clearClientStore");
   await syscall("mock.setConfig", "ai", aiConfigSampleNoEmbeddings);
   await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
