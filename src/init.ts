@@ -746,7 +746,7 @@ For docs related to Space Lua scripts, configuration, or SilverBullet-specific q
   };
   if (aiSettings.chat.enableTools) {
     chatSystemPrompt.content +=
-      `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant.`;
+      `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant. When calling external tools, do not use the current SilverBullet page name as a filter or identifier — it is a SilverBullet-internal path and will not match identifiers in external systems.`;
   }
   if (aiSettings.chat.userInformation) {
     chatSystemPrompt.content +=
