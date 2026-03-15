@@ -6,6 +6,18 @@ This page is a brief overview of each version.
 
 - Poll for agent changes to handle command palette selection
 
+## 1.2.2 (2026-03-15)
+
+- Fix agent panel not updating when switching agents
+
+## 1.2.1 (2026-03-15)
+
+- Fix RAG status not refreshing when switching agents
+
+## 1.2.0 (2026-03-15)
+
+- Add per-agent RAG (searchEmbeddings) control
+
 ## 1.1.7 (2026-03-14)
 
 - Add MistralProvider with tool_choice: "any" for reliable MCP tool calls
