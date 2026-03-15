@@ -183,6 +183,18 @@ function setNestedValue(obj: any, path: string, value: any): void {
       }
       break;
 
+    case "clientStore.del":
+      delete clientStore[args[0]];
+      break;
+
+    case "editor.flashNotification":
+      // no-op in tests
+      break;
+
+    case "editor.hidePanel":
+      // no-op in tests
+      break;
+
     default:
       throw Error(`Missing mock for: ${name}`);
   }
