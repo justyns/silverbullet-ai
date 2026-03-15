@@ -794,15 +794,12 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   setInterval(async function () {
     if (displayedAgentRef === undefined) return; // not yet initialized
     try {
-      const [agent, status] = await Promise.all([
-        syscall("system.invokeFunction", "silverbullet-ai.chatAgentState", "get"),
-        syscall("system.invokeFunction", "silverbullet-ai.getChatStatus"),
-      ]);
-      const agentRef = agent?.ref ?? null;
-      const ragEnabled = status.rag.enabled && status.rag.indexEnabled;
-      if (agentRef !== displayedAgentRef || ragEnabled !== lastRagEnabled) {
-        if (agentRef !== displayedAgentRef) updateAgentIndicator(agent);
-        await updateChatStatus();
+      const state = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.getPollState",
+      );
+      if (state.agentRef !== displayedAgentRef || state.ragEnabled !== lastRagEnabled) {
+        await loadCurrentAgent();
       }
     } catch (_e) {
       // ignore transient polling errors

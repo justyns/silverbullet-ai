@@ -562,6 +562,23 @@ export interface ChatStatus {
 }
 
 /**
+ * Returns lightweight agent/RAG state for polling — no provider calls.
+ */
+export async function getPollState(): Promise<{
+  agentRef: string | null;
+  ragEnabled: boolean;
+}> {
+  await initIfNeeded();
+  return {
+    agentRef: currentChatAgent?.ref ?? null,
+    ragEnabled:
+      (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+        ? currentChatAgent.aiagent.searchEmbeddings
+        : aiSettings?.chat?.searchEmbeddings) ?? false,
+  };
+}
+
+/**
  * Returns consolidated chat panel status including RAG, tokens, and model info.
  */
 export async function getChatStatus(): Promise<ChatStatus> {
