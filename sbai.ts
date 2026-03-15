@@ -2,6 +2,7 @@ import { extractFrontMatter } from "./src/lib/frontmatter.ts";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
+  AIAgentTemplate,
   EmbeddingModelConfig,
   ImageGenerationOptions,
   ImageModelConfig,
@@ -495,12 +496,14 @@ export async function selectEmbeddingModelFromConfig() {
 /**
  * Prompts the user to select an AI agent from available agents.
  */
-export async function selectAgentCommand() {
+export async function selectAgentCommand(): Promise<AIAgentTemplate | null> {
   const agent = await selectAgent();
   if (agent) {
     await chatAgentState("set", agent);
     await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
+    return agent;
   }
+  return null;
 }
 
 /**

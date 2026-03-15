@@ -730,8 +730,14 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   panelTitleEl.addEventListener("click", async function () {
     try {
-      await syscall("system.invokeCommand", "AI: Select Agent");
-      await loadCurrentAgent();
+      const agent = await syscall(
+        "system.invokeFunction",
+        "silverbullet-ai.selectAgent",
+      );
+      if (agent !== null && agent !== undefined) {
+        updateAgentIndicator(agent);
+        await updateChatStatus();
+      }
     } catch (e) {
       console.error("Failed to open agent selector:", e);
     }
