@@ -188,7 +188,8 @@ export async function startPanelChat(
       const allowedReadPaths = currentChatAgent?.aiagent?.allowedReadPaths;
       const pageAllowed = isPathAllowed(currentPage, allowedReadPaths);
 
-      contextBlock = `Current date and time: ${new Date().toISOString()}`;
+      contextBlock = `Current SilverBullet page: ${currentPage}`;
+      contextBlock += `\nCurrent date and time: ${new Date().toISOString()}`;
       if (currentChatAgent) {
         const agentName = currentChatAgent.aiagent.name || currentChatAgent.ref;
         contextBlock += `\nActive agent: ${agentName}`;
@@ -204,7 +205,7 @@ export async function startPanelChat(
         const truncatedContent = pageContent.length > 4000
           ? pageContent.substring(0, 4000) + "\n...(truncated)"
           : pageContent;
-        contextBlock += `\nCurrent SilverBullet page (${currentPage}):\n${truncatedContent}`;
+        contextBlock += `\n\nPage content:\n${truncatedContent}`;
       }
     } catch (e) {
       console.log("Could not get page context:", e);
