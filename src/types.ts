@@ -179,6 +179,7 @@ export type AIAgentTemplate = {
     inheritBasePrompt?: boolean;
     allowedReadPaths?: string[];
     allowedWritePaths?: string[];
+    searchEmbeddings?: boolean;
   };
 };
 

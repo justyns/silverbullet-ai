@@ -184,6 +184,7 @@ export async function convertPageToMessages(
 export async function enrichChatMessages(
   messages: ChatMessage[],
   _globalMetadata?: Record<string, any>,
+  options?: { searchEmbeddings?: boolean },
 ): Promise<{ messagesWithAttachments: MessageWithAttachments[] }> {
   const result: MessageWithAttachments[] = [];
   let currentPage, pageMeta;
@@ -270,7 +271,10 @@ export async function enrichChatMessages(
       messageAttachments.push(...wikiResult.attachments);
     }
 
-    if (aiSettings?.chat?.searchEmbeddings && aiSettings?.indexEmbeddings) {
+    const searchEmbeddingsEnabled = options?.searchEmbeddings !== undefined
+      ? options.searchEmbeddings
+      : aiSettings?.chat?.searchEmbeddings;
+    if (searchEmbeddingsEnabled && aiSettings?.indexEmbeddings) {
       const searchResults = await searchEmbeddingsForChat(message.content);
 
       if (searchResults.context.totalResults > 0) {

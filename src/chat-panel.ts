@@ -247,7 +247,10 @@ export async function startPanelChat(
     };
 
     const cleanedMessages = await cleanMessagesForApi(messages);
-    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+    const enrichOptions = currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+      ? { searchEmbeddings: currentChatAgent.aiagent.searchEmbeddings }
+      : undefined;
+    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages, undefined, enrichOptions);
 
     // Prepend page context after enrichment so RAG search uses original user content
     if (contextBlock) {
@@ -573,7 +576,9 @@ export async function getChatStatus(): Promise<ChatStatus> {
 
   return {
     rag: {
-      enabled: aiSettings?.chat?.searchEmbeddings ?? false,
+      enabled: (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+        ? currentChatAgent.aiagent.searchEmbeddings
+        : aiSettings?.chat?.searchEmbeddings) ?? false,
       indexEnabled: aiSettings?.indexEmbeddings ?? false,
     },
     reasoning: {
