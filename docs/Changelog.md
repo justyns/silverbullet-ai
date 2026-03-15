@@ -6,6 +6,10 @@ This page is a brief overview of each version.
 
 - Fix RAG status not refreshing when switching agents
 
+## 1.2.0 (2026-03-15)
+
+- Add per-agent RAG (searchEmbeddings) control
+
 ## 1.1.7 (2026-03-14)
 
 - Add MistralProvider with tool_choice: "any" for reliable MCP tool calls
