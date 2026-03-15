@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 1.2.5 (2026-03-15)
+
+- Document per-agent RAG (searchEmbeddings) control in Agents.md
+
 ## 1.2.4 (2026-03-15)
 
 - Use lightweight getPollState to avoid provider calls on every poll tick

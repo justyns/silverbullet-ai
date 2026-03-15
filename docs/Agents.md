@@ -210,6 +210,7 @@ aiagent:
 | `inheritBasePrompt` | boolean | Prepend base system prompt (default: true) |
 | `allowedReadPaths` | string[] | Path prefixes tools can read from (e.g., `["Journal/", "Notes/"]`) |
 | `allowedWritePaths` | string[] | Path prefixes tools can write to (e.g., `["Journal/"]`) |
+| `searchEmbeddings` | boolean | Override the global RAG (embedding search) toggle for this agent. `true` always enables RAG, `false` always disables it, omit to use the session toggle. |
 
 ### Base Prompt Inheritance
 
@@ -257,6 +258,37 @@ ai.agents.journal = {
 - If not set, no path restrictions apply
 
 This is useful for creating restricted agents that can only operate on specific areas of your space.
+
+### Per-Agent RAG Control
+
+Agents can override the global RAG (embedding search) toggle using `searchEmbeddings`:
+
+```yaml
+---
+tags: meta/template/aiAgent
+aiagent:
+  name: "Research Assistant"
+  description: "Always searches embeddings for context"
+  systemPrompt: "You are a research assistant with access to the full knowledge base."
+  searchEmbeddings: true
+---
+```
+
+Or in Lua:
+
+```lua
+ai.agents.research = {
+  name = "Research Assistant",
+  systemPrompt = "You are a research assistant with access to the full knowledge base.",
+  searchEmbeddings = true
+}
+```
+
+- `searchEmbeddings: true` — RAG is always on for this agent, regardless of the session toggle
+- `searchEmbeddings: false` — RAG is always off for this agent
+- Omit the property to use the user's current session toggle (default behavior)
+
+The chat panel status button reflects the effective RAG state when an agent is active.
 
 ## Usage
 
