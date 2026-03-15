@@ -24,6 +24,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
         inheritBasePrompt?: boolean;
         allowedReadPaths?: string[];
         allowedWritePaths?: string[];
+        searchEmbeddings?: boolean;
       }
     >;
 
@@ -40,6 +41,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
             inheritBasePrompt: agent.inheritBasePrompt,
             allowedReadPaths: agent.allowedReadPaths,
             allowedWritePaths: agent.allowedWritePaths,
+            searchEmbeddings: agent.searchEmbeddings,
           },
         });
       }
