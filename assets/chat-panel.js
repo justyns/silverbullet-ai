@@ -790,18 +790,18 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   loadCurrentAgent();
   userInput.focus();
 
-  // Poll for agent changes triggered externally (e.g. command palette)
+  // Poll for agent/RAG changes triggered externally (e.g. command palette)
   setInterval(async function () {
     if (displayedAgentRef === undefined) return; // not yet initialized
     try {
-      const agent = await syscall(
-        "system.invokeFunction",
-        "silverbullet-ai.chatAgentState",
-        "get",
-      );
+      const [agent, status] = await Promise.all([
+        syscall("system.invokeFunction", "silverbullet-ai.chatAgentState", "get"),
+        syscall("system.invokeFunction", "silverbullet-ai.getChatStatus"),
+      ]);
       const agentRef = agent?.ref ?? null;
-      if (agentRef !== displayedAgentRef) {
-        updateAgentIndicator(agent);
+      const ragEnabled = status.rag.enabled && status.rag.indexEnabled;
+      if (agentRef !== displayedAgentRef || ragEnabled !== lastRagEnabled) {
+        if (agentRef !== displayedAgentRef) updateAgentIndicator(agent);
         await updateChatStatus();
       }
     } catch (_e) {
