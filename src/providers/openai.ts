@@ -436,4 +436,20 @@ export class MistralProvider extends OpenAIProvider {
 
   override name = "Mistral";
   override toolChoiceValue = "any";
+
+  override async chat(
+    messages: Array<ChatMessage>,
+    tools?: Tool[],
+    response_format?: StreamChatOptions["response_format"],
+  ): Promise<ChatResponse> {
+    // Use "any" only when there are no prior tool results in the context.
+    // Once tool results exist, switch to "auto" so Mistral can respond with text.
+    const hasToolResults = messages.some((m) => m.role === "tool");
+    if (hasToolResults) {
+      this.toolChoiceValue = "auto";
+    } else {
+      this.toolChoiceValue = "any";
+    }
+    return super.chat(messages, tools, response_format);
+  }
 }
