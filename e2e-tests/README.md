@@ -6,15 +6,16 @@ This directory contains end-to-end browser tests for the SilverBullet AI plugin 
 
 ### Prerequisites
 
-- [Deno](https://deno.land/) installed (v2.0 or later)
+- [Node.js](https://nodejs.org/) (v18 or later) and npm installed
 - SilverBullet CLI installed globally
 
-### Install Playwright Browsers
+### Install Dependencies and Playwright Browsers
 
-Before running tests for the first time, install Playwright browsers:
+Before running tests for the first time, install dependencies and Playwright browsers:
 
 ```bash
-deno run -A npm:playwright install
+npm install
+npx playwright install
 ```
 
 This will download Chromium, Firefox, and WebKit browsers.
@@ -24,38 +25,38 @@ This will download Chromium, Firefox, and WebKit browsers.
 ### Run all tests
 
 ```bash
-deno task test:e2e
+npx playwright test
 ```
 
 ### Run tests in UI mode (interactive)
 
 ```bash
-deno task test:e2e:ui
+npx playwright test --ui
 ```
 
 ### Run tests in a specific browser
 
 ```bash
 # Chromium only
-deno task test:e2e --project=chromium
+npx playwright test --project=chromium
 
 # Firefox only
-deno task test:e2e --project=firefox
+npx playwright test --project=firefox
 
 # Mobile Chrome
-deno task test:e2e --project="Mobile Chrome"
+npx playwright test --project="Mobile Chrome"
 ```
 
 ### Run tests in headed mode (see the browser)
 
 ```bash
-deno task test:e2e --headed
+npx playwright test --headed
 ```
 
 ### Run specific test file
 
 ```bash
-deno run -A npm:playwright test tests/chat-panel.spec.ts
+npx playwright test tests/chat-panel.spec.ts
 ```
 
 ## Test Structure
@@ -73,7 +74,7 @@ e2e-tests/
 Tests use Playwright's test framework. Example:
 
 ```typescript
-import { test, expect } from "npm:@playwright/test@1.49.0";
+import { test, expect } from "@playwright/test";
 
 test("my test", async ({ page }) => {
   await page.goto("/");
@@ -88,7 +89,7 @@ test("my test", async ({ page }) => {
 After running tests, you can view the HTML report:
 
 ```bash
-deno run -A npm:playwright show-report
+npx playwright show-report
 ```
 
 ## CI/CD Integration
@@ -102,7 +103,7 @@ E2E tests are configured to run in GitHub Actions on every push and pull request
 Run tests in debug mode with Playwright Inspector:
 
 ```bash
-deno run -A npm:playwright test --debug
+npx playwright test --debug
 ```
 
 ### Screenshots and Videos
@@ -110,7 +111,7 @@ deno run -A npm:playwright test --debug
 On test failure, Playwright automatically captures:
 - Screenshots (in `test-results/`)
 - Videos (in `test-results/`)
-- Traces (viewable with `playwright show-trace`)
+- Traces (viewable with `npx playwright show-trace`)
 
 ## Troubleshooting
 
@@ -119,7 +120,7 @@ On test failure, Playwright automatically captures:
 If the test web server fails to start:
 
 1. Check that port 3000 is available
-2. Ensure SilverBullet is installed: `deno install -A --global npm:silverbullet`
+2. Ensure SilverBullet is installed: `npm install -g silverbullet`
 3. Manually test: `silverbullet ./test-space --port 3000`
 
 ### Tests timing out
@@ -137,11 +138,10 @@ use: {
 Reinstall browsers:
 
 ```bash
-deno run -A npm:playwright install --force
+npx playwright install --force
 ```
 
 ## Resources
 
 - [Playwright Documentation](https://playwright.dev/)
-- [Playwright with Deno](https://www.kapp.technology/en/blog/run-playwright-on-deno-javascript-runtime/)
 - [SilverBullet Documentation](https://silverbullet.md/)

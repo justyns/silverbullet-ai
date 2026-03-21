@@ -2,16 +2,24 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.5 (2026-03-13)
+## 0.7.0 (2026-03-20)
 
+- Add Mistral provider with `tool_choice: "any"` for reliable MCP tool calls; moved to its own `src/providers/mistral.ts`
+- Fix model metadata lookup picking wrong provider for Mistral models
+- Fix Mistral model metadata lookup returning incorrect context window size
+- Fix agent panel not updating when switching agents
+- Fix RAG status not refreshing when switching agents
+- Poll for agent changes to handle command palette selection
+- Fix security issues and improve type safety
+- **BREAKING**: Build system migrated from Deno to Node.js/npm (`npm run build`, `npm test`)
+- Rename CI workflow from `deno-build.yml` to `build.yml`; update all workflows to latest action versions
+- Update development docs to reflect Node.js/npm build and test commands
 - Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
 - Fix promise hang bugs and missing permissions in streaming agentic chat
 - Fix unsafe type casts that could cause runtime errors
-- Inject available tool list into AI system prompt so models know what tools they can use
 - Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
-- **BREAKING**: Build system migrated from Deno to Node.js/npm
 - Add release workflow to publish to GitHub Releases automatically on version tags
-- Display agent name and click it to change to a different agent
+- Display agent name in chat panel header; hover shows pointer cursor to indicate it is clickable, click to change agent
 - Persist agent selection in chat panel
 - Remember the state of the assistant chat panel and re-open it on page reload
 - Add support for displaying thinking/reasoning blocks with Ollama

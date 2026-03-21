@@ -1,5 +1,7 @@
 [Mistral AI](https://mistral.ai/) is a hosted service that offers an OpenAI-compatible API.
 
+Mistral has a dedicated provider (`MistralProvider`) that extends the OpenAI provider with `tool_choice: "any"` instead of `"auto"`. This is required for reliable tool/MCP call behavior with Mistral models — use `provider = "mistral"` to enable it.
+
 ## Provider Configuration (Recommended)
 
 ```lua
@@ -42,7 +44,7 @@ config.set {
       {
         name = "mistral-medium",
         modelName = "mistral-medium",
-        provider = "openai",
+        provider = "mistral",  -- Use "mistral", not "openai", to get correct tool_choice behavior
         baseUrl = "https://api.mistral.ai/v1",
         secretName = "MISTRAL_API_KEY"
       }

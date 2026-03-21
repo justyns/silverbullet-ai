@@ -60,6 +60,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
   let lastRagEnabled = false;
   let lastRagIndexEnabled = false;
+  let lastAgentDisabledRag = false;
   let lastReasoningEnabled = false;
 
   async function updateChatStatus() {
@@ -97,6 +98,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
       // Update RAG status
       lastRagIndexEnabled = status.rag.indexEnabled;
+      lastAgentDisabledRag = status.rag.agentDisabledRag ?? false;
       lastRagEnabled = status.rag.enabled && status.rag.indexEnabled;
       ragIndicatorEl.classList.remove("enabled", "disabled", "searching");
 
@@ -600,6 +602,13 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       );
       updateAgentIndicator(agent);
       await updateChatStatus();
+      if (lastAgentDisabledRag) {
+        await syscall(
+          "editor.flashNotification",
+          "RAG disabled for this agent",
+          "info",
+        );
+      }
     } catch (e) {
       console.error("Failed to load current agent:", e);
     }
@@ -740,6 +749,9 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       if (agent !== null && agent !== undefined) {
         updateAgentIndicator(agent);
         await updateChatStatus();
+        if (lastAgentDisabledRag) {
+          await syscall("editor.flashNotification", "RAG disabled for this agent", "info");
+        }
       }
     } catch (e) {
       console.error("Failed to open agent selector:", e);
@@ -790,19 +802,16 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
   loadCurrentAgent();
   userInput.focus();
 
-  // Poll for agent changes triggered externally (e.g. command palette)
+  // Poll for agent/RAG changes triggered externally (e.g. command palette)
   setInterval(async function () {
     if (displayedAgentRef === undefined) return; // not yet initialized
     try {
-      const agent = await syscall(
+      const state = await syscall(
         "system.invokeFunction",
-        "silverbullet-ai.chatAgentState",
-        "get",
+        "silverbullet-ai.getPollState",
       );
-      const agentRef = agent?.ref ?? null;
-      if (agentRef !== displayedAgentRef) {
-        updateAgentIndicator(agent);
-        await updateChatStatus();
+      if (state.agentRef !== displayedAgentRef || state.ragEnabled !== lastRagEnabled) {
+        await loadCurrentAgent();
       }
     } catch (_e) {
       // ignore transient polling errors

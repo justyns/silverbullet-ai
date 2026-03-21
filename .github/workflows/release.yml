@@ -18,11 +18,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
 
@@ -31,9 +31,6 @@ jobs:
 
       - name: Run tests
         run: npm test
-
-      - name: Build release
-        run: npm run build:release
 
       - name: Create dist files
         run: npm run dist
