@@ -1,5 +1,6 @@
 import { clientStore, editor } from "@silverbulletmd/silverbullet/syscalls";
-import { MistralProvider, OpenAIProvider } from "./providers/openai.ts";
+import { OpenAIProvider } from "./providers/openai.ts";
+import { MistralProvider } from "./providers/mistral.ts";
 import { GeminiProvider } from "./providers/gemini.ts";
 import { OllamaProvider } from "./providers/ollama.ts";
 import type { ProviderConfig, ProvidersConfig } from "./types.ts";
