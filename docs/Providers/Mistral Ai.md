@@ -1,6 +1,11 @@
 [Mistral AI](https://mistral.ai/) is a hosted service that offers an OpenAI-compatible API.
 
-Mistral has a dedicated provider (`MistralProvider`) that extends the OpenAI provider with `tool_choice: "any"` instead of `"auto"`. This is required for reliable tool/MCP call behavior with Mistral models — use `provider = "mistral"` to enable it.
+Mistral has a dedicated provider (`MistralProvider`) in `src/providers/mistral.ts` that extends the OpenAI provider with two key behaviors:
+
+- **Tool calls**: Uses `tool_choice: "any"` to reliably trigger tool/MCP calls, then automatically switches to `"auto"` once tool results are present so Mistral returns a text response instead of looping indefinitely.
+- **Embeddings**: Routes `mistral-embed` through the OpenAI-compatible embeddings endpoint — no extra configuration needed.
+
+Use `provider = "mistral"` to enable these behaviors.
 
 ## Provider Configuration (Recommended)
 
@@ -53,11 +58,31 @@ config.set {
 }
 ```
 
+## Embedding Configuration
+
+Mistral embeddings use the `mistral-embed` model, which is OpenAI-compatible. Set `provider = "mistral"` and specify the embedding model:
+
+```lua
+config.set {
+  ai = {
+    providers = {
+      mistral = {
+        provider = "mistral",
+        apiKey = mistral_key,
+        baseUrl = "https://api.mistral.ai/v1",
+      }
+    },
+    defaultTextModel = "mistral:mistral-large-latest",
+    defaultEmbeddingModel = "mistral:mistral-embed"
+  }
+}
+```
+
 ## Provider Options
 
 | Option | Description |
 |--------|-------------|
-| `provider` | Use `"mistral"` (recommended) or `"openai"`. Using `"mistral"` enables correct `tool_choice` behavior for MCP/tool calls. |
+| `provider` | Use `"mistral"` (recommended) or `"openai"`. Using `"mistral"` enables correct `tool_choice` behavior and embedding support. |
 | `apiKey` | Your Mistral API key |
 | `baseUrl` | Must be `"https://api.mistral.ai/v1"` |
 | `preferredModels` | Array of model names to show first in the picker |
