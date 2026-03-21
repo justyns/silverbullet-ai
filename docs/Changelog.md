@@ -5,8 +5,13 @@ This page is a brief overview of each version.
 ## 0.7.0 (2026-03-20)
 
 - Add Mistral provider with `tool_choice: "any"` for reliable MCP tool calls; moved to its own `src/providers/mistral.ts`
+- Fix Mistral tool calls looping indefinitely — `tool_choice` now switches from `"any"` to `"auto"` once tool results exist in the context so Mistral returns a text response
+- Fix `useProxy` defaulting to `true` for Mistral, which caused 411 Content-Length Required errors; now correctly consults provider defaults
+- Add Mistral embedding support by routing through `OpenAIEmbeddingProvider` with Mistral's base URL (`mistral-embed` is OpenAI-compatible)
 - Fix model metadata lookup picking wrong provider for Mistral models
 - Fix Mistral model metadata lookup returning incorrect context window size
+- Fix image model initialization crashing plugin init for unsupported providers; now logs a warning and clears stale cache
+- Fix `promptAndGenerateImage` to check `currentImageProvider` before proceeding, with a clear actionable error message
 - Fix agent panel not updating when switching agents
 - Fix RAG status not refreshing when switching agents
 - Poll for agent changes to handle command palette selection
