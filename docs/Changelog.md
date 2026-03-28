@@ -2,7 +2,7 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.7.0 (2026-03-20)
+## 0.7.0 - unreleased
 
 - Add Mistral provider with `tool_choice: "any"` for reliable MCP tool calls; moved to its own `src/providers/mistral.ts`
 - Fix Mistral tool calls looping indefinitely — `tool_choice` now switches from `"any"` to `"auto"` once tool results exist in the context so Mistral returns a text response
@@ -20,11 +20,22 @@ This page is a brief overview of each version.
 - Rename CI workflow from `deno-build.yml` to `build.yml`; update all workflows to latest action versions
 - Update development docs to reflect Node.js/npm build and test commands
 - Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
+- Fix Gemini streaming never completing (promise hang) — detect `finishReason` instead of relying on `[DONE]` sentinel
+- Fix Gemini tool calling: pass tools to API, parse `functionCall` parts in responses, handle `thoughtSignature`
+- Fix Gemini `additionalProperties` error in JSON schema mode — strip unsupported schema fields
 - Fix promise hang bugs and missing permissions in streaming agentic chat
 - Fix unsafe type casts that could cause runtime errors
+- Fix config re-initialization loop caused by embedding/image model setup overwriting the global API key
 - Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
 - Add release workflow to publish to GitHub Releases automatically on version tags
-- Display agent name in chat panel header; hover shows pointer cursor to indicate it is clickable, click to change agent
+
+## 0.6.5 (2026-03-13)
+
+- Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
+- Add configurable `timeout` option per provider for slow models
+- Add model name to assistant chat header, click to change the model for the session
+- Click RAG icon to enable/disable embeddings search temporarily
+- Display agent name and click it to change to a different agent
 - Persist agent selection in chat panel
 - Remember the state of the assistant chat panel and re-open it on page reload
 - Add support for displaying thinking/reasoning blocks with Ollama
