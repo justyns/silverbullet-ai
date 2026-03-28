@@ -19,6 +19,36 @@ type GeminiChatContent = {
   role: string;
 };
 
+/**
+ * Recursively strips properties that Gemini's schema doesn't support
+ * (e.g. additionalProperties).
+ */
+function stripUnsupportedSchemaProps(schema: Record<string, unknown>): Record<string, unknown> {
+  const cleaned: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(schema)) {
+    if (key === "additionalProperties") continue;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      cleaned[key] = stripUnsupportedSchemaProps(value as Record<string, unknown>);
+    } else {
+      cleaned[key] = value;
+    }
+  }
+  return cleaned;
+}
+
+/**
+ * Converts OpenAI-format tools to Gemini's function declaration format.
+ */
+function convertToolsToGemini(tools: Tool[]): Record<string, unknown> {
+  return {
+    functionDeclarations: tools.map((tool) => ({
+      name: tool.function.name,
+      description: tool.function.description,
+      parameters: stripUnsupportedSchemaProps(tool.function.parameters as Record<string, unknown>),
+    })),
+  };
+}
+
 export class GeminiProvider extends AbstractProvider {
   static defaults: ProviderDefaults = {
     baseUrl: "https://generativelanguage.googleapis.com",
@@ -247,7 +277,7 @@ export class GeminiProvider extends AbstractProvider {
 
   async chat(
     messages: Array<ChatMessage>,
-    _tools?: Tool[],
+    tools?: Tool[],
     response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
     const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
@@ -258,6 +288,10 @@ export class GeminiProvider extends AbstractProvider {
       contents: payloadContents,
     };
 
+    if (tools && tools.length > 0) {
+      requestBody.tools = [convertToolsToGemini(tools)];
+    }
+
     if (
       response_format?.type === "json_object" ||
       response_format?.type === "json_schema"
@@ -265,7 +299,9 @@ export class GeminiProvider extends AbstractProvider {
       requestBody.generationConfig = {
         responseMimeType: "application/json",
         ...(response_format.type === "json_schema" && {
-          responseSchema: response_format.json_schema.schema,
+          responseSchema: stripUnsupportedSchemaProps(
+            response_format.json_schema.schema as Record<string, unknown>,
+          ),
         }),
       };
     }
@@ -287,9 +323,27 @@ export class GeminiProvider extends AbstractProvider {
     }
 
     const responseData = await response.json();
+    const candidate = responseData.candidates?.[0];
+    const parts = candidate?.content?.parts || [];
+
+    // Check for function calls in the response
+    const functionCalls = parts.filter((p: any) => p.functionCall);
+    const textParts = parts.filter((p: any) => p.text !== undefined);
+
+    const toolCalls = functionCalls.length > 0
+      ? functionCalls.map((p: any, i: number) => ({
+        id: `call_${i}`,
+        type: "function" as const,
+        function: {
+          name: p.functionCall.name,
+          arguments: JSON.stringify(p.functionCall.args || {}),
+        },
+      }))
+      : undefined;
+
     return {
-      content: responseData.candidates[0].content.parts[0].text,
-      tool_calls: undefined,
+      content: textParts.map((p: any) => p.text).join("") || "",
+      tool_calls: toolCalls,
       usage: responseData.usageMetadata
         ? {
           prompt_tokens: responseData.usageMetadata.promptTokenCount || 0,
