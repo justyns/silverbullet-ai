@@ -190,6 +190,21 @@ export class GeminiProvider extends AbstractProvider {
                   total_tokens: data.usageMetadata.totalTokenCount || 0,
                 };
               }
+
+              // Gemini signals completion via finishReason, not [DONE]
+              const finishReason = data.candidates?.[0]?.finishReason;
+              if (finishReason) {
+                source.close();
+                const response: ChatResponse = {
+                  content: fullContent,
+                  tool_calls: undefined,
+                  finish_reason: "stop",
+                  usage,
+                };
+                if (onComplete) onComplete(response);
+                resolve(response);
+                return;
+              }
             }
           } catch (error) {
             console.error("Error processing message event:", error, e.data);
