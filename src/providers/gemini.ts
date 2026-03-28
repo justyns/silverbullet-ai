@@ -10,9 +10,10 @@ type HttpHeaders = {
   "x-goog-api-key"?: string;
 };
 
-type GeminiChatPart = {
-  text: string;
-};
+type GeminiChatPart =
+  | { text: string }
+  | { functionCall: { name: string; args: Record<string, unknown> } }
+  | { functionResponse: { name: string; response: Record<string, unknown> } };
 
 type GeminiChatContent = {
   parts: GeminiChatPart[];
@@ -96,24 +97,59 @@ export class GeminiProvider extends AbstractProvider {
   private mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
     const payloadContents: GeminiChatContent[] = [];
     let previousRole = "";
-    messages.forEach((message: ChatMessage) => {
+
+    for (const message of messages) {
+      // Assistant message with tool calls → model role with functionCall parts
+      if (message.role === "assistant" && message.tool_calls?.length) {
+        // Use _raw parts if available to preserve thoughtSignature
+        const parts: any[] = message.tool_calls.map((tc) =>
+          tc._raw || {
+            functionCall: {
+              name: tc.function.name,
+              args: JSON.parse(tc.function.arguments || "{}"),
+            },
+          }
+        );
+        if (message.content) {
+          parts.unshift({ text: message.content });
+        }
+        payloadContents.push({ role: "model", parts });
+        previousRole = "model";
+        continue;
+      }
+
+      // Tool result → user role with functionResponse parts
+      if (message.role === "tool") {
+        const part: GeminiChatPart = {
+          functionResponse: {
+            name: message.name || "unknown",
+            response: { result: message.content },
+          },
+        };
+        // Batch consecutive tool results into one user message
+        if (previousRole === "tool") {
+          payloadContents[payloadContents.length - 1].parts.push(part);
+        } else {
+          payloadContents.push({ role: "user", parts: [part] });
+        }
+        previousRole = "tool";
+        continue;
+      }
+
       let role = "user";
-      if (message.role === "system" || message.role === "user") {
-        // No concept of "system" messages in Gemini
-        role = "user";
-      } else if (message.role === "assistant") {
+      if (message.role === "assistant") {
         role = "model";
       }
-      // First and last messages must be user messages
+
       if (
         role === "model" &&
         (payloadContents.length === 0 || previousRole === "model")
       ) {
         // Skip model message if it's the first or follows another model message
       } else if (role === "user" && previousRole === "user") {
-        // Merge with previous message if two user messages in a row
-        payloadContents[payloadContents.length - 1].parts[0].text += " " +
-          message.content;
+        payloadContents[payloadContents.length - 1].parts.push(
+          { text: message.content },
+        );
       } else {
         payloadContents.push({
           role: role,
@@ -121,12 +157,13 @@ export class GeminiProvider extends AbstractProvider {
         });
       }
       previousRole = role;
-    });
+    }
+
     return payloadContents;
   }
 
   streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const { messages, response_format, onChunk, onComplete } = options;
+    const { messages, tools, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {
       try {
@@ -149,6 +186,10 @@ export class GeminiProvider extends AbstractProvider {
           contents: payloadContents,
         };
 
+        if (tools && tools.length > 0) {
+          requestBody.tools = [convertToolsToGemini(tools)];
+        }
+
         if (
           response_format?.type === "json_object" ||
           response_format?.type === "json_schema"
@@ -156,7 +197,9 @@ export class GeminiProvider extends AbstractProvider {
           requestBody.generationConfig = {
             responseMimeType: "application/json",
             ...(response_format.type === "json_schema" && {
-              responseSchema: response_format.json_schema.schema,
+              responseSchema: stripUnsupportedSchemaProps(
+                response_format.json_schema.schema as Record<string, unknown>,
+              ),
             }),
           };
         }
@@ -171,6 +214,7 @@ export class GeminiProvider extends AbstractProvider {
         const source = new SSE(sseUrl, sseOptions);
         let fullContent = "";
         let usage: Usage | undefined;
+        const collectedToolCalls: ChatResponse["tool_calls"] = [];
 
         // Timeout only applies to initial connection - cleared on first chunk
         let timeoutId: number | undefined = setTimeout(() => {
@@ -206,13 +250,25 @@ export class GeminiProvider extends AbstractProvider {
               console.error("Received empty message from Gemini");
             } else {
               const data = JSON.parse(e.data);
-              const msg = data.candidates?.[0]?.content?.parts?.[0]?.text ||
-                data.text ||
-                "";
-              fullContent += msg;
-              if (onChunk) onChunk(msg);
+              const parts = data.candidates?.[0]?.content?.parts || [];
 
-              // Capture usage metadata (comes in final chunk)
+              for (const part of parts) {
+                if (part.text) {
+                  fullContent += part.text;
+                  if (onChunk) onChunk(part.text);
+                } else if (part.functionCall) {
+                  collectedToolCalls!.push({
+                    id: `call_${collectedToolCalls!.length}`,
+                    type: "function",
+                    function: {
+                      name: part.functionCall.name,
+                      arguments: JSON.stringify(part.functionCall.args || {}),
+                    },
+                    _raw: part,
+                  });
+                }
+              }
+
               if (data.usageMetadata) {
                 usage = {
                   prompt_tokens: data.usageMetadata.promptTokenCount || 0,
@@ -227,8 +283,8 @@ export class GeminiProvider extends AbstractProvider {
                 source.close();
                 const response: ChatResponse = {
                   content: fullContent,
-                  tool_calls: undefined,
-                  finish_reason: "stop",
+                  tool_calls: collectedToolCalls!.length > 0 ? collectedToolCalls : undefined,
+                  finish_reason: finishReason === "STOP" ? "stop" : "tool_calls",
                   usage,
                 };
                 if (onComplete) onComplete(response);
@@ -338,6 +394,7 @@ export class GeminiProvider extends AbstractProvider {
           name: p.functionCall.name,
           arguments: JSON.stringify(p.functionCall.args || {}),
         },
+        _raw: p,
       }))
       : undefined;
 
