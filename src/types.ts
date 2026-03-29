@@ -120,6 +120,7 @@ export type ToolCall = {
     name: string;
     arguments: string;
   };
+  _raw?: Record<string, unknown>;
 };
 
 export type ChatMessage = {

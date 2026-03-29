@@ -1,25 +1,20 @@
-import * as yaml from "yaml";
+import { readFile, stat, writeFile } from "node:fs/promises";
+import { execSync } from "node:child_process";
+import { parse as yamlParse } from "yaml";
 import { parseFiles } from "@structured-types/api";
 
-const tag = Deno.args[0];
+const tag = process.argv[2];
 
 if (!tag) {
   console.error("No tag provided.");
-  Deno.exit(1);
+  process.exit(1);
 }
 
 function getGitHubRepo(): string {
-  // GitHub Actions sets GITHUB_REPOSITORY as "owner/repo"
-  const envRepo = Deno.env.get("GITHUB_REPOSITORY");
+  const envRepo = process.env.GITHUB_REPOSITORY;
   if (envRepo) return envRepo;
-  // Local: parse from git remote URL (supports both HTTPS and SSH)
   try {
-    const result = new Deno.Command("git", {
-      args: ["remote", "get-url", "origin"],
-      stdout: "piped",
-      stderr: "null",
-    }).outputSync();
-    const url = new TextDecoder().decode(result.stdout).trim();
+    const url = execSync("git remote get-url origin", { stdio: ["pipe", "pipe", "ignore"] }).toString().trim();
     const match = url.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
     if (match) return match[1];
   } catch {}
@@ -31,7 +26,6 @@ const githubRepo = getGitHubRepo();
 function extractDocsForFunction(functionPath: string): string {
   const [filePath, functionName] = functionPath.split(":");
   const parsed = parseFiles([`./${filePath}`]);
-  // console.log("parsed", parsed);
   if (!parsed[functionName]) return "No documentation found.";
   return parsed[functionName].description || "No documentation found.";
 }
@@ -41,27 +35,22 @@ async function updateReadme(tag: string) {
   const plugYamlPath = "./silverbullet-ai.plug.yaml";
   const installationDocPath = "./docs/Installation.md";
   const featuresDocPath = "./docs/Features.md";
-  let readmeContent = await Deno.readTextFile(readmePath);
-  const plugYamlContent = await Deno.readTextFile(plugYamlPath);
-  let installationDocContent = await Deno.readTextFile(installationDocPath);
-  const featuresDocContent = await Deno.readTextFile(featuresDocPath);
+  let readmeContent = await readFile(readmePath, "utf-8");
+  const plugYamlContent = await readFile(plugYamlPath, "utf-8");
+  let installationDocContent = await readFile(installationDocPath, "utf-8");
+  const featuresDocContent = await readFile(featuresDocPath, "utf-8");
 
   const escapedRepo = githubRepo.replace("/", "\\/");
   const ghrVersionedPattern = new RegExp(`ghr:${escapedRepo}@[0-9.]+\\/PLUG\\.md`, "g");
   const ghrVersioned = `ghr:${githubRepo}@${tag}/PLUG.md`;
 
-  // Update the tag in the README
   readmeContent = readmeContent.replace(ghrVersionedPattern, ghrVersioned);
-
-  // Update the tag in the Installation.md
   installationDocContent = installationDocContent.replace(ghrVersionedPattern, ghrVersioned);
 
-  // Parse plug YAML to get a list of functions/commands
-  const plugYaml = yaml.parse(plugYamlContent);
+  const plugYaml = yamlParse(plugYamlContent);
   const commands = plugYaml.functions;
   let commandsMarkdown = "";
 
-  // Extract documentation for each command using jsdoc/tsdoc comments
   for (const [key, value] of Object.entries(commands)) {
     if (typeof value === "object" && value.path && value.command?.name) {
       const docs = extractDocsForFunction(value.path);
@@ -69,14 +58,11 @@ async function updateReadme(tag: string) {
       commandsMarkdown += `- **${value.command.name}**: ${docs}\n`;
       const commandDocsPath = `./docs/Commands/${value.command.name}.md`;
       try {
-        await Deno.stat(commandDocsPath);
-        // File exists, ignore for now
-      } catch (error) {
-        if (error instanceof Deno.errors.NotFound) {
-          // Command doc does not exist, create a new one
+        await stat(commandDocsPath);
+      } catch (error: any) {
+        if (error.code === "ENOENT") {
           if (docs) {
-            const commandDocsContent = `${docs}\n`;
-            await Deno.writeTextFile(commandDocsPath, commandDocsContent);
+            await writeFile(commandDocsPath, `${docs}\n`, "utf-8");
           }
         } else {
           throw error;
@@ -85,12 +71,10 @@ async function updateReadme(tag: string) {
     }
   }
 
-  // This "dynamic" part of the readme will be enclosed with comments to make it replaceable
   const startCommandsMarker = "<!-- start-commands-and-functions -->";
   const endCommandsMarker = "<!-- end-commands-and-functions -->";
   const commandsInsertionSection = `${startCommandsMarker}\n${commandsMarkdown}\n${endCommandsMarker}`;
 
-  // Replace or insert the commands and functions section in the README
   if (
     readmeContent.includes(startCommandsMarker) &&
     readmeContent.includes(endCommandsMarker)
@@ -107,7 +91,6 @@ async function updateReadme(tag: string) {
     );
   }
 
-  // Update the features section in the README
   const startFeaturesMarker = "<!-- start-features -->";
   const endFeaturesMarker = "<!-- end-features -->";
   const featuresInsertionSection = `${startFeaturesMarker}\n${featuresDocContent}\n${endFeaturesMarker}`;
@@ -128,8 +111,8 @@ async function updateReadme(tag: string) {
     );
   }
 
-  await Deno.writeTextFile(readmePath, readmeContent);
-  await Deno.writeTextFile(installationDocPath, installationDocContent);
+  await writeFile(readmePath, readmeContent, "utf-8");
+  await writeFile(installationDocPath, installationDocContent, "utf-8");
 }
 
 updateReadme(tag);

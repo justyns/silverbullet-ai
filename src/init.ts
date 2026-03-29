@@ -45,8 +45,7 @@ export function setSessionToggle(key: "searchEmbeddings" | "showReasoning") {
 }
 
 export async function initIfNeeded() {
-  // text models (mostly)
-  const basicSetupDone = apiKey && currentAIProvider && aiSettings && currentModel;
+  const basicSetupDone = currentAIProvider && aiSettings && currentModel;
 
   // and embedding models if needed
   const embeddingsNeedSetup = aiSettings?.indexEmbeddings &&
@@ -499,11 +498,6 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
     );
   }
 
-  if (resolvedApiKey !== apiKey) {
-    apiKey = resolvedApiKey;
-    log("API key updated for image model");
-  }
-
   // Apply provider config defaults to model
   const effectiveModel: ImageModelConfig = {
     ...model,
@@ -538,11 +532,6 @@ export async function configureSelectedEmbeddingModel(
       `AI API key is missing for embedding provider "${model.provider}". ` +
         "Please set it in your Space Lua config using providers.{name}.apiKey or ai.keys.",
     );
-  }
-
-  if (resolvedApiKey !== apiKey) {
-    apiKey = resolvedApiKey;
-    log("API key updated for embedding model");
   }
 
   // Apply provider config defaults to model

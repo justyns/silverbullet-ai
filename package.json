@@ -6,7 +6,8 @@
   "scripts": {
     "build": "npx plug-compile silverbullet-ai.plug.yaml",
     "test": "vitest run",
-    "dist": "npx plug-compile silverbullet-ai.plug.yaml && tsx scripts/build-dist.ts"
+    "dist": "npx plug-compile silverbullet-ai.plug.yaml && tsx scripts/build-dist.ts",
+    "update-readme": "tsx scripts/update-readme.ts"
   },
   "dependencies": {
     "@silverbulletmd/silverbullet": ">=2.5.3",
@@ -14,6 +15,7 @@
   },
   "devDependencies": {
     "@lezer/markdown": "^1.0.0",
+    "@structured-types/api": "^3.46.12",
     "tsx": "^4.0.0",
     "vitest": "^3.0.0",
     "yaml": "^2.0.0"

@@ -16,6 +16,7 @@ test?space*
 site/
 testspace*/
 dist/
+node_modules/
 
 # Generated llms.txt files
 docs/llms.txt
