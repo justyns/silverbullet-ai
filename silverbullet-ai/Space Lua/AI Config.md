@@ -30,7 +30,7 @@ config.define("ai.providers", {
     properties = {
       provider = {
         type = "string",
-        enum = {"openai", "gemini", "ollama", "mock"},
+        enum = {"openai", "gemini", "ollama", "mistral", "mock"},
         description = "Provider type (defaults to key name if omitted)",
       },
       apiKey = {
@@ -99,7 +99,7 @@ config.define("ai.textModels", {
       },
       provider = {
         type = "string",
-        enum = {"openai", "gemini", "ollama", "mock"},
+        enum = {"openai", "gemini", "ollama", "mistral", "mock"},
         description = "AI provider for this model",
       },
       secretName = {
@@ -191,8 +191,8 @@ config.define("ai.embeddingModels", {
       },
       provider = {
         type = "string",
-        enum = {"openai", "gemini", "ollama", "mock"},
-        description = "Embedding provider for this model",
+        enum = {"openai", "gemini", "ollama", "mistral", "mock"},
+        description = "Embedding provider for this model (mistral uses OpenAI-compatible API)",
       },
       secretName = {
         type = "string",

@@ -24,11 +24,28 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
         inheritBasePrompt?: boolean;
         allowedReadPaths?: string[];
         allowedWritePaths?: string[];
+        searchEmbeddings?: boolean;
       }
     >;
 
+    // Lua→JS bridges drop boolean `false` values (treated like nil).
+    // Use tostring() in a separate Lua call to reliably detect explicit false.
+    const luaBooleans = await lua.evalExpression(`
+      (function()
+        local result = {}
+        for k, v in pairs(ai.agents or {}) do
+          if type(v) == "table" and v.searchEmbeddings ~= nil then
+            result[k] = tostring(v.searchEmbeddings)
+          end
+        end
+        return result
+      end)()
+    `) as Record<string, string> | null;
+
     for (const [key, agent] of Object.entries(luaAgents)) {
       if (agent && typeof agent === "object") {
+        const seStr = luaBooleans?.[key];
+        const searchEmbeddings = seStr === "false" ? false : seStr === "true" ? true : undefined;
         agents.push({
           ref: key,
           aiagent: {
@@ -40,6 +57,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
             inheritBasePrompt: agent.inheritBasePrompt,
             allowedReadPaths: agent.allowedReadPaths,
             allowedWritePaths: agent.allowedWritePaths,
+            searchEmbeddings,
           },
         });
       }

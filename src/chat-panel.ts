@@ -8,7 +8,7 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded } from "./init.ts";
+import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, setSessionToggle } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import { formatReasoningBlock } from "./widgets.ts";
@@ -241,7 +241,10 @@ export async function startPanelChat(
     };
 
     const cleanedMessages = await cleanMessagesForApi(messages);
-    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages);
+    const enrichOptions = currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+      ? { searchEmbeddings: currentChatAgent.aiagent.searchEmbeddings }
+      : undefined;
+    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages, undefined, enrichOptions);
 
     // Prepend page context after enrichment so RAG search uses original user content
     if (contextBlock) {
@@ -528,18 +531,19 @@ async function loadPersistedTokenUsage(): Promise<void> {
  * Gets the context window limit for a model.
  * First tries the provider's API (e.g., Ollama), then falls back to LiteLLM metadata.
  */
-async function getContextLimit(modelName: string): Promise<number | null> {
+async function getContextLimit(modelName: string, providerHint?: string): Promise<number | null> {
   const providerLimit = await currentAIProvider?.getContextLimit(modelName);
   if (providerLimit) {
     return providerLimit;
   }
-  return lookupModelContextLimit(modelName);
+  return lookupModelContextLimit(modelName, providerHint);
 }
 
 export interface ChatStatus {
   rag: {
     enabled: boolean;
     indexEnabled: boolean;
+    agentDisabledRag: boolean;
   };
   reasoning: {
     enabled: boolean;
@@ -548,6 +552,23 @@ export interface ChatStatus {
   model: {
     name: string | null;
     contextLimit: number | null;
+  };
+}
+
+/**
+ * Returns lightweight agent/RAG state for polling — no provider calls.
+ */
+export async function getPollState(): Promise<{
+  agentRef: string | null;
+  ragEnabled: boolean;
+}> {
+  await initIfNeeded();
+  return {
+    agentRef: currentChatAgent?.ref ?? null,
+    ragEnabled:
+      (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+        ? currentChatAgent.aiagent.searchEmbeddings
+        : aiSettings?.chat?.searchEmbeddings) ?? false,
   };
 }
 
@@ -562,13 +583,18 @@ export async function getChatStatus(): Promise<ChatStatus> {
   let contextLimit: number | null = null;
 
   if (model?.modelName) {
-    contextLimit = await getContextLimit(model.modelName);
+    contextLimit = await getContextLimit(model.modelName, model.providerKey);
   }
+
+  const agentDisabledRag = currentChatAgent?.aiagent?.searchEmbeddings === false;
 
   return {
     rag: {
-      enabled: aiSettings?.chat?.searchEmbeddings ?? false,
+      enabled: (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+        ? currentChatAgent.aiagent.searchEmbeddings
+        : aiSettings?.chat?.searchEmbeddings) ?? false,
       indexEnabled: aiSettings?.indexEmbeddings ?? false,
+      agentDisabledRag,
     },
     reasoning: {
       enabled: aiSettings?.chat?.showReasoning ?? false,
@@ -600,6 +626,7 @@ async function toggleChatSetting(
 
   const newValue = !(aiSettings.chat[settingKey] ?? false);
   aiSettings.chat[settingKey] = newValue;
+  setSessionToggle(settingKey);
 
   await editor.flashNotification(
     newValue ? enabledMessage : disabledMessage,

@@ -1,8 +1,8 @@
-import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractFrontMatter } from "./src/lib/frontmatter.ts";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
-import { decodeBase64 } from "@std/encoding/base64";
 import { getPageLength } from "./src/editorUtils.ts";
 import type {
+  AIAgentTemplate,
   EmbeddingModelConfig,
   ImageGenerationOptions,
   ImageModelConfig,
@@ -496,12 +496,14 @@ export async function selectEmbeddingModelFromConfig() {
 /**
  * Prompts the user to select an AI agent from available agents.
  */
-export async function selectAgentCommand() {
+export async function selectAgentCommand(): Promise<AIAgentTemplate | null> {
   const agent = await selectAgent();
   if (agent) {
     await chatAgentState("set", agent);
     await editor.flashNotification(`Agent: ${agent.aiagent.name || agent.ref}`);
+    return agent;
   }
+  return null;
 }
 
 /**
@@ -654,9 +656,11 @@ export async function streamChatOnPage() {
 export async function promptAndGenerateImage() {
   await initIfNeeded();
 
-  const selectedImageModel = await getSelectedImageModel();
-  if (!selectedImageModel && (!aiSettings.imageModels || aiSettings.imageModels.length === 0)) {
-    await editor.flashNotification("No image models available. Use 'AI: Select Image Model' first.", "error");
+  if (!currentImageProvider) {
+    await editor.flashNotification(
+      "No image model configured. Use 'AI: Select Image Model' to choose a supported image generation model (e.g. dall-e-3).",
+      "error",
+    );
     return;
   }
 
@@ -688,7 +692,7 @@ export async function promptAndGenerateImage() {
     if (imageData && imageData.data && imageData.data.length > 0) {
       const base64Image = imageData.data[0].b64_json;
       const revisedPrompt = imageData.data[0].revised_prompt;
-      const decodedImage = new Uint8Array(decodeBase64(base64Image));
+      const decodedImage = Uint8Array.from(atob(base64Image), (c) => c.charCodeAt(0));
 
       // Generate a unique filename for the image
       const finalFileName = `dall-e-${Date.now()}.png`;

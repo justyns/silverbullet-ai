@@ -32,15 +32,25 @@ const PROVIDER_PREFIXES = [
   "vertex_ai/",
   "ollama/",
   "gemini/",
+  "mistral/",
 ];
 
 export function lookupModel(
   data: Record<string, ModelMetadata>,
   modelName: string,
+  providerHint?: string,
 ): ModelMetadata | null {
   // Exact match
   if (data[modelName]) {
     return data[modelName];
+  }
+
+  // Try provider hint first (e.g., "mistral" → "mistral/mistral-large-latest")
+  if (providerHint) {
+    const hintPrefixed = `${providerHint}/${modelName}`;
+    if (data[hintPrefixed]) {
+      return data[hintPrefixed];
+    }
   }
 
   // Try with provider prefixes
@@ -57,6 +67,9 @@ export function lookupModel(
     if (data[normalized]) {
       return data[normalized];
     }
+    if (providerHint && data[`${providerHint}/${normalized}`]) {
+      return data[`${providerHint}/${normalized}`];
+    }
     for (const prefix of PROVIDER_PREFIXES) {
       const prefixedNormalized = `${prefix}${normalized}`;
       if (data[prefixedNormalized]) {
@@ -68,7 +81,7 @@ export function lookupModel(
   // Try stripping Ollama-style tags (e.g., :latest, :7b-instruct)
   const withoutTag = modelName.replace(/:[^/]+$/, "");
   if (withoutTag !== modelName) {
-    const tagResult = lookupModel(data, withoutTag);
+    const tagResult = lookupModel(data, withoutTag, providerHint);
     if (tagResult) return tagResult;
   }
 
@@ -125,13 +138,14 @@ export async function fetchModelMetadata(): Promise<
 
 export async function getModelContextLimit(
   modelName: string,
+  providerHint?: string,
 ): Promise<number | null> {
   if (!modelName) {
     return null;
   }
 
   const metadata = await fetchModelMetadata();
-  const model = lookupModel(metadata, modelName);
+  const model = lookupModel(metadata, modelName, providerHint);
 
   if (!model) {
     return null;
@@ -143,13 +157,14 @@ export async function getModelContextLimit(
 
 export async function getModelMetadata(
   modelName: string,
+  providerHint?: string,
 ): Promise<ModelMetadata | null> {
   if (!modelName) {
     return null;
   }
 
   const metadata = await fetchModelMetadata();
-  return lookupModel(metadata, modelName);
+  return lookupModel(metadata, modelName, providerHint);
 }
 
 export async function refreshModelMetadata(): Promise<void> {

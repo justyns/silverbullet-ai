@@ -41,6 +41,7 @@ export class OpenAIProvider extends AbstractProvider {
   override name = "OpenAI";
   requireAuth: boolean;
   supportsThinking: boolean = false;
+  toolChoiceValue: string = "auto";
 
   constructor(
     apiKey: string,
@@ -86,7 +87,7 @@ export class OpenAIProvider extends AbstractProvider {
 
         if (tools && tools.length > 0) {
           requestBody.tools = tools;
-          requestBody.tool_choice = "auto";
+          requestBody.tool_choice = this.toolChoiceValue;
         }
 
         if (response_format) {
@@ -306,7 +307,7 @@ export class OpenAIProvider extends AbstractProvider {
 
       if (tools && tools.length > 0) {
         requestBody.tools = tools;
-        requestBody.tool_choice = "auto";
+        requestBody.tool_choice = this.toolChoiceValue;
       }
 
       if (response_format) {

@@ -1,35 +1,44 @@
 ## Build
-To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then, build the plug with:
+
+To build this plug, make sure you have [Node.js](https://nodejs.org/) (v18 or later) and npm installed. Then install dependencies and build:
 
 ```shell
-deno task build
+npm install
+npm run build
 ```
 
-Or to watch for changes and rebuild automatically
+This compiles the plug to `silverbullet-ai.plug.js`. Copy it into your space's `_plug` folder:
 
 ```shell
-deno task watch
-```
-
-Then, copy the resulting `.plug.js` file into your space's `_plug` folder. Or build and copy in one command:
-
-```shell
-deno task build && cp *.plug.js /my/space/_plug/
+npm run build && cp silverbullet-ai.plug.js /my/space/_plug/
 ```
 
 SilverBullet will automatically sync and load the new version of the plug (or speed up this process by running the {[Sync: Now]} command).
+
+### Distribution Build
+
+To generate a full distribution (plug + combined Space Lua library):
+
+```shell
+npm run dist
+```
+
+This creates the following files in `dist/`:
+- `silverbullet-ai.plug.js` — the compiled plug
+- `silverbullet-ai-library.md` — combined Space Lua pages for installation
+- `PLUG.md` — the installable library page
+
+Copy `silverbullet-ai-library.md` to your space root so SilverBullet can load the Space Lua functions.
 
 ## Testing
 
 ### Unit Tests
 
-Run unit tests with Deno's built-in test runner:
+Run unit tests with vitest:
 
 ```shell
-deno task test
+npm test
 ```
-
-This runs all `*.test.ts` files and generates coverage reports in `cov_profile/`.
 
 ### E2E Tests (Browser Testing)
 
@@ -37,10 +46,12 @@ The project includes end-to-end tests using [Playwright](https://playwright.dev/
 
 #### Setup
 
-First-time setup requires installing Playwright browsers:
+First-time setup requires installing dependencies and Playwright browsers:
 
 ```shell
-deno task playwright:install
+cd e2e-tests
+npm install
+npx playwright install
 ```
 
 #### Running E2E Tests
@@ -48,27 +59,28 @@ deno task playwright:install
 Run all E2E tests:
 
 ```shell
-deno task test:e2e
+cd e2e-tests
+npx playwright test
 ```
 
 Run tests with interactive UI:
 
 ```shell
-deno task test:e2e:ui
+npx playwright test --ui
 ```
 
 Run tests in headed mode (see the browser):
 
 ```shell
-deno task test:e2e:headed
+npx playwright test --headed
 ```
 
 Run specific browser:
 
 ```shell
-deno task test:e2e --project=chromium
-deno task test:e2e --project=firefox
-deno task test:e2e --project="Mobile Chrome"
+npx playwright test --project=chromium
+npx playwright test --project=firefox
+npx playwright test --project="Mobile Chrome"
 ```
 
 #### Test Structure

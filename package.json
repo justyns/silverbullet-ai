@@ -1,0 +1,21 @@
+{
+  "name": "silverbullet-ai",
+  "version": "0.7.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "npx plug-compile silverbullet-ai.plug.yaml",
+    "test": "vitest run",
+    "dist": "npx plug-compile silverbullet-ai.plug.yaml && tsx scripts/build-dist.ts"
+  },
+  "dependencies": {
+    "@silverbulletmd/silverbullet": ">=2.5.3",
+    "sse.js": "^2.2.0"
+  },
+  "devDependencies": {
+    "@lezer/markdown": "^1.0.0",
+    "tsx": "^4.0.0",
+    "vitest": "^3.0.0",
+    "yaml": "^2.0.0"
+  }
+}

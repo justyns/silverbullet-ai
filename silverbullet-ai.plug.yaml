@@ -139,6 +139,8 @@ functions:
     path: src/chat-panel.ts:exportPanelChat
   getChatStatus:
     path: src/chat-panel.ts:getChatStatus
+  getPollState:
+    path: src/chat-panel.ts:getPollState
   resetSessionTokenUsage:
     path: src/chat-panel.ts:resetSessionTokenUsage
   toggleRagEnabled:

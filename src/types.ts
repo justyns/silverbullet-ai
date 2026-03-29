@@ -177,6 +177,7 @@ export type AIAgentTemplate = {
     inheritBasePrompt?: boolean;
     allowedReadPaths?: string[];
     allowedWritePaths?: string[];
+    searchEmbeddings?: boolean;
   };
 };
 
@@ -189,6 +190,7 @@ export enum Provider {
   OpenAI = "openai",
   Gemini = "gemini",
   Ollama = "ollama",
+  Mistral = "mistral",
 
   Mock = "mock",
 }
@@ -203,6 +205,7 @@ export enum EmbeddingProvider {
   OpenAI = "openai",
   Gemini = "gemini",
   Ollama = "ollama",
+  Mistral = "mistral",
 
   Mock = "mock",
 }

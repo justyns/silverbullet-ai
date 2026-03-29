@@ -5,6 +5,7 @@ import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
 import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
 import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
+import { MistralProvider } from "./providers/mistral.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import { inferProviderType } from "./model-discovery.ts";
@@ -28,11 +29,20 @@ export let chatSystemPrompt: ChatMessage;
 
 export let currentAIProvider: ProviderInterface;
 export let currentImageProvider: ImageProviderInterface;
-export let currentEmbeddingProvider: EmbeddingProviderInterface;
+export let currentEmbeddingProvider: EmbeddingProviderInterface | undefined;
 
 export let currentModel: ModelConfig;
 export let currentImageModel: ImageModelConfig;
-export let currentEmbeddingModel: EmbeddingModelConfig;
+export let currentEmbeddingModel: EmbeddingModelConfig | undefined;
+
+// Track whether the user has explicitly toggled these during the current session
+let sessionSearchEmbeddingsToggled = false;
+let sessionShowReasoningToggled = false;
+
+export function setSessionToggle(key: "searchEmbeddings" | "showReasoning") {
+  if (key === "searchEmbeddings") sessionSearchEmbeddingsToggled = true;
+  if (key === "showReasoning") sessionShowReasoningToggled = true;
+}
 
 export async function initIfNeeded() {
   // text models (mostly)
@@ -102,6 +112,7 @@ const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
   openai: OpenAIProvider,
   gemini: GeminiProvider,
   ollama: OllamaProvider,
+  mistral: MistralProvider,
 };
 
 const defaultProviderDefaults: ProviderDefaults = {
@@ -125,7 +136,7 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
@@ -157,7 +168,7 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
@@ -189,7 +200,7 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
     return null;
   }
   const parts = modelString.split(":");
-  if (parts.length < 2) {
+  if (parts.length < 2 || !parts[0].trim()) {
     console.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
@@ -199,6 +210,15 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
   let providerType = providerConfig.provider || inferProviderType(providerKey);
   if (providerType.toLowerCase() === "openai") {
     providerType = "dalle";
+  }
+  const validImageProviders = Object.values(ImageProvider) as string[];
+  if (!validImageProviders.includes(providerType.toLowerCase())) {
+    console.error(
+      `[silverbullet-ai] "${providerType}" is not a supported image provider. ` +
+        `Supported image providers: ${validImageProviders.join(", ")}. ` +
+        `Check your defaultImageModel config.`,
+    );
+    return null;
   }
   const defaults = getProviderDefaults(providerType);
 
@@ -303,6 +323,16 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         effectiveTimeout,
       );
       break;
+    case Provider.Mistral:
+      currentAIProvider = new MistralProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "https://api.mistral.ai/v1",
+        model.requireAuth,
+        useProxy,
+        effectiveTimeout,
+      );
+      break;
     case Provider.Mock:
       currentAIProvider = new MockProvider(
         apiKey,
@@ -351,6 +381,16 @@ function setupEmbeddingProvider(model: EmbeddingModelConfig, timeout?: number) {
         model.modelName,
         model.baseUrl || "http://localhost:11434",
         model.requireAuth ?? false,
+        useProxy,
+        effectiveTimeout,
+      );
+      break;
+    case EmbeddingProvider.Mistral:
+      currentEmbeddingProvider = new OpenAIEmbeddingProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "https://api.mistral.ai/v1",
+        model.requireAuth ?? true,
         useProxy,
         effectiveTimeout,
       );
@@ -427,7 +467,7 @@ export async function configureSelectedModel(model: ModelConfig) {
   const effectiveModel: ModelConfig = {
     ...model,
     baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
-    useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
+    useProxy: model.useProxy ?? providerConfig.useProxy ?? getProviderDefaults(model.provider).useProxy,
   };
 
   // Get timeout from provider config
@@ -509,7 +549,7 @@ export async function configureSelectedEmbeddingModel(
   const effectiveModel: EmbeddingModelConfig = {
     ...model,
     baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
-    useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
+    useProxy: model.useProxy ?? providerConfig.useProxy ?? getProviderDefaults(model.provider).useProxy,
   };
 
   // Get timeout from provider config
@@ -570,9 +610,10 @@ export async function initializeOpenAI(configure = true) {
   // TODO: I should really rename this function...
   const newCombinedSettings = await loadAndMergeSettings();
 
-  // Preserve session-only toggle states across settings reloads
-  const sessionSearchEmbeddings = aiSettings?.chat?.searchEmbeddings;
-  const sessionShowReasoning = aiSettings?.chat?.showReasoning;
+  // Preserve session-only toggle states across settings reloads, but only if
+  // the user explicitly toggled them during this session (not just whatever was cached)
+  const sessionSearchEmbeddings = sessionSearchEmbeddingsToggled ? aiSettings?.chat?.searchEmbeddings : undefined;
+  const sessionShowReasoning = sessionShowReasoningToggled ? aiSettings?.chat?.showReasoning : undefined;
 
   if (
     !aiSettings ||
@@ -581,7 +622,7 @@ export async function initializeOpenAI(configure = true) {
     log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
 
-    // Restore session-only toggles if they were set
+    // Restore session-only toggles only if explicitly toggled by the user
     if (sessionSearchEmbeddings !== undefined) {
       aiSettings.chat.searchEmbeddings = sessionSearchEmbeddings;
     }
@@ -681,15 +722,26 @@ export async function initializeOpenAI(configure = true) {
     }
 
     const selectedImageModel = await getSelectedImageModel();
-    if (selectedImageModel) {
-      await configureSelectedImageModel(selectedImageModel);
-    } else if (aiSettings.imageModels.length > 0) {
-      await getAndConfigureImageModel();
-    } else if (aiSettings.defaultImageModel) {
-      const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
-      if (defaultModel) {
-        await configureSelectedImageModel(defaultModel);
-        log("Configured default image model directly:", defaultModel);
+    try {
+      if (selectedImageModel) {
+        await configureSelectedImageModel(selectedImageModel);
+      } else if (aiSettings.imageModels.length > 0) {
+        await getAndConfigureImageModel();
+      } else if (aiSettings.defaultImageModel) {
+        const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
+        if (defaultModel) {
+          await configureSelectedImageModel(defaultModel);
+          log("Configured default image model directly:", defaultModel);
+        }
+      }
+    } catch (error) {
+      console.warn(
+        `[silverbullet-ai] Failed to configure image model: ${(error as Error).message}. ` +
+          "Image generation will be unavailable. Check your image model configuration.",
+      );
+      if (selectedImageModel) {
+        // Clear the invalid cached model so it doesn't block future sessions
+        await clientStore.set("ai.selectedImageModel", null);
       }
     }
 
@@ -705,8 +757,8 @@ export async function initializeOpenAI(configure = true) {
         log("Configured default embedding model directly:", defaultModel);
       }
     } else {
-      currentEmbeddingProvider = undefined as any;
-      currentEmbeddingModel = undefined as any;
+      currentEmbeddingProvider = undefined;
+      currentEmbeddingModel = undefined;
     }
   }
 

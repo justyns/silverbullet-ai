@@ -2,13 +2,29 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.6.5 (2026-03-13)
+## 0.7.0 (2026-03-20)
 
-- Correctly infer provider type in more cases, e.g. ollamaLocal -> ollama
-- Add configurable `timeout` option per provider for slow models
-- Add model name to assistant chat header, click to change the model for the session
-- Click RAG icon to enable/disable embeddings search temporarily
-- Display agent name and click it to change to a different agent
+- Add Mistral provider with `tool_choice: "any"` for reliable MCP tool calls; moved to its own `src/providers/mistral.ts`
+- Fix Mistral tool calls looping indefinitely — `tool_choice` now switches from `"any"` to `"auto"` once tool results exist in the context so Mistral returns a text response
+- Fix `useProxy` defaulting to `true` for Mistral, which caused 411 Content-Length Required errors; now correctly consults provider defaults
+- Add Mistral embedding support by routing through `OpenAIEmbeddingProvider` with Mistral's base URL (`mistral-embed` is OpenAI-compatible)
+- Fix model metadata lookup picking wrong provider for Mistral models
+- Fix Mistral model metadata lookup returning incorrect context window size
+- Fix image model initialization crashing plugin init for unsupported providers; now logs a warning and clears stale cache
+- Fix `promptAndGenerateImage` to check `currentImageProvider` before proceeding, with a clear actionable error message
+- Fix agent panel not updating when switching agents
+- Fix RAG status not refreshing when switching agents
+- Poll for agent changes to handle command palette selection
+- Fix security issues and improve type safety
+- **BREAKING**: Build system migrated from Deno to Node.js/npm (`npm run build`, `npm test`)
+- Rename CI workflow from `deno-build.yml` to `build.yml`; update all workflows to latest action versions
+- Update development docs to reflect Node.js/npm build and test commands
+- Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
+- Fix promise hang bugs and missing permissions in streaming agentic chat
+- Fix unsafe type casts that could cause runtime errors
+- Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
+- Add release workflow to publish to GitHub Releases automatically on version tags
+- Display agent name in chat panel header; hover shows pointer cursor to indicate it is clickable, click to change agent
 - Persist agent selection in chat panel
 - Remember the state of the assistant chat panel and re-open it on page reload
 - Add support for displaying thinking/reasoning blocks with Ollama

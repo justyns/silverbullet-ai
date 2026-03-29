@@ -1,7 +1,7 @@
 import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
-import { extractAttributes } from "@silverbulletmd/silverbullet/lib/attribute";
-import { extractFrontMatter } from "@silverbulletmd/silverbullet/lib/frontmatter";
+import { extractAttributes } from "./lib/attribute.ts";
+import { extractFrontMatter } from "./lib/frontmatter.ts";
 import { aiSettings } from "./init.ts";
 import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
@@ -184,6 +184,7 @@ export async function convertPageToMessages(
 export async function enrichChatMessages(
   messages: ChatMessage[],
   _globalMetadata?: Record<string, any>,
+  enrichOptions?: { searchEmbeddings?: boolean },
 ): Promise<{ messagesWithAttachments: MessageWithAttachments[] }> {
   const result: MessageWithAttachments[] = [];
   let currentPage, pageMeta;
@@ -270,7 +271,10 @@ export async function enrichChatMessages(
       messageAttachments.push(...wikiResult.attachments);
     }
 
-    if (aiSettings?.chat?.searchEmbeddings && aiSettings?.indexEmbeddings) {
+    const searchEmbeddingsEnabled = enrichOptions?.searchEmbeddings !== undefined
+      ? enrichOptions.searchEmbeddings
+      : aiSettings?.chat?.searchEmbeddings;
+    if (searchEmbeddingsEnabled && aiSettings?.indexEmbeddings) {
       const searchResults = await searchEmbeddingsForChat(message.content);
 
       if (searchResults.context.totalResults > 0) {

@@ -4,7 +4,7 @@ The following Providers are currently supported and have been verified as workin
 |----------|------|-------|------------|
 | [[Providers/DallE]] | ✗ | ✓ | ✗ |
 | [[Providers/Google Gemini]] | ✓ | ✗ | ✓ |
-| [[Providers/Mistral Ai]] | ✓ | ✗ | ✗ |
+| [[Providers/Mistral Ai]] | ✓ | ✗ | ✓ |
 | [[Providers/Ollama]] | ✓ | ✗ | ✓ |
 | [[Providers/OpenAI]] | ✓ | ✗ | ✓ |
 | [[Providers/OpenRouter]] | ✓ | ✗ | ✓ |
