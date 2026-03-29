@@ -45,8 +45,7 @@ export function setSessionToggle(key: "searchEmbeddings" | "showReasoning") {
 }
 
 export async function initIfNeeded() {
-  // text models (mostly)
-  const basicSetupDone = apiKey && currentAIProvider && aiSettings && currentModel;
+  const basicSetupDone = currentAIProvider && aiSettings && currentModel;
 
   // and embedding models if needed
   const embeddingsNeedSetup = aiSettings?.indexEmbeddings &&
