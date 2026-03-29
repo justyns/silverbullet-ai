@@ -9,6 +9,14 @@ on:
       tag:
         description: "Tag to release (e.g. v1.2.3)"
         required: true
+      draft:
+        description: "Create as draft release"
+        type: boolean
+        default: false
+      prerelease:
+        description: "Mark as prerelease"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -39,6 +47,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
+          draft: ${{ github.event.inputs.draft == 'true' }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
           generate_release_notes: true
           files: |
             dist/silverbullet-ai.plug.js
