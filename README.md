@@ -256,22 +256,15 @@ Run `AI: Execute AI Prompt from Custom Template` to use your templates.
 
 ## Build
 
-To build this plug, make sure you have [SilverBullet installed](https://silverbullet.md/Install). Then:
-
 ```shell
-deno task build
-```
-
-Or to watch for changes:
-
-```shell
-deno task watch
+npm install
+npm run build
 ```
 
 Copy the resulting `.plug.js` file into your space's `_plug` folder:
 
 ```shell
-deno task build && cp *.plug.js /my/space/_plug/
+npm run build && cp *.plug.js /my/space/_plug/
 ```
 
 ## Installation

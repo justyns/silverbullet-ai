@@ -6,7 +6,6 @@ import { formatReasoningBlock } from "../widgets.ts";
 import { aiSettings } from "../init.ts";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
-// deno-lint-ignore no-explicit-any
 const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
 
 export type ProviderDefaults = {

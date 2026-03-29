@@ -3,7 +3,6 @@ import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
 
 // nativeFetch is the original fetch before SilverBullet's monkey-patching
-// deno-lint-ignore no-explicit-any
 const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
 
 export interface EmbeddingProviderInterface {
