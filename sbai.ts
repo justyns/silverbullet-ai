@@ -26,6 +26,7 @@ import {
   getSelectedTextModel,
   initializeOpenAI,
   initIfNeeded,
+  modelSupportsTools,
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
@@ -61,6 +62,7 @@ type FilterOption = {
   providerType?: string; // Actual provider type (e.g., "ollama")
   modelName?: string;
   isUtility?: boolean;
+  supportsFunctionCalling?: boolean;
 };
 
 /**
@@ -99,6 +101,7 @@ export async function selectModelFromConfig() {
         hint,
         hintInactive: !isSelected,
         orderId: isPreferred ? -500 + preferredIndex : 0,
+        supportsFunctionCalling: model.supportsFunctionCalling,
       });
     }
   }
@@ -117,6 +120,7 @@ export async function selectModelFromConfig() {
           description: model.description || `${model.modelName} on ${model.provider}`,
           category: model.provider,
           provider: model.provider,
+          supportsFunctionCalling: model.supportsTools,
           modelName: model.modelName,
           hint: "configured",
           hintInactive: !isSelected,
@@ -205,6 +209,7 @@ export async function selectModelFromConfig() {
     providerKey: selected.provider,
     secretName: "",
     requireAuth: defaults.requireAuth,
+    supportsTools: selected.supportsFunctionCalling,
   };
 
   await setSelectedTextModel(modelConfig);
@@ -522,6 +527,9 @@ async function areToolsEnabled(): Promise<boolean> {
   // Check global config
   if (aiSettings.chat?.enableTools === false) return false;
 
+  // Check the model itself
+  if (!modelSupportsTools()) return false;
+
   // Check page frontmatter
   try {
     const pageText = await editor.getText();
@@ -814,7 +822,7 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
     }
 
     // If tools are enabled, use the agentic chat
-    if (options.useTools) {
+    if (options.useTools && modelSupportsTools()) {
       const luaTools = await discoverTools();
       const tools = convertToOpenAITools(luaTools);
 
