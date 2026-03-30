@@ -28,6 +28,7 @@ This page is a brief overview of each version.
 - Fix config re-initialization loop caused by embedding/image model setup overwriting the global API key
 - Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
 - Add release workflow to publish to GitHub Releases automatically on version tags
+- Fix support for models that don't support tool calling
 
 ## 0.6.5 (2026-03-13)
 

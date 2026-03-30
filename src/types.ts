@@ -282,6 +282,7 @@ export type ModelConfig = {
   requireAuth: boolean;
   baseUrl?: string;
   useProxy?: boolean;
+  supportsTools?: boolean;
 };
 
 export type ImageModelConfig = {

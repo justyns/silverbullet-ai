@@ -8,7 +8,7 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, setSessionToggle } from "./init.ts";
+import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, modelSupportsTools, setSessionToggle } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import { formatReasoningBlock } from "./widgets.ts";
@@ -171,7 +171,7 @@ export async function startPanelChat(
       status: "streaming",
     });
 
-    let luaTools = await discoverTools();
+    let luaTools = modelSupportsTools() ? await discoverTools() : new Map<string, LuaToolDefinition>();
     if (currentChatAgent) {
       luaTools = filterToolsForAgent(luaTools, currentChatAgent);
     }
