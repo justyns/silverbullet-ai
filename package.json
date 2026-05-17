@@ -10,7 +10,7 @@
     "update-readme": "tsx scripts/update-readme.ts"
   },
   "dependencies": {
-    "@silverbulletmd/silverbullet": ">=2.5.3",
+    "@silverbulletmd/silverbullet": ">=2.8.0",
     "sse.js": "^2.2.0"
   },
   "devDependencies": {
