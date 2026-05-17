@@ -2,33 +2,37 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.7.0 - unreleased
+## 0.7.0 (2026-05-17)
 
-- Add Mistral provider with `tool_choice: "any"` for reliable MCP tool calls; moved to its own `src/providers/mistral.ts`
-- Fix Mistral tool calls looping indefinitely — `tool_choice` now switches from `"any"` to `"auto"` once tool results exist in the context so Mistral returns a text response
-- Fix `useProxy` defaulting to `true` for Mistral, which caused 411 Content-Length Required errors; now correctly consults provider defaults
+- **BREAKING**: Build system migrated from Deno to Node.js/npm (`npm run build`, `npm test`)
+- Rename CI workflow from `deno-build.yml` to `build.yml`; update all workflows to latest action versions
+- Update development docs to reflect Node.js/npm build and test commands
+- Add release workflow to publish to GitHub Releases automatically on version tags
+- Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
+- Bump minimum SilverBullet to v2.8.0
+- Add Mistral provider with `tool_choice: "any"` for reliable tool calls; lives in its own `src/providers/mistral.ts`
 - Add Mistral embedding support by routing through `OpenAIEmbeddingProvider` with Mistral's base URL (`mistral-embed` is OpenAI-compatible)
+- Inject the available tool list into the chat system prompt so models see what's callable
+- Fix Mistral tool calls looping indefinitely — `tool_choice` now switches from `"any"` to `"auto"` once tool results exist, so Mistral returns a text response
+- Fix `useProxy` defaulting to `true` for Mistral, which caused 411 Content-Length Required errors; now consults provider defaults
 - Fix model metadata lookup picking wrong provider for Mistral models
 - Fix Mistral model metadata lookup returning incorrect context window size
+- Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
+- Fix Gemini streaming never completing (promise hang) — detect `finishReason` instead of relying on `[DONE]` sentinel
+- Fix Gemini tool calling: pass tools to API, parse `functionCall` parts in responses, handle `thoughtSignature`
+- Fix Gemini `additionalProperties` error in JSON schema mode — strip unsupported schema fields
+- Fix support for models that don't support tool calling — tools are no longer sent for those models
+- Remove API key from the init check since Ollama doesn't require one
 - Fix image model initialization crashing plugin init for unsupported providers; now logs a warning and clears stale cache
 - Fix `promptAndGenerateImage` to check `currentImageProvider` before proceeding, with a clear actionable error message
 - Fix agent panel not updating when switching agents
 - Fix RAG status not refreshing when switching agents
 - Poll for agent changes to handle command palette selection
-- Fix security issues and improve type safety
-- **BREAKING**: Build system migrated from Deno to Node.js/npm (`npm run build`, `npm test`)
-- Rename CI workflow from `deno-build.yml` to `build.yml`; update all workflows to latest action versions
-- Update development docs to reflect Node.js/npm build and test commands
-- Fix Gemini API key being sent as a URL query parameter; it is now sent via the `x-goog-api-key` header only
-- Fix Gemini streaming never completing (promise hang) — detect `finishReason` instead of relying on `[DONE]` sentinel
-- Fix Gemini tool calling: pass tools to API, parse `functionCall` parts in responses, handle `thoughtSignature`
-- Fix Gemini `additionalProperties` error in JSON schema mode — strip unsupported schema fields
 - Fix promise hang bugs and missing permissions in streaming agentic chat
 - Fix unsafe type casts that could cause runtime errors
 - Fix config re-initialization loop caused by embedding/image model setup overwriting the global API key
-- Replace hardcoded `justyns/silverbullet-ai` repo references with dynamic repo detection
-- Add release workflow to publish to GitHub Releases automatically on version tags
-- Fix support for models that don't support tool calling
+- Fix double-unescape in `unescapeHtml` by replacing `&amp;` last
+- Fix security issues and improve type safety
 
 ## 0.6.5 (2026-03-13)
 
