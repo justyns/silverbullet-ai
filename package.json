@@ -17,7 +17,7 @@
     "@lezer/markdown": "^1.0.0",
     "@structured-types/api": "^3.46.12",
     "tsx": "^4.0.0",
-    "vitest": "^3.0.0",
+    "vitest": "^4.0.0",
     "yaml": "^2.0.0"
   }
 }
