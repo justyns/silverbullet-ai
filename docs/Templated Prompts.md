@@ -167,7 +167,7 @@ The `enrich` attribute can also be toggled on or off per message. By default it 
 
 ## Post Processors
 
-`aiPrompt.postProcessors` can be set to a list of Space Lua function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
+`aiPrompt.postProcessors` can be set to a list of [[Space Lua]] function names like in the example below. Once the LLM finishes streaming its response, the entire response will be sent to each post processor function in order.
 
 Each function must accept a single data parameter containing these fields:
 
@@ -202,4 +202,3 @@ Generate a random name for a pet. Only generate a single name. Return nothing bu
 ```
 
 Running this prompt, the LLM may return `Henry` as the name and then aiFooBar will transform it into `FOO Henry BAR` which is what will ultimately be placed in the note the templated was executed from.
-

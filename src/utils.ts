@@ -1,12 +1,27 @@
-import { editor, events, lua, markdown, space, system } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  editor,
+  events,
+  lua,
+  markdown,
+  space,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "./lib/attribute.ts";
 import { extractFrontMatter } from "./lib/frontmatter.ts";
 import { aiSettings } from "./init.ts";
-import type { Attachment, ChatMessage, EnrichmentResult, MessageWithAttachments } from "./types.ts";
+import type {
+  Attachment,
+  ChatMessage,
+  EnrichmentResult,
+  MessageWithAttachments,
+} from "./types.ts";
 import { searchEmbeddingsForChat } from "./embeddings.ts";
 import { getCachedToolResult } from "./tools.ts";
-import { parseToolCallJson, REASONING_BLOCK_PATTERN, TOOL_CALL_WIDGET_PATTERN } from "./widgets.ts";
+import {
+  parseToolCallJson,
+  REASONING_BLOCK_PATTERN,
+  TOOL_CALL_WIDGET_PATTERN,
+} from "./widgets.ts";
 
 export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
@@ -14,30 +29,31 @@ export function log(...args: any[]) {
   console.log(...args);
 }
 
-export function isPathAllowed(page: string, allowedPaths: string[] | undefined): boolean {
+export function isPathAllowed(
+  page: string,
+  allowedPaths: string[] | undefined,
+): boolean {
   if (!allowedPaths || allowedPaths.length === 0) return true;
-  return allowedPaths.some((prefix) => page === prefix || page.startsWith(prefix));
+  return allowedPaths.some(
+    (prefix) => page === prefix || page.startsWith(prefix),
+  );
 }
 
 export async function parseToolCallsFromContent(content: string): Promise<{
   strippedContent: string;
   toolMessages: ChatMessage[];
-  toolCalls: Array<
-    {
-      id: string;
-      type: "function";
-      function: { name: string; arguments: string };
-    }
-  >;
+  toolCalls: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }>;
 }> {
   const toolMessages: ChatMessage[] = [];
-  const toolCalls: Array<
-    {
-      id: string;
-      type: "function";
-      function: { name: string; arguments: string };
-    }
-  > = [];
+  const toolCalls: Array<{
+    id: string;
+    type: "function";
+    function: { name: string; arguments: string };
+  }> = [];
   let match;
   const pattern = new RegExp(TOOL_CALL_WIDGET_PATTERN.source, "g");
 
@@ -98,7 +114,8 @@ export async function cleanMessagesForApi(
   const cleanedMessages: ChatMessage[] = [];
   for (const msg of messages) {
     if (msg.role === "assistant") {
-      const { strippedContent, toolMessages, toolCalls } = await parseToolCallsFromContent(msg.content);
+      const { strippedContent, toolMessages, toolCalls } =
+        await parseToolCallsFromContent(msg.content);
       if (toolCalls.length > 0) {
         cleanedMessages.push({
           ...msg,
@@ -200,7 +217,11 @@ export async function enrichChatMessages(
   }
 
   for (const message of messages) {
-    if (message.role === "assistant" || message.role === "system" || message.role === "tool") {
+    if (
+      message.role === "assistant" ||
+      message.role === "system" ||
+      message.role === "tool"
+    ) {
       // Don't enrich assistant, system, or tool messages
       // Tool messages must immediately follow assistant messages with tool_calls per OpenAI API
       result.push({ message, attachments: [] });
@@ -271,20 +292,25 @@ export async function enrichChatMessages(
       messageAttachments.push(...wikiResult.attachments);
     }
 
-    const searchEmbeddingsEnabled = enrichOptions?.searchEmbeddings !== undefined
-      ? enrichOptions.searchEmbeddings
-      : aiSettings?.chat?.searchEmbeddings;
+    const searchEmbeddingsEnabled =
+      enrichOptions?.searchEmbeddings !== undefined
+        ? enrichOptions.searchEmbeddings
+        : aiSettings?.chat?.searchEmbeddings;
     if (searchEmbeddingsEnabled && aiSettings?.indexEmbeddings) {
       const searchResults = await searchEmbeddingsForChat(message.content);
 
       if (searchResults.context.totalResults > 0) {
         const snippets = searchResults.results
-          .map((page) => `<snippet page="${page.name}">\n${page.content}\n</snippet>`)
+          .map(
+            (page) =>
+              `<snippet page="${page.name}">\n${page.content}\n</snippet>`,
+          )
           .join("\n");
 
-        const truncatedQuery = message.content.length > 100
-          ? message.content.substring(0, 100) + "..."
-          : message.content;
+        const truncatedQuery =
+          message.content.length > 100
+            ? message.content.substring(0, 100) + "..."
+            : message.content;
 
         messageAttachments.push({
           name: truncatedQuery,
@@ -332,7 +358,10 @@ export async function enrichChatMessages(
     );
     for (const func of finalEnrichFunctions) {
       // console.log("Enriching message with function", func);
-      enrichedContent = await system.invokeFunction(func, enrichedContent);
+      enrichedContent = await invokeSpaceLuaFunction<string>(
+        func,
+        enrichedContent,
+      );
     }
 
     result.push({
@@ -401,7 +430,8 @@ export function luaLongString(s: string): string {
 export function jsToLuaLiteral(value: unknown): string {
   if (value === null || value === undefined) return "nil";
   if (typeof value === "boolean") return value ? "true" : "false";
-  if (typeof value === "number") return Number.isFinite(value) ? String(value) : "nil";
+  if (typeof value === "number")
+    return Number.isFinite(value) ? String(value) : "nil";
   if (typeof value === "string") {
     const escaped = value
       .replace(/\\/g, "\\\\")
@@ -417,12 +447,25 @@ export function jsToLuaLiteral(value: unknown): string {
   if (typeof value === "object") {
     const entries = Object.entries(value).map(([k, v]) => {
       const isValidIdentifier = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(k);
-      const key = isValidIdentifier ? k : `["${k.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
+      const key = isValidIdentifier
+        ? k
+        : `["${k.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"]`;
       return `${key}=${jsToLuaLiteral(v)}`;
     });
     return `{${entries.join(", ")}}`;
   }
   return "nil";
+}
+
+/**
+ * Invokes a user-defined Space Lua function by name with a single argument.
+ * TODO: Is there a better/safer way to do this?
+ */
+export async function invokeSpaceLuaFunction<T = unknown>(
+  name: string,
+  arg: unknown,
+): Promise<T> {
+  return await lua.evalExpression(`${name}(${jsToLuaLiteral(arg)})`);
 }
 
 /**
@@ -440,7 +483,9 @@ async function enrichMessageWithWikiLinks(
     const result = await lua.evalExpression(
       `ai.enrichWithWikiLinks(${luaContent}, ${luaSeenNames})`,
     );
-    const rawAttachments = Array.isArray(result.attachments) ? result.attachments : [];
+    const rawAttachments = Array.isArray(result.attachments)
+      ? result.attachments
+      : [];
     const attachments: Attachment[] = rawAttachments.map(
       (a: { name: string; content: string; type?: string }) => ({
         name: a.name,
@@ -489,7 +534,11 @@ export type DiffLine = {
  * @param width - Character width of the bar (default 20)
  * @returns String like "[████████░░░░░░░░░░░░] 40%"
  */
-export function renderProgressBar(current: number, total: number, width = 20): string {
+export function renderProgressBar(
+  current: number,
+  total: number,
+  width = 20,
+): string {
   const filled = Math.round((current / total) * width);
   const empty = width - filled;
   const pct = Math.round((current / total) * 100);
@@ -513,27 +562,35 @@ export type ProgressModalOptions = {
   };
 };
 
-export function showProgressModal(options: ProgressModalOptions): Promise<void> {
+export function showProgressModal(
+  options: ProgressModalOptions,
+): Promise<void> {
   const progressHtml = options.progress
     ? `<p style="margin: 8px 0 4px 0;">${
-      options.progress.label || "Progress"
-    } ${options.progress.current} of ${options.progress.total}${
-      options.progress.itemName ? `: <strong>${options.progress.itemName}</strong>` : ""
-    }</p>
-       <p style="font-family: monospace; margin: 0;">${
-      renderProgressBar(options.progress.current, options.progress.total)
-    }</p>`
+        options.progress.label || "Progress"
+      } ${options.progress.current} of ${options.progress.total}${
+        options.progress.itemName
+          ? `: <strong>${options.progress.itemName}</strong>`
+          : ""
+      }</p>
+       <p style="font-family: monospace; margin: 0;">${renderProgressBar(
+         options.progress.current,
+         options.progress.total,
+       )}</p>`
     : "";
 
   const secondaryHtml = options.secondaryProgress
     ? `<p style="margin: 8px 0 4px 0;">${
-      options.secondaryProgress.label || "Progress"
-    } ${options.secondaryProgress.current} of ${options.secondaryProgress.total}${
-      options.secondaryProgress.itemName ? `: <strong>${options.secondaryProgress.itemName}</strong>` : ""
-    }</p>
-       <p style="font-family: monospace; margin: 0;">${
-      renderProgressBar(options.secondaryProgress.current, options.secondaryProgress.total)
-    }</p>`
+        options.secondaryProgress.label || "Progress"
+      } ${options.secondaryProgress.current} of ${options.secondaryProgress.total}${
+        options.secondaryProgress.itemName
+          ? `: <strong>${options.secondaryProgress.itemName}</strong>`
+          : ""
+      }</p>
+       <p style="font-family: monospace; margin: 0;">${renderProgressBar(
+         options.secondaryProgress.current,
+         options.secondaryProgress.total,
+       )}</p>`
     : "";
 
   const statusHtml = options.statusText ? `<p>${options.statusText}</p>` : "";

@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.7.1 (2026-05-19)
+
+- Fix post processors and enrichment functions not working when defined as lua functions instead of space-script/plugs
+
 ## 0.7.0 (2026-05-17)
 
 - **BREAKING**: Build system migrated from Deno to Node.js/npm (`npm run build`, `npm test`)
