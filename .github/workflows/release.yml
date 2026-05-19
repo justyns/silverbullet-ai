@@ -42,6 +42,8 @@ jobs:
 
       - name: Create dist files
         run: npm run dist
+        env:
+          RELEASE_VERSION: ${{ github.event.inputs.tag || github.ref_name }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

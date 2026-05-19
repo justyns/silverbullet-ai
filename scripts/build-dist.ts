@@ -26,8 +26,25 @@ async function emptyDir(dir: string) {
   await mkdir(dir, { recursive: true });
 }
 
-function getVersion(): string {
-  return execSync("git describe --tags --always").toString().trim();
+function normalizeVersion(version: string): string {
+  return version.trim().replace(/^v/, "");
+}
+
+async function getVersion(): Promise<string> {
+  const envVersion = process.env.PLUG_VERSION || process.env.RELEASE_VERSION ||
+    process.env.npm_package_version;
+  if (envVersion) return normalizeVersion(envVersion);
+
+  try {
+    const packageJson = JSON.parse(await readFile("package.json", "utf-8"));
+    if (typeof packageJson.version === "string") {
+      return normalizeVersion(packageJson.version);
+    }
+  } catch (error) {
+    console.error("Could not read version from package.json:", error);
+  }
+
+  return normalizeVersion(execSync("git describe --tags --always").toString());
 }
 
 function getGitHubRepo(): string {
@@ -44,7 +61,7 @@ function getGitHubRepo(): string {
 }
 
 function extractRecentChangelog(changelog: string, version: string): string {
-  const versionMatch = version.match(/^(\d+\.\d+)/);
+  const versionMatch = normalizeVersion(version).match(/^(\d+\.\d+)/);
   if (!versionMatch) return "";
   const minorPrefix = versionMatch[1];
 
@@ -136,7 +153,7 @@ Install by copying this file to your space, or use \`Library: Install\` with \`g
   await writeFile(join(DIST_DIR, COMBINED_LIBRARY), combinedContent, "utf-8");
   console.log(`✓ Created ${DIST_DIR}/${COMBINED_LIBRARY}`);
 
-  const version = getVersion();
+  const version = await getVersion();
   const [repoOwner, repoName] = githubRepo.split("/");
   let plugMdContent = await readFile(PLUG_MD, "utf-8");
   // Patch frontmatter fields to reflect the actual owner/repo
