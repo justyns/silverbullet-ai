@@ -72,7 +72,8 @@ function setNestedValue(obj: any, path: string, value: any): void {
   for (let i = 0; i < keys.length - 1; i++) {
     const key = keys[i];
     if (
-      !(key in current) || typeof current[key] !== "object" ||
+      !(key in current) ||
+      typeof current[key] !== "object" ||
       current[key] === null
     ) {
       current[key] = {};
@@ -114,7 +115,8 @@ function setNestedValue(obj: any, path: string, value: any): void {
       // If looking for ai.keys.* and the value is undefined (and no default provided),
       // throw an error to simulate missing config
       if (
-        args[0].startsWith("ai.keys.") && value === undefined &&
+        args[0].startsWith("ai.keys.") &&
+        value === undefined &&
         args[1] === undefined
       ) {
         throw new Error(`Config key ${args[0]} not found`);
@@ -160,6 +162,17 @@ function setNestedValue(obj: any, path: string, value: any): void {
     // Lua syscalls for v2
     case "lua.parseExpression":
       return { type: "MockExpression", expr: args[0] };
+    case "lua.evalExpression":
+      return evalExpressionMock(args[0]);
+
+    case "mock.setLuaFunction":
+      luaFunctionMocks[args[0]] = args[1];
+      break;
+    case "mock.clearLuaFunctions":
+      for (const key in luaFunctionMocks) {
+        delete luaFunctionMocks[key];
+      }
+      break;
 
     // Config syscalls for v2
     case "config.define":
@@ -195,6 +208,44 @@ function invokeFunctionMock(args: readonly any[]) {
     default:
       console.log("system.invokeFunction", args);
       throw Error(`Missing invokeFunction mock for ${args[0]}`);
+  }
+}
+
+const luaFunctionMocks: { [name: string]: (arg: any) => any } = {};
+
+function evalExpressionMock(expr: string) {
+  // Match `name(...)` where name may be dotted (e.g. `myNs.fn`).
+  const match = expr.match(/^([A-Za-z_][\w]*(?:\.[A-Za-z_][\w]*)*)\((.*)\)$/s);
+  if (!match) {
+    throw new Error(`Mock evalExpression: unsupported expression: ${expr}`);
+  }
+  const [, name, argLiteral] = match;
+  const fn = luaFunctionMocks[name];
+  if (!fn) {
+    throw new Error(`Mock evalExpression: no function registered for ${name}`);
+  }
+  // Crude Lua-literal -> JS coercion good enough for tests.
+  return fn(parseLuaTableLiteral(argLiteral));
+}
+
+function parseLuaTableLiteral(src: string): any {
+  const trimmed = src.trim();
+  if (trimmed === "" || trimmed === "nil") return undefined;
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (/^-?\d+(\.\d+)?$/.test(trimmed)) return Number(trimmed);
+  // Convert Lua table literal `{k="v", ...}` into JSON-ish then parse.
+  const jsonish = trimmed
+    .replace(/\\\n/g, "\\n")
+    .replace(/([{,]\s*)([A-Za-z_][\w]*)\s*=/g, '$1"$2":')
+    .replace(/([{,]\s*)\["([^"]*)"\]\s*=/g, '$1"$2":');
+  try {
+    return JSON.parse(jsonish);
+  } catch {
+    if (/^".*"$/.test(trimmed)) {
+      return JSON.parse(trimmed);
+    }
+    throw new Error(`Mock evalExpression: could not parse arg: ${src}`);
   }
 }
 

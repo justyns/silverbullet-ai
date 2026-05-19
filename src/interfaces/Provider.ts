@@ -1,7 +1,7 @@
-import { editor, system } from "@silverbulletmd/silverbullet/syscalls";
+import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
 import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
-import { assembleMessagesWithAttachments, enrichChatMessages } from "../utils.ts";
+import { assembleMessagesWithAttachments, enrichChatMessages, invokeSpaceLuaFunction } from "../utils.ts";
 import { formatReasoningBlock } from "../widgets.ts";
 import { aiSettings } from "../init.ts";
 
@@ -197,7 +197,7 @@ export abstract class AbstractProvider implements ProviderInterface {
         };
         for (const processor of postProcessors) {
           console.log("Applying post-processor:", processor);
-          newData = await system.invokeFunction(
+          newData = await invokeSpaceLuaFunction<string>(
             processor,
             postProcessorData,
           );

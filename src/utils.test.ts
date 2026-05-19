@@ -1,10 +1,11 @@
-import { expect, test } from "vitest";
+import { beforeEach, expect, test } from "vitest";
 const assertEquals = (actual: unknown, expected: unknown, _msg?: string) => expect(actual).toEqual(expected);
 import "./mocks/syscalls.ts";
 import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
+  invokeSpaceLuaFunction,
   jsToLuaLiteral,
   luaLongString,
   parseToolCallsFromContent,
@@ -499,4 +500,40 @@ test("jsToLuaLiteral should handle complex nested structures", () => {
   };
   const result = jsToLuaLiteral(complex);
   assertEquals(result, '{page={name="work/AICompany", size=117}, currentLineNumber=7, selectedText=nil}');
+});
+
+beforeEach(async () => {
+  await syscall("mock.clearLuaFunctions");
+});
+
+test("invokeSpaceLuaFunction invokes a bare-name Space Lua function with a table arg", async () => {
+  await syscall("mock.setLuaFunction", "aiFooBar", (data: any) => {
+    return `FOO ${data.response} BAR`;
+  });
+  const result = await invokeSpaceLuaFunction("aiFooBar", {
+    response: "Henry",
+    lineBefore: "",
+    lineCurrent: "",
+    lineAfter: "",
+  });
+  assertEquals(result, "FOO Henry BAR");
+});
+
+test("invokeSpaceLuaFunction resolves dotted namespace names", async () => {
+  await syscall("mock.setLuaFunction", "myNs.extract", (data: any) => {
+    return data.response.toUpperCase();
+  });
+  const result = await invokeSpaceLuaFunction("myNs.extract", {
+    response: "hello",
+    lineBefore: "",
+    lineCurrent: "",
+    lineAfter: "",
+  });
+  assertEquals(result, "HELLO");
+});
+
+test("invokeSpaceLuaFunction surfaces errors from undefined functions", async () => {
+  await expect(
+    invokeSpaceLuaFunction("notRegistered", { response: "x" }),
+  ).rejects.toThrow();
 });

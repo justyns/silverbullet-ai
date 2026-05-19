@@ -70,7 +70,7 @@ The query results will be included in the message sent to the LLM.
 
 ## Custom Enrichment Functions
 
-You can add your own enrichment logic using Space Lua. Define a function and register it:
+You can add your own enrichment logic using [[Space Lua]]. Define a function in a `space-lua` block (so it is registered as a global in the Space Lua environment) and reference it by name. Dotted namespace names like `myNs.enrich` are also supported.
 
 ```lua
 -- In a Space Lua block
