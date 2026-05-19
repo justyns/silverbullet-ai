@@ -23,6 +23,10 @@ function getGitHubRepo(): string {
 
 const githubRepo = getGitHubRepo();
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function extractDocsForFunction(functionPath: string): string {
   const [filePath, functionName] = functionPath.split(":");
   const parsed = parseFiles([`./${filePath}`]);
@@ -40,8 +44,11 @@ async function updateReadme(tag: string) {
   let installationDocContent = await readFile(installationDocPath, "utf-8");
   const featuresDocContent = await readFile(featuresDocPath, "utf-8");
 
-  const escapedRepo = githubRepo.replace("/", "\\/");
-  const ghrVersionedPattern = new RegExp(`ghr:${escapedRepo}@[0-9.]+\\/PLUG\\.md`, "g");
+  const escapedRepo = escapeRegExp(githubRepo);
+  const ghrVersionedPattern = new RegExp(
+    `ghr:${escapedRepo}@v?[0-9]+(?:\\.[0-9]+)*(?:[-+][A-Za-z0-9.-]+)?\\/PLUG\\.md`,
+    "g",
+  );
   const ghrVersioned = `ghr:${githubRepo}@${tag}/PLUG.md`;
 
   readmeContent = readmeContent.replace(ghrVersionedPattern, ghrVersioned);
