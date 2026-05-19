@@ -237,8 +237,6 @@ function parseLuaTableLiteral(src: string): any {
   // Convert Lua table literal `{k="v", ...}` into JSON-ish then parse.
   const jsonish = trimmed
     .replace(/\\\n/g, "\\n")
-    .replace(/^\{/, "{")
-    .replace(/\}$/, "}")
     .replace(/([{,]\s*)([A-Za-z_][\w]*)\s*=/g, '$1"$2":')
     .replace(/([{,]\s*)\["([^"]*)"\]\s*=/g, '$1"$2":');
   try {
