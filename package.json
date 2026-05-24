@@ -6,6 +6,7 @@
   "scripts": {
     "build": "npx plug-compile silverbullet-ai.plug.yaml",
     "test": "vitest run",
+    "test:integration": "vitest run --root integration-tests",
     "dist": "npx plug-compile silverbullet-ai.plug.yaml && tsx scripts/build-dist.ts",
     "update-readme": "tsx scripts/update-readme.ts"
   },
