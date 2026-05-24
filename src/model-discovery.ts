@@ -6,7 +6,7 @@ import { OllamaProvider } from "./providers/ollama.ts";
 import type { ProviderConfig, ProvidersConfig } from "./types.ts";
 import { aiSettings, getProviderDefaults, initializeOpenAI } from "./init.ts";
 import { fetchModelMetadata, lookupModel, type ModelMetadata } from "./model-metadata.ts";
-import { showProgressModal } from "./utils.ts";
+import { log, showProgressModal } from "./utils.ts";
 
 const CACHE_KEY_PREFIX = "ai.modelCache.";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -180,7 +180,7 @@ export async function discoverModelsForProvider(
 ): Promise<CachedModel[]> {
   const provider = createProviderForDiscovery(providerName, config);
   if (!provider) {
-    console.error(`Cannot create provider for discovery: ${providerName}`);
+    log.error(`Cannot create provider for discovery: ${providerName}`);
     return [];
   }
 
@@ -197,7 +197,7 @@ export async function discoverModelsForProvider(
         const model = await getModelMetadataAndMode(provider, id, providerName, showPricing);
         models.push(model);
       } catch (error) {
-        console.error(`Failed to get metadata for ${id}:`, error);
+        log.error(`Failed to get metadata for ${id}:`, error);
         models.push({ id, mode: null });
       }
     }
@@ -205,7 +205,7 @@ export async function discoverModelsForProvider(
     await setCache(providerName, models);
     return models;
   } catch (error) {
-    console.error(`Failed to discover models for ${providerName}:`, error);
+    log.error(`Failed to discover models for ${providerName}:`, error);
     return [];
   }
 }
@@ -359,7 +359,7 @@ export async function refreshAllModelCaches(): Promise<number> {
       const models = await discoverModelsForProvider(providerName, config!);
       total += models.length;
     } catch (error) {
-      console.error(`Failed to refresh models for ${providerName}:`, error);
+      log.error(`Failed to refresh models for ${providerName}:`, error);
     }
   }
 
@@ -377,7 +377,7 @@ export async function refreshModelListCommand(): Promise<void> {
     const count = await refreshAllModelCaches();
     await editor.flashNotification(`Refreshed model lists: ${count} models found`, "info");
   } catch (error) {
-    console.error("Failed to refresh model lists:", error);
+    log.error("Failed to refresh model lists:", error);
     await editor.flashNotification("Failed to refresh model lists", "error");
   }
 }

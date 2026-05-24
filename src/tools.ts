@@ -1,5 +1,5 @@
 import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
-import { computeSimpleDiff, type DiffLine, isPathAllowed } from "./utils.ts";
+import { computeSimpleDiff, type DiffLine, isPathAllowed, log } from "./utils.ts";
 import type {
   ChatMessage,
   ChatResponse,
@@ -135,7 +135,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
     );
 
     if (!toolsExist) {
-      console.log(
+      log.debug(
         "ai.tools not defined - Space Lua AI Tools may not be loaded",
       );
       return tools;
@@ -151,11 +151,11 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
     end)()`) as string[];
 
     if (!toolNames || !Array.isArray(toolNames) || toolNames.length === 0) {
-      console.log("No tools found in ai.tools");
+      log.debug("No tools found in ai.tools");
       return tools;
     }
 
-    console.log(`Found ${toolNames.length} tool names:`, toolNames);
+    log.debug(`Found ${toolNames.length} tool names:`, toolNames);
 
     // Fetch metadata for each tool (without the handler function)
     for (const name of toolNames) {
@@ -190,18 +190,18 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
             readPathParam: metadata.readPathParam,
             writePathParam: metadata.writePathParam,
           });
-          console.log(`Discovered tool: ${name}`);
+          log.debug(`Discovered tool: ${name}`);
         } else {
-          console.warn(`Invalid metadata for tool "${name}":`, metadata);
+          log.warn(`Invalid metadata for tool "${name}":`, metadata);
         }
       } catch (e) {
-        console.error(`Error fetching metadata for tool "${name}":`, e);
+        log.error(`Error fetching metadata for tool "${name}":`, e);
       }
     }
 
-    console.log(`Discovered ${tools.size} tools from Space Lua`);
+    log.debug(`Discovered ${tools.size} tools from Space Lua`);
   } catch (e) {
-    console.error("Error discovering tools:", e);
+    log.error("Error discovering tools:", e);
   }
 
   return tools;
@@ -315,7 +315,7 @@ export async function executeTool(
       result: resultStr,
     };
   } catch (e) {
-    console.error(`Error executing tool "${toolName}":`, e);
+    log.error(`Error executing tool "${toolName}":`, e);
     return {
       success: false,
       error: e instanceof Error ? e.message : String(e),
@@ -354,7 +354,7 @@ function requestToolApproval(
 
         await editor.showPanel("modal", 20, html, initScript);
       } catch (e) {
-        console.error("Error showing tool approval modal:", e);
+        log.error("Error showing tool approval modal:", e);
         pendingApprovals.delete(approvalId);
         reject(e);
       }
@@ -463,7 +463,7 @@ export async function requestWriteApproval(
 
         await editor.showPanel("modal", 20, html, initScript);
       } catch (e) {
-        console.error("Error showing write approval modal:", e);
+        log.error("Error showing write approval modal:", e);
         pendingWrites.delete(writeId);
         reject(e);
       }
@@ -548,7 +548,7 @@ async function processToolCalls(
     const toolName = toolCall.function.name;
     const parsedArgs = parseToolCallArguments(toolCall.function.arguments);
     const args = parsedArgs.ok ? parsedArgs.args : {};
-    console.log(`Executing tool: ${toolName}`, args);
+    log.debug(`Executing tool: ${toolName}`, args);
 
     if (!parsedArgs.ok) {
       const parseErrorResult: ToolExecutionResult = {

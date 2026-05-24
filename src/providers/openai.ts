@@ -12,7 +12,7 @@ import type {
 } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
-import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
+import { buildProxyHeaders, buildProxyUrl, log } from "../utils.ts";
 import { aiSettings } from "../init.ts";
 
 type HttpHeaders = {
@@ -228,7 +228,7 @@ export class OpenAIProvider extends AbstractProvider {
               }
             }
           } catch (error) {
-            console.error("Error processing streaming message:", error, e.data);
+            log.error("Error processing streaming message:", error, e.data);
           }
         });
 
@@ -237,14 +237,14 @@ export class OpenAIProvider extends AbstractProvider {
             clearTimeout(timeoutId);
             timeoutId = undefined;
           }
-          console.error("SSE error:", e.data, e);
+          log.error("SSE error:", e.data, e);
           source.close();
           reject(new Error(`SSE error: ${e.data}`));
         });
 
         source.stream();
       } catch (error) {
-        console.error("Error streaming from OpenAI chat endpoint:", error);
+        log.error("Error streaming from OpenAI chat endpoint:", error);
         editor.flashNotification(
           "Error streaming from OpenAI chat endpoint.",
           "error",
@@ -270,9 +270,9 @@ export class OpenAIProvider extends AbstractProvider {
       );
 
       if (!response.ok) {
-        console.error("HTTP response: ", response);
+        log.error("HTTP response: ", response);
         const errorBody = await response.json();
-        console.error("HTTP response body: ", errorBody);
+        log.error("HTTP response body: ", errorBody);
         const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
@@ -284,7 +284,7 @@ export class OpenAIProvider extends AbstractProvider {
 
       return data.data.map((model: any) => model.id);
     } catch (error) {
-      console.error("Error fetching OpenAI models:", error);
+      log.error("Error fetching OpenAI models:", error);
       throw error;
     }
   }
@@ -325,9 +325,9 @@ export class OpenAIProvider extends AbstractProvider {
       );
 
       if (!response.ok) {
-        console.error("http response: ", response);
+        log.error("http response: ", response);
         const errorBody = await response.json();
-        console.error("http response body: ", errorBody);
+        log.error("http response body: ", errorBody);
         const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
@@ -351,7 +351,7 @@ export class OpenAIProvider extends AbstractProvider {
           : undefined,
       };
     } catch (error) {
-      console.error("Error calling OpenAI chat endpoint:", error);
+      log.error("Error calling OpenAI chat endpoint:", error);
       await editor.flashNotification(
         "Error calling OpenAI chat endpoint.",
         "error",
@@ -402,9 +402,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
     );
 
     if (!response.ok) {
-      console.error("HTTP response: ", response);
+      log.error("HTTP response: ", response);
       const errorBody = await response.json();
-      console.error("HTTP response body: ", errorBody);
+      log.error("HTTP response body: ", errorBody);
       const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
       throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }

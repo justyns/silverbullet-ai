@@ -1,6 +1,7 @@
 import { apiKey, initializeOpenAI } from "../init.ts";
 import { ImageGenerationOptions } from "../types.ts";
 import { AbstractImageProvider } from "../interfaces/ImageProvider.ts";
+import { log } from "../utils.ts";
 
 export class DallEProvider extends AbstractImageProvider {
   constructor(
@@ -52,7 +53,7 @@ export class DallEProvider extends AbstractImageProvider {
 
       if (!response.ok) {
         const errorBody = await response.json();
-        console.error("HTTP response body: ", errorBody);
+        log.error("HTTP response body: ", errorBody);
         const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
@@ -63,7 +64,7 @@ export class DallEProvider extends AbstractImageProvider {
       }
       return data;
     } catch (error) {
-      console.error("Error calling DALL·E image generation endpoint:", error);
+      log.error("Error calling DALL·E image generation endpoint:", error);
       throw error;
     }
   }

@@ -1,7 +1,7 @@
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
 import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
-import { assembleMessagesWithAttachments, enrichChatMessages, invokeSpaceLuaFunction } from "../utils.ts";
+import { assembleMessagesWithAttachments, enrichChatMessages, invokeSpaceLuaFunction, log } from "../utils.ts";
 import { formatReasoningBlock } from "../widgets.ts";
 import { aiSettings } from "../init.ts";
 
@@ -138,7 +138,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     const handleChunk = (data: string) => {
       try {
         if (!data) {
-          console.log("No data received from LLM");
+          log.debug("No data received from LLM");
           return;
         }
         fullResponse += data;
@@ -162,7 +162,7 @@ export abstract class AbstractProvider implements ProviderInterface {
         cursorPos += data.length;
         if (onChunk) onChunk(data);
       } catch (error) {
-        console.error("Error handling chat stream data:", error);
+        log.error("Error handling chat stream data:", error);
         editor.flashNotification(
           "An error occurred while processing chat data.",
           "error",
@@ -176,13 +176,13 @@ export abstract class AbstractProvider implements ProviderInterface {
 
     const handleComplete = async (response: ChatResponse) => {
       const data = response.content || "";
-      console.log("Response complete:", data);
+      log.debug("Response complete:", data);
       await insertQueue;
       let endOfResponse = startOfResponse + fullResponse.length;
-      console.log("Start of response:", startOfResponse);
-      console.log("End of response:", endOfResponse);
-      console.log("Full response:", fullResponse);
-      console.log("Post-processors:", postProcessors);
+      log.debug("Start of response:", startOfResponse);
+      log.debug("End of response:", endOfResponse);
+      log.debug("Full response:", fullResponse);
+      log.debug("Post-processors:", postProcessors);
       let newData = fullResponse;
 
       // If reasoning exists and enabled, prepend as code block
@@ -202,13 +202,13 @@ export abstract class AbstractProvider implements ProviderInterface {
           lineAfter: getLineAfter(pageText, endOfResponse),
         };
         for (const processor of postProcessors) {
-          console.log("Applying post-processor:", processor);
+          log.debug("Applying post-processor:", processor);
           newData = await invokeSpaceLuaFunction<string>(
             processor,
             postProcessorData,
           );
         }
-        console.log("Data changed by post-processors, updating editor");
+        log.debug("Data changed by post-processors, updating editor");
         await editor.replaceRange(startOfResponse, endOfResponse, newData);
       }
 

@@ -3,6 +3,7 @@ import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
 import { OpenAIProvider } from "./openai.ts";
 import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
+import { log } from "../utils.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -87,7 +88,7 @@ export class OllamaProvider extends AbstractProvider {
       );
 
       if (!response.ok) {
-        console.error("Failed to get model info:", response.status);
+        log.error("Failed to get model info:", response.status);
         return null;
       }
 
@@ -95,7 +96,7 @@ export class OllamaProvider extends AbstractProvider {
       await clientStore.set(cacheKey, data);
       return data;
     } catch (error) {
-      console.error("Error fetching model info:", error);
+      log.error("Error fetching model info:", error);
       return null;
     }
   }
@@ -158,9 +159,9 @@ export class OllamaProvider extends AbstractProvider {
       );
 
       if (!response.ok) {
-        console.error("HTTP response: ", response);
+        log.error("HTTP response: ", response);
         const errorBody = await response.json();
-        console.error("HTTP response body: ", errorBody);
+        log.error("HTTP response body: ", errorBody);
         const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
@@ -172,7 +173,7 @@ export class OllamaProvider extends AbstractProvider {
 
       return data.models.map((model: any) => model.name);
     } catch (error) {
-      console.error("Error fetching Ollama models:", error);
+      log.error("Error fetching Ollama models:", error);
       throw error;
     }
   }
@@ -220,9 +221,9 @@ export class OllamaEmbeddingProvider extends AbstractEmbeddingProvider {
     );
 
     if (!response.ok) {
-      console.error("HTTP response: ", response);
+      log.error("HTTP response: ", response);
       const errorBody = await response.json();
-      console.error("HTTP response body: ", errorBody);
+      log.error("HTTP response body: ", errorBody);
       const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
       throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }

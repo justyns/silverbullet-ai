@@ -270,6 +270,7 @@ export type AISettings = {
   indexEmbeddingsExcludeStrings: string[];
   indexSummary: boolean;
   indexSummaryModelName: string;
+  debug?: boolean;
 };
 
 export type ModelConfig = {

@@ -1,6 +1,6 @@
 import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, LuaToolDefinition } from "./types.ts";
-import { isPathAllowed, luaLongString } from "./utils.ts";
+import { isPathAllowed, log, luaLongString } from "./utils.ts";
 import { chatSystemPrompt } from "./init.ts";
 
 /**
@@ -63,7 +63,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
       }
     }
   } catch (error) {
-    console.error("Failed to discover Lua agents:", error);
+    log.error("Failed to discover Lua agents:", error);
   }
 
   // Discover page-based agents
@@ -82,7 +82,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
       });
     }
   } catch (error) {
-    console.error("Failed to discover page agents:", error);
+    log.error("Failed to discover page agents:", error);
   }
 
   return agents;
@@ -190,12 +190,12 @@ export async function buildAgentSystemPrompt(
           }),
         );
       } catch (error) {
-        console.error("Failed to enrich agent wiki links:", error);
+        log.error("Failed to enrich agent wiki links:", error);
         fullPrompt += "\n\n" + bodyContent;
       }
     }
   } catch (error) {
-    console.error("Failed to read agent page:", error);
+    log.error("Failed to read agent page:", error);
   }
 
   // Filter attachments based on allowedReadPaths

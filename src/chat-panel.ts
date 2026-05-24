@@ -9,7 +9,7 @@ import type {
   Usage,
 } from "./types.ts";
 import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, modelSupportsTools, setSessionToggle } from "./init.ts";
-import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed } from "./utils.ts";
+import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed, log } from "./utils.ts";
 import { convertToOpenAITools, discoverTools, runAgenticChat } from "./tools.ts";
 import { formatReasoningBlock } from "./widgets.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
@@ -176,7 +176,7 @@ export async function startPanelChat(
       luaTools = filterToolsForAgent(luaTools, currentChatAgent);
     }
     const tools = convertToOpenAITools(luaTools);
-    console.log(
+    log.debug(
       `Panel chat: discovered ${tools.length} tools${
         currentChatAgent ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})` : ""
       }`,
@@ -208,7 +208,7 @@ export async function startPanelChat(
         contextBlock += `\n\nPage content:\n${truncatedContent}`;
       }
     } catch (e) {
-      console.log("Could not get page context:", e);
+      log.debug("Could not get page context:", e);
     }
 
     if (aiSettings?.chat?.customContext) {
@@ -220,7 +220,7 @@ export async function startPanelChat(
           contextBlock += `\n\n${customResult}`;
         }
       } catch (e) {
-        console.error("Failed to evaluate customContext:", e);
+        log.error("Failed to evaluate customContext:", e);
       }
     }
 
@@ -290,7 +290,7 @@ export async function startPanelChat(
 
     return { streamId, embeddingsContext };
   } catch (error) {
-    console.error("Error starting panel chat:", error);
+    log.error("Error starting panel chat:", error);
     return { error: error instanceof Error ? error.message : String(error) };
   }
 }
@@ -471,7 +471,7 @@ tags: aichat${agentRef ? `\nagent: "${agentRef}"` : ""}
     const action = existingPages.length > 0 ? "updated" : "exported to";
     await editor.flashNotification(`Chat ${action} "${pageName}"`);
   } catch (error) {
-    console.error("Error exporting chat:", error);
+    log.error("Error exporting chat:", error);
     await editor.flashNotification("Failed to export chat", "error");
   }
 }
@@ -496,7 +496,7 @@ async function saveTokenUsage(): Promise<void> {
   try {
     await clientStore.set(TOKEN_USAGE_KEY, sessionTokenUsage);
   } catch (e) {
-    console.error("Failed to save token usage:", e);
+    log.error("Failed to save token usage:", e);
   }
 }
 
@@ -522,7 +522,7 @@ async function loadPersistedTokenUsage(): Promise<void> {
       sessionTokenUsage = stored;
     }
   } catch (e) {
-    console.error("Failed to load token usage:", e);
+    log.error("Failed to load token usage:", e);
   }
   tokenUsageLoaded = true;
 }
@@ -666,6 +666,6 @@ export async function restorePanelState(): Promise<void> {
       await openAIAssistant();
     }
   } catch (e) {
-    console.error("Failed to restore panel state:", e);
+    log.error("Failed to restore panel state:", e);
   }
 }
