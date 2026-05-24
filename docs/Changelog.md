@@ -2,6 +2,10 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.7.2 (2026-05-24)
+
+- Fix an issue with post processors where they'd run for each streamed chunk instead of the final text, causing replacements like `FOO Mochi BARochi BAR`.  Now they only run once, after the full response has finished streaming.
+
 ## 0.7.1 (2026-05-19)
 
 - Fix post processors and enrichment functions not working when defined as lua functions instead of space-script/plugs

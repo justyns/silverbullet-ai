@@ -131,6 +131,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     let stillLoading = true;
     let fullResponse = "";
     let fullReasoning = "";
+    let insertQueue = Promise.resolve();
 
     const startOfResponse = cursorPos;
 
@@ -145,14 +146,18 @@ export abstract class AbstractProvider implements ProviderInterface {
           if (["`", "-", "*"].includes(data.charAt(0))) {
             data = "\n" + data;
           }
-          editor.replaceRange(
-            cursorPos,
-            cursorPos + loadingMessage.length,
-            data,
+          const pos = cursorPos;
+          insertQueue = insertQueue.then(() =>
+            editor.replaceRange(
+              pos,
+              pos + loadingMessage.length,
+              data,
+            )
           );
           stillLoading = false;
         } else {
-          editor.insertAtPos(data, cursorPos);
+          const pos = cursorPos;
+          insertQueue = insertQueue.then(() => editor.insertAtPos(data, pos));
         }
         cursorPos += data.length;
         if (onChunk) onChunk(data);
@@ -172,6 +177,7 @@ export abstract class AbstractProvider implements ProviderInterface {
     const handleComplete = async (response: ChatResponse) => {
       const data = response.content || "";
       console.log("Response complete:", data);
+      await insertQueue;
       let endOfResponse = startOfResponse + fullResponse.length;
       console.log("Start of response:", startOfResponse);
       console.log("End of response:", endOfResponse);
@@ -203,7 +209,7 @@ export abstract class AbstractProvider implements ProviderInterface {
           );
         }
         console.log("Data changed by post-processors, updating editor");
-        editor.replaceRange(startOfResponse, endOfResponse, newData);
+        await editor.replaceRange(startOfResponse, endOfResponse, newData);
       }
 
       if (onComplete) onComplete(response);

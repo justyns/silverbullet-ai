@@ -202,3 +202,5 @@ Generate a random name for a pet. Only generate a single name. Return nothing bu
 ```
 
 Running this prompt, the LLM may return `Henry` as the name and then aiFooBar will transform it into `FOO Henry BAR` which is what will ultimately be placed in the note the templated was executed from.
+
+When streaming is enabled, the raw LLM response is inserted into the note as it arrives. After streaming completes, post processors run against the full response and the streamed text is replaced with the final processed result.

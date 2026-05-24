@@ -20,12 +20,15 @@ export class MockProvider extends AbstractProvider {
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const mockResponse = "This is a mock streaming response.";
+    const mockResponse = (globalThis as any).mockStreamingResponse ||
+      "This is a mock streaming response.";
+    const mockChunks = (globalThis as any).mockStreamingChunks ||
+      mockResponse.split(" ").map((word: string) => word + " ");
 
     if (options.onChunk) {
-      for (const word of mockResponse.split(" ")) {
+      for (const chunk of mockChunks) {
         await new Promise((resolve) => setTimeout(resolve, 50));
-        options.onChunk(word + " ");
+        options.onChunk(chunk);
       }
     }
 

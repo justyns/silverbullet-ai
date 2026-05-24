@@ -33,6 +33,9 @@ function parseMarkdownMock(text: string) {
 
 let editorText = "Mock data";
 (globalThis as any).editorText;
+let editorCursor = 0;
+let editorSelection = { from: 0, to: 0 };
+let editorInsertDelayMs = 0;
 
 const pages: { [key: string]: string } = {};
 (globalThis as any).pages;
@@ -95,8 +98,47 @@ function setNestedValue(obj: any, path: string, value: any): void {
     case "mock.setText":
       editorText = args[0];
       break;
+    case "mock.setCursor":
+      editorCursor = args[0];
+      break;
+    case "mock.setSelection":
+      editorSelection = args[0];
+      break;
+    case "mock.setEditorInsertDelay":
+      editorInsertDelayMs = args[0];
+      break;
     case "editor.getText":
       return await Promise.resolve(editorText);
+    case "editor.setText":
+      editorText = args[0];
+      break;
+    case "editor.getCursor":
+      return editorCursor;
+    case "editor.getSelection":
+      return editorSelection;
+    case "editor.getCurrentPage":
+      return "Test Page";
+    case "editor.insertAtPos": {
+      if (editorInsertDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, editorInsertDelayMs));
+      }
+      const text = args[0];
+      const pos = args[1];
+      editorText = editorText.slice(0, pos) + text + editorText.slice(pos);
+      break;
+    }
+    case "editor.replaceRange": {
+      const from = args[0];
+      const to = args[1];
+      const text = args[2];
+      editorText = editorText.slice(0, from) + text + editorText.slice(to);
+      break;
+    }
+    case "editor.flashNotification":
+      break;
+    case "editor.moveCursor":
+      editorCursor = args[0];
+      break;
 
     case "mock.setPage":
       pages[args[0]] = args[1];
@@ -104,6 +146,8 @@ function setNestedValue(obj: any, path: string, value: any): void {
     case "space.readPage":
       //   console.log("space.readPage", args);
       return await Promise.resolve(pages[args[0]]);
+    case "space.getPageMeta":
+      return { name: args[0], ref: args[0] };
 
     case "mock.setConfig":
       setNestedValue(systemConfig, args[0], args[1]);
