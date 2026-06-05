@@ -11,6 +11,7 @@ This page is a brief overview of each version.
   - MCP tools are namespaced (`mcp__<server>__<tool>`) and get merged into the available tools with lua tools
   - New `AI: Test MCP Connection` command to verify configured servers and list their tools
 - Add `ai.debug` config option and a `log` helper. Verbose/diagnostic logs are now suppressed by default and only shown when `ai.debug = true`
+- Add `callTool` and `listTools` functions to the Space Lua API for invoking tools directly from scripts
 
 ## 0.7.2 (2026-05-24)
 

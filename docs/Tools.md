@@ -189,3 +189,38 @@ ai.tools.my_writer = {
 4. Write operations require **both** read and write access (since tools typically read content before modifying it)
 
 All built-in tools declare their path parameters, so they work with agent path permissions automatically.
+
+## Calling Tools from Space Lua
+
+Tools are normally invoked by the LLM during a chat. You can also run any tool
+from a Space Lua script using the `silverbullet-ai.callTool` function.
+
+```lua
+-- Run a tool by name and inspect the result
+local r = system.invokeFunction("silverbullet-ai.callTool",
+  "mcp__my_server__add", {a = 2, b = 3})
+print(r.success, r.result) -- r.error is set when success is false
+```
+
+`callTool(name, args)` returns a table:
+
+- `success` - `true` if the tool ran without error
+- `result` - the tool's output as a string (when `success` is `true`)
+- `summary` - (optional) a short summary, if the tool returned one
+- `error` - the error message (when `success` is `false`)
+
+Because the script author explicitly named the tool, `callTool` runs it
+immediately and **does not show the approval modal**, even for untrusted MCP
+tools. Only call tools you intend to run.
+
+To discover what is available — including the namespaced MCP tool names — use
+`silverbullet-ai.listTools`:
+
+```lua
+for _, t in ipairs(system.invokeFunction("silverbullet-ai.listTools")) do
+  print(t.name, t.source, t.requiresApproval)
+end
+```
+
+Each entry has `name`, `description`, `parameters` (JSON Schema), `source`
+(`"lua"` or `"mcp"`), `mcpServer` (for MCP tools), and `requiresApproval`.

@@ -48,6 +48,8 @@ config.set("ai", {
 
 Discovered tools are namespaced as `mcp__<server>__<tool>` so they never collide with built-in tools. They respect the same controls as built-in tools, including per-agent tool filtering ([[Agents]]).
 
+Besides being offered to the LLM during chat, MCP tools can be invoked **directly** from a Space Lua script with `system.invokeFunction("silverbullet-ai.callTool", "mcp__<server>__<tool>", {...})`. Use `silverbullet-ai.listTools` to discover the namespaced names. See [[Tools#Calling Tools from Space Lua]] for details.
+
 ## Approval & trust
 
 MCP tools require approval before running **unless** their server is marked `trusted: true`. The global `chat.skipToolApproval` setting still overrides everything. In short:

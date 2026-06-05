@@ -8,6 +8,10 @@ functions:
     path: sbai.ts:queryAI
   chat:
     path: sbai.ts:chat
+  callTool:
+    path: src/tools.ts:callTool
+  listTools:
+    path: src/tools.ts:listTools
 
   promptAndGenerateImage:
     path: sbai.ts:promptAndGenerateImage

@@ -14,13 +14,14 @@ import {
 import type {
   ChatMessage,
   ChatResponse,
+  JsonSchemaObject,
   LuaToolDefinition,
   PathPermissions,
   StreamChatOptions,
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings } from "./init.ts";
+import { aiSettings, initIfNeeded } from "./init.ts";
 import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
 
 function validatePathPermission(
@@ -232,6 +233,62 @@ export async function discoverAllTools(): Promise<
     tools.set(name, def);
   }
   return tools;
+}
+
+/**
+ * Lua-callable: run a single tool by name (MCP or Lua) and return its result.
+ * Bypasses the LLM — the script author named the tool directly, so no approval
+ * modal is shown (mirrors how Lua tool handlers already run when called directly).
+ *
+ * @example From Space Lua:
+ * ```lua
+ * local r = system.invokeFunction("silverbullet-ai.callTool",
+ *   "mcp__my_server__add", {a = 2, b = 3})
+ * print(r.success, r.result)
+ * ```
+ */
+export async function callTool(
+  toolName: string,
+  args?: Record<string, unknown>,
+): Promise<ToolExecutionResult> {
+  await initIfNeeded();
+  const luaTools = await discoverAllTools();
+  return await executeTool(toolName, args ?? {}, luaTools);
+}
+
+/**
+ * Lua-callable: list all discovered tools (Space Lua `ai.tools` + MCP servers) so
+ * scripts can introspect what is available before calling `callTool`. The
+ * `requiresApproval` flag reflects what the chat flow would prompt for; `callTool`
+ * itself never prompts.
+ *
+ * @example From Space Lua:
+ * ```lua
+ * for _, t in ipairs(system.invokeFunction("silverbullet-ai.listTools")) do
+ *   print(t.name, t.source)
+ * end
+ * ```
+ */
+export async function listTools(): Promise<
+  Array<{
+    name: string;
+    description: string;
+    parameters: JsonSchemaObject;
+    source: "lua" | "mcp";
+    mcpServer?: string;
+    requiresApproval: boolean;
+  }>
+> {
+  await initIfNeeded();
+  const luaTools = await discoverAllTools();
+  return Array.from(luaTools.entries()).map(([name, def]) => ({
+    name,
+    description: def.description,
+    parameters: def.parameters,
+    source: def.source ?? "lua",
+    mcpServer: def.mcpServer,
+    requiresApproval: toolRequiresApproval(def, false),
+  }));
 }
 
 /**
