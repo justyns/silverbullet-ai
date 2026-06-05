@@ -1,5 +1,16 @@
-import { asset, clientStore, editor, lua, space } from "@silverbulletmd/silverbullet/syscalls";
-import { computeSimpleDiff, type DiffLine, isPathAllowed, log } from "./utils.ts";
+import {
+  asset,
+  clientStore,
+  editor,
+  lua,
+  space,
+} from "@silverbulletmd/silverbullet/syscalls";
+import {
+  computeSimpleDiff,
+  type DiffLine,
+  isPathAllowed,
+  log,
+} from "./utils.ts";
 import type {
   ChatMessage,
   ChatResponse,
@@ -10,6 +21,7 @@ import type {
   Usage,
 } from "./types.ts";
 import { aiSettings } from "./init.ts";
+import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
 
 function validatePathPermission(
   tool: LuaToolDefinition,
@@ -23,7 +35,10 @@ function validatePathPermission(
 
   for (const paramName of readParams) {
     const page = args[paramName];
-    if (typeof page === "string" && !isPathAllowed(page, permissions.allowedReadPaths)) {
+    if (
+      typeof page === "string" &&
+      !isPathAllowed(page, permissions.allowedReadPaths)
+    ) {
       return { allowed: false, error: `Read access denied for "${page}"` };
     }
   }
@@ -85,9 +100,7 @@ export async function cacheToolResult(
   await clientStore.set(`${TOOL_RESULT_CACHE_PREFIX}${id}`, result);
 }
 
-export async function getCachedToolResult(
-  id: string,
-): Promise<string | null> {
+export async function getCachedToolResult(id: string): Promise<string | null> {
   return await clientStore.get(`${TOOL_RESULT_CACHE_PREFIX}${id}`);
 }
 
@@ -135,20 +148,18 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
     );
 
     if (!toolsExist) {
-      log.debug(
-        "ai.tools not defined - Space Lua AI Tools may not be loaded",
-      );
+      log.debug("ai.tools not defined - Space Lua AI Tools may not be loaded");
       return tools;
     }
 
     // Get tool names (keys only, no functions) using IIFE
-    const toolNames = await lua.evalExpression(`(function()
+    const toolNames = (await lua.evalExpression(`(function()
       local names = {}
       for k, _ in pairs(ai.tools) do
         table.insert(names, k)
       end
       return names
-    end)()`) as string[];
+    end)()`)) as string[];
 
     if (!toolNames || !Array.isArray(toolNames) || toolNames.length === 0) {
       log.debug("No tools found in ai.tools");
@@ -161,7 +172,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
     for (const name of toolNames) {
       try {
         const nameLiteral = toLuaStringLiteral(name);
-        const metadata = await lua.evalExpression(`(function()
+        const metadata = (await lua.evalExpression(`(function()
           local tool = ai.tools[${nameLiteral}]
           if tool then
             return {
@@ -173,7 +184,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
             }
           end
           return nil
-        end)()`) as {
+        end)()`)) as {
           description: string;
           parameters: LuaToolDefinition["parameters"];
           requiresApproval?: boolean;
@@ -208,6 +219,22 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
 }
 
 /**
+ * Discovers all tools available to the chat: Space Lua tools (`ai.tools`) merged
+ * with tools from configured MCP servers. MCP tools are namespaced
+ * (`mcp__<server>__<tool>`) so they never collide with Lua tools.
+ */
+export async function discoverAllTools(): Promise<
+  Map<string, LuaToolDefinition>
+> {
+  const tools = await discoverTools();
+  const mcpTools = await discoverMCPTools(aiSettings?.mcpServers);
+  for (const [name, def] of mcpTools) {
+    tools.set(name, def);
+  }
+  return tools;
+}
+
+/**
  * Converts Space Lua tool definitions to OpenAI tool format
  */
 export function convertToOpenAITools(
@@ -222,7 +249,12 @@ export function convertToOpenAITools(
         name,
         description: def.description,
         parameters: {
-          type: "object",
+          // Preserve the full JSON Schema (e.g. $defs/$ref/additionalProperties from MCP servers)
+          ...def.parameters,
+          type:
+            typeof def.parameters.type === "string"
+              ? def.parameters.type
+              : "object",
           properties: def.parameters.properties || {},
           required: def.parameters.required || [],
         },
@@ -280,6 +312,11 @@ export async function executeTool(
     };
   }
 
+  // MCP-sourced tools execute over HTTP instead of through a Lua handler.
+  if (tool.source === "mcp") {
+    return await executeMCPTool(tool, args, aiSettings?.mcpServers);
+  }
+
   const permCheck = validatePathPermission(tool, args, permissions);
   if (!permCheck.allowed) {
     return { success: false, error: permCheck.error };
@@ -299,7 +336,10 @@ export async function executeTool(
       "result" in result &&
       "summary" in result
     ) {
-      const resultStr = typeof result.result === "string" ? result.result : JSON.stringify(result.result, null, 2);
+      const resultStr =
+        typeof result.result === "string"
+          ? result.result
+          : JSON.stringify(result.result, null, 2);
       return {
         success: true,
         result: resultStr,
@@ -308,7 +348,8 @@ export async function executeTool(
     }
 
     // Plain return - backward compatible
-    const resultStr = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+    const resultStr =
+      typeof result === "string" ? result : JSON.stringify(result, null, 2);
 
     return {
       success: true,
@@ -427,7 +468,9 @@ export async function requestWriteApproval(
         } else {
           resolve({
             success: false,
-            error: result.feedback ? `Write rejected: ${result.feedback}` : "Write rejected by user",
+            error: result.feedback
+              ? `Write rejected: ${result.feedback}`
+              : "Write rejected by user",
           });
         }
       },
@@ -449,15 +492,13 @@ export async function requestWriteApproval(
         );
 
         const initScript = `
-        globalThis.toolApprovalData = ${
-          JSON.stringify({
-            approvalId: writeId,
-            toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
-            args: { page, contentLength: newContent.length },
-            hasDiffSupport: true,
-            isWriteApproval: true,
-          })
-        };
+        globalThis.toolApprovalData = ${JSON.stringify({
+          approvalId: writeId,
+          toolName: isNewPage ? `Create: ${page}` : `Write: ${page}`,
+          args: { page, contentLength: newContent.length },
+          hasDiffSupport: true,
+          isWriteApproval: true,
+        })};
         ${script}
       `;
 
@@ -474,9 +515,10 @@ export async function requestWriteApproval(
 /**
  * Called from modal JS to get diff data for a write operation.
  */
-export function getWriteDiff(
-  writeId: string,
-): { diff?: DiffLine[]; error?: string } {
+export function getWriteDiff(writeId: string): {
+  diff?: DiffLine[];
+  error?: string;
+} {
   const pending = pendingWrites.get(writeId);
   if (!pending) {
     return { error: "Write approval not found" };
@@ -526,12 +568,28 @@ function parseToolCallArguments(
 }
 
 /**
+ * Decides whether a tool call must be approved by the user before running.
+ * Lua tools opt in via `requiresApproval`; MCP tools require approval unless their
+ * server is marked `trusted`. A global `skipToolApproval` setting overrides both.
+ */
+export function toolRequiresApproval(
+  toolDef: LuaToolDefinition | undefined,
+  skipToolApproval: boolean | undefined,
+): boolean {
+  if (skipToolApproval) return false;
+  if (toolDef?.requiresApproval) return true;
+  if (toolDef?.source === "mcp" && toolDef?.trusted !== true) return true;
+  return false;
+}
+
+/**
  * Processes tool calls: executes them, formats display text, and builds result messages
  */
 async function processToolCalls(
-  toolCalls: Array<
-    { id: string; function: { name: string; arguments: string } }
-  >,
+  toolCalls: Array<{
+    id: string;
+    function: { name: string; arguments: string };
+  }>,
   luaTools: Map<string, LuaToolDefinition>,
   onToolCall?: (
     toolName: string,
@@ -574,11 +632,8 @@ async function processToolCalls(
     }
 
     const toolDef = luaTools.get(toolName);
-    if (toolDef?.requiresApproval && !aiSettings?.chat?.skipToolApproval) {
-      const approvalResult = await requestToolApproval(
-        toolName,
-        args,
-      );
+    if (toolRequiresApproval(toolDef, aiSettings?.chat?.skipToolApproval)) {
+      const approvalResult = await requestToolApproval(toolName, args);
       if (!approvalResult.approved) {
         const feedbackMsg = approvalResult.feedback
           ? `User feedback: ${approvalResult.feedback}`
@@ -607,7 +662,9 @@ async function processToolCalls(
     }
 
     const result = await executeTool(toolName, args, luaTools, permissions);
-    const fullResult = result.success ? (result.result || "") : `Error: ${result.error}`;
+    const fullResult = result.success
+      ? result.result || ""
+      : `Error: ${result.error}`;
 
     // Cache full result for later retrieval
     if (result.success && fullResult) {
@@ -680,7 +737,10 @@ export type AgenticChatResult = {
  * Runs an agentic chat loop that executes tool calls until we get a final response.
  * This is a reusable utility for both the chat panel and chat-on-page.
  */
-function aggregateUsage(total: Usage | undefined, add: Usage | undefined): Usage | undefined {
+function aggregateUsage(
+  total: Usage | undefined,
+  add: Usage | undefined,
+): Usage | undefined {
   if (!add) return total;
   if (!total) {
     return { ...add };
@@ -759,7 +819,8 @@ export async function runAgenticChat(
   // Hit max iterations
   return {
     messages: workingMessages,
-    finalResponse: "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
+    finalResponse:
+      "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     toolCallsText,
     usage: totalUsage,
   };
@@ -878,7 +939,8 @@ export async function runStreamingAgenticChat(
   // Hit max iterations
   return {
     messages: workingMessages,
-    finalResponse: fullResponse +
+    finalResponse:
+      fullResponse +
       "\n\n⚠️ Maximum tool iterations reached. Response may be incomplete.",
     finalReasoning: fullReasoning || undefined,
     toolCallsText,

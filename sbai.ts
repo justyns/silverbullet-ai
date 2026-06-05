@@ -48,7 +48,7 @@ import {
   log,
   showProgressModal,
 } from "./src/utils.ts";
-import { convertToOpenAITools, discoverTools, runAgenticChat, runStreamingAgenticChat } from "./src/tools.ts";
+import { convertToOpenAITools, discoverAllTools, runAgenticChat, runStreamingAgenticChat } from "./src/tools.ts";
 import { chatAgentState } from "./src/chat-panel.ts";
 import { selectAgent } from "./src/agents.ts";
 
@@ -576,7 +576,7 @@ export async function streamChatOnPage() {
   try {
     // Check if tools are enabled and available
     const toolsEnabled = await areToolsEnabled();
-    const luaTools = toolsEnabled ? await discoverTools() : new Map();
+    const luaTools = toolsEnabled ? await discoverAllTools() : new Map();
     const tools = convertToOpenAITools(luaTools);
 
     if (tools.length > 0) {
@@ -824,7 +824,7 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
 
     // If tools are enabled, use the agentic chat
     if (options.useTools && modelSupportsTools()) {
-      const luaTools = await discoverTools();
+      const luaTools = await discoverAllTools();
       const tools = convertToOpenAITools(luaTools);
 
       if (tools.length > 0) {

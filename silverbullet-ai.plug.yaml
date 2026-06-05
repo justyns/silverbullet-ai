@@ -111,6 +111,10 @@ functions:
     path: src/benchmark.ts:benchmarkCommand
     command:
       name: "AI: Run Benchmark"
+  testMcpConnection:
+    path: src/mcp/command.ts:testMcpConnection
+    command:
+      name: "AI: Test MCP Connection"
 
   # AI Assistant Panel
   openAIAssistant:

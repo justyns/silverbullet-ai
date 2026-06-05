@@ -13,6 +13,7 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = resolve(__dirname, "..");
+const MCP_SERVER_DIR = resolve(__dirname, "mcp-test-server");
 const STARTUP_TIMEOUT_MS = 90_000;
 const POLL_INTERVAL_MS = 300;
 const TEARDOWN_GRACE_MS = 3_000;
@@ -31,7 +32,7 @@ function getFreePort(): Promise<number> {
   });
 }
 
-function buildConfigMarkdown(apiKey: string): string {
+function buildConfigMarkdown(apiKey: string, mcpUrl: string): string {
   return `\`\`\`space-lua
 config.set {
   ai = {
@@ -40,11 +41,18 @@ config.set {
     },
     textModels = {
       {
-        name = "openrouter-gpt-4o-mini",
-        modelName = "openai/gpt-4o-mini",
+        name = "openrouter-haiku",
+        modelName = "anthropic/claude-3.5-haiku",
         provider = "openai",
         baseUrl = "https://openrouter.ai/api/v1",
         secretName = "OPENROUTER_API_KEY",
+        supportsTools = true,
+      },
+    },
+    mcpServers = {
+      testmcp = {
+        url = ${JSON.stringify(mcpUrl)},
+        trusted = true,
       },
     },
   }
@@ -53,7 +61,7 @@ config.set {
 `;
 }
 
-function prepareTestSpace(apiKey: string): string {
+function prepareTestSpace(apiKey: string, mcpUrl: string): string {
   const dir = mkdtempSync(join(tmpdir(), "sb-ai-itest-"));
 
   copyFileSync(
@@ -73,7 +81,7 @@ function prepareTestSpace(apiKey: string): string {
     join(dir, "silverbullet-ai-library.md"),
   );
 
-  writeFileSync(join(dir, "CONFIG.md"), buildConfigMarkdown(apiKey));
+  writeFileSync(join(dir, "CONFIG.md"), buildConfigMarkdown(apiKey, mcpUrl));
 
   return dir;
 }
@@ -124,6 +132,53 @@ function waitForExit(proc: ChildProcess, timeoutMs: number): Promise<boolean> {
   });
 }
 
+// Spawns the hello-world MCP test server and waits until it answers an
+// initialize request. Returns the server process and its /mcp URL.
+async function startMcpServer(): Promise<{ proc: ChildProcess; url: string }> {
+  const port = await getFreePort();
+  const url = `http://127.0.0.1:${port}/mcp`;
+  const tsxBin = join(MCP_SERVER_DIR, "node_modules", ".bin", "tsx");
+  const proc = spawn(tsxBin, ["server.ts"], {
+    cwd: MCP_SERVER_DIR,
+    env: { ...process.env, PORT: String(port), MCP_JSON_RESPONSE: "1" },
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  proc.stdout?.on("data", (chunk) => process.stderr.write(`[mcp] ${chunk}`));
+  proc.stderr?.on("data", (chunk) => process.stderr.write(`[mcp] ${chunk}`));
+
+  const deadline = Date.now() + 30_000;
+  while (Date.now() < deadline) {
+    if (proc.exitCode !== null) {
+      throw new Error(`MCP test server exited early (code ${proc.exitCode})`);
+    }
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json, text/event-stream",
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          id: 1,
+          method: "initialize",
+          params: {
+            protocolVersion: "2025-06-18",
+            capabilities: {},
+            clientInfo: { name: "setup", version: "0" },
+          },
+        }),
+      });
+      if (res.ok) return { proc, url };
+    } catch {
+      // not ready yet
+    }
+    await new Promise((r) => setTimeout(r, 200));
+  }
+  if (proc.exitCode === null) proc.kill("SIGKILL");
+  throw new Error("MCP test server did not become ready");
+}
+
 export async function setup() {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
@@ -132,11 +187,15 @@ export async function setup() {
     );
   }
 
+  const mcp = await startMcpServer();
+  process.env.SB_TEST_MCP_URL = mcp.url;
+  console.log(`[itest] MCP test server ready at ${mcp.url}`);
+
   const port = process.env.SB_TEST_PORT
     ? Number(process.env.SB_TEST_PORT)
     : await getFreePort();
   const url = `http://127.0.0.1:${port}`;
-  const testSpaceDir = prepareTestSpace(apiKey);
+  const testSpaceDir = prepareTestSpace(apiKey, mcp.url);
 
   console.log(`[itest] Starting SilverBullet (${SILVERBULLET_BIN})`);
   console.log(`[itest] Test space: ${testSpaceDir}`);
@@ -153,6 +212,9 @@ export async function setup() {
   sbProcess.stdout?.on("data", (chunk) => process.stderr.write(`[sb] ${chunk}`));
   sbProcess.stderr?.on("data", (chunk) => process.stderr.write(`[sb] ${chunk}`));
 
+  const killMcp = () => {
+    if (mcp.proc.exitCode === null) mcp.proc.kill("SIGTERM");
+  };
   const cleanupSpace = () => {
     if (process.env.KEEP_TEST_SPACE) {
       console.log(`[itest] KEEP_TEST_SPACE set, leaving: ${testSpaceDir}`);
@@ -165,6 +227,7 @@ export async function setup() {
     await waitForRuntimeAPI(url, sbProcess);
   } catch (err) {
     if (sbProcess.exitCode === null) sbProcess.kill("SIGKILL");
+    killMcp();
     cleanupSpace();
     throw err;
   }
@@ -178,6 +241,7 @@ export async function setup() {
       const exited = await waitForExit(sbProcess, TEARDOWN_GRACE_MS);
       if (!exited) sbProcess.kill("SIGKILL");
     }
+    killMcp();
     cleanupSpace();
   };
 }

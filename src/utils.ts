@@ -366,10 +366,7 @@ export async function enrichChatMessages(
 
     // then get rid of duplicates
     const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];
-    log.debug(
-      "Received custom enrich message functions",
-      finalEnrichFunctions,
-    );
+    log.debug("Received custom enrich message functions", finalEnrichFunctions);
     for (const func of finalEnrichFunctions) {
       // console.log("Enriching message with function", func);
       enrichedContent = await invokeSpaceLuaFunction<string>(
@@ -518,23 +515,7 @@ async function enrichMessageWithWikiLinks(
   }
 }
 
-// Copied from silverbullet/client/plugos/syscalls/fetch.ts
-export function buildProxyHeaders(
-  headers?: Record<string, any>,
-): Record<string, any> {
-  const newHeaders: Record<string, any> = { "X-Proxy-Request": "true" };
-  if (!headers) {
-    return newHeaders;
-  }
-  for (const [key, value] of Object.entries(headers)) {
-    newHeaders[`X-Proxy-Header-${key}`] = value;
-  }
-  return newHeaders;
-}
-
-export function buildProxyUrl(url: string): string {
-  return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
-}
+export { buildProxyHeaders, buildProxyUrl } from "./proxy.ts";
 
 export type DiffLine = {
   type: "same" | "add" | "remove";

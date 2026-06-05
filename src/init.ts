@@ -8,6 +8,7 @@ import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
+import { clearMCPClients } from "./mcp/index.ts";
 import { inferProviderType } from "./model-discovery.ts";
 import type {
   AISettings,
@@ -568,6 +569,7 @@ async function loadAndMergeSettings() {
     indexSummaryModelName: "",
     indexEmbeddingsExcludePages: [],
     indexEmbeddingsExcludeStrings: ["user:", "assistant:", "**user**:", "**assistant**:"],
+    mcpServers: {},
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
@@ -618,6 +620,10 @@ export async function initializeOpenAI(configure = true) {
   ) {
     log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
+
+    // MCP server config may have changed; drop cached clients/tools so the next
+    // discovery uses the new url/token/timeout instead of a stale connection.
+    clearMCPClients();
 
     // Restore session-only toggles only if explicitly toggled by the user
     if (sessionSearchEmbeddings !== undefined) {

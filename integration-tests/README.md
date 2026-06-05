@@ -22,7 +22,9 @@ they invoke plug functions directly via Lua over HTTP.
    must exist in the repo root. Run `npm run dist` if they don't.
 
 4. **OpenRouter API key**: set `OPENROUTER_API_KEY` in your environment. Get one
-   at https://openrouter.ai/. The test uses `openai/gpt-4o-mini` for now.
+   at https://openrouter.ai/. The tests use `anthropic/claude-3.5-haiku` (a
+   tool-calling-capable model; some keys' data policy blocks tool calls on
+   `openai/gpt-4o-mini`).
 
 ## Running
 

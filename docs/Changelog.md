@@ -2,6 +2,16 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.8.0 (Unreleased)
+
+- Add **MCP (Model Context Protocol) client** support
+  - Configure servers under `ai.mcpServers` (Streamable HTTP transport only for now)
+  - Per-server `trusted` flag: trusted servers' tool calls auto-run, otherwise each call requires approval
+  - Custom request `headers` per server (e.g. for auth)
+  - MCP tools are namespaced (`mcp__<server>__<tool>`) and get merged into the available tools with lua tools
+  - New `AI: Test MCP Connection` command to verify configured servers and list their tools
+- Add `ai.debug` config option and a `log` helper. Verbose/diagnostic logs are now suppressed by default and only shown when `ai.debug = true`
+
 ## 0.7.2 (2026-05-24)
 
 - Fix an issue with post processors where they'd run for each streamed chunk instead of the final text, causing replacements like `FOO Mochi BARochi BAR`.  Now they only run once, after the full response has finished streaming.
