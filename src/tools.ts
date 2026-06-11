@@ -287,7 +287,7 @@ export async function listTools(): Promise<
     parameters: def.parameters,
     source: def.source ?? "lua",
     mcpServer: def.mcpServer,
-    requiresApproval: toolRequiresApproval(def, false),
+    requiresApproval: toolRequiresApproval(def, aiSettings?.chat?.skipToolApproval),
   }));
 }
 

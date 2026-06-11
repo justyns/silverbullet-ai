@@ -16,9 +16,7 @@ export type MCPClientFactory = (
 ) => MCPClient;
 
 const defaultFactory: MCPClientFactory = (_name, config) =>
-  new MCPClient(new ProxiedHttpTransport(config, { useProxy: true }), {
-    clientName: "silverbullet-ai",
-  });
+  new MCPClient(new ProxiedHttpTransport(config));
 
 let clientFactory: MCPClientFactory = defaultFactory;
 const clientCache = new Map<string, MCPClient>();
@@ -50,14 +48,15 @@ function clientFor(name: string, config: MCPServerConfig): MCPClient {
 }
 
 // Tool names must match OpenAI's regex, and are namespaced by
-// server so tools from different servers can't collide.
+// server so tools from different servers can't collide. Capped at 63 chars,
+// the stricter of OpenAI's (64) and Gemini's (63) name length limits.
 export function namespaceToolName(
   serverName: string,
   toolName: string,
 ): string {
   const clean = (s: string) => s.replace(/[^a-zA-Z0-9_-]/g, "_");
   const name = `mcp__${clean(serverName)}__${clean(toolName)}`;
-  return name.length <= 64 ? name : name.slice(0, 64);
+  return name.length <= 63 ? name : name.slice(0, 63);
 }
 
 export function mcpToolToDefinition(
@@ -123,7 +122,6 @@ export async function discoverMCPTools(
     ([, config]) => config && config.enabled !== false,
   ) as Array<[string, MCPServerConfig]>;
 
-  // Probe servers concurrentl
   await Promise.all(
     entries.map(async ([name, config]) => {
       try {
@@ -163,17 +161,14 @@ export async function executeMCPTool(
     };
   }
 
-  let client = clientCache.get(serverName);
-  if (!client) {
-    const config = servers?.[serverName];
-    if (!config) {
-      return {
-        success: false,
-        error: `No configuration found for MCP server "${serverName}"`,
-      };
-    }
-    client = clientFor(serverName, config);
+  const config = servers?.[serverName];
+  if (!config) {
+    return {
+      success: false,
+      error: `No configuration found for MCP server "${serverName}"`,
+    };
   }
+  const client = clientFor(serverName, config);
 
   try {
     const result = await client.callTool(realName, args);
