@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { MCPClient } from "./client.ts";
 import {
   type JsonRpcRequest,
+  McpHttpError,
   type McpTransport,
   type RawMcpResponse,
 } from "./types.ts";
@@ -144,5 +145,85 @@ describe("MCPClient", () => {
     };
     const client = new MCPClient(transport);
     await expect(client.initialize()).rejects.toThrow(/no response/i);
+  });
+
+  test("surfaces an uncorrelated error body as an HTTP error", async () => {
+    // e.g. a 401 with a JSON-RPC error body whose id is null
+    const transport: McpTransport = {
+      post: () =>
+        Promise.resolve({
+          status: 401,
+          messages: [
+            {
+              jsonrpc: "2.0",
+              id: null,
+              error: { code: -32001, message: "Unauthorized" },
+            } as any,
+          ],
+        }),
+    };
+    const client = new MCPClient(transport);
+    await expect(client.initialize()).rejects.toThrow(/HTTP 401/);
+  });
+
+  test("re-initializes and retries once when the session expires (HTTP 404)", async () => {
+    let session = "S1";
+    let expired = false;
+    let initCount = 0;
+    const { transport, calls } = makeTransport((method, message) => {
+      if (method === "initialize") {
+        initCount++;
+        session = `S${initCount}`;
+        expired = false;
+        return { result: initResult, sessionId: session };
+      }
+      if (method === "notifications/initialized") return null;
+      if (expired) throw new McpHttpError(404, "MCP server returned HTTP 404");
+      if (method === "tools/call") {
+        return { result: { content: [{ type: "text", text: "ok" }] } };
+      }
+      return { result: {} };
+    });
+
+    const client = new MCPClient(transport);
+    await client.initialize();
+    expired = true; // simulate a server restart / expired session
+
+    const result = await client.callTool("echo", {});
+    expect(result.content?.[0].text).toBe("ok");
+    expect(initCount).toBe(2);
+    // the retried call carries the new session id
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall.message.method).toBe("tools/call");
+    expect(lastCall.headers["Mcp-Session-Id"]).toBe("S2");
+  });
+
+  test("gives up after one retry if the server keeps returning 404", async () => {
+    let initialized = false;
+    const transport: McpTransport = {
+      post: (message) => {
+        const method = (message as any).method;
+        if (method === "initialize") {
+          initialized = true;
+          return Promise.resolve({
+            status: 200,
+            sessionId: "S",
+            messages: [
+              { jsonrpc: "2.0", id: (message as any).id, result: initResult } as any,
+            ],
+          });
+        }
+        if (method === "notifications/initialized") {
+          return Promise.resolve({ status: 202, messages: [] });
+        }
+        return Promise.reject(
+          new McpHttpError(404, "MCP server returned HTTP 404"),
+        );
+      },
+    };
+    const client = new MCPClient(transport);
+    await client.initialize();
+    expect(initialized).toBe(true);
+    await expect(client.callTool("x", {})).rejects.toThrow(/HTTP 404/);
   });
 });

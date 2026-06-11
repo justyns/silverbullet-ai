@@ -9,6 +9,7 @@ import {
   type JsonRpcMessage,
   type JsonRpcNotification,
   type JsonRpcRequest,
+  McpHttpError,
   type MCPServerConfig,
   type McpTransport,
   type RawMcpResponse,
@@ -52,8 +53,11 @@ export function parseMcpMessages(
 type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
 
 // nativeFetch is the original fetch before SilverBullet's proxy monkey-patching;
-// we build the proxy URL/headers ourselves so we use it directly.
-const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
+// we build the proxy URL/headers ourselves so we use it directly. Wrapped in a
+// function so it's resolved at call time and invoked with the global scope as
+// `this` (calling it as an object property throws "Illegal invocation").
+const nativeFetch: FetchLike = (url, init) =>
+  ((globalThis as any).nativeFetch as typeof fetch)(url, init);
 
 export type ProxiedHttpTransportOptions = {
   fetchFn?: FetchLike; // injectable for tests
@@ -129,7 +133,7 @@ export class ProxiedHttpTransport implements McpTransport {
     }
     if (text.trim() === "") {
       if (status >= 400) {
-        throw new Error(`MCP server returned HTTP ${status}`);
+        throw new McpHttpError(status, `MCP server returned HTTP ${status}`);
       }
       return { status, sessionId, messages: [] };
     }
@@ -139,7 +143,8 @@ export class ProxiedHttpTransport implements McpTransport {
       messages = parseMcpMessages(text, contentType);
     } catch (e) {
       if (status >= 400) {
-        throw new Error(
+        throw new McpHttpError(
+          status,
           `MCP server returned HTTP ${status}: ${text.slice(0, 200)}`,
         );
       }

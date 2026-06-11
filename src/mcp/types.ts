@@ -91,6 +91,17 @@ export type McpCallToolResult = {
   [key: string]: unknown;
 };
 
+// Thrown by transports for HTTP-level failures, so the client can react to
+// specific statuses (e.g. 404 = expired session -> re-initialize per the spec).
+export class McpHttpError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
+
 // --- Transport seam ---
 
 // The raw result of POSTing one JSON-RPC message to the server endpoint. The

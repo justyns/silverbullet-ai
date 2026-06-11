@@ -4,6 +4,7 @@ import {
   type JsonRpcResponse,
   MCP_PROTOCOL_VERSION,
   type McpCallToolResult,
+  McpHttpError,
   type McpInitializeResult,
   type McpListToolsResult,
   type McpToolDef,
@@ -45,6 +46,27 @@ export class MCPClient {
     method: string,
     params?: unknown,
   ): Promise<Record<string, unknown>> {
+    try {
+      return await this.requestOnce(method, params);
+    } catch (e) {
+      // An HTTP 404 on an established session means the server expired or lost
+      // it; the spec says to start a new session, so re-initialize and retry once.
+      if (
+        !(e instanceof McpHttpError) || e.status !== 404 || !this.initialized
+      ) {
+        throw e;
+      }
+      this.initialized = false;
+      this.sessionId = undefined;
+      await this.initialize();
+      return await this.requestOnce(method, params);
+    }
+  }
+
+  private async requestOnce(
+    method: string,
+    params?: unknown,
+  ): Promise<Record<string, unknown>> {
     const id = this.nextId++;
     const req: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
     const res = await this.transport.post(req, this.currentHeaders());
@@ -54,6 +76,14 @@ export class MCPClient {
       | JsonRpcResponse
       | undefined;
     if (!reply) {
+      // An error body the server couldn't correlate to our request (id: null)
+      // is an HTTP-level failure, not a protocol reply.
+      if (res.status >= 400) {
+        throw new McpHttpError(
+          res.status,
+          `MCP ${method}: server returned HTTP ${res.status}`,
+        );
+      }
       throw new Error(`MCP ${method}: no response for request id ${id}`);
     }
     if (isJsonRpcErrorResponse(reply)) {
