@@ -15,7 +15,7 @@
     "sse.js": "^2.2.0"
   },
   "devDependencies": {
-    "@lezer/markdown": "1.6.3",
+    "@lezer/markdown": "1.6.4",
     "@structured-types/api": "^3.46.12",
     "tsx": "^4.19.0",
     "vitest": "^4.0.18",
