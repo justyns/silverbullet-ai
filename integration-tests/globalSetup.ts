@@ -1,6 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import {
   copyFileSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   rmSync,
@@ -138,6 +139,11 @@ async function startMcpServer(): Promise<{ proc: ChildProcess; url: string }> {
   const port = await getFreePort();
   const url = `http://127.0.0.1:${port}/mcp`;
   const tsxBin = join(MCP_SERVER_DIR, "node_modules", ".bin", "tsx");
+  if (!existsSync(tsxBin)) {
+    throw new Error(
+      `MCP test server dependencies missing; run: npm install --prefix ${MCP_SERVER_DIR}`,
+    );
+  }
   const proc = spawn(tsxBin, ["server.ts"], {
     cwd: MCP_SERVER_DIR,
     env: { ...process.env, PORT: String(port), MCP_JSON_RESPONSE: "1" },

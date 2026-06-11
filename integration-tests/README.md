@@ -26,6 +26,12 @@ they invoke plug functions directly via Lua over HTTP.
    tool-calling-capable model; some keys' data policy blocks tool calls on
    `openai/gpt-4o-mini`).
 
+5. **MCP test server dependencies**: the MCP tests spawn a small real MCP server
+   from `mcp-test-server/`. Install its dependencies once:
+   ```bash
+   npm install --prefix integration-tests/mcp-test-server
+   ```
+
 ## Running
 
 ```bash
