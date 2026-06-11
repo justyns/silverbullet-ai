@@ -9,9 +9,20 @@ import type {
 } from "./types.ts";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
-import { currentEmbeddingModel, currentEmbeddingProvider, initIfNeeded } from "../src/init.ts";
+import {
+  currentEmbeddingModel,
+  currentEmbeddingProvider,
+  initIfNeeded,
+} from "../src/init.ts";
 import { log, showProgressModal } from "./utils.ts";
-import { clientStore, editor, index, markdown, mq, space } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  clientStore,
+  editor,
+  index,
+  markdown,
+  mq,
+  space,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { aiSettings, configureSelectedModel } from "./init.ts";
 
 const searchPrefix = "aisearch:";
@@ -46,17 +57,21 @@ export function canIndexPage(pageName: string): boolean {
 
 export async function shouldIndexEmbeddings() {
   await initIfNeeded();
-  return aiSettings.indexEmbeddings &&
+  return (
+    aiSettings.indexEmbeddings &&
     currentEmbeddingProvider !== undefined &&
-    currentEmbeddingModel !== undefined;
+    currentEmbeddingModel !== undefined
+  );
 }
 
 export async function shouldIndexSummaries() {
   await initIfNeeded();
-  return aiSettings.indexEmbeddings &&
+  return (
+    aiSettings.indexEmbeddings &&
     aiSettings.indexSummary &&
     currentEmbeddingProvider !== undefined &&
-    currentEmbeddingModel !== undefined;
+    currentEmbeddingModel !== undefined
+  );
 }
 
 /**
@@ -67,7 +82,7 @@ export async function shouldIndexSummaries() {
 export async function reindexAllEmbeddings(): Promise<void> {
   await initIfNeeded();
 
-  if (!await shouldIndexEmbeddings()) {
+  if (!(await shouldIndexEmbeddings())) {
     await editor.flashNotification(
       "Embeddings indexing is disabled. Enable indexEmbeddings in config.",
       "error",
@@ -76,7 +91,9 @@ export async function reindexAllEmbeddings(): Promise<void> {
   }
 
   const allPages = await space.listPages();
-  const indexablePages = allPages.filter((page: { name: string }) => canIndexPage(page.name));
+  const indexablePages = allPages.filter((page: { name: string }) =>
+    canIndexPage(page.name),
+  );
   const total = indexablePages.length;
 
   if (total === 0) {
@@ -84,7 +101,10 @@ export async function reindexAllEmbeddings(): Promise<void> {
     return;
   }
 
-  await editor.flashNotification(`Starting embeddings reindex: ${total} pages`, "info");
+  await editor.flashNotification(
+    `Starting embeddings reindex: ${total} pages`,
+    "info",
+  );
 
   const includeSummaries = await shouldIndexSummaries();
   let indexed = 0;
@@ -100,7 +120,7 @@ export async function reindexAllEmbeddings(): Promise<void> {
       }
       indexed++;
     } catch (error) {
-      console.error(`Error indexing ${page.name}:`, error);
+      log.error(`Error indexing ${page.name}:`, error);
       errors++;
     }
 
@@ -126,7 +146,7 @@ export async function reindexAllEmbeddings(): Promise<void> {
  * them.
  */
 export async function indexEmbeddings(page: string) {
-  if (!await shouldIndexEmbeddings()) {
+  if (!(await shouldIndexEmbeddings())) {
     return;
   }
 
@@ -147,7 +167,11 @@ export async function indexEmbeddings(page: string) {
   //     ^ We also add the page title and headers as context to each chunk
   const startTime = Date.now();
 
-  type ChunkInfo = { contextualText: string; paragraphText: string; pos: number };
+  type ChunkInfo = {
+    contextualText: string;
+    paragraphText: string;
+    pos: number;
+  };
   const chunks: ChunkInfo[] = [];
 
   // Track current header hierarchy (h1, h2, h3, etc.)
@@ -173,11 +197,13 @@ export async function indexEmbeddings(page: string) {
       continue;
     }
 
-    const isEmptyRoleMarker = aiSettings.indexEmbeddingsExcludeStrings.some((s) => {
-      if (!paragraphText.startsWith(s)) return false;
-      const contentAfterMarker = paragraphText.slice(s.length).trim();
-      return contentAfterMarker.length === 0;
-    });
+    const isEmptyRoleMarker = aiSettings.indexEmbeddingsExcludeStrings.some(
+      (s) => {
+        if (!paragraphText.startsWith(s)) return false;
+        const contentAfterMarker = paragraphText.slice(s.length).trim();
+        return contentAfterMarker.length === 0;
+      },
+    );
     if (isEmptyRoleMarker) {
       continue;
     }
@@ -203,7 +229,8 @@ export async function indexEmbeddings(page: string) {
 
   // batch generate embeddings for all chunks
   const texts = chunks.map((c) => c.contextualText);
-  const embeddings = await currentEmbeddingProvider.generateEmbeddingsBatch(texts);
+  const embeddings =
+    await currentEmbeddingProvider.generateEmbeddingsBatch(texts);
 
   // and shove them into one array to index
   const objects: EmbeddingObject[] = chunks.map((chunk, i) => ({
@@ -231,7 +258,7 @@ export async function indexEmbeddings(page: string) {
  * Generate a summary for a page, and then indexes it.
  */
 export async function indexSummary(page: string) {
-  if (!await shouldIndexSummaries()) {
+  if (!(await shouldIndexSummaries())) {
     return;
   }
 
@@ -248,7 +275,9 @@ export async function indexSummary(page: string) {
 
   const startTime = Date.now();
   const pageText = renderToText(tree);
-  const summaryModel = aiSettings.textModels.find((model) => model.name === aiSettings.indexSummaryModelName);
+  const summaryModel = aiSettings.textModels.find(
+    (model) => model.name === aiSettings.indexSummaryModelName,
+  );
   if (!summaryModel) {
     throw new Error(
       `Could not find summary model ${aiSettings.indexSummaryModelName}`,
@@ -267,7 +296,7 @@ export async function indexSummary(page: string) {
   const cacheKey = `ai.summaryCache.${await hashSHA256(
     [summaryModel.name, pageText, summaryPrompt].join(""),
   )}`;
-  let summary = await clientStore.get(cacheKey) as string | undefined;
+  let summary = (await clientStore.get(cacheKey)) as string | undefined;
   if (!summary) {
     summary = await summaryProvider.singleMessageChat(
       "Contents of " + page + ":\n" + pageText + "\n\n" + summaryPrompt,
@@ -296,9 +325,10 @@ export async function indexSummary(page: string) {
 
 // Listen for page:index events and queue up embedding and summary indexing to
 // prevent the main SB indexing process from being blocked.
-export async function queueEmbeddingGeneration(
-  { name: page, tree }: IndexTreeEvent,
-) {
+export async function queueEmbeddingGeneration({
+  name: page,
+  tree,
+}: IndexTreeEvent) {
   if (aiSettings && !aiSettings.indexEmbeddings) {
     return;
   }
@@ -309,7 +339,8 @@ export async function queueEmbeddingGeneration(
   if (!canIndexPage(page)) return;
   if (!tree.children) return;
 
-  const canIndex = currentEmbeddingProvider !== undefined &&
+  const canIndex =
+    currentEmbeddingProvider !== undefined &&
     currentEmbeddingModel !== undefined;
 
   if (canIndex) {
@@ -324,22 +355,22 @@ export async function processEmbeddingsQueue(messages: MQMessage[]) {
   await initIfNeeded();
   for (const message of messages) {
     const pageName: string = message.body;
-    console.log(`AI: Generating and indexing embeddings for file ${pageName}`);
+    log.info(`AI: Generating and indexing embeddings for file ${pageName}`);
     await indexEmbeddings(pageName);
   }
   const queueStats = await mq.getQueueStats("aiEmbeddingsQueue");
-  console.log(`AI: Embeddings queue stats: ${JSON.stringify(queueStats)}`);
+  log.debug(`AI: Embeddings queue stats: ${JSON.stringify(queueStats)}`);
 }
 
 export async function processSummaryQueue(messages: MQMessage[]) {
   await initIfNeeded();
   for (const message of messages) {
     const pageName: string = message.body;
-    console.log(`AI: Generating and indexing summary for ${pageName}`);
+    log(`AI: Generating and indexing summary for ${pageName}`);
     await indexSummary(pageName);
   }
   const queueStats = await mq.getQueueStats("aiSummaryQueue");
-  console.log(`AI: Summary queue stats: ${JSON.stringify(queueStats)}`);
+  log(`AI: Summary queue stats: ${JSON.stringify(queueStats)}`);
 }
 
 export async function getAllEmbeddings(): Promise<EmbeddingObject[]> {
@@ -380,9 +411,10 @@ export async function searchEmbeddings(
 
   // Allow passing in pre-generated embeddings, but generate them if its a string
   const startEmbeddingGeneration = Date.now();
-  const queryEmbedding = typeof query === "string" ? await generateEmbeddings(query) : query;
+  const queryEmbedding =
+    typeof query === "string" ? await generateEmbeddings(query) : query;
   const endEmbeddingGeneration = Date.now();
-  console.log(
+  log.debug(
     `searchEmbeddings: Query embedding generation took ${endEmbeddingGeneration - startEmbeddingGeneration} ms`,
   );
 
@@ -390,7 +422,7 @@ export async function searchEmbeddings(
   const embeddings = await getAllEmbeddings();
   const endRetrievingEmbeddings = Date.now();
 
-  console.log(
+  log.debug(
     `Retrieved ${embeddings.length} embeddings in ${endRetrievingEmbeddings - startRetrievingEmbeddings} ms`,
   );
 
@@ -440,7 +472,7 @@ export async function searchEmbeddings(
     }
   }
 
-  console.log(
+  log.debug(
     `Finished searching embeddings in ${Date.now() - startRetrievingEmbeddings} ms`,
   );
 
@@ -449,7 +481,7 @@ export async function searchEmbeddings(
     const summaries = await getAllAISummaries();
     const endRetrievingSummaries = Date.now();
 
-    console.log(
+    log.debug(
       `Retrieved ${summaries.length} summaries in ${endRetrievingSummaries - startRetrievingSummaries} ms`,
     );
 
@@ -499,7 +531,7 @@ export async function searchEmbeddings(
       }
     }
 
-    console.log(
+    log.debug(
       `Finished searching summaries in ${Date.now() - startRetrievingSummaries} ms`,
     );
 
@@ -615,7 +647,9 @@ export async function searchEmbeddingsForChat(
       const bestChild = r.children[0];
       const childCount = r.children.length || 1;
       const rawSimilarity = (r.score ?? 0) / childCount;
-      const similarity = Number.isFinite(rawSimilarity) ? Math.round(rawSimilarity * 100) : 0;
+      const similarity = Number.isFinite(rawSimilarity)
+        ? Math.round(rawSimilarity * 100)
+        : 0;
 
       if (similarity < 15) {
         continue;
@@ -635,7 +669,7 @@ export async function searchEmbeddingsForChat(
       context: { pages: contextPages, totalResults: results.length },
     };
   } catch (error) {
-    console.error("Error in searchEmbeddingsForChat:", error);
+    log.error("Error in searchEmbeddingsForChat:", error);
     return emptyResult;
   }
 }
@@ -666,7 +700,7 @@ export async function runSearch(phrase: string): Promise<string> {
     try {
       queryEmbedding = await generateEmbeddings(phrase);
     } catch (error) {
-      console.error("Error generating query vector embeddings", error);
+      log.error("Error generating query vector embeddings", error);
       text += "> **error** ⚠️ Failed to generate query vector embeddings.\n";
       text += `> ${error}\n\n`;
       return text;
@@ -681,7 +715,7 @@ export async function runSearch(phrase: string): Promise<string> {
         true,
       );
     } catch (error) {
-      console.error("Error searching embeddings", error);
+      log.error("Error searching embeddings", error);
       text += "> **error** ⚠️ Failed to search through embeddings.\n";
       text += `> ${error}\n\n`;
       return text;

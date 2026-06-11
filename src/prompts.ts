@@ -24,6 +24,7 @@ import {
   convertPageToMessages,
   enrichChatMessages,
   jsToLuaLiteral,
+  log,
   luaLongString,
 } from "./utils.ts";
 import { ChatMessage } from "./types.ts";
@@ -103,11 +104,11 @@ export async function insertAiPromptFromTemplate(
     );
   } else {
     const slashOptions = options as SlashCompletionOption;
-    console.log("selectedTemplate from slash completion: ", slashOptions);
+    log.debug("selectedTemplate from slash completion: ", slashOptions);
     const templatePageContent = await space.readPage(slashOptions.templatePage);
     const tree = await markdown.parseMarkdown(templatePageContent);
     const { aiprompt } = await extractFrontMatter(tree);
-    console.log("templatePage from slash completion: ", templatePageContent);
+    log.debug("templatePage from slash completion: ", templatePageContent);
     selectedTemplate = {
       ref: slashOptions.templatePage,
       systemPrompt: aiprompt.systemPrompt ||
@@ -125,7 +126,7 @@ export async function insertAiPromptFromTemplate(
     return;
   }
 
-  console.log("User selected prompt template: ", selectedTemplate);
+  log.debug("User selected prompt template: ", selectedTemplate);
 
   const validInsertAtOptions = [
     "cursor",
@@ -147,7 +148,7 @@ export async function insertAiPromptFromTemplate(
     // "replace",
   ];
   if (!validInsertAtOptions.includes(selectedTemplate.insertAt)) {
-    console.error(
+    log.error(
       `Invalid insertAt value: ${selectedTemplate.insertAt}. It must be one of ${
         validInsertAtOptions.join(
           ", ",
@@ -179,7 +180,7 @@ export async function insertAiPromptFromTemplate(
     currentPage = await editor.getCurrentPage();
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
-    console.error("Error fetching template details or page metadata", error);
+    log.error("Error fetching template details or page metadata", error);
     await editor.flashNotification(
       "Error fetching template details or page metadata",
       "error",
@@ -218,7 +219,7 @@ export async function insertAiPromptFromTemplate(
         0);
     lineEndPos = lineStartPos + lines[currentLineNumber - 1].length;
   } catch (error) {
-    console.error("Error fetching current page text or cursor position", error);
+    log.error("Error fetching current page text or cursor position", error);
     await editor.flashNotification(
       "Error fetching current page text or cursor position",
       "error",
@@ -262,7 +263,7 @@ export async function insertAiPromptFromTemplate(
       }
     }
   } catch (error) {
-    console.error("Error fetching current item", error);
+    log.error("Error fetching current item", error);
   }
 
   try {
@@ -273,7 +274,7 @@ export async function insertAiPromptFromTemplate(
       currentParagraph = getParagraph(currentPageText, curCursorPos);
     }
   } catch (error) {
-    console.error("Error fetching current paragraph", error);
+    log.error("Error fetching current paragraph", error);
     await editor.flashNotification("Error fetching current paragraph", "error");
     return;
   }
@@ -286,7 +287,7 @@ export async function insertAiPromptFromTemplate(
       selectedText = await getSelectedText();
     }
   } catch (error) {
-    console.error("Error fetching selected text", error);
+    log.error("Error fetching selected text", error);
   }
 
   let cursorPos;
@@ -366,8 +367,8 @@ export async function insertAiPromptFromTemplate(
         );
         return;
       }
-      console.log("smartReplaceType: ", smartReplaceType);
-      console.log("smartReplaceText: ", smartReplaceText);
+      log.debug("smartReplaceType: ", smartReplaceType);
+      log.debug("smartReplaceText: ", smartReplaceText);
       break;
     case "start-of-line":
       cursorPos = lineStartPos;
@@ -400,7 +401,7 @@ export async function insertAiPromptFromTemplate(
     cursorPos = await getPageLength();
   }
 
-  console.log("templatetext: ", templateText);
+  log.debug("templatetext: ", templateText);
 
   let messages: ChatMessage[] = [];
   const globalMetadata = {
@@ -429,13 +430,13 @@ export async function insertAiPromptFromTemplate(
       const templateContent = templateText.replace(/\$\{@/g, "${");
       const templateData = globalMetadata;
       const luaExpression = `spacelua.interpolate(${luaLongString(templateContent)}, ${jsToLuaLiteral(templateData)})`;
-      console.log("Evaluating template Lua expression:", luaExpression);
+      log.debug("Evaluating template Lua expression:", luaExpression);
       renderedTemplate = await lua.evalExpression(luaExpression);
-      console.log("Template rendered successfully:", renderedTemplate);
+      log.debug("Template rendered successfully:", renderedTemplate);
     } catch (error) {
-      console.error("Template rendering failed:", error);
-      console.error("Failed template content:", templateText);
-      console.error("Template metadata:", globalMetadata);
+      log.error("Template rendering failed:", error);
+      log.error("Failed template content:", templateText);
+      log.error("Template metadata:", globalMetadata);
 
       // Fallback to plain text if template rendering fails
       renderedTemplate = templateText;
@@ -471,7 +472,7 @@ export async function insertAiPromptFromTemplate(
     }
   }
 
-  console.log("Messages: ", messages);
+  log.debug("Messages: ", messages);
   await currentAIProvider.streamChatIntoEditor(
     {
       messages: messages,

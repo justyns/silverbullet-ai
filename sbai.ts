@@ -45,9 +45,10 @@ import {
   convertPageToMessages,
   enrichChatMessages,
   folderName,
+  log,
   showProgressModal,
 } from "./src/utils.ts";
-import { convertToOpenAITools, discoverTools, runAgenticChat, runStreamingAgenticChat } from "./src/tools.ts";
+import { convertToOpenAITools, discoverAllTools, runAgenticChat, runStreamingAgenticChat } from "./src/tools.ts";
 import { chatAgentState } from "./src/chat-panel.ts";
 import { selectAgent } from "./src/agents.ts";
 
@@ -215,7 +216,7 @@ export async function selectModelFromConfig() {
   await setSelectedTextModel(modelConfig);
   await configureSelectedModel(modelConfig);
   await editor.flashNotification(`Selected model: ${selected.name}`);
-  console.log(`Selected model:`, modelConfig);
+  log.info(`Selected model:`, modelConfig);
 }
 
 /**
@@ -355,7 +356,7 @@ export async function selectImageModelFromConfig() {
   await setSelectedImageModel(modelConfig);
   await configureSelectedImageModel(modelConfig);
   await editor.flashNotification(`Selected image model: ${selected.name}`);
-  console.log(`Selected image model:`, modelConfig);
+  log.info(`Selected image model:`, modelConfig);
 }
 
 /**
@@ -495,7 +496,7 @@ export async function selectEmbeddingModelFromConfig() {
   await setSelectedEmbeddingModel(modelConfig);
   await configureSelectedEmbeddingModel(modelConfig);
   await editor.flashNotification(`Selected embedding model: ${selected.name}`);
-  console.log(`Selected embedding model:`, modelConfig);
+  log.info(`Selected embedding model:`, modelConfig);
 }
 
 /**
@@ -562,7 +563,7 @@ export async function streamChatOnPage() {
     chatSystemPrompt,
     messagesWithAttachments,
   );
-  console.log("enrichedMessages", enrichedMessages);
+  log.debug("enrichedMessages", enrichedMessages);
 
   let cursorPos = await getPageLength();
   await editor.insertAtPos("\n\n**assistant**: ", cursorPos);
@@ -575,11 +576,11 @@ export async function streamChatOnPage() {
   try {
     // Check if tools are enabled and available
     const toolsEnabled = await areToolsEnabled();
-    const luaTools = toolsEnabled ? await discoverTools() : new Map();
+    const luaTools = toolsEnabled ? await discoverAllTools() : new Map();
     const tools = convertToOpenAITools(luaTools);
 
     if (tools.length > 0) {
-      console.log(`Chat on page: using ${tools.length} tools with streaming`);
+      log.debug(`Chat on page: using ${tools.length} tools with streaming`);
 
       // Queue to serialize async insertions (SSE events fire faster than editor can insert)
       let insertQueue = Promise.resolve();
@@ -652,7 +653,7 @@ export async function streamChatOnPage() {
       messages: enrichedMessages,
     }, cursorPos);
   } catch (error) {
-    console.error("Error streaming chat on page:", error);
+    log.error("Error streaming chat on page:", error);
     await editor.flashNotification("Error streaming chat on page.", "error");
   }
 }
@@ -724,7 +725,7 @@ export async function promptAndGenerateImage() {
     }
   } catch (error) {
     await editor.hidePanel("modal");
-    console.error("Error generating image with DALL·E:", error);
+    log.error("Error generating image with DALL·E:", error);
     const msg = error instanceof Error ? error.message : "Unknown error";
     await editor.flashNotification(`Image generation failed: ${msg}`, "error");
   }
@@ -748,7 +749,7 @@ export async function queryAI(
     );
     return response;
   } catch (error) {
-    console.error("Error querying OpenAI:", error);
+    log.error("Error querying OpenAI:", error);
     throw error;
   }
 }
@@ -823,7 +824,7 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
 
     // If tools are enabled, use the agentic chat
     if (options.useTools && modelSupportsTools()) {
-      const luaTools = await discoverTools();
+      const luaTools = await discoverAllTools();
       const tools = convertToOpenAITools(luaTools);
 
       if (tools.length > 0) {
@@ -851,7 +852,7 @@ export async function chat(options: ChatOptions): Promise<ChatResult> {
       response: response.content || "",
     };
   } catch (error) {
-    console.error("Error in chat function:", error);
+    log.error("Error in chat function:", error);
     throw error;
   }
 }

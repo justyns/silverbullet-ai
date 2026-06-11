@@ -8,6 +8,7 @@ import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
+import { clearMCPClients } from "./mcp/index.ts";
 import { inferProviderType } from "./model-discovery.ts";
 import type {
   AISettings,
@@ -59,7 +60,7 @@ export async function initIfNeeded() {
 
 export function modelSupportsTools(): boolean {
   if (currentModel?.supportsTools === false) {
-    console.log(`Model ${currentModel.modelName} does not support tools, skipping tool use`);
+    log(`Model ${currentModel.modelName} does not support tools, skipping tool use`);
     return false;
   }
   return true;
@@ -136,15 +137,15 @@ export function getProviderDefaults(providerType: string): ProviderDefaults {
 
 export function parseDefaultModelString(modelString: string): ModelConfig | null {
   if (typeof modelString !== "string") {
-    console.error(
-      `[silverbullet-ai] defaultTextModel must be a string like "provider:modelName", ` +
+    log.error(
+      `defaultTextModel must be a string like "provider:modelName", ` +
         `but got ${typeof modelString}. Check your config.`,
     );
     return null;
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    console.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
   const providerKey = parts[0];
@@ -168,15 +169,15 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
 
 export function parseDefaultEmbeddingModelString(modelString: string): EmbeddingModelConfig | null {
   if (typeof modelString !== "string") {
-    console.error(
-      `[silverbullet-ai] defaultEmbeddingModel must be a string like "provider:modelName", ` +
+    log.error(
+      `defaultEmbeddingModel must be a string like "provider:modelName", ` +
         `but got ${typeof modelString}. Check your config.`,
     );
     return null;
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    console.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
   const providerKey = parts[0];
@@ -200,15 +201,15 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
 
 export function parseDefaultImageModelString(modelString: string): ImageModelConfig | null {
   if (typeof modelString !== "string") {
-    console.error(
-      `[silverbullet-ai] defaultImageModel must be a string like "provider:modelName", ` +
+    log.error(
+      `defaultImageModel must be a string like "provider:modelName", ` +
         `but got ${typeof modelString}. Check your config.`,
     );
     return null;
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    console.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
     return null;
   }
   const providerKey = parts[0];
@@ -220,8 +221,8 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
   }
   const validImageProviders = Object.values(ImageProvider) as string[];
   if (!validImageProviders.includes(providerType.toLowerCase())) {
-    console.error(
-      `[silverbullet-ai] "${providerType}" is not a supported image provider. ` +
+    log.error(
+      `"${providerType}" is not a supported image provider. ` +
         `Supported image providers: ${validImageProviders.join(", ")}. ` +
         `Check your defaultImageModel config.`,
     );
@@ -568,6 +569,7 @@ async function loadAndMergeSettings() {
     indexSummaryModelName: "",
     indexEmbeddingsExcludePages: [],
     indexEmbeddingsExcludeStrings: ["user:", "assistant:", "**user**:", "**assistant**:"],
+    mcpServers: {},
   };
   const defaultChatSettings: ChatSettings = {
     userInformation: "",
@@ -619,6 +621,10 @@ export async function initializeOpenAI(configure = true) {
     log("aiSettings updating from", aiSettings);
     aiSettings = newCombinedSettings;
 
+    // MCP server config may have changed; drop cached clients/tools so the next
+    // discovery uses the new url/token/timeout instead of a stale connection.
+    clearMCPClients();
+
     // Restore session-only toggles only if explicitly toggled by the user
     if (sessionSearchEmbeddings !== undefined) {
       aiSettings.chat.searchEmbeddings = sessionSearchEmbeddings;
@@ -634,8 +640,8 @@ export async function initializeOpenAI(configure = true) {
       aiSettings.textModels?.length > 0 &&
       !aiSettings.providers
     ) {
-      console.warn(
-        "[silverbullet-ai] textModels config is deprecated. " +
+      log.warn(
+        "textModels config is deprecated. " +
           "Please migrate to providers config. See https://ai.silverbullet.md/",
       );
     }
@@ -652,8 +658,8 @@ export async function initializeOpenAI(configure = true) {
         await setSelectedTextModel(defaultModel);
         log("Set default text model:", defaultModel);
       } else {
-        console.error(
-          `[silverbullet-ai] Failed to parse defaultTextModel: "${aiSettings.defaultTextModel}". ` +
+        log.error(
+          `Failed to parse defaultTextModel: "${aiSettings.defaultTextModel}". ` +
             'Expected format: "provider:modelName" (e.g., "openai:gpt-4o", "ollama:llama3.2"). ' +
             "Please check your config.",
         );
@@ -673,8 +679,8 @@ export async function initializeOpenAI(configure = true) {
         await setSelectedImageModel(defaultModel);
         log("Set default image model:", defaultModel);
       } else {
-        console.error(
-          `[silverbullet-ai] Failed to parse defaultImageModel: "${aiSettings.defaultImageModel}". ` +
+        log.error(
+          `Failed to parse defaultImageModel: "${aiSettings.defaultImageModel}". ` +
             'Expected format: "provider:modelName" (e.g., "openai:dall-e-3").',
         );
       }
@@ -692,8 +698,8 @@ export async function initializeOpenAI(configure = true) {
         await setSelectedEmbeddingModel(defaultModel);
         log("Set default embedding model:", defaultModel);
       } else {
-        console.error(
-          `[silverbullet-ai] Failed to parse defaultEmbeddingModel: "${aiSettings.defaultEmbeddingModel}". ` +
+        log.error(
+          `Failed to parse defaultEmbeddingModel: "${aiSettings.defaultEmbeddingModel}". ` +
             'Expected format: "provider:modelName" (e.g., "openai:text-embedding-3-small").',
         );
       }
@@ -732,8 +738,8 @@ export async function initializeOpenAI(configure = true) {
         }
       }
     } catch (error) {
-      console.warn(
-        `[silverbullet-ai] Failed to configure image model: ${(error as Error).message}. ` +
+      log.warn(
+        `Failed to configure image model: ${(error as Error).message}. ` +
           "Image generation will be unavailable. Check your image model configuration.",
       );
       if (selectedImageModel) {

@@ -1,4 +1,5 @@
 import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
+import { log } from "./utils.ts";
 
 const CACHE_KEY = "ai.modelMetadataCache";
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
@@ -127,7 +128,7 @@ export async function fetchModelMetadata(): Promise<
 
     return data;
   } catch (error) {
-    console.error("Failed to fetch LiteLLM model metadata:", error);
+    log.error("Failed to fetch LiteLLM model metadata:", error);
     // Return cached data if available, even if stale
     if (cached) {
       return cached.data;

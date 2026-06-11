@@ -8,13 +8,13 @@ export type ResponseFormat =
   | { type: "text" }
   | { type: "json_object" }
   | {
-    type: "json_schema";
-    json_schema: {
-      name: string;
-      schema: Record<string, unknown>;
-      strict?: boolean;
+      type: "json_schema";
+      json_schema: {
+        name: string;
+        schema: Record<string, unknown>;
+        strict?: boolean;
+      };
     };
-  };
 
 export type StreamChatOptions = {
   messages: Array<ChatMessage>;
@@ -95,21 +95,22 @@ export type EmbeddingsContext = {
   totalResults: number;
 };
 
+// A JSON Schema object describing tool input parameters. Loosely typed so that
+// arbitrary JSON Schema from MCP servers passes through unchanged.
+export type JsonSchemaObject = {
+  type?: string;
+  properties?: Record<string, unknown>;
+  required?: string[];
+  [key: string]: unknown;
+};
+
 // Tool definition in OpenAI format
 export type Tool = {
   type: "function";
   function: {
     name: string;
     description: string;
-    parameters: {
-      type: "object";
-      properties: Record<string, {
-        type: string;
-        description?: string;
-        enum?: string[];
-      }>;
-      required?: string[];
-    };
+    parameters: JsonSchemaObject;
   };
 };
 
@@ -148,22 +149,17 @@ export type MessageWithAttachments = {
   attachments: Attachment[];
 };
 
-// Space Lua tool definition format
 export type LuaToolDefinition = {
   description: string;
-  parameters: {
-    type: "object";
-    properties: Record<string, {
-      type: string;
-      description?: string;
-      enum?: string[];
-    }>;
-    required?: string[];
-  };
-  handler: string; // Lua function reference
+  parameters: JsonSchemaObject;
+  handler: string; // Lua function reference (unused for MCP tools)
   requiresApproval?: boolean;
   readPathParam?: string | string[];
   writePathParam?: string | string[];
+  source?: "lua" | "mcp";
+  mcpServer?: string;
+  mcpToolName?: string;
+  trusted?: boolean;
 };
 
 export type AIAgentTemplate = {
@@ -249,9 +245,25 @@ export type ProvidersConfig = {
   [key: string]: ProviderConfig | undefined;
 };
 
+// Configuration for a single external MCP server the client connects to.
+export type MCPServerConfig = {
+  url: string; // Streamable HTTP endpoint, e.g. "http://127.0.0.1:9000/mcp"
+  enabled?: boolean;
+  trusted?: boolean;
+  headers?: Record<string, string>;
+  timeout?: number;
+};
+
+export type MCPServersConfig = {
+  [serverName: string]: MCPServerConfig | undefined;
+};
+
 export type AISettings = {
   // New provider-centric config
   providers?: ProvidersConfig;
+
+  // External MCP servers whose tools are exposed to the chat
+  mcpServers?: MCPServersConfig;
 
   // Default models to use (format: "provider:modelName", e.g., "ollama:llama3.2")
   defaultTextModel?: string;
@@ -270,6 +282,7 @@ export type AISettings = {
   indexEmbeddingsExcludeStrings: string[];
   indexSummary: boolean;
   indexSummaryModelName: string;
+  debug?: boolean;
 };
 
 export type ModelConfig = {

@@ -25,9 +25,23 @@ import {
 
 export { folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
-export function log(...args: any[]) {
+const debug = (...args: any[]) => {
+  if (!aiSettings?.debug) return;
   console.log(...args);
-}
+};
+
+export const log: {
+  (...args: any[]): void;
+  debug: (...args: any[]) => void;
+  info: (...args: any[]) => void;
+  warn: (...args: any[]) => void;
+  error: (...args: any[]) => void;
+} = Object.assign(debug, {
+  debug,
+  info: (...args: any[]) => console.info(...args),
+  warn: (...args: any[]) => console.warn(...args),
+  error: (...args: any[]) => console.error(...args),
+});
 
 export function isPathAllowed(
   page: string,
@@ -211,7 +225,7 @@ export async function enrichChatMessages(
     currentPage = await editor.getCurrentPage();
     pageMeta = await space.getPageMeta(currentPage);
   } catch (error) {
-    console.error("Error fetching page metadata", error);
+    log.error("Error fetching page metadata", error);
     await editor.flashNotification("Error fetching page metadata", "error");
     return { messagesWithAttachments: [] };
   }
@@ -247,7 +261,7 @@ export async function enrichChatMessages(
       messageAttributes.enrich !== undefined &&
       messageAttributes.enrich === false
     ) {
-      console.log(
+      log.debug(
         "Skipping message enrichment due to enrich=false attribute",
         messageAttributes,
       );
@@ -261,24 +275,24 @@ export async function enrichChatMessages(
     // Render message as a template if it's a user message
     if (message.role === "user") {
       if (pageMeta) {
-        console.log("Rendering template", message.content, pageMeta);
+        log.debug("Rendering template", message.content, pageMeta);
         try {
           const tree = await markdown.parseMarkdown(message.content);
           const expandedTree = await markdown.expandMarkdown(tree);
           enrichedContent = renderToText(expandedTree).trim();
-          console.log(
+          log.debug(
             "Message template expanded successfully via markdown system",
           );
         } catch (error) {
-          console.error("Message template expansion failed:", error);
-          console.error("Failed content:", message.content);
-          console.error("Page metadata:", pageMeta);
+          log.error("Message template expansion failed:", error);
+          log.error("Failed content:", message.content);
+          log.error("Page metadata:", pageMeta);
 
           // Fallback to original content if template expansion fails
           enrichedContent = message.content;
         }
       } else {
-        console.log("No page metadata found, skipping template rendering");
+        log.debug("No page metadata found, skipping template rendering");
       }
     }
 
@@ -352,10 +366,7 @@ export async function enrichChatMessages(
 
     // then get rid of duplicates
     const finalEnrichFunctions = [...new Set(combinedEnrichFunctions)];
-    console.log(
-      "Received custom enrich message functions",
-      finalEnrichFunctions,
-    );
+    log.debug("Received custom enrich message functions", finalEnrichFunctions);
     for (const func of finalEnrichFunctions) {
       // console.log("Enriching message with function", func);
       enrichedContent = await invokeSpaceLuaFunction<string>(
@@ -499,28 +510,12 @@ async function enrichMessageWithWikiLinks(
       seenNames: result.seenPages || seenNames,
     };
   } catch (error) {
-    console.error("Failed to enrich with wiki links:", error);
+    log.error("Failed to enrich with wiki links:", error);
     return { content, attachments: [], seenNames };
   }
 }
 
-// Copied from silverbullet/client/plugos/syscalls/fetch.ts
-export function buildProxyHeaders(
-  headers?: Record<string, any>,
-): Record<string, any> {
-  const newHeaders: Record<string, any> = { "X-Proxy-Request": "true" };
-  if (!headers) {
-    return newHeaders;
-  }
-  for (const [key, value] of Object.entries(headers)) {
-    newHeaders[`X-Proxy-Header-${key}`] = value;
-  }
-  return newHeaders;
-}
-
-export function buildProxyUrl(url: string): string {
-  return `/.proxy/${url.replace(/^https?:\/\//, "")}`;
-}
+export { buildProxyHeaders, buildProxyUrl } from "./proxy.ts";
 
 export type DiffLine = {
   type: "same" | "add" | "remove";

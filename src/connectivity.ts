@@ -10,7 +10,7 @@ import {
   initIfNeeded,
 } from "./init.ts";
 import type { Tool } from "./types.ts";
-import { showProgressModal } from "./utils.ts";
+import { log, showProgressModal } from "./utils.ts";
 
 const connectivityTestPage = "🛰️ AI Connectivity Test";
 
@@ -185,7 +185,7 @@ Use these commands to select your models:
                         "This is a streaming connectivity test. Respond with exactly 'CONNECTED' (no quotes, no other text).",
                     }],
                     onChunk: (chunk) => {
-                      console.log("Streaming chunk received:", chunk);
+                      log.debug("Streaming chunk received:", chunk);
                       chunks.push(chunk);
                     },
                     onComplete: (response) => {

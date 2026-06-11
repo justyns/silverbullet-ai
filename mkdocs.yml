@@ -90,6 +90,7 @@ nav:
   - Bundled Prompts.md
   - Agents.md
   - Tools.md
+  - MCP.md
   - Context Enrichment.md
   - Space Lua.md
   - Commands:

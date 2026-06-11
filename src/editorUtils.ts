@@ -1,6 +1,10 @@
 import { editor, markdown } from "@silverbulletmd/silverbullet/syscalls";
-import { collectNodesOfType, renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import {
+  collectNodesOfType,
+  renderToText,
+} from "@silverbulletmd/silverbullet/lib/tree";
 import { stringify as yamlStringify } from "yaml";
+import { log } from "./utils.ts";
 
 type FrontMatter = Record<string, any>;
 
@@ -93,7 +97,10 @@ export async function updateFrontmatter(
  * @param pos The cursor position.
  * @returns The start and end positions of the paragraph and the paragraph text.
  */
-export function getParagraph(text: string, pos: number): {
+export function getParagraph(
+  text: string,
+  pos: number,
+): {
   from: number;
   to: number;
   text: string;
@@ -108,7 +115,6 @@ export function getParagraph(text: string, pos: number): {
 
     if (currentPos <= pos && pos < currentPos + lineLength) {
       // Look backwards for the start of the paragraph
-      console.log("Looking backwards for the start of the paragraph");
       for (let j = i; j >= 0; j--) {
         if (j === 0 || lines[j - 1].trim() === "") {
           start = j === 0 ? 0 : lines.slice(0, j).join("\n").length + 1;
@@ -116,7 +122,6 @@ export function getParagraph(text: string, pos: number): {
         }
       }
       // Look forwards for the end of the paragraph
-      console.log("Looking forwards for the end of the paragraph");
       for (let k = i; k < lines.length; k++) {
         if (k === lines.length - 1 || lines[k + 1].trim() === "") {
           end = lines.slice(0, k + 1).join("\n").length;
@@ -127,7 +132,7 @@ export function getParagraph(text: string, pos: number): {
     }
     currentPos += lineLength;
   }
-  console.log("Found paragraph", text.slice(start, end));
+  log.debug("Found paragraph", text.slice(start, end));
   return {
     from: start,
     to: end,

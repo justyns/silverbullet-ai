@@ -2,7 +2,7 @@ import { SSE } from "sse.js";
 import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool, Usage } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
 import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
-import { buildProxyHeaders, buildProxyUrl } from "../utils.ts";
+import { buildProxyHeaders, buildProxyUrl, log } from "../utils.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
@@ -80,7 +80,7 @@ export class GeminiProvider extends AbstractProvider {
       });
       if (!response.ok) {
         const errorBody = await response.json();
-        console.error("HTTP response body: ", errorBody);
+        log.error("HTTP response body: ", errorBody);
         const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
         throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
       }
@@ -89,7 +89,7 @@ export class GeminiProvider extends AbstractProvider {
         return model.name.split("/")[1]; // Extract model name from full path (e.g. "models/gemini-2")
       });
     } catch (error) {
-      console.error("Failed to fetch models:", error);
+      log.error("Failed to fetch models:", error);
       throw error;
     }
   }
@@ -247,7 +247,7 @@ export class GeminiProvider extends AbstractProvider {
               resolve(response);
               return;
             } else if (!e.data) {
-              console.error("Received empty message from Gemini");
+              log.error("Received empty message from Gemini");
             } else {
               const data = JSON.parse(e.data);
               const parts = data.candidates?.[0]?.content?.parts || [];
@@ -293,7 +293,7 @@ export class GeminiProvider extends AbstractProvider {
               }
             }
           } catch (error) {
-            console.error("Error processing message event:", error, e.data);
+            log.error("Error processing message event:", error, e.data);
           }
         });
 
@@ -318,14 +318,14 @@ export class GeminiProvider extends AbstractProvider {
             clearTimeout(timeoutId);
             timeoutId = undefined;
           }
-          console.error("SSE error:", e);
+          log.error("SSE error:", e);
           source.close();
           reject(new Error(`SSE error: ${e.data}`));
         });
 
         source.stream();
       } catch (error) {
-        console.error("Error streaming from Gemini chat endpoint:", error);
+        log.error("Error streaming from Gemini chat endpoint:", error);
         reject(error);
       }
     });
@@ -373,7 +373,7 @@ export class GeminiProvider extends AbstractProvider {
 
     if (!response.ok) {
       const errorBody = await response.json();
-      console.error("HTTP response body: ", errorBody);
+      log.error("HTTP response body: ", errorBody);
       const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
       throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }
@@ -450,9 +450,9 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     );
 
     if (!response.ok) {
-      console.error("HTTP response: ", response);
+      log.error("HTTP response: ", response);
       const errorBody = await response.json();
-      console.error("HTTP response body: ", errorBody);
+      log.error("HTTP response body: ", errorBody);
       const errorMsg = errorBody?.error?.message || JSON.stringify(errorBody);
       throw new Error(`HTTP error ${response.status}: ${errorMsg}`);
     }
