@@ -16,5 +16,9 @@ export function buildProxyHeaders(
 }
 
 export function buildProxyUrl(url: string): string {
-  return `/.proxy/${url.replace(/^https?:\/\//i, "")}`;
+  // Plug workers are loaded from <prefix>/.fs/..., so derive the prefix from our
+  // own location to support SilverBullet instances hosted under a URL prefix.
+  const pathname = globalThis.location?.pathname ?? "";
+  const base = pathname.includes("/.fs/") ? pathname.split("/.fs/")[0] : "";
+  return `${base}/.proxy/${url.replace(/^https?:\/\//i, "")}`;
 }
