@@ -171,7 +171,9 @@ export async function startPanelChat(
       status: "streaming",
     });
 
-    let luaTools = modelSupportsTools() ? await discoverAllTools() : new Map<string, LuaToolDefinition>();
+    let luaTools = aiSettings?.chat?.enableTools !== false && modelSupportsTools()
+      ? await discoverAllTools()
+      : new Map<string, LuaToolDefinition>();
     if (currentChatAgent) {
       luaTools = filterToolsForAgent(luaTools, currentChatAgent);
     }

@@ -18,6 +18,10 @@ config.set("ai", {
 })
 ```
 
+## Models Without Tool Support
+
+Some models (e.g. `gemma3` on Ollama) cannot do tool calling and reject requests that include tool definitions. If that happens, the plug automatically retries without tools and keeps tools disabled for that model for the rest of the session. To skip the failed first request entirely, set `supportsTools = false` on the model config (see [Text Models](Configuration/Text%20Models.md)), or disable tools globally with `enableTools = false`.
+
 ## Built-in Tools
 
 The plug includes built-in tools, mostly defined using space lua.
