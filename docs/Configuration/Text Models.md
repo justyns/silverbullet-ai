@@ -31,4 +31,4 @@ config.set {
 - **requireAuth**: If false, the Authorization headers will not be sent. Needed as a workaround for some CORS issues with Ollama.
 - **secretName**: Name of the API key in `ai.keys`.
 - **useProxy**: If false, bypasses SilverBullet's proxy and makes requests directly. Useful for local services like Ollama. Defaults to true for cloud providers.
-- **supportsTools**: Set to false for models that do not support tool calling (e.g. `gemma3` on Ollama) to skip sending tool definitions entirely. When picking a model from a discovered provider list, this is detected automatically where possible. If a model rejects tools anyway, the plug falls back to chatting without tools and remembers it for the rest of the session.
+- **supportsTools**: Set to false for models that do not support tool calling (e.g. `gemma3` on Ollama) to skip sending tool definitions entirely. If a model rejects tools anyway, the plug falls back to chatting without tools and remembers it for the rest of the session.
