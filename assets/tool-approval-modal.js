@@ -11,9 +11,14 @@
   try {
     const customStyles = await syscall("editor.getUiOption", "customStyles");
     if (customStyles) {
-      const styleContainer = document.createElement("div");
-      styleContainer.innerHTML = customStyles;
-      document.head.appendChild(styleContainer);
+      // customStyles is a string of <style> blocks; parse inertly and keep
+      // only the style text so no other markup can be injected
+      const parsed = new DOMParser().parseFromString(customStyles, "text/html");
+      for (const style of parsed.querySelectorAll("style")) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = style.textContent;
+        document.head.appendChild(styleEl);
+      }
     }
   } catch (e) {
     console.warn("Could not load custom styles:", e);
