@@ -816,12 +816,13 @@ function isNoToolSupportError(error: unknown): boolean {
 }
 
 async function handleNoToolSupport(): Promise<void> {
-  log.warn(`Model ${currentModel?.modelName} does not support tools, continuing without them`);
+  const msg = `Model ${currentModel?.modelName} does not support tools, continuing without them`;
+  log.warn(msg);
   if (currentModel) {
     currentModel.supportsTools = false;
   }
   try {
-    await editor.flashNotification("Model does not support tools, continuing without them", "info");
+    await editor.flashNotification(msg, "info");
   } catch {
     // Not running in a client context
   }
@@ -844,6 +845,7 @@ export async function runAgenticChat(
   let toolCallsText = "";
   let iterations = 0;
   let totalUsage: Usage | undefined;
+  let activeTools: Tool[] | undefined = tools;
 
   // If no tools available, just call once and return
   if (tools.length === 0) {
@@ -863,18 +865,12 @@ export async function runAgenticChat(
 
     let response: ChatResponse;
     try {
-      response = await chatFunction(workingMessages, tools);
+      response = await chatFunction(workingMessages, activeTools);
     } catch (error) {
-      if (!isNoToolSupportError(error)) throw error;
+      if (!isNoToolSupportError(error) || !activeTools?.length) throw error;
       await handleNoToolSupport();
-      const fallback = await chatFunction(workingMessages);
-      return {
-        messages: workingMessages,
-        finalResponse: fallback.content || "",
-        finalReasoning: fallback.reasoning,
-        toolCallsText,
-        usage: aggregateUsage(totalUsage, fallback.usage),
-      };
+      activeTools = undefined;
+      continue;
     }
     totalUsage = aggregateUsage(totalUsage, response.usage);
 
@@ -960,6 +956,11 @@ export async function runStreamingAgenticChat(
   let fullResponse = "";
   let fullReasoning = "";
   let totalUsage: Usage | undefined;
+  let activeTools = tools;
+  const collectReasoning = (chunk: string) => {
+    fullReasoning += chunk;
+    if (onReasoningChunk) onReasoningChunk(chunk);
+  };
 
   // If no tools available, just stream once and return
   if (tools.length === 0) {
@@ -967,10 +968,7 @@ export async function runStreamingAgenticChat(
       messages: workingMessages,
       tools: [],
       onChunk,
-      onReasoningChunk: (chunk) => {
-        fullReasoning += chunk;
-        if (onReasoningChunk) onReasoningChunk(chunk);
-      },
+      onReasoningChunk: collectReasoning,
     });
     return {
       messages: workingMessages,
@@ -989,32 +987,15 @@ export async function runStreamingAgenticChat(
     try {
       result = await streamFunction({
         messages: workingMessages,
-        tools,
+        tools: activeTools,
         onChunk,
-        onReasoningChunk: (chunk) => {
-          fullReasoning += chunk;
-          if (onReasoningChunk) onReasoningChunk(chunk);
-        },
+        onReasoningChunk: collectReasoning,
       });
     } catch (error) {
-      if (!isNoToolSupportError(error)) throw error;
+      if (!isNoToolSupportError(error) || activeTools.length === 0) throw error;
       await handleNoToolSupport();
-      const fallback = await streamFunction({
-        messages: workingMessages,
-        tools: [],
-        onChunk,
-        onReasoningChunk: (chunk) => {
-          fullReasoning += chunk;
-          if (onReasoningChunk) onReasoningChunk(chunk);
-        },
-      });
-      return {
-        messages: workingMessages,
-        finalResponse: fallback.content || "",
-        finalReasoning: fullReasoning || undefined,
-        toolCallsText,
-        usage: aggregateUsage(totalUsage, fallback.usage),
-      };
+      activeTools = [];
+      continue;
     }
     totalUsage = aggregateUsage(totalUsage, result.usage);
 
