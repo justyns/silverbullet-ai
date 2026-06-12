@@ -30,6 +30,7 @@ import {
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
+  toolsEnabled,
 } from "./src/init.ts";
 import {
   formatModelHint,
@@ -525,11 +526,8 @@ export async function clearAgentCommand() {
  * Tools can be disabled globally via config or per-page via frontmatter.
  */
 async function areToolsEnabled(): Promise<boolean> {
-  // Check global config
-  if (aiSettings.chat?.enableTools === false) return false;
-
-  // Check the model itself
-  if (!modelSupportsTools()) return false;
+  // Check global config and the model itself
+  if (!toolsEnabled()) return false;
 
   // Check page frontmatter
   try {
@@ -575,8 +573,8 @@ export async function streamChatOnPage() {
 
   try {
     // Check if tools are enabled and available
-    const toolsEnabled = await areToolsEnabled();
-    const luaTools = toolsEnabled ? await discoverAllTools() : new Map();
+    const useTools = await areToolsEnabled();
+    const luaTools = useTools ? await discoverAllTools() : new Map();
     const tools = convertToOpenAITools(luaTools);
 
     if (tools.length > 0) {

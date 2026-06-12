@@ -21,7 +21,7 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, initIfNeeded } from "./init.ts";
+import { aiSettings, currentModel, initIfNeeded } from "./init.ts";
 import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
 
 function validatePathPermission(
@@ -809,6 +809,25 @@ function aggregateUsage(
   };
 }
 
+// Some servers (e.g. Ollama) reject the whole request with a 400 when the
+// model can't do tool calling; detect that so we can retry without tools.
+function isNoToolSupportError(error: unknown): boolean {
+  return error instanceof Error && /does not support tools/i.test(error.message);
+}
+
+async function handleNoToolSupport(): Promise<void> {
+  const msg = `Model ${currentModel?.modelName} does not support tools, continuing without them`;
+  log.warn(msg);
+  if (currentModel) {
+    currentModel.supportsTools = false;
+  }
+  try {
+    await editor.flashNotification(msg, "info");
+  } catch {
+    // Not running in a client context
+  }
+}
+
 export async function runAgenticChat(
   options: AgenticChatOptions,
 ): Promise<AgenticChatResult> {
@@ -826,6 +845,7 @@ export async function runAgenticChat(
   let toolCallsText = "";
   let iterations = 0;
   let totalUsage: Usage | undefined;
+  let activeTools: Tool[] | undefined = tools;
 
   // If no tools available, just call once and return
   if (tools.length === 0) {
@@ -843,7 +863,15 @@ export async function runAgenticChat(
   while (iterations < maxIterations) {
     iterations++;
 
-    const response = await chatFunction(workingMessages, tools);
+    let response: ChatResponse;
+    try {
+      response = await chatFunction(workingMessages, activeTools);
+    } catch (error) {
+      if (!isNoToolSupportError(error) || !activeTools?.length) throw error;
+      await handleNoToolSupport();
+      activeTools = undefined;
+      continue;
+    }
     totalUsage = aggregateUsage(totalUsage, response.usage);
 
     if (response.tool_calls && response.tool_calls.length > 0) {
@@ -928,6 +956,11 @@ export async function runStreamingAgenticChat(
   let fullResponse = "";
   let fullReasoning = "";
   let totalUsage: Usage | undefined;
+  let activeTools = tools;
+  const collectReasoning = (chunk: string) => {
+    fullReasoning += chunk;
+    if (onReasoningChunk) onReasoningChunk(chunk);
+  };
 
   // If no tools available, just stream once and return
   if (tools.length === 0) {
@@ -935,10 +968,7 @@ export async function runStreamingAgenticChat(
       messages: workingMessages,
       tools: [],
       onChunk,
-      onReasoningChunk: (chunk) => {
-        fullReasoning += chunk;
-        if (onReasoningChunk) onReasoningChunk(chunk);
-      },
+      onReasoningChunk: collectReasoning,
     });
     return {
       messages: workingMessages,
@@ -953,15 +983,20 @@ export async function runStreamingAgenticChat(
   while (iterations < maxIterations) {
     iterations++;
 
-    const result = await streamFunction({
-      messages: workingMessages,
-      tools,
-      onChunk,
-      onReasoningChunk: (chunk) => {
-        fullReasoning += chunk;
-        if (onReasoningChunk) onReasoningChunk(chunk);
-      },
-    });
+    let result: ChatResponse;
+    try {
+      result = await streamFunction({
+        messages: workingMessages,
+        tools: activeTools,
+        onChunk,
+        onReasoningChunk: collectReasoning,
+      });
+    } catch (error) {
+      if (!isNoToolSupportError(error) || activeTools.length === 0) throw error;
+      await handleNoToolSupport();
+      activeTools = [];
+      continue;
+    }
     totalUsage = aggregateUsage(totalUsage, result.usage);
 
     if (result.tool_calls && result.tool_calls.length > 0) {

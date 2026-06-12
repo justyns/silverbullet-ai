@@ -66,6 +66,10 @@ export function modelSupportsTools(): boolean {
   return true;
 }
 
+export function toolsEnabled(): boolean {
+  return aiSettings?.chat?.enableTools !== false && modelSupportsTools();
+}
+
 export async function getSelectedTextModel() {
   try {
     return await clientStore.get("ai.selectedTextModel");
@@ -781,7 +785,7 @@ Format code with fenced blocks and language tags. Use markdown tables for struct
 
 For docs related to Space Lua scripts, configuration, or SilverBullet-specific questions, fetch: https://ai.silverbullet.md/llms.txt`,
   };
-  if (aiSettings.chat.enableTools && modelSupportsTools()) {
+  if (toolsEnabled()) {
     chatSystemPrompt.content +=
       `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant.`;
   }
