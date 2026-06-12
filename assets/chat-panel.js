@@ -11,12 +11,11 @@
   try {
     const customStyles = await syscall("editor.getUiOption", "customStyles");
     if (customStyles) {
-      // customStyles is a string of <style> blocks; parse inertly and keep
-      // only the style text so no other markup can be injected
-      const parsed = new DOMParser().parseFromString(customStyles, "text/html");
-      for (const style of parsed.querySelectorAll("style")) {
+      // customStyles is a string of <style> blocks built by SilverBullet core;
+      // extract only the CSS text so no other markup can be injected
+      for (const match of customStyles.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
         const styleEl = document.createElement("style");
-        styleEl.textContent = style.textContent;
+        styleEl.textContent = match[1];
         document.head.appendChild(styleEl);
       }
     }
