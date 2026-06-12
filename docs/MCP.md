@@ -60,7 +60,7 @@ MCP tools require approval before running **unless** their server is marked `tru
 
 ## Testing a connection
 
-Run the **`AI: Test MCP Connection`** command. It connects to every configured server, lists the tools each one exposes, and writes a status report page (`AI: MCP Connection Test`).
+Run the **`AI: Connectivity Test`** command. When MCP servers are configured, the report includes an **MCP Servers** section listing each server and the tools it exposes.
 
 ## Reaching stdio servers
 

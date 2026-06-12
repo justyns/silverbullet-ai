@@ -9,6 +9,7 @@ import {
   getSelectedTextModel,
   initIfNeeded,
 } from "./init.ts";
+import { renderMCPTestReport, testMCPServers } from "./mcp/index.ts";
 import type { Tool } from "./types.ts";
 import { log, showProgressModal } from "./utils.ts";
 
@@ -28,14 +29,18 @@ export async function runConnectivityTests(): Promise<string> {
   const textModel = await getSelectedTextModel();
   const imageModel = await getSelectedImageModel();
   const embeddingModel = await getSelectedEmbeddingModel();
+  const mcpServers = aiSettings.mcpServers ?? {};
+  const hasMcpServers = Object.keys(mcpServers).length > 0;
 
   // Calculate total tests based on selected models
   // Text model: 7 tests (Provider, Availability, Non-streaming, Streaming, JSON, Schema, Tools)
   // Embedding model: 2 tests (Provider, Generation)
   // Image model: 0 tests (just displays info)
+  // MCP servers: 1 test (all servers checked in one step)
   let totalTests = 0;
   if (textModel) totalTests += 7;
   if (embeddingModel) totalTests += 2;
+  if (hasMcpServers) totalTests += 1;
 
   let currentTest = 0;
 
@@ -448,6 +453,15 @@ Use these commands to select your models:
       }
     }
 
+    if (hasMcpServers) {
+      await showProgressModal({
+        title: "🛰️ Running Connectivity Tests...",
+        progress: { current: ++currentTest, total: totalTests, label: "Test", itemName: "MCP Servers" },
+      });
+      const mcpStatuses = await testMCPServers(mcpServers);
+      text += "\n" + renderMCPTestReport(mcpStatuses) + "\n";
+    }
+
     await editor.flashNotification("Connectivity tests complete", "info");
   } finally {
     // Always hide the modal
@@ -476,7 +490,7 @@ Run the **AI: Connectivity Test** command to test your AI provider connections.
 }
 
 /**
- * Command to run connectivity tests and navigate to the results page.
+ * Command to run connectivity tests (including any configured MCP servers) and navigate to the results page.
  */
 export async function connectivityTestCommand() {
   await runConnectivityTests();

@@ -25,16 +25,15 @@ async function evalLua(expr: string, timeoutSec = 60): Promise<unknown> {
 }
 
 describe("MCP integration", () => {
-  test("testMcpConnection discovers the MCP server's tools through SilverBullet", async () => {
-    const report = (await evalLua(
-      `system.invokeFunction("silverbullet-ai.testMcpConnection")`,
+  test("listTools discovers the MCP server's tools through SilverBullet", async () => {
+    const tools = (await evalLua(
+      `system.invokeFunction("silverbullet-ai.listTools")`,
       60,
-    )) as string;
+    )) as Array<{ name: string; source: string; mcpServer?: string }>;
 
-    expect(report).toContain("testmcp");
-    expect(report).toContain("echo");
-    expect(report).toContain("add");
-    expect(report).not.toContain("❌");
+    const byName = Object.fromEntries(tools.map((t) => [t.name, t]));
+    expect(byName["mcp__testmcp__echo"]?.source).toBe("mcp");
+    expect(byName["mcp__testmcp__add"]?.mcpServer).toBe("testmcp");
   }, 120_000);
 
   test("chat with tools invokes a real MCP tool end to end", async () => {

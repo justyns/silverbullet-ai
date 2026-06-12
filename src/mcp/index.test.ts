@@ -192,8 +192,9 @@ describe("testMCPServers + renderMCPTestReport", () => {
     expect(byName.off.ok).toBe(false);
 
     const report = renderMCPTestReport(statuses);
-    expect(report).toContain("✅ good");
-    expect(report).toContain("❌ bad");
+    expect(report).toContain("## 🔌 MCP Servers");
+    expect(report).toContain("### ✅ good");
+    expect(report).toContain("### ❌ bad");
     expect(report).toContain("echo, add");
   });
 

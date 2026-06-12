@@ -40,6 +40,8 @@ describe("AI: Connectivity Test", () => {
     expect(md).toContain("# 🛰️ AI Connectivity Test");
     expect(md).toContain("Provider successfully configured");
     expect(md).toMatch(/(?:Successfully connected to API)/);
+    expect(md).toContain("## 🔌 MCP Servers");
+    expect(md).toContain("✅ testmcp");
     expect(md).not.toContain("Failed to configure provider");
     expect(md).not.toContain("Failed to connect to API");
   }, 180_000);

@@ -216,7 +216,7 @@ export async function testMCPServers(
 }
 
 export function renderMCPTestReport(statuses: MCPServerStatus[]): string {
-  const lines = ["# 🔌 MCP Connection Test", ""];
+  const lines = ["## 🔌 MCP Servers", ""];
   if (statuses.length === 0) {
     lines.push(
       "No MCP servers are configured. Add them under `ai.mcpServers`.",
@@ -226,12 +226,12 @@ export function renderMCPTestReport(statuses: MCPServerStatus[]): string {
   for (const s of statuses) {
     if (s.ok) {
       const tools = s.tools ?? [];
-      lines.push(`## ✅ ${s.name}`);
+      lines.push(`### ✅ ${s.name}`);
       lines.push(
         `Connected, ${tools.length} tool(s): ${tools.join(", ") || "none"}`,
       );
     } else {
-      lines.push(`## ❌ ${s.name}`);
+      lines.push(`### ❌ ${s.name}`);
       lines.push(`Failed: ${s.error ?? "unknown error"}`);
     }
     lines.push("");
