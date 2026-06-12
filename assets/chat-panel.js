@@ -11,9 +11,13 @@
   try {
     const customStyles = await syscall("editor.getUiOption", "customStyles");
     if (customStyles) {
-      const styleContainer = document.createElement("div");
-      styleContainer.innerHTML = customStyles;
-      document.head.appendChild(styleContainer);
+      // customStyles is a string of <style> blocks built by SilverBullet core;
+      // extract only the CSS text so no other markup can be injected
+      for (const match of customStyles.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
+        const styleEl = document.createElement("style");
+        styleEl.textContent = match[1];
+        document.head.appendChild(styleEl);
+      }
     }
   } catch (e) {
     console.warn("Could not load custom styles:", e);
@@ -243,15 +247,15 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       "silverbullet-ai.postProcessToolCallHtml",
       html,
     );
-    // DOMPurify may not be loaded yet if script runs before CDN loads
+    // DOMPurify is bundled ahead of this script (see loadPanelAssets in
+    // src/chat-panel.ts); the fallback should never be hit
     if (typeof DOMPurify !== "undefined") {
       element.innerHTML = DOMPurify.sanitize(finalHtml, {
         ADD_TAGS: ["details", "summary"],
         ADD_ATTR: ["open"],
       });
     } else {
-      // Fallback: content is from our own backend, reasonably safe
-      element.innerHTML = finalHtml;
+      element.textContent = content;
     }
   }
 

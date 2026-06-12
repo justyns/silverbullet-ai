@@ -80,6 +80,26 @@ async function initChatAgent(): Promise<void> {
 }
 
 /**
+ * Loads the panel HTML and script, with the vendored DOMPurify prepended so
+ * it's guaranteed to be defined before the panel script runs (no CDN needed).
+ */
+async function loadPanelAssets(): Promise<{ html: string; script: string }> {
+  const html = await asset.readAsset(
+    "silverbullet-ai",
+    "assets/chat-panel.html",
+  );
+  const purify = await asset.readAsset(
+    "silverbullet-ai",
+    "assets/purify.min.js",
+  );
+  const script = await asset.readAsset(
+    "silverbullet-ai",
+    "assets/chat-panel.js",
+  );
+  return { html, script: purify + "\n" + script };
+}
+
+/**
  * Opens the AI Assistant panel (side panel)
  */
 export async function openAIAssistant() {
@@ -89,14 +109,7 @@ export async function openAIAssistant() {
     return;
   }
 
-  const html = await asset.readAsset(
-    "silverbullet-ai",
-    "assets/chat-panel.html",
-  );
-  const script = await asset.readAsset(
-    "silverbullet-ai",
-    "assets/chat-panel.js",
-  );
+  const { html, script } = await loadPanelAssets();
   await editor.showPanel("rhs", 1, html, script);
   isPanelOpen = true;
   await clientStore.set(PANEL_STATE_KEY, true);
@@ -112,14 +125,7 @@ export async function openAIAssistantModal() {
     return;
   }
 
-  const html = await asset.readAsset(
-    "silverbullet-ai",
-    "assets/chat-panel.html",
-  );
-  const script = await asset.readAsset(
-    "silverbullet-ai",
-    "assets/chat-panel.js",
-  );
+  const { html, script } = await loadPanelAssets();
   await editor.showPanel("modal", 20, html, script);
   isPanelOpen = true;
   await clientStore.set(PANEL_STATE_KEY, true);

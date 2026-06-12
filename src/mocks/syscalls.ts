@@ -70,6 +70,11 @@ function getNestedValue(obj: any, path: string, defaultValue?: any): any {
 
 function setNestedValue(obj: any, path: string, value: any): void {
   const keys = path.split(".");
+  for (const key of keys) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") {
+      throw new Error(`Unsafe config key: ${path}`);
+    }
+  }
   let current = obj;
 
   for (let i = 0; i < keys.length - 1; i++) {
