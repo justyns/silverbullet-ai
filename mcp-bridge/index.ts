@@ -67,9 +67,19 @@ async function evalLuaScript(script: string): Promise<unknown> {
     headers,
     body: script,
   });
-  const json = (await res.json()) as { result?: unknown; error?: string };
+
+  const text = await res.text();
+  let json: { result?: unknown; error?: string } = {};
+  try {
+    json = JSON.parse(text);
+  } catch {
+    // invalid json or not json (e.g. "Unauthorized" from SB)
+  }
   if (!res.ok || json.error) {
-    throw new Error(json.error ?? `SilverBullet returned HTTP ${res.status}`);
+    throw new Error(
+      json.error ??
+        `SilverBullet returned HTTP ${res.status} ${res.statusText}`,
+    );
   }
   return json.result;
 }

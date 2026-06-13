@@ -2,6 +2,12 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.9.0 (unreleased)
+
+- Add MCP server as a separate package.
+  - See [[MCP Server]] for details.
+  - Eposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.
+
 ## 0.8.0 (2026-06-12)
 
 - Add **MCP (Model Context Protocol) client** support
