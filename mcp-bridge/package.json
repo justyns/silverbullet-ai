@@ -1,0 +1,27 @@
+{
+  "name": "silverbullet-ai-mcp",
+  "version": "0.0.0",
+  "description": "MCP server bridge exposing silverbullet-ai tools from a SilverBullet server",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "bin": {
+    "silverbullet-ai-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.7.0"
+  }
+}

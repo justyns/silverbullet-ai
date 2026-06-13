@@ -4,9 +4,12 @@ This page is a brief overview of each version.
 
 ## 0.9.0 (unreleased)
 
-- Add **vision support**, images referenced in your notes and chat are sent to vision-capable models
+- Add **vision support**, images referenced in notes and chat are sent to vision-capable models
   - New `ai.chat` config options: `attachImages` (send referenced images, default off), `downloadRemoteImages` (also fetch and cache remote images, default off), and `maxImageSizeMB` (skip larger images, default 10)
   - Per-model `supportsVision` flag, auto-detected during model discovery
+- Add MCP server as a separate package.
+  - See [[MCP Server]] for details.
+  - Exposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.
 
 ## 0.8.0 (2026-06-12)
 

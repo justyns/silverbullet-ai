@@ -89,6 +89,7 @@ Each tool needs:
 - `parameters` - JSON Schema defining input parameters
 - `handler` - Function that receives `args` and returns a string result
 - `requiresApproval` - (optional) If `true`, user must confirm before the tool executes
+- `readOnly` - (optional) If `true`, sets a hint that the tool only reads and does not modify the space. Uses the `readOnlyHint` annotation (see [[MCP Server]])
 - `readPathParam` - (optional) Parameter name(s) containing page paths for read operations. Can be a string or array of strings. (used with agent path permissions)
 - `writePathParam` - (optional) Parameter name(s) containing page paths for write operations. Can be a string or array of strings. (used with agent path permissions)
 
@@ -227,4 +228,5 @@ end
 ```
 
 Each entry has `name`, `description`, `parameters` (JSON Schema), `source`
-(`"lua"` or `"mcp"`), `mcpServer` (for MCP tools), and `requiresApproval`.
+(`"lua"` or `"mcp"`), `mcpServer` (for MCP tools), `requiresApproval`, and
+`readOnly`.

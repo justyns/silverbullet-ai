@@ -161,6 +161,7 @@ export type LuaToolDefinition = {
   parameters: JsonSchemaObject;
   handler: string; // Lua function reference (unused for MCP tools)
   requiresApproval?: boolean;
+  readOnly?: boolean;
   readPathParam?: string | string[];
   writePathParam?: string | string[];
   source?: "lua" | "mcp";
