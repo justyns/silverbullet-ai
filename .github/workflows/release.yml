@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 jobs:
   release:
@@ -60,9 +61,8 @@ jobs:
 
       - name: Publish MCP bridge to npm
         working-directory: mcp-bridge
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          npm install -g npm@latest
           npm ci
           npm version ${{ github.event.inputs.tag || github.ref_name }} --no-git-tag-version --allow-same-version
           npm publish
