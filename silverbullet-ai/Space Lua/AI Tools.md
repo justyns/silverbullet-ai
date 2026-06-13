@@ -88,6 +88,7 @@ end
 
 ai.tools.read_note = {
   description = "Read the content of a note. Optionally read only a specific section.",
+  readOnly = true,
   readPathParam = "page",
   parameters = {
     type = "object",
@@ -153,6 +154,7 @@ ai.tools.read_note = {
 
 ai.tools.list_pages = {
   description = "List pages in the space. Pages ending with / have subpages (e.g., 'Projects/' has children).",
+  readOnly = true,
   readPathParam = "path",
   parameters = {
     type = "object",
@@ -234,6 +236,7 @@ ai.tools.list_pages = {
 
 ai.tools.get_page_info = {
   description = "Get metadata about a page including tags, last modified date, size, and subpage count",
+  readOnly = true,
   readPathParam = "page",
   parameters = {
     type = "object",

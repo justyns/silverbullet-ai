@@ -85,6 +85,9 @@ type PendingWrite = {
 
 const pendingWrites = new Map<string, PendingWrite>();
 
+// Set while callTool runs so write tools skip the (headless-incompatible) approval modal.
+let directToolCall = false;
+
 export type ToolExecutionResult = {
   success: boolean;
   result?: string;
@@ -180,6 +183,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
               description = tool.description,
               parameters = tool.parameters,
               requiresApproval = tool.requiresApproval or false,
+              readOnly = tool.readOnly or false,
               readPathParam = tool.readPathParam,
               writePathParam = tool.writePathParam
             }
@@ -189,6 +193,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
           description: string;
           parameters: LuaToolDefinition["parameters"];
           requiresApproval?: boolean;
+          readOnly?: boolean;
           readPathParam?: string;
           writePathParam?: string;
         } | null;
@@ -199,6 +204,7 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
             parameters: metadata.parameters,
             handler: name,
             requiresApproval: metadata.requiresApproval === true,
+            readOnly: metadata.readOnly === true,
             readPathParam: metadata.readPathParam,
             writePathParam: metadata.writePathParam,
           });
@@ -253,7 +259,12 @@ export async function callTool(
 ): Promise<ToolExecutionResult> {
   await initIfNeeded();
   const luaTools = await discoverAllTools();
-  return await executeTool(toolName, args ?? {}, luaTools);
+  directToolCall = true;
+  try {
+    return await executeTool(toolName, args ?? {}, luaTools);
+  } finally {
+    directToolCall = false;
+  }
 }
 
 /**
@@ -277,6 +288,7 @@ export async function listTools(): Promise<
     source: "lua" | "mcp";
     mcpServer?: string;
     requiresApproval: boolean;
+    readOnly: boolean;
   }>
 > {
   await initIfNeeded();
@@ -288,6 +300,7 @@ export async function listTools(): Promise<
     source: def.source ?? "lua",
     mcpServer: def.mcpServer,
     requiresApproval: toolRequiresApproval(def, aiSettings?.chat?.skipToolApproval),
+    readOnly: def.readOnly === true,
   }));
 }
 
@@ -498,8 +511,8 @@ export async function requestWriteApproval(
   page: string,
   newContent: string,
 ): Promise<{ success: boolean; error?: string }> {
-  // Skip approval if configured - write directly
-  if (aiSettings?.chat?.skipToolApproval) {
+  // Skip approval if configured, or when called via callTool (no modal to approve in)
+  if (directToolCall || aiSettings?.chat?.skipToolApproval) {
     await space.writePage(page, newContent);
     return { success: true };
   }

@@ -33,6 +33,7 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "24"
+          registry-url: "https://registry.npmjs.org"
 
       - name: Install dependencies
         run: npm install
@@ -56,3 +57,12 @@ jobs:
             dist/silverbullet-ai.plug.js
             dist/PLUG.md
             dist/silverbullet-ai-library.md
+
+      - name: Publish MCP bridge to npm
+        working-directory: mcp-bridge
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          npm ci
+          npm version ${{ github.event.inputs.tag || github.ref_name }} --no-git-tag-version --allow-same-version
+          npm publish
