@@ -151,6 +151,9 @@ function setNestedValue(obj: any, path: string, value: any): void {
     case "space.readPage":
       //   console.log("space.readPage", args);
       return await Promise.resolve(pages[args[0]]);
+    case "space.writePage":
+      pages[args[0]] = args[1];
+      break;
     case "space.getPageMeta":
       return { name: args[0], ref: args[0] };
 

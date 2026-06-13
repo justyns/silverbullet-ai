@@ -91,6 +91,7 @@ nav:
   - Agents.md
   - Tools.md
   - MCP.md
+  - MCP Server.md
   - Context Enrichment.md
   - Space Lua.md
   - Commands:

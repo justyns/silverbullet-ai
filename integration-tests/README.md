@@ -32,6 +32,12 @@ they invoke plug functions directly via Lua over HTTP.
    npm install --prefix integration-tests/mcp-test-server
    ```
 
+6. **MCP bridge dependencies**: `mcp-bridge.test.ts` runs the `silverbullet-ai-mcp`
+   bridge from `mcp-bridge/`. Install its dependencies once:
+   ```bash
+   npm install --prefix mcp-bridge
+   ```
+
 ## Running
 
 ```bash

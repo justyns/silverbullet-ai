@@ -6,6 +6,7 @@ import {
   discoverAllTools,
   executeTool,
   listTools,
+  requestWriteApproval,
   toolRequiresApproval,
 } from "./tools.ts";
 import { initializeOpenAI } from "./init.ts";
@@ -168,5 +169,28 @@ describe("callTool + listTools (Lua-callable)", () => {
     expect(add?.description).toBe("Add two numbers");
     // srv is configured untrusted, so the chat flow would prompt for approval
     expect(add?.requiresApproval).toBe(true);
+  });
+});
+
+describe("write approval bypass during callTool", () => {
+  test("requestWriteApproval writes directly while callTool is running", async () => {
+    let write: { success: boolean; error?: string } | undefined;
+    _setMCPClientFactory(() =>
+      fakeClient([{ name: "write" }], async () => {
+        write = await requestWriteApproval("bypass page", "new content");
+        return { content: [{ type: "text", text: "done" }] };
+      })
+    );
+
+    const res = await callTool("mcp__srv__write");
+    expect(res.success).toBe(true);
+    expect(write).toEqual({ success: true });
+    expect(await syscall("space.readPage", "bypass page")).toBe("new content");
+  });
+
+  test("requestWriteApproval still requires approval outside callTool", async () => {
+    await syscall("mock.setPage", "existing", "old");
+    await expect(requestWriteApproval("existing", "new")).rejects.toThrow();
+    expect(await syscall("space.readPage", "existing")).toBe("old");
   });
 });
