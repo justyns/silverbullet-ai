@@ -70,6 +70,11 @@ export function toolsEnabled(): boolean {
   return aiSettings?.chat?.enableTools !== false && modelSupportsTools();
 }
 
+export function visionEnabled(): boolean {
+  return aiSettings?.chat?.attachImages === true &&
+    currentModel?.supportsVision !== false;
+}
+
 export async function getSelectedTextModel() {
   try {
     return await clientStore.get("ai.selectedTextModel");
@@ -317,7 +322,7 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "https://api.openai.com/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
@@ -330,7 +335,7 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
@@ -340,7 +345,7 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "https://api.mistral.ai/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
@@ -586,6 +591,9 @@ async function loadAndMergeSettings() {
     showReasoning: true,
     enableTools: true,
     skipToolApproval: false,
+    attachImages: false,
+    downloadRemoteImages: false,
+    maxImageSizeMB: 10,
     defaultAgent: "",
   };
   const defaultPromptInstructions: PromptInstructions = {

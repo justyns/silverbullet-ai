@@ -28,7 +28,7 @@ function parseMarkdownMock(text: string) {
     };
   }
 
-  return convertNode(lezerTree, 0, text.length);
+  return convertNode(lezerTree.topNode, 0, text.length);
 }
 
 let editorText = "Mock data";
@@ -39,6 +39,10 @@ let editorInsertDelayMs = 0;
 
 const pages: { [key: string]: string } = {};
 (globalThis as any).pages;
+
+const documents: { [key: string]: Uint8Array } = {};
+
+const flashNotifications: { message: string; type: string }[] = [];
 
 const clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
@@ -125,7 +129,9 @@ function setNestedValue(obj: any, path: string, value: any): void {
       return "Test Page";
     case "editor.insertAtPos": {
       if (editorInsertDelayMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, editorInsertDelayMs));
+        await new Promise((resolve) =>
+          setTimeout(resolve, editorInsertDelayMs),
+        );
       }
       const text = args[0];
       const pos = args[1];
@@ -140,6 +146,12 @@ function setNestedValue(obj: any, path: string, value: any): void {
       break;
     }
     case "editor.flashNotification":
+      flashNotifications.push({ message: args[0], type: args[1] ?? "info" });
+      break;
+    case "mock.getNotifications":
+      return flashNotifications;
+    case "mock.clearNotifications":
+      flashNotifications.length = 0;
       break;
     case "editor.moveCursor":
       editorCursor = args[0];
@@ -153,6 +165,15 @@ function setNestedValue(obj: any, path: string, value: any): void {
       return await Promise.resolve(pages[args[0]]);
     case "space.getPageMeta":
       return { name: args[0], ref: args[0] };
+
+    case "mock.setDocument":
+      documents[args[0]] = args[1];
+      break;
+    case "space.readDocument":
+      if (!(args[0] in documents)) {
+        throw new Error(`Document not found: ${args[0]}`);
+      }
+      return documents[args[0]];
 
     case "mock.setConfig":
       setNestedValue(systemConfig, args[0], args[1]);
@@ -174,6 +195,10 @@ function setNestedValue(obj: any, path: string, value: any): void {
     }
 
     // Pass through to the real functions
+    case "markdown.expandMarkdown":
+      return args[0];
+    case "event.dispatch":
+      return [];
     case "markdown.parseMarkdown":
       return parseMarkdownMock(args[0]);
     case "yaml.parse":

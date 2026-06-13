@@ -30,7 +30,10 @@ config.set("ai", {
   chat = {
     parseWikiLinks = true,      -- Extract content from [[wiki-links]]
     searchEmbeddings = true,    -- Search indexed embeddings for context
-    bakeMessages = true         -- Render templates/queries before sending
+    bakeMessages = true,        -- Render templates/queries before sending
+    attachImages = true,        -- Send referenced images to vision models
+    downloadRemoteImages = false, -- Also download https:// image links
+    maxImageSizeMB = 10         -- Skip images larger than this (default 10)
   }
 })
 ```
@@ -54,6 +57,22 @@ The content of the "Project Notes" page will be attached to your message, giving
 When `searchEmbeddings` is enabled and you have [[Configuration/Embedding Models|embeddings configured]], the plug searches your indexed notes for content semantically related to your message.
 
 Relevant excerpts are automatically included as context, enabling RAG (Retrieval Augmented Generation).
+
+## Image Attachments (Vision)
+
+When `attachImages` is enabled and the selected model supports vision, images referenced in your chat messages are sent to the LLM:
+
+```
+Describe the animal in ![[photos/cat.png]]
+
+Transcribe this diagram into a Mermaid block: ![diagram](architecture.png)
+```
+
+Both `![[image.png]]` and `![alt](image.png)` syntax work. In the chat panel, images embedded in the current page are also attached, so you can ask "describe the image on this page".
+
+Supported formats: png, jpg/jpeg, gif, webp.
+
+Remote `https://` image links are skipped unless `downloadRemoteImages` is enabled, which downloads and caches them locally before sending.
 
 ## Template Expansion
 

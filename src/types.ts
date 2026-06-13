@@ -124,9 +124,16 @@ export type ToolCall = {
   _raw?: Record<string, unknown>;
 };
 
+export type ChatImage = {
+  name: string;
+  mimeType: string;
+  url: string;
+};
+
 export type ChatMessage = {
   content: string;
   role: "user" | "assistant" | "system" | "tool";
+  images?: ChatImage[];
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
@@ -218,6 +225,9 @@ export type ChatSettings = {
   customEnrichFunctions: string[];
   enableTools: boolean;
   skipToolApproval: boolean;
+  attachImages: boolean;
+  downloadRemoteImages: boolean;
+  maxImageSizeMB: number;
   defaultAgent?: string;
 };
 
@@ -296,6 +306,7 @@ export type ModelConfig = {
   baseUrl?: string;
   useProxy?: boolean;
   supportsTools?: boolean;
+  supportsVision?: boolean;
 };
 
 export type ImageModelConfig = {

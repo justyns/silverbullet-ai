@@ -5,11 +5,13 @@ import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
   convertPageToMessages,
+  enrichChatMessages,
   invokeSpaceLuaFunction,
   jsToLuaLiteral,
   luaLongString,
   parseToolCallsFromContent,
 } from "./utils.ts";
+import { configureSelectedModel, initializeOpenAI, parseDefaultModelString } from "./init.ts";
 import { postProcessToolCallHtml } from "./widgets.ts";
 import { Attachment, MessageWithAttachments } from "./types.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
@@ -536,4 +538,46 @@ test("invokeSpaceLuaFunction surfaces errors from undefined functions", async ()
   await expect(
     invokeSpaceLuaFunction("notRegistered", { response: "x" }),
   ).rejects.toThrow();
+});
+
+async function setupVisionTest(
+  chat: Record<string, unknown>,
+  supportsVision?: boolean,
+) {
+  await syscall("mock.setConfig", "ai", {
+    providers: { ollama: { baseUrl: "http://localhost:11434/v1" } },
+    chat: { parseWikiLinks: false, bakeMessages: false, ...chat },
+  });
+  await initializeOpenAI(false);
+  const model = parseDefaultModelString("ollama:llava")!;
+  await configureSelectedModel({ ...model, supportsVision });
+  await syscall("mock.setDocument", "img.png", new Uint8Array([1, 2, 3]));
+}
+
+const imageMessages: ChatMessage[] = [
+  { role: "user", content: "What is ![alt](img.png)?" },
+  { role: "assistant", content: "An image ![alt](img.png)" },
+];
+
+test("enrichChatMessages does not attach images by default", async () => {
+  await setupVisionTest({});
+  const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
+  expect(messagesWithAttachments[0].message.images).toBeUndefined();
+});
+
+test("enrichChatMessages attaches images to user messages when enabled", async () => {
+  await setupVisionTest({ attachImages: true });
+  const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
+  expect(messagesWithAttachments[0].message.images).toEqual([{
+    name: "img.png",
+    mimeType: "image/png",
+    url: "data:image/png;base64,AQID",
+  }]);
+  expect(messagesWithAttachments[1].message.images).toBeUndefined();
+});
+
+test("enrichChatMessages skips images when the model does not support vision", async () => {
+  await setupVisionTest({ attachImages: true }, false);
+  const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
+  expect(messagesWithAttachments[0].message.images).toBeUndefined();
 });

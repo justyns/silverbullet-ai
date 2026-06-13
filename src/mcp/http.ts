@@ -4,7 +4,12 @@
 // prefixing upstream response headers with `x-proxy-header-` and reporting the
 // upstream status via `x-proxy-status-code`.
 
-import { buildProxyHeaders, buildProxyUrl } from "../proxy.ts";
+import {
+  buildProxyHeaders,
+  buildProxyUrl,
+  readResponseHeader,
+  readStatus,
+} from "../proxy.ts";
 import {
   type JsonRpcMessage,
   type JsonRpcNotification,
@@ -63,26 +68,6 @@ export type ProxiedHttpTransportOptions = {
   fetchFn?: FetchLike; // injectable for tests
   useProxy?: boolean;
 };
-
-function readResponseHeader(
-  res: Response,
-  name: string,
-  useProxy: boolean,
-): string | undefined {
-  if (useProxy) {
-    return res.headers.get(`x-proxy-header-${name}`) ??
-      res.headers.get(name) ?? undefined;
-  }
-  return res.headers.get(name) ?? undefined;
-}
-
-function readStatus(res: Response, useProxy: boolean): number {
-  if (useProxy) {
-    const s = res.headers.get("x-proxy-status-code");
-    if (s) return Number(s);
-  }
-  return res.status;
-}
 
 export class ProxiedHttpTransport implements McpTransport {
   private readonly url: string;

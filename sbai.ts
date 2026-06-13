@@ -65,6 +65,7 @@ type FilterOption = {
   modelName?: string;
   isUtility?: boolean;
   supportsFunctionCalling?: boolean;
+  supportsVision?: boolean;
 };
 
 /**
@@ -104,6 +105,7 @@ export async function selectModelFromConfig() {
         hintInactive: !isSelected,
         orderId: isPreferred ? -500 + preferredIndex : 0,
         supportsFunctionCalling: model.supportsFunctionCalling,
+        supportsVision: model.supportsVision,
       });
     }
   }
@@ -123,6 +125,7 @@ export async function selectModelFromConfig() {
           category: model.provider,
           provider: model.provider,
           supportsFunctionCalling: model.supportsTools,
+          supportsVision: model.supportsVision,
           modelName: model.modelName,
           hint: "configured",
           hintInactive: !isSelected,
@@ -212,6 +215,7 @@ export async function selectModelFromConfig() {
     secretName: "",
     requireAuth: defaults.requireAuth,
     supportsTools: selected.supportsFunctionCalling,
+    supportsVision: selected.supportsVision,
   };
 
   await setSelectedTextModel(modelConfig);

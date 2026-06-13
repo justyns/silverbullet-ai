@@ -8,8 +8,9 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, setSessionToggle, toolsEnabled } from "./init.ts";
+import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, setSessionToggle, toolsEnabled, visionEnabled } from "./init.ts";
 import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed, log } from "./utils.ts";
+import { extractImagesFromMarkdown } from "./images.ts";
 import { convertToOpenAITools, discoverAllTools, runAgenticChat } from "./tools.ts";
 import { formatReasoningBlock } from "./widgets.ts";
 import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
@@ -189,6 +190,7 @@ export async function startPanelChat(
     );
 
     let contextBlock = "";
+    let pageImageSource: { page: string; content: string } | undefined;
     try {
       const currentPage = await editor.getCurrentPage();
       const allowedReadPaths = currentChatAgent?.aiagent?.allowedReadPaths;
@@ -204,6 +206,7 @@ export async function startPanelChat(
       // Only include selection and content if page is within allowed paths
       if (pageAllowed) {
         const pageContent = await editor.getText();
+        pageImageSource = { page: currentPage, content: pageContent };
         const selection = await editor.getSelection();
         if (selection && selection.text) {
           contextBlock += `\nSelected text: "${selection.text}"`;
@@ -256,9 +259,20 @@ export async function startPanelChat(
     if (contextBlock) {
       const lastUserIdx = messagesWithAttachments.findLastIndex((m) => m.message.role === "user");
       if (lastUserIdx !== -1) {
-        messagesWithAttachments[lastUserIdx].message.content = `<context>\n${contextBlock}\n</context>\n\n${
-          messagesWithAttachments[lastUserIdx].message.content
-        }`;
+        const lastMessage = messagesWithAttachments[lastUserIdx].message;
+        lastMessage.content = `<context>\n${contextBlock}\n</context>\n\n${lastMessage.content}`;
+
+        if (pageImageSource && visionEnabled()) {
+          const seen = new Set((lastMessage.images ?? []).map((i) => i.name));
+          const pageImages = await extractImagesFromMarkdown(
+            pageImageSource.content,
+            pageImageSource.page,
+            seen,
+          );
+          if (pageImages.length > 0) {
+            lastMessage.images = [...(lastMessage.images ?? []), ...pageImages];
+          }
+        }
       }
     }
 

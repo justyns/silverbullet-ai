@@ -10,15 +10,96 @@ type HttpHeaders = {
   "x-goog-api-key"?: string;
 };
 
-type GeminiChatPart =
+export type GeminiChatPart =
   | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
   | { functionCall: { name: string; args: Record<string, unknown> } }
   | { functionResponse: { name: string; response: Record<string, unknown> } };
 
-type GeminiChatContent = {
+export type GeminiChatContent = {
   parts: GeminiChatPart[];
   role: string;
 };
+
+function userParts(message: ChatMessage): GeminiChatPart[] {
+  const parts: GeminiChatPart[] = [{ text: message.content }];
+  for (const img of message.images ?? []) {
+    const data = img.url.split(",", 2)[1];
+    if (data) {
+      parts.push({ text: `Image: ${img.name}` });
+      parts.push({ inlineData: { mimeType: img.mimeType, data } });
+    }
+  }
+  return parts;
+}
+
+export function mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
+  const payloadContents: GeminiChatContent[] = [];
+  let previousRole = "";
+
+  for (const message of messages) {
+    // Assistant message with tool calls → model role with functionCall parts
+    if (message.role === "assistant" && message.tool_calls?.length) {
+      // Use _raw parts if available to preserve thoughtSignature
+      const parts: any[] = message.tool_calls.map((tc) =>
+        tc._raw || {
+          functionCall: {
+            name: tc.function.name,
+            args: JSON.parse(tc.function.arguments || "{}"),
+          },
+        }
+      );
+      if (message.content) {
+        parts.unshift({ text: message.content });
+      }
+      payloadContents.push({ role: "model", parts });
+      previousRole = "model";
+      continue;
+    }
+
+    // Tool result → user role with functionResponse parts
+    if (message.role === "tool") {
+      const part: GeminiChatPart = {
+        functionResponse: {
+          name: message.name || "unknown",
+          response: { result: message.content },
+        },
+      };
+      // Batch consecutive tool results into one user message
+      if (previousRole === "tool") {
+        payloadContents[payloadContents.length - 1].parts.push(part);
+      } else {
+        payloadContents.push({ role: "user", parts: [part] });
+      }
+      previousRole = "tool";
+      continue;
+    }
+
+    let role = "user";
+    if (message.role === "assistant") {
+      role = "model";
+    }
+
+    if (
+      role === "model" &&
+      (payloadContents.length === 0 || previousRole === "model")
+    ) {
+      // Skip model message if it's the first or follows another model message
+    } else if (role === "user" && previousRole === "user") {
+      payloadContents[payloadContents.length - 1].parts.push(
+        ...userParts(message),
+      );
+    } else {
+      payloadContents.push({
+        role: role,
+        parts: userParts(message),
+      });
+    }
+    previousRole = role;
+  }
+
+  return payloadContents;
+}
 
 /**
  * Recursively strips properties that Gemini's schema doesn't support
@@ -94,74 +175,6 @@ export class GeminiProvider extends AbstractProvider {
     }
   }
 
-  private mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
-    const payloadContents: GeminiChatContent[] = [];
-    let previousRole = "";
-
-    for (const message of messages) {
-      // Assistant message with tool calls → model role with functionCall parts
-      if (message.role === "assistant" && message.tool_calls?.length) {
-        // Use _raw parts if available to preserve thoughtSignature
-        const parts: any[] = message.tool_calls.map((tc) =>
-          tc._raw || {
-            functionCall: {
-              name: tc.function.name,
-              args: JSON.parse(tc.function.arguments || "{}"),
-            },
-          }
-        );
-        if (message.content) {
-          parts.unshift({ text: message.content });
-        }
-        payloadContents.push({ role: "model", parts });
-        previousRole = "model";
-        continue;
-      }
-
-      // Tool result → user role with functionResponse parts
-      if (message.role === "tool") {
-        const part: GeminiChatPart = {
-          functionResponse: {
-            name: message.name || "unknown",
-            response: { result: message.content },
-          },
-        };
-        // Batch consecutive tool results into one user message
-        if (previousRole === "tool") {
-          payloadContents[payloadContents.length - 1].parts.push(part);
-        } else {
-          payloadContents.push({ role: "user", parts: [part] });
-        }
-        previousRole = "tool";
-        continue;
-      }
-
-      let role = "user";
-      if (message.role === "assistant") {
-        role = "model";
-      }
-
-      if (
-        role === "model" &&
-        (payloadContents.length === 0 || previousRole === "model")
-      ) {
-        // Skip model message if it's the first or follows another model message
-      } else if (role === "user" && previousRole === "user") {
-        payloadContents[payloadContents.length - 1].parts.push(
-          { text: message.content },
-        );
-      } else {
-        payloadContents.push({
-          role: role,
-          parts: [{ text: message.content }],
-        });
-      }
-      previousRole = role;
-    }
-
-    return payloadContents;
-  }
-
   streamChat(options: StreamChatOptions): Promise<ChatResponse> {
     const { messages, tools, response_format, onChunk, onComplete } = options;
 
@@ -178,7 +191,7 @@ export class GeminiProvider extends AbstractProvider {
         const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
         const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
 
-        const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
+        const payloadContents: GeminiChatContent[] = mapRolesForGemini(
           messages,
         );
 
@@ -336,7 +349,7 @@ export class GeminiProvider extends AbstractProvider {
     tools?: Tool[],
     response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
-    const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
+    const payloadContents: GeminiChatContent[] = mapRolesForGemini(
       messages,
     );
 

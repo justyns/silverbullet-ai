@@ -2,6 +2,12 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.9.0 (unreleased)
+
+- Add **vision support**, images referenced in your notes and chat are sent to vision-capable models
+  - New `ai.chat` config options: `attachImages` (send referenced images, default off), `downloadRemoteImages` (also fetch and cache remote images, default off), and `maxImageSizeMB` (skip larger images, default 10)
+  - Per-model `supportsVision` flag, auto-detected during model discovery
+
 ## 0.8.0 (2026-06-12)
 
 - Add **MCP (Model Context Protocol) client** support

@@ -8,9 +8,11 @@ import {
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "./lib/attribute.ts";
 import { extractFrontMatter } from "./lib/frontmatter.ts";
-import { aiSettings } from "./init.ts";
+import { aiSettings, visionEnabled } from "./init.ts";
+import { extractImagesFromMarkdown } from "./images.ts";
 import type {
   Attachment,
+  ChatImage,
   ChatMessage,
   EnrichmentResult,
   MessageWithAttachments,
@@ -220,6 +222,7 @@ export async function enrichChatMessages(
   const result: MessageWithAttachments[] = [];
   let currentPage, pageMeta;
   let wikiLinkSeenNames: Record<string, boolean> = {};
+  const seenImages = new Set<string>();
 
   try {
     currentPage = await editor.getCurrentPage();
@@ -375,8 +378,18 @@ export async function enrichChatMessages(
       );
     }
 
+    let images: ChatImage[] | undefined;
+    if (visionEnabled()) {
+      const extracted = await extractImagesFromMarkdown(
+        enrichedContent,
+        currentPage,
+        seenImages,
+      );
+      if (extracted.length > 0) images = extracted;
+    }
+
     result.push({
-      message: { ...message, content: enrichedContent },
+      message: { ...message, content: enrichedContent, images },
       attachments: messageAttachments,
     });
   }
