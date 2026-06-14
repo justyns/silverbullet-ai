@@ -118,6 +118,18 @@ config.define("ai.textModels", {
         type = "boolean",
         description = "Whether to use SilverBullet's proxy for requests",
       },
+      supportsTools = {
+        type = "boolean",
+        description = "Whether the model supports tool/function calling",
+      },
+      supportsVision = {
+        type = "boolean",
+        description = "Whether the model can accept images (auto-detected when using ai.providers)",
+      },
+      supportsDocuments = {
+        type = "boolean",
+        description = "Whether the model can accept PDFs/documents (opt-in; no auto-detection)",
+      },
     },
     required = {"name", "modelName", "provider"},
     additionalProperties = false,
@@ -257,6 +269,26 @@ config.define("ai.chat", {
     skipToolApproval = {
       type = "boolean",
       description = "Skip approval prompts for tools (useful for benchmarks)",
+    },
+    showReasoning = {
+      type = "boolean",
+      description = "Show model reasoning/thinking blocks in the chat",
+    },
+    attachImages = {
+      type = "boolean",
+      description = "Send images referenced in messages/pages to vision-capable models",
+    },
+    attachDocuments = {
+      type = "boolean",
+      description = "Send PDFs referenced in messages/pages to document-capable models",
+    },
+    downloadRemoteImages = {
+      type = "boolean",
+      description = "Download and cache remote https:// image links before sending",
+    },
+    maxFileSizeMB = {
+      type = "number",
+      description = "Skip referenced files larger than this many MB (default 10)",
     },
     defaultAgent = {
       type = "string",

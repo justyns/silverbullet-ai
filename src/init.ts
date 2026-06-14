@@ -1,9 +1,16 @@
-import { clientStore, editor, system } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  clientStore,
+  editor,
+  system,
+} from "@silverbulletmd/silverbullet/syscalls";
 import { DallEProvider } from "./providers/dalle.ts";
 import { GeminiEmbeddingProvider, GeminiProvider } from "./providers/gemini.ts";
 import { ImageProviderInterface } from "./interfaces/ImageProvider.ts";
 import { EmbeddingProviderInterface } from "./interfaces/EmbeddingProvider.ts";
-import { type ProviderDefaults, ProviderInterface } from "./interfaces/Provider.ts";
+import {
+  type ProviderDefaults,
+  ProviderInterface,
+} from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
@@ -12,6 +19,7 @@ import { clearMCPClients } from "./mcp/index.ts";
 import { inferProviderType } from "./model-discovery.ts";
 import type {
   AISettings,
+  AttachmentKind,
   ChatMessage,
   ChatSettings,
   EmbeddingModelConfig,
@@ -49,7 +57,8 @@ export async function initIfNeeded() {
   const basicSetupDone = currentAIProvider && aiSettings && currentModel;
 
   // and embedding models if needed
-  const embeddingsNeedSetup = aiSettings?.indexEmbeddings &&
+  const embeddingsNeedSetup =
+    aiSettings?.indexEmbeddings &&
     (!currentEmbeddingProvider || !currentEmbeddingModel);
 
   if (basicSetupDone && !embeddingsNeedSetup) {
@@ -60,7 +69,9 @@ export async function initIfNeeded() {
 
 export function modelSupportsTools(): boolean {
   if (currentModel?.supportsTools === false) {
-    log(`Model ${currentModel.modelName} does not support tools, skipping tool use`);
+    log(
+      `Model ${currentModel.modelName} does not support tools, skipping tool use`,
+    );
     return false;
   }
   return true;
@@ -68,6 +79,24 @@ export function modelSupportsTools(): boolean {
 
 export function toolsEnabled(): boolean {
   return aiSettings?.chat?.enableTools !== false && modelSupportsTools();
+}
+
+// Binary attachment kinds the current MODEL can accept (capability only). Used by
+// the view_file tool, where the model explicitly asked, so config opt-in is bypassed.
+export function supportedAttachmentKinds(): Set<AttachmentKind> {
+  const kinds = new Set<AttachmentKind>();
+  if (currentModel?.supportsVision !== false) kinds.add("image");
+  if (currentModel?.supportsDocuments === true) kinds.add("document");
+  return kinds;
+}
+
+// Kinds sent during auto-enrichment
+export function enabledAttachmentKinds(): Set<AttachmentKind> {
+  const chat = aiSettings?.chat;
+  const kinds = supportedAttachmentKinds();
+  if (chat?.attachImages !== true) kinds.delete("image");
+  if (chat?.attachDocuments !== true) kinds.delete("document");
+  return kinds;
 }
 
 export async function getSelectedTextModel() {
@@ -136,10 +165,15 @@ const defaultProviderDefaults: ProviderDefaults = {
 };
 
 export function getProviderDefaults(providerType: string): ProviderDefaults {
-  return providerRegistry[providerType.toLowerCase()]?.defaults || defaultProviderDefaults;
+  return (
+    providerRegistry[providerType.toLowerCase()]?.defaults ||
+    defaultProviderDefaults
+  );
 }
 
-export function parseDefaultModelString(modelString: string): ModelConfig | null {
+export function parseDefaultModelString(
+  modelString: string,
+): ModelConfig | null {
   if (typeof modelString !== "string") {
     log.error(
       `defaultTextModel must be a string like "provider:modelName", ` +
@@ -149,13 +183,16 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    log.warn(`Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(
+      `Invalid defaultTextModel format: "${modelString}". Expected "provider:modelName".`,
+    );
     return null;
   }
   const providerKey = parts[0];
   const modelName = parts.slice(1).join(":");
   const providerConfig = getProviderConfig(providerKey);
-  const providerType = providerConfig.provider || inferProviderType(providerKey);
+  const providerType =
+    providerConfig.provider || inferProviderType(providerKey);
   const defaults = getProviderDefaults(providerType);
 
   return {
@@ -171,7 +208,9 @@ export function parseDefaultModelString(modelString: string): ModelConfig | null
   };
 }
 
-export function parseDefaultEmbeddingModelString(modelString: string): EmbeddingModelConfig | null {
+export function parseDefaultEmbeddingModelString(
+  modelString: string,
+): EmbeddingModelConfig | null {
   if (typeof modelString !== "string") {
     log.error(
       `defaultEmbeddingModel must be a string like "provider:modelName", ` +
@@ -181,13 +220,16 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    log.warn(`Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(
+      `Invalid defaultEmbeddingModel format: "${modelString}". Expected "provider:modelName".`,
+    );
     return null;
   }
   const providerKey = parts[0];
   const modelName = parts.slice(1).join(":");
   const providerConfig = getProviderConfig(providerKey);
-  const providerType = providerConfig.provider || inferProviderType(providerKey);
+  const providerType =
+    providerConfig.provider || inferProviderType(providerKey);
   const defaults = getProviderDefaults(providerType);
 
   return {
@@ -203,7 +245,9 @@ export function parseDefaultEmbeddingModelString(modelString: string): Embedding
   };
 }
 
-export function parseDefaultImageModelString(modelString: string): ImageModelConfig | null {
+export function parseDefaultImageModelString(
+  modelString: string,
+): ImageModelConfig | null {
   if (typeof modelString !== "string") {
     log.error(
       `defaultImageModel must be a string like "provider:modelName", ` +
@@ -213,7 +257,9 @@ export function parseDefaultImageModelString(modelString: string): ImageModelCon
   }
   const parts = modelString.split(":");
   if (parts.length < 2 || !parts[0].trim()) {
-    log.warn(`Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`);
+    log.warn(
+      `Invalid defaultImageModel format: "${modelString}". Expected "provider:modelName".`,
+    );
     return null;
   }
   const providerKey = parts[0];
@@ -252,8 +298,8 @@ function getDefaultBaseUrl(providerName: string): string {
 }
 
 export async function getAndConfigureModel() {
-  const selectedModel = await getSelectedTextModel() ||
-    aiSettings.textModels[0];
+  const selectedModel =
+    (await getSelectedTextModel()) || aiSettings.textModels[0];
   if (!selectedModel) {
     throw new Error("No text model selected or available as default.");
   }
@@ -261,8 +307,8 @@ export async function getAndConfigureModel() {
 }
 
 async function getAndConfigureImageModel() {
-  const selectedImageModel = await getSelectedImageModel() ||
-    aiSettings.imageModels[0];
+  const selectedImageModel =
+    (await getSelectedImageModel()) || aiSettings.imageModels[0];
   if (!selectedImageModel) {
     throw new Error("No image model selected or available as default.");
   }
@@ -270,8 +316,8 @@ async function getAndConfigureImageModel() {
 }
 
 async function getAndConfigureEmbeddingModel() {
-  const selectedEmbeddingModel = await getSelectedEmbeddingModel() ||
-    aiSettings.embeddingModels[0];
+  const selectedEmbeddingModel =
+    (await getSelectedEmbeddingModel()) || aiSettings.embeddingModels[0];
   if (!selectedEmbeddingModel) {
     throw new Error("No embedding model selected or available as default.");
   }
@@ -294,10 +340,7 @@ function setupImageProvider(model: ImageModelConfig, timeout?: number) {
       );
       break;
     case ImageProvider.Mock:
-      currentImageProvider = new MockImageProvider(
-        apiKey,
-        model.modelName,
-      );
+      currentImageProvider = new MockImageProvider(apiKey, model.modelName);
       break;
     default:
       throw new Error(
@@ -317,20 +360,25 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "https://api.openai.com/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
       break;
     case Provider.Gemini:
-      currentAIProvider = new GeminiProvider(apiKey, model.modelName, useProxy, effectiveTimeout);
+      currentAIProvider = new GeminiProvider(
+        apiKey,
+        model.modelName,
+        useProxy,
+        effectiveTimeout,
+      );
       break;
     case Provider.Ollama:
       currentAIProvider = new OllamaProvider(
         apiKey,
         model.modelName,
         model.baseUrl || "http://localhost:11434/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
@@ -340,7 +388,7 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         apiKey,
         model.modelName,
         model.baseUrl || "https://api.mistral.ai/v1",
-        model.requireAuth,
+        model.requireAuth ?? defaults.requireAuth,
         useProxy,
         effectiveTimeout,
       );
@@ -478,12 +526,19 @@ export async function configureSelectedModel(model: ModelConfig) {
   // Apply provider config defaults to model
   const effectiveModel: ModelConfig = {
     ...model,
-    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
-    useProxy: model.useProxy ?? providerConfig.useProxy ?? getProviderDefaults(model.provider).useProxy,
+    baseUrl:
+      model.baseUrl ||
+      providerConfig.baseUrl ||
+      getDefaultBaseUrl(model.provider),
+    useProxy:
+      model.useProxy ??
+      providerConfig.useProxy ??
+      getProviderDefaults(model.provider).useProxy,
   };
 
   // Get timeout from provider config
-  const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
+  const timeout =
+    providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
   log(`Provider config for "${configKey}":`, providerConfig);
   log(`Using timeout: ${timeout}ms (${timeout / 1000}s)`);
 
@@ -514,7 +569,10 @@ export async function configureSelectedImageModel(model: ImageModelConfig) {
   // Apply provider config defaults to model
   const effectiveModel: ImageModelConfig = {
     ...model,
-    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
+    baseUrl:
+      model.baseUrl ||
+      providerConfig.baseUrl ||
+      getDefaultBaseUrl(model.provider),
     useProxy: model.useProxy ?? providerConfig.useProxy ?? true,
   };
 
@@ -550,12 +608,19 @@ export async function configureSelectedEmbeddingModel(
   // Apply provider config defaults to model
   const effectiveModel: EmbeddingModelConfig = {
     ...model,
-    baseUrl: model.baseUrl || providerConfig.baseUrl || getDefaultBaseUrl(model.provider),
-    useProxy: model.useProxy ?? providerConfig.useProxy ?? getProviderDefaults(model.provider).useProxy,
+    baseUrl:
+      model.baseUrl ||
+      providerConfig.baseUrl ||
+      getDefaultBaseUrl(model.provider),
+    useProxy:
+      model.useProxy ??
+      providerConfig.useProxy ??
+      getProviderDefaults(model.provider).useProxy,
   };
 
   // Get timeout from provider config
-  const timeout = providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
+  const timeout =
+    providerConfig.timeout ?? getProviderDefaults(model.provider).timeout;
 
   currentEmbeddingModel = effectiveModel;
   setupEmbeddingProvider(effectiveModel, timeout);
@@ -572,7 +637,12 @@ async function loadAndMergeSettings() {
     indexSummary: false,
     indexSummaryModelName: "",
     indexEmbeddingsExcludePages: [],
-    indexEmbeddingsExcludeStrings: ["user:", "assistant:", "**user**:", "**assistant**:"],
+    indexEmbeddingsExcludeStrings: [
+      "user:",
+      "assistant:",
+      "**user**:",
+      "**assistant**:",
+    ],
     mcpServers: {},
   };
   const defaultChatSettings: ChatSettings = {
@@ -586,6 +656,10 @@ async function loadAndMergeSettings() {
     showReasoning: true,
     enableTools: true,
     skipToolApproval: false,
+    attachImages: false,
+    attachDocuments: false,
+    downloadRemoteImages: false,
+    maxFileSizeMB: 10,
     defaultAgent: "",
   };
   const defaultPromptInstructions: PromptInstructions = {
@@ -615,8 +689,12 @@ export async function initializeOpenAI(configure = true) {
 
   // Preserve session-only toggle states across settings reloads, but only if
   // the user explicitly toggled them during this session (not just whatever was cached)
-  const sessionSearchEmbeddings = sessionSearchEmbeddingsToggled ? aiSettings?.chat?.searchEmbeddings : undefined;
-  const sessionShowReasoning = sessionShowReasoningToggled ? aiSettings?.chat?.showReasoning : undefined;
+  const sessionSearchEmbeddings = sessionSearchEmbeddingsToggled
+    ? aiSettings?.chat?.searchEmbeddings
+    : undefined;
+  const sessionShowReasoning = sessionShowReasoningToggled
+    ? aiSettings?.chat?.showReasoning
+    : undefined;
 
   if (
     !aiSettings ||
@@ -640,10 +718,7 @@ export async function initializeOpenAI(configure = true) {
     log("aiSettings updated to", aiSettings);
 
     // Deprecation warning for legacy config, just to console for now
-    if (
-      aiSettings.textModels?.length > 0 &&
-      !aiSettings.providers
-    ) {
+    if (aiSettings.textModels?.length > 0 && !aiSettings.providers) {
       log.warn(
         "textModels config is deprecated. " +
           "Please migrate to providers config. See https://ai.silverbullet.md/",
@@ -678,7 +753,9 @@ export async function initializeOpenAI(configure = true) {
   const currentlySelectedImageModel = await getSelectedImageModel();
   if (!currentlySelectedImageModel) {
     if (aiSettings.defaultImageModel) {
-      const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
+      const defaultModel = parseDefaultImageModelString(
+        aiSettings.defaultImageModel,
+      );
       if (defaultModel) {
         await setSelectedImageModel(defaultModel);
         log("Set default image model:", defaultModel);
@@ -697,7 +774,9 @@ export async function initializeOpenAI(configure = true) {
   const currentlySelectedEmbeddingModel = await getSelectedEmbeddingModel();
   if (!currentlySelectedEmbeddingModel) {
     if (aiSettings.defaultEmbeddingModel) {
-      const defaultModel = parseDefaultEmbeddingModelString(aiSettings.defaultEmbeddingModel);
+      const defaultModel = parseDefaultEmbeddingModelString(
+        aiSettings.defaultEmbeddingModel,
+      );
       if (defaultModel) {
         await setSelectedEmbeddingModel(defaultModel);
         log("Set default embedding model:", defaultModel);
@@ -735,7 +814,9 @@ export async function initializeOpenAI(configure = true) {
       } else if (aiSettings.imageModels.length > 0) {
         await getAndConfigureImageModel();
       } else if (aiSettings.defaultImageModel) {
-        const defaultModel = parseDefaultImageModelString(aiSettings.defaultImageModel);
+        const defaultModel = parseDefaultImageModelString(
+          aiSettings.defaultImageModel,
+        );
         if (defaultModel) {
           await configureSelectedImageModel(defaultModel);
           log("Configured default image model directly:", defaultModel);
@@ -758,7 +839,9 @@ export async function initializeOpenAI(configure = true) {
     } else if (aiSettings.embeddingModels.length > 0) {
       await getAndConfigureEmbeddingModel();
     } else if (aiSettings.defaultEmbeddingModel) {
-      const defaultModel = parseDefaultEmbeddingModelString(aiSettings.defaultEmbeddingModel);
+      const defaultModel = parseDefaultEmbeddingModelString(
+        aiSettings.defaultEmbeddingModel,
+      );
       if (defaultModel) {
         await configureSelectedEmbeddingModel(defaultModel);
         log("Configured default embedding model directly:", defaultModel);
@@ -786,16 +869,13 @@ Format code with fenced blocks and language tags. Use markdown tables for struct
 For docs related to Space Lua scripts, configuration, or SilverBullet-specific questions, fetch: https://ai.silverbullet.md/llms.txt`,
   };
   if (toolsEnabled()) {
-    chatSystemPrompt.content +=
-      `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant.`;
+    chatSystemPrompt.content += `\n\nUse your tools proactively. Take action rather than just describing what could be done. Read notes to gather context before responding when relevant.`;
   }
   if (aiSettings.chat.userInformation) {
-    chatSystemPrompt.content +=
-      `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;
+    chatSystemPrompt.content += `\nThe user has provided the following information about themselves: ${aiSettings.chat.userInformation}`;
   }
   if (aiSettings.chat.userInstructions) {
-    chatSystemPrompt.content +=
-      `\nThe user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
+    chatSystemPrompt.content += `\nThe user has provided the following instructions for the chat, follow them as closely as possible: ${aiSettings.chat.userInstructions}`;
   }
 }
 

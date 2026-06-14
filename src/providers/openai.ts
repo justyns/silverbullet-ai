@@ -1,6 +1,7 @@
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { SSE } from "sse.js";
 import type {
+  Attachment,
   ChatMessage,
   ChatResponse,
   EmbeddingGenerationOptions,
@@ -11,22 +12,62 @@ import type {
   Usage,
 } from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
+import {
+  AbstractProvider,
+  type ProviderDefaults,
+} from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl, log } from "../utils.ts";
 import { aiSettings } from "../init.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
-  "Authorization"?: string;
+  Authorization?: string;
 };
 
 /**
  * Extracts reasoning/thinking content from various provider response formats.
  * Supports: Ollama (thinking), OpenAI (reasoning, reasoning_content)
  */
-function extractReasoning(message: Record<string, unknown>): string | undefined {
-  const reasoning = message.thinking || message.reasoning || message.reasoning_content;
+function extractReasoning(
+  message: Record<string, unknown>,
+): string | undefined {
+  const reasoning =
+    message.thinking || message.reasoning || message.reasoning_content;
   return typeof reasoning === "string" && reasoning ? reasoning : undefined;
+}
+
+type OpenAIContentPart =
+  | { type: "text"; text: string }
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "file"; file: { filename: string; file_data: string } };
+
+function attachmentToPart(a: Attachment): OpenAIContentPart {
+  const { mimeType, url } = a.binary!;
+  if (mimeType.startsWith("image/")) {
+    return { type: "image_url", image_url: { url } };
+  }
+  // Non-images use OpenAI's `file` content part (data: URL). Gated by
+  // supportsDocuments, since not every OpenAI-compatible endpoint accepts it.
+  return { type: "file", file: { filename: a.name, file_data: url } };
+}
+
+/**
+ * Converts messages to the OpenAI wire format. A message carrying binary
+ * attachments becomes multipart content (its text label + each native part).
+ */
+export function toOpenAIMessages(
+  messages: ChatMessage[],
+): Array<Record<string, unknown>> {
+  return messages.map((message) => {
+    const { attachments, ...rest } = message;
+    const binary = attachments?.filter((a) => a.binary);
+    if (!binary?.length) return rest;
+    const content: OpenAIContentPart[] = [
+      { type: "text", text: message.content },
+      ...binary.map(attachmentToPart),
+    ];
+    return { ...rest, content };
+  });
 }
 
 export class OpenAIProvider extends AbstractProvider {
@@ -56,7 +97,14 @@ export class OpenAIProvider extends AbstractProvider {
   }
 
   streamChat(options: StreamChatOptions): Promise<ChatResponse> {
-    const { messages, tools, response_format, onChunk, onReasoningChunk, onComplete } = options;
+    const {
+      messages,
+      tools,
+      response_format,
+      onChunk,
+      onReasoningChunk,
+      onComplete,
+    } = options;
 
     return new Promise((resolve, reject) => {
       try {
@@ -71,13 +119,15 @@ export class OpenAIProvider extends AbstractProvider {
         const sseUrl = this.useProxy
           ? buildProxyUrl(`${this.baseUrl}/chat/completions`)
           : `${this.baseUrl}/chat/completions`;
-        const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
+        const finalHeaders = this.useProxy
+          ? buildProxyHeaders(headers)
+          : headers;
 
         const requestBody: Record<string, unknown> = {
           model: this.modelName,
           stream: true,
           stream_options: { include_usage: true },
-          messages: messages,
+          messages: toOpenAIMessages(messages),
         };
 
         // Enable thinking mode for providers that support it (e.g., Ollama with qwq, deepseek-r1)
@@ -107,11 +157,14 @@ export class OpenAIProvider extends AbstractProvider {
         let finishReason: string = "stop";
         let usage: Usage | undefined;
 
-        const toolCallsAccumulator = new Map<number, {
-          id: string;
-          type: string;
-          function: { name: string; arguments: string };
-        }>();
+        const toolCallsAccumulator = new Map<
+          number,
+          {
+            id: string;
+            type: string;
+            function: { name: string; arguments: string };
+          }
+        >();
 
         // Timeout only applies to initial connection - cleared on first chunk
         let timeoutId: number | undefined = setTimeout(() => {
@@ -135,9 +188,10 @@ export class OpenAIProvider extends AbstractProvider {
             if (e.data === "[DONE]") {
               source.close();
 
-              const toolCalls = toolCallsAccumulator.size > 0
-                ? Array.from(toolCallsAccumulator.values()) as ToolCall[]
-                : undefined;
+              const toolCalls =
+                toolCallsAccumulator.size > 0
+                  ? (Array.from(toolCallsAccumulator.values()) as ToolCall[])
+                  : undefined;
 
               const response: ChatResponse = {
                 content: fullContent,
@@ -174,7 +228,8 @@ export class OpenAIProvider extends AbstractProvider {
             }
 
             // Handle reasoning/thinking content from delta or message
-            const reasoningChunk = extractReasoning(choice.delta || {}) ||
+            const reasoningChunk =
+              extractReasoning(choice.delta || {}) ||
               extractReasoning(data.message || {});
             if (reasoningChunk) {
               fullReasoning += reasoningChunk;
@@ -207,18 +262,27 @@ export class OpenAIProvider extends AbstractProvider {
             if (choice.finish_reason) {
               finishReason = choice.finish_reason;
               // Ollama may not send [DONE], so complete on finish_reason
-              if (choice.finish_reason === "stop" || choice.finish_reason === "tool_calls") {
+              if (
+                choice.finish_reason === "stop" ||
+                choice.finish_reason === "tool_calls"
+              ) {
                 setTimeout(() => {
                   source.close();
-                  const toolCalls = toolCallsAccumulator.size > 0
-                    ? Array.from(toolCallsAccumulator.values()) as ToolCall[]
-                    : undefined;
+                  const toolCalls =
+                    toolCallsAccumulator.size > 0
+                      ? (Array.from(
+                          toolCallsAccumulator.values(),
+                        ) as ToolCall[])
+                      : undefined;
 
                   const response: ChatResponse = {
                     content: fullContent,
                     reasoning: fullReasoning || undefined,
                     tool_calls: toolCalls,
-                    finish_reason: finishReason as "stop" | "tool_calls" | "length",
+                    finish_reason: finishReason as
+                      | "stop"
+                      | "tool_calls"
+                      | "length",
                     usage,
                   };
 
@@ -264,10 +328,10 @@ export class OpenAIProvider extends AbstractProvider {
         headers["Authorization"] = `Bearer ${this.apiKey}`;
       }
 
-      const response = await this.fetch(
-        `${this.baseUrl}/models`,
-        { method: "GET", headers: headers },
-      );
+      const response = await this.fetch(`${this.baseUrl}/models`, {
+        method: "GET",
+        headers: headers,
+      });
 
       if (!response.ok) {
         log.error("HTTP response: ", response);
@@ -297,7 +361,7 @@ export class OpenAIProvider extends AbstractProvider {
     try {
       const requestBody: Record<string, unknown> = {
         model: this.modelName,
-        messages: messages,
+        messages: toOpenAIMessages(messages),
       };
 
       // Enable thinking mode for providers that support it (e.g., Ollama with qwq, deepseek-r1)
@@ -315,14 +379,15 @@ export class OpenAIProvider extends AbstractProvider {
       }
 
       const headers = {
-        "Authorization": `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
         "Content-Type": "application/json",
       };
 
-      const response = await this.fetch(
-        `${this.baseUrl}/chat/completions`,
-        { method: "POST", headers: headers, body: JSON.stringify(requestBody) },
-      );
+      const response = await this.fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(requestBody),
+      });
 
       if (!response.ok) {
         log.error("http response: ", response);
@@ -344,10 +409,10 @@ export class OpenAIProvider extends AbstractProvider {
         tool_calls: message.tool_calls as ToolCall[] | undefined,
         usage: data.usage
           ? {
-            prompt_tokens: data.usage.prompt_tokens,
-            completion_tokens: data.usage.completion_tokens,
-            total_tokens: data.usage.total_tokens,
-          }
+              prompt_tokens: data.usage.prompt_tokens,
+              completion_tokens: data.usage.completion_tokens,
+              total_tokens: data.usage.total_tokens,
+            }
           : undefined,
       };
     } catch (error) {
@@ -381,7 +446,9 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
   }
 
   // Native batch support - /v1/embeddings accepts array input
-  override async _generateEmbeddingsBatch(texts: string[]): Promise<Array<Array<number>>> {
+  override async _generateEmbeddingsBatch(
+    texts: string[],
+  ): Promise<Array<Array<number>>> {
     const body = JSON.stringify({
       model: this.modelName,
       input: texts,
@@ -396,10 +463,11 @@ export class OpenAIEmbeddingProvider extends AbstractEmbeddingProvider {
       headers["Authorization"] = `Bearer ${this.apiKey}`;
     }
 
-    const response = await this.fetch(
-      `${this.baseUrl}/embeddings`,
-      { method: "POST", headers: headers, body: body },
-    );
+    const response = await this.fetch(`${this.baseUrl}/embeddings`, {
+      method: "POST",
+      headers: headers,
+      body: body,
+    });
 
     if (!response.ok) {
       log.error("HTTP response: ", response);

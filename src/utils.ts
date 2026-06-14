@@ -8,7 +8,8 @@ import {
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
 import { extractAttributes } from "./lib/attribute.ts";
 import { extractFrontMatter } from "./lib/frontmatter.ts";
-import { aiSettings } from "./init.ts";
+import { aiSettings, enabledAttachmentKinds } from "./init.ts";
+import { extractFilesFromMarkdown, getFileHandlerExts } from "./files.ts";
 import type {
   Attachment,
   ChatMessage,
@@ -220,6 +221,9 @@ export async function enrichChatMessages(
   const result: MessageWithAttachments[] = [];
   let currentPage, pageMeta;
   let wikiLinkSeenNames: Record<string, boolean> = {};
+  const seenFiles = new Set<string>();
+  const enabledKinds = enabledAttachmentKinds();
+  const handlerExts = await getFileHandlerExts();
 
   try {
     currentPage = await editor.getCurrentPage();
@@ -375,6 +379,19 @@ export async function enrichChatMessages(
       );
     }
 
+    // Embedded files (images/PDFs/handler-resolved) join the same attachment
+    // list as wiki-link/RAG context, in document order, for unified assembly.
+    if (enabledKinds.size > 0 || handlerExts.size > 0) {
+      const files = await extractFilesFromMarkdown(
+        enrichedContent,
+        currentPage,
+        enabledKinds,
+        handlerExts,
+        seenFiles,
+      );
+      messageAttachments.push(...files);
+    }
+
     result.push({
       message: { ...message, content: enrichedContent },
       attachments: messageAttachments,
@@ -385,9 +402,34 @@ export async function enrichChatMessages(
 }
 
 /**
+ * Renders one attachment as its own standalone message. Text attachments become a
+ * `<context>` block; binary attachments become a labeled user message that carries
+ * the payload for the provider to emit as a native part.
+ */
+export function attachmentMessage(a: Attachment): ChatMessage {
+  if (a.binary) {
+    // The path is from `![[path]]` in the message; the alt
+    // text, when present, is also added.
+    const label = a.alt
+      ? `Attached ${a.type}: ${a.name} "${a.alt}"`
+      : `Attached ${a.type}: ${a.name}`;
+    return {
+      role: "user" as const,
+      content: label,
+      attachments: [a],
+    };
+  }
+  return {
+    role: "user" as const,
+    content: `<context type="${a.type}" name="${a.name}">\n${a.content ?? ""}\n</context>`,
+  };
+}
+
+/**
  * Assembles the final message array with attachments interleaved for LLM prompt caching.
- * Each message's attachments are inserted right before that message.
- * Agent attachments go right after the system message (stable per session).
+ * Each attachment becomes its own message right before the message it belongs to;
+ * agent attachments go right after the system message (stable per session). Keeping a
+ * deterministic order means the provider can cache the stable prefix.
  * Message order: [system, agent-attachments, msg1-attachments, msg1, msg2-attachments, msg2, ...]
  */
 export function assembleMessagesWithAttachments(
@@ -397,21 +439,13 @@ export function assembleMessagesWithAttachments(
 ): ChatMessage[] {
   const result: ChatMessage[] = [systemMessage];
 
-  // Agent attachments go right after system message (stable per session)
   for (const a of agentAttachments) {
-    result.push({
-      role: "user" as const,
-      content: `<context type="${a.type}" name="${a.name}">\n${a.content}\n</context>`,
-    });
+    result.push(attachmentMessage(a));
   }
 
-  // Insert each message's attachments right before that message
   for (const { message, attachments } of messagesWithAttachments) {
     for (const a of attachments) {
-      result.push({
-        role: "user" as const,
-        content: `<context type="${a.type}" name="${a.name}">\n${a.content}\n</context>`,
-      });
+      result.push(attachmentMessage(a));
     }
     result.push(message);
   }

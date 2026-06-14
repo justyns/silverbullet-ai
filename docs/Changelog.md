@@ -4,9 +4,15 @@ This page is a brief overview of each version.
 
 ## 0.9.0 (unreleased)
 
+- Add **file attachments**, files referenced in notes and chat (`![[file]]` / `![alt](file)`) are sent to the model as native parts.
+  - **Images** (vision): `attachImages` (default off) + per-model `supportsVision`. Formats: png, jpg/jpeg, gif, webp
+  - **PDFs** (documents): `attachDocuments` (default off) + per-model `supportsDocuments` (opt-in, no auto-detection yet)
+  - **Custom types**: register `ai.fileHandlers[ext]` to convert any file to text or a supported image, see [[Context Enrichment]]
+  - **via tool**: the `view_file(path)` tool lets the model pull in a file it only saw referenced in context
+  - Other `ai.chat` options: `downloadRemoteImages` (fetch & cache remote images, default off), `maxFileSizeMB` (skip larger files, default 10)
 - Add MCP server as a separate package.
   - See [[MCP Server]] for details.
-  - Eposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.
+  - Exposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.
 
 ## 0.8.0 (2026-06-12)
 

@@ -97,10 +97,14 @@ test.describe("AI Chat Panel", () => {
 
     const panelFrame = page.frameLocator("iframe").first();
 
-    // Click new chat button
+    // The New button collapses into the overflow menu on narrow panels
     const newChatBtn = panelFrame.locator("#new-chat-btn");
-    await expect(newChatBtn).toBeVisible();
-    await newChatBtn.click();
+    if (await newChatBtn.isVisible()) {
+      await newChatBtn.click();
+    } else {
+      await panelFrame.locator("#overflow-btn").click();
+      await panelFrame.locator("#overflow-new-chat-btn").click();
+    }
 
     // Empty state should be visible after new chat
     const emptyState = panelFrame.locator(".empty-state");

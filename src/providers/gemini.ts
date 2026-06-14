@@ -1,35 +1,139 @@
 import { SSE } from "sse.js";
-import type { ChatMessage, ChatResponse, sseEvent, StreamChatOptions, Tool, Usage } from "../types.ts";
+import type {
+  ChatMessage,
+  ChatResponse,
+  sseEvent,
+  StreamChatOptions,
+  Tool,
+  Usage,
+} from "../types.ts";
 import { AbstractEmbeddingProvider } from "../interfaces/EmbeddingProvider.ts";
-import { AbstractProvider, type ProviderDefaults } from "../interfaces/Provider.ts";
+import {
+  AbstractProvider,
+  type ProviderDefaults,
+} from "../interfaces/Provider.ts";
 import { buildProxyHeaders, buildProxyUrl, log } from "../utils.ts";
 
 type HttpHeaders = {
   "Content-Type": string;
-  "Authorization"?: string;
+  Authorization?: string;
   "x-goog-api-key"?: string;
 };
 
-type GeminiChatPart =
+export type GeminiChatPart =
   | { text: string }
+  | { inlineData: { mimeType: string; data: string } }
   | { functionCall: { name: string; args: Record<string, unknown> } }
   | { functionResponse: { name: string; response: Record<string, unknown> } };
 
-type GeminiChatContent = {
+export type GeminiChatContent = {
   parts: GeminiChatPart[];
   role: string;
 };
+
+function userParts(message: ChatMessage): GeminiChatPart[] {
+  const parts: GeminiChatPart[] = [{ text: message.content }];
+  // inlineData carries any mime (image, pdf, ...); the label is the message text.
+  for (const a of message.attachments ?? []) {
+    if (!a.binary) continue;
+    const data = a.binary.url.split(",", 2)[1];
+    if (data) {
+      parts.push({ inlineData: { mimeType: a.binary.mimeType, data } });
+    }
+  }
+  return parts;
+}
+
+export function mapRolesForGemini(
+  messages: ChatMessage[],
+): GeminiChatContent[] {
+  const payloadContents: GeminiChatContent[] = [];
+  let previousRole = "";
+
+  for (const message of messages) {
+    // Assistant message with tool calls → model role with functionCall parts
+    if (message.role === "assistant" && message.tool_calls?.length) {
+      // Use _raw parts if available to preserve thoughtSignature
+      const parts: any[] = message.tool_calls.map(
+        (tc) =>
+          tc._raw || {
+            functionCall: {
+              name: tc.function.name,
+              args: JSON.parse(tc.function.arguments || "{}"),
+            },
+          },
+      );
+      if (message.content) {
+        parts.unshift({ text: message.content });
+      }
+      payloadContents.push({ role: "model", parts });
+      previousRole = "model";
+      continue;
+    }
+
+    // Tool result → user role with functionResponse parts
+    if (message.role === "tool") {
+      const part: GeminiChatPart = {
+        functionResponse: {
+          name: message.name || "unknown",
+          response: { result: message.content },
+        },
+      };
+      // Batch consecutive tool results into one user message
+      if (previousRole === "tool") {
+        payloadContents[payloadContents.length - 1].parts.push(part);
+      } else {
+        payloadContents.push({ role: "user", parts: [part] });
+      }
+      previousRole = "tool";
+      continue;
+    }
+
+    let role = "user";
+    if (message.role === "assistant") {
+      role = "model";
+    }
+
+    if (
+      role === "model" &&
+      (payloadContents.length === 0 || previousRole === "model")
+    ) {
+      // Skip model message if it's the first or follows another model message
+    } else if (
+      role === "user" &&
+      (previousRole === "user" || previousRole === "tool")
+    ) {
+      // Merge into the preceding user content so that we
+      // keep alternating user/model turns.
+      payloadContents[payloadContents.length - 1].parts.push(
+        ...userParts(message),
+      );
+    } else {
+      payloadContents.push({
+        role: role,
+        parts: userParts(message),
+      });
+    }
+    previousRole = role;
+  }
+
+  return payloadContents;
+}
 
 /**
  * Recursively strips properties that Gemini's schema doesn't support
  * (e.g. additionalProperties).
  */
-function stripUnsupportedSchemaProps(schema: Record<string, unknown>): Record<string, unknown> {
+function stripUnsupportedSchemaProps(
+  schema: Record<string, unknown>,
+): Record<string, unknown> {
   const cleaned: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(schema)) {
     if (key === "additionalProperties") continue;
     if (value && typeof value === "object" && !Array.isArray(value)) {
-      cleaned[key] = stripUnsupportedSchemaProps(value as Record<string, unknown>);
+      cleaned[key] = stripUnsupportedSchemaProps(
+        value as Record<string, unknown>,
+      );
     } else {
       cleaned[key] = value;
     }
@@ -45,7 +149,9 @@ function convertToolsToGemini(tools: Tool[]): Record<string, unknown> {
     functionDeclarations: tools.map((tool) => ({
       name: tool.function.name,
       description: tool.function.description,
-      parameters: stripUnsupportedSchemaProps(tool.function.parameters as Record<string, unknown>),
+      parameters: stripUnsupportedSchemaProps(
+        tool.function.parameters as Record<string, unknown>,
+      ),
     })),
   };
 }
@@ -94,81 +200,12 @@ export class GeminiProvider extends AbstractProvider {
     }
   }
 
-  private mapRolesForGemini(messages: ChatMessage[]): GeminiChatContent[] {
-    const payloadContents: GeminiChatContent[] = [];
-    let previousRole = "";
-
-    for (const message of messages) {
-      // Assistant message with tool calls → model role with functionCall parts
-      if (message.role === "assistant" && message.tool_calls?.length) {
-        // Use _raw parts if available to preserve thoughtSignature
-        const parts: any[] = message.tool_calls.map((tc) =>
-          tc._raw || {
-            functionCall: {
-              name: tc.function.name,
-              args: JSON.parse(tc.function.arguments || "{}"),
-            },
-          }
-        );
-        if (message.content) {
-          parts.unshift({ text: message.content });
-        }
-        payloadContents.push({ role: "model", parts });
-        previousRole = "model";
-        continue;
-      }
-
-      // Tool result → user role with functionResponse parts
-      if (message.role === "tool") {
-        const part: GeminiChatPart = {
-          functionResponse: {
-            name: message.name || "unknown",
-            response: { result: message.content },
-          },
-        };
-        // Batch consecutive tool results into one user message
-        if (previousRole === "tool") {
-          payloadContents[payloadContents.length - 1].parts.push(part);
-        } else {
-          payloadContents.push({ role: "user", parts: [part] });
-        }
-        previousRole = "tool";
-        continue;
-      }
-
-      let role = "user";
-      if (message.role === "assistant") {
-        role = "model";
-      }
-
-      if (
-        role === "model" &&
-        (payloadContents.length === 0 || previousRole === "model")
-      ) {
-        // Skip model message if it's the first or follows another model message
-      } else if (role === "user" && previousRole === "user") {
-        payloadContents[payloadContents.length - 1].parts.push(
-          { text: message.content },
-        );
-      } else {
-        payloadContents.push({
-          role: role,
-          parts: [{ text: message.content }],
-        });
-      }
-      previousRole = role;
-    }
-
-    return payloadContents;
-  }
-
   streamChat(options: StreamChatOptions): Promise<ChatResponse> {
     const { messages, tools, response_format, onChunk, onComplete } = options;
 
     return new Promise((resolve, reject) => {
       try {
-        const rawUrl =
-          `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?alt=sse`;
+        const rawUrl = `${this.baseUrl}/v1beta/models/${this.modelName}:streamGenerateContent?alt=sse`;
 
         const headers: HttpHeaders = {
           "Content-Type": "application/json",
@@ -176,11 +213,12 @@ export class GeminiProvider extends AbstractProvider {
         };
 
         const sseUrl = this.useProxy ? buildProxyUrl(rawUrl) : rawUrl;
-        const finalHeaders = this.useProxy ? buildProxyHeaders(headers) : headers;
+        const finalHeaders = this.useProxy
+          ? buildProxyHeaders(headers)
+          : headers;
 
-        const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
-          messages,
-        );
+        const payloadContents: GeminiChatContent[] =
+          mapRolesForGemini(messages);
 
         const requestBody: Record<string, unknown> = {
           contents: payloadContents,
@@ -272,7 +310,8 @@ export class GeminiProvider extends AbstractProvider {
               if (data.usageMetadata) {
                 usage = {
                   prompt_tokens: data.usageMetadata.promptTokenCount || 0,
-                  completion_tokens: data.usageMetadata.candidatesTokenCount || 0,
+                  completion_tokens:
+                    data.usageMetadata.candidatesTokenCount || 0,
                   total_tokens: data.usageMetadata.totalTokenCount || 0,
                 };
               }
@@ -283,8 +322,12 @@ export class GeminiProvider extends AbstractProvider {
                 source.close();
                 const response: ChatResponse = {
                   content: fullContent,
-                  tool_calls: collectedToolCalls!.length > 0 ? collectedToolCalls : undefined,
-                  finish_reason: finishReason === "STOP" ? "stop" : "tool_calls",
+                  tool_calls:
+                    collectedToolCalls!.length > 0
+                      ? collectedToolCalls
+                      : undefined,
+                  finish_reason:
+                    finishReason === "STOP" ? "stop" : "tool_calls",
                   usage,
                 };
                 if (onComplete) onComplete(response);
@@ -336,9 +379,7 @@ export class GeminiProvider extends AbstractProvider {
     tools?: Tool[],
     response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
-    const payloadContents: GeminiChatContent[] = this.mapRolesForGemini(
-      messages,
-    );
+    const payloadContents: GeminiChatContent[] = mapRolesForGemini(messages);
 
     const requestBody: Record<string, unknown> = {
       contents: payloadContents,
@@ -366,7 +407,10 @@ export class GeminiProvider extends AbstractProvider {
       `${this.baseUrl}/v1beta/models/${this.modelName}:generateContent`,
       {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": this.apiKey,
+        },
         body: JSON.stringify(requestBody),
       },
     );
@@ -386,27 +430,29 @@ export class GeminiProvider extends AbstractProvider {
     const functionCalls = parts.filter((p: any) => p.functionCall);
     const textParts = parts.filter((p: any) => p.text !== undefined);
 
-    const toolCalls = functionCalls.length > 0
-      ? functionCalls.map((p: any, i: number) => ({
-        id: `call_${i}`,
-        type: "function" as const,
-        function: {
-          name: p.functionCall.name,
-          arguments: JSON.stringify(p.functionCall.args || {}),
-        },
-        _raw: p,
-      }))
-      : undefined;
+    const toolCalls =
+      functionCalls.length > 0
+        ? functionCalls.map((p: any, i: number) => ({
+            id: `call_${i}`,
+            type: "function" as const,
+            function: {
+              name: p.functionCall.name,
+              arguments: JSON.stringify(p.functionCall.args || {}),
+            },
+            _raw: p,
+          }))
+        : undefined;
 
     return {
       content: textParts.map((p: any) => p.text).join("") || "",
       tool_calls: toolCalls,
       usage: responseData.usageMetadata
         ? {
-          prompt_tokens: responseData.usageMetadata.promptTokenCount || 0,
-          completion_tokens: responseData.usageMetadata.candidatesTokenCount || 0,
-          total_tokens: responseData.usageMetadata.totalTokenCount || 0,
-        }
+            prompt_tokens: responseData.usageMetadata.promptTokenCount || 0,
+            completion_tokens:
+              responseData.usageMetadata.candidatesTokenCount || 0,
+            total_tokens: responseData.usageMetadata.totalTokenCount || 0,
+          }
         : undefined,
     };
   }
@@ -424,9 +470,7 @@ export class GeminiEmbeddingProvider extends AbstractEmbeddingProvider {
     super(apiKey, baseUrl, "Gemini", modelName, requireAuth, useProxy, timeout);
   }
 
-  async _generateEmbeddings(
-    options: { text: string },
-  ): Promise<Array<number>> {
+  async _generateEmbeddings(options: { text: string }): Promise<Array<number>> {
     const body = JSON.stringify({
       model: this.modelName,
       content: {

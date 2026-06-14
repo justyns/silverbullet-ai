@@ -22,3 +22,26 @@ export function buildProxyUrl(url: string): string {
   const base = pathname.includes("/.fs/") ? pathname.split("/.fs/")[0] : "";
   return `${base}/.proxy/${url.replace(/^https?:\/\//i, "")}`;
 }
+
+// When proxied, SilverBullet returns its own 200 and moves the upstream status to
+// `x-proxy-status-code` and upstream headers to `x-proxy-header-*`. These read the
+// real values back (and fall through to the direct response when not proxying).
+export function readResponseHeader(
+  res: Response,
+  name: string,
+  useProxy: boolean,
+): string | undefined {
+  if (useProxy) {
+    return res.headers.get(`x-proxy-header-${name}`) ??
+      res.headers.get(name) ?? undefined;
+  }
+  return res.headers.get(name) ?? undefined;
+}
+
+export function readStatus(res: Response, useProxy: boolean): number {
+  if (useProxy) {
+    const s = res.headers.get("x-proxy-status-code");
+    if (s) return Number(s);
+  }
+  return res.status;
+}

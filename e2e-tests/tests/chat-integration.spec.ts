@@ -48,10 +48,9 @@ test.describe("AI Chat Integration", () => {
     const assistantMessage = panelFrame.locator(".message.assistant");
     await expect(assistantMessage).toBeVisible({ timeout: 30000 });
 
-    // Verify the response contains some text (not empty)
-    const responseText = await assistantMessage.textContent();
-    expect(responseText).toBeTruthy();
-    expect(responseText!.length).toBeGreaterThan(0);
+    // Verify the response contains some text (the message div appears
+    // empty while streaming, so wait for content)
+    await expect(assistantMessage).not.toBeEmpty({ timeout: 30000 });
 
     // The empty state should no longer be visible
     const emptyState = panelFrame.locator(".empty-state");
