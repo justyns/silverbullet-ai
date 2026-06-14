@@ -235,6 +235,18 @@ test("resolveFileToAttachment returns null when the kind isn't supported", async
   expect(a).toBeNull();
 });
 
+test("resolveFileToAttachment respects allowedReadPaths", async () => {
+  await setup();
+  await syscall("mock.setDocument", "secret/x.png", PNG_BYTES);
+  expect(
+    await resolveFileToAttachment("secret/x.png", IMAGES, NO_HANDLERS, ["notes/"]),
+  ).toBeNull();
+  const ok = await resolveFileToAttachment("notes/img.png", IMAGES, NO_HANDLERS, [
+    "notes/",
+  ]);
+  expect(ok?.name).toEqual("notes/img.png");
+});
+
 test("resolveFileToAttachment uses a registered handler", async () => {
   await setup();
   await syscall("mock.setDocument", "notes/x.note", SMALL_BYTES);

@@ -680,9 +680,12 @@ function parseAttachPaths(raw: unknown): string[] | undefined {
 }
 
 // Resolves attach-paths into carrier messages (image/pdf parts or handler text)
-// the model sees next turn. Capability-gated only — the model explicitly asked.
+// the model sees next turn. Capability-gated only — the model explicitly asked —
+// but still confined to the agent's allowedReadPaths so a tool can't pull files
+// outside its sandbox.
 async function buildAttachmentCarriers(
   paths: string[],
+  permissions?: PathPermissions,
 ): Promise<ChatMessage[]> {
   if (paths.length === 0) return [];
   const kinds = supportedAttachmentKinds();
@@ -692,7 +695,12 @@ async function buildAttachmentCarriers(
   for (const path of paths) {
     if (seen.has(path)) continue;
     seen.add(path);
-    const attachment = await resolveFileToAttachment(path, kinds, handlerExts);
+    const attachment = await resolveFileToAttachment(
+      path,
+      kinds,
+      handlerExts,
+      permissions?.allowedReadPaths,
+    );
     if (attachment) messages.push(attachmentMessage(attachment));
   }
   return messages;
@@ -819,7 +827,10 @@ async function processToolCalls(
     if (result.attachPaths) attachPaths.push(...result.attachPaths);
   }
 
-  const attachmentMessages = await buildAttachmentCarriers(attachPaths);
+  const attachmentMessages = await buildAttachmentCarriers(
+    attachPaths,
+    permissions,
+  );
   return { toolCallsText, toolMessages, attachmentMessages };
 }
 

@@ -328,6 +328,7 @@ export async function startPanelChat(
               enabledKinds,
               handlerExts,
               seen,
+              currentChatAgent?.aiagent?.allowedReadPaths,
             );
             existing.push(...pageFiles);
           }

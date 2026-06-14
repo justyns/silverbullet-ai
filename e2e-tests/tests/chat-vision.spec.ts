@@ -90,7 +90,7 @@ test.describe("AI Chat Vision", () => {
     const multipart = requestBody.messages.find((m: any) => Array.isArray(m.content));
     expect(multipart).toBeTruthy();
     expect(multipart.role).toBe("user");
-    expect(multipart.content).toContainEqual({ type: "text", text: "Image: red.png" });
+    expect(multipart.content).toContainEqual({ type: "text", text: "Attached image: red.png" });
     const imagePart = multipart.content.find((p: any) => p.type === "image_url");
     expect(imagePart.image_url.url).toMatch(/^data:image\/png;base64,/);
   });

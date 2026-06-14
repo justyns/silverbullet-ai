@@ -103,7 +103,7 @@ export function mapRolesForGemini(
       role === "user" &&
       (previousRole === "user" || previousRole === "tool")
     ) {
-      // Merge into the preceding user content so thaht we
+      // Merge into the preceding user content so that we
       // keep alternating user/model turns.
       payloadContents[payloadContents.length - 1].parts.push(
         ...userParts(message),

@@ -46,7 +46,8 @@ function attachmentToPart(a: Attachment): OpenAIContentPart {
   if (mimeType.startsWith("image/")) {
     return { type: "image_url", image_url: { url } };
   }
-  // PDFs and other documents use the OpenAI file part with a data: URL.
+  // Non-images use OpenAI's `file` content part (data: URL). Gated by
+  // supportsDocuments, since not every OpenAI-compatible endpoint accepts it.
   return { type: "file", file: { filename: a.name, file_data: url } };
 }
 

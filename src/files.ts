@@ -15,7 +15,7 @@ import {
 } from "@silverbulletmd/silverbullet/lib/tree";
 
 import { aiSettings, currentModel } from "./init.ts";
-import { invokeSpaceLuaFunction, log } from "./utils.ts";
+import { invokeSpaceLuaFunction, isPathAllowed, log } from "./utils.ts";
 import {
   buildProxyHeaders,
   buildProxyUrl,
@@ -220,7 +220,9 @@ export async function resolveFileToAttachment(
   path: string,
   kinds: Set<AttachmentKind>,
   handlerExts: Set<string>,
+  allowedReadPaths?: string[],
 ): Promise<Attachment | null> {
+  if (!isPathAllowed(path, allowedReadPaths)) return null;
   const ext = extOf(path);
   if (ext && handlerExts.has(ext)) {
     return await runFileHandler(ext, path, kinds);
@@ -243,6 +245,7 @@ export async function extractFilesFromMarkdown(
   enabledKinds: Set<AttachmentKind>,
   handlerExts: Set<string>,
   seen: Set<string> = new Set(),
+  allowedReadPaths?: string[],
 ): Promise<Attachment[]> {
   const attachments: Attachment[] = [];
 
@@ -283,6 +286,7 @@ export async function extractFilesFromMarkdown(
       url,
       enabledKinds,
       handlerExts,
+      allowedReadPaths,
     );
     if (resolved) {
       if (transclusion.alias) resolved.alt = transclusion.alias;

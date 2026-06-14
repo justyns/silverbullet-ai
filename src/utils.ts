@@ -409,7 +409,7 @@ export async function enrichChatMessages(
 export function attachmentMessage(a: Attachment): ChatMessage {
   if (a.binary) {
     // The path is from `![[path]]` in the message; the alt
-    // text, when present, is also addedl.
+    // text, when present, is also added.
     const label = a.alt
       ? `Attached ${a.type}: ${a.name} "${a.alt}"`
       : `Attached ${a.type}: ${a.name}`;
