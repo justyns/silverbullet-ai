@@ -15,11 +15,16 @@ Each piece of context is wrapped as an "attachment" and inserted into the conver
 
 ## Attachment Types
 
+Text context is added to the conversation wrapped in a `<context type="…" name="…">` block. The `type` tells the model where the text came from:
+
 | Type | Description |
 |------|-------------|
 | `note` | Content from a wiki-linked page like `[[PageName]]` |
-| `embedding` | Content from semantically similar pages found via embedding search |
+| `rag` | Excerpts from semantically similar pages (embedding search) |
 | `custom` | Content added by custom enrichment functions |
+| `file` | Text extracted from an embedded file by a custom `ai.fileHandlers` handler |
+
+**Note**: This is separate from native file attachments like for models that support vision.
 
 ## Configuration
 
@@ -32,8 +37,9 @@ config.set("ai", {
     searchEmbeddings = true,    -- Search indexed embeddings for context
     bakeMessages = true,        -- Render templates/queries before sending
     attachImages = true,        -- Send referenced images to vision models
+    attachDocuments = false,    -- Send referenced PDFs to document-capable models
     downloadRemoteImages = false, -- Also download https:// image links
-    maxImageSizeMB = 10         -- Skip images larger than this (default 10)
+    maxFileSizeMB = 10          -- Skip files larger than this (default 10)
   }
 })
 ```
@@ -58,7 +64,9 @@ When `searchEmbeddings` is enabled and you have [[Configuration/Embedding Models
 
 Relevant excerpts are automatically included as context, enabling RAG (Retrieval Augmented Generation).
 
-## Image Attachments (Vision)
+## File Attachments (Vision & Documents)
+
+Files referenced in your messages are collected alongside text context and delivered automatically: each becomes a native part when the model supports it.
 
 When `attachImages` is enabled and the selected model supports vision, images referenced in your chat messages are sent to the LLM:
 
@@ -68,11 +76,33 @@ Describe the animal in ![[photos/cat.png]]
 Transcribe this diagram into a Mermaid block: ![diagram](architecture.png)
 ```
 
-Both `![[image.png]]` and `![alt](image.png)` syntax work. In the chat panel, images embedded in the current page are also attached, so you can ask "describe the image on this page".
+Both `![[image.png]]` and `![alt](image.png)` syntax work. In the chat panel, files embedded in the current page are also attached, so you can ask "describe the image on this page". Each file is labeled with its path (and any alt text / `|caption` you gave it), so the model can tell multiple attachments apart.
 
-Supported formats: png, jpg/jpeg, gif, webp.
+Supported image formats: png, jpg/jpeg, gif, webp. Files larger than `maxFileSizeMB` (default 10) are skipped. Remote `https://` image links are skipped unless `downloadRemoteImages` is enabled, which downloads and caches them locally before sending.
 
-Remote `https://` image links are skipped unless `downloadRemoteImages` is enabled, which downloads and caches them locally before sending.
+### Documents (PDF)
+
+PDFs require `attachDocuments = true` **and** a model explicitly flagged document-capable.  There is no auto-detect for PDF support, so it is opt-in per model via `supportsDocuments`:
+
+```lua
+config.set("ai", {
+  textModels = {
+    { name = "gpt-4o", provider = "openai", modelName = "gpt-4o",
+      supportsVision = true, supportsDocuments = true },
+  },
+})
+```
+
+### Custom file handlers
+
+For file types a model can't read natively, register a handler in `ai.fileHandlers`, keyed by extension. It receives `{ path, mimeType, dataUrl }` and returns either `{ text = "..." }` (added as text context, so it reaches any model) or `{ mimeType = "...", data = "<base64>" }` (sent as a native attachment):
+
+```lua
+ai.fileHandlers = ai.fileHandlers or {}
+ai.fileHandlers.draw = function(file)
+  return { text = my_drawio_ocr(file.dataUrl) }
+end
+```
 
 ## Template Expansion
 

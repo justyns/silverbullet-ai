@@ -66,6 +66,7 @@ type FilterOption = {
   isUtility?: boolean;
   supportsFunctionCalling?: boolean;
   supportsVision?: boolean;
+  supportsDocuments?: boolean;
 };
 
 /**
@@ -126,6 +127,7 @@ export async function selectModelFromConfig() {
           provider: model.provider,
           supportsFunctionCalling: model.supportsTools,
           supportsVision: model.supportsVision,
+          supportsDocuments: model.supportsDocuments,
           modelName: model.modelName,
           hint: "configured",
           hintInactive: !isSelected,
@@ -216,6 +218,7 @@ export async function selectModelFromConfig() {
     requireAuth: defaults.requireAuth,
     supportsTools: selected.supportsFunctionCalling,
     supportsVision: selected.supportsVision,
+    supportsDocuments: selected.supportsDocuments,
   };
 
   await setSelectedTextModel(modelConfig);

@@ -303,6 +303,40 @@ test("assembleMessagesWithAttachments should insert attachments before their sou
   assertEquals(result[2].content, "Check [[PageA]]");
 });
 
+test("assembleMessagesWithAttachments renders a binary attachment as its own ordered carrier message", () => {
+  const systemMessage: ChatMessage = { role: "system", content: "You are helpful." };
+  const textAttachment: Attachment = {
+    name: "PageA",
+    content: "Page A content",
+    type: "note",
+  };
+  const imageAttachment: Attachment = {
+    name: "cat.png",
+    type: "image",
+    binary: { mimeType: "image/png", url: "data:image/png;base64,abc" },
+    alt: "a sleeping cat",
+  };
+  const messagesWithAttachments: MessageWithAttachments[] = [
+    {
+      message: { role: "user", content: "Describe ![[cat.png]] and [[PageA]]" },
+      attachments: [textAttachment, imageAttachment],
+    },
+  ];
+
+  const result = assembleMessagesWithAttachments(
+    systemMessage,
+    messagesWithAttachments,
+  );
+
+  // [system, text <context> msg, binary carrier msg, real user msg]
+  expect(result.length).toEqual(4);
+  expect(result[1].content).toContain("<context");
+  expect(result[1].attachments).toBeUndefined();
+  expect(result[2].content).toEqual('Attached image: cat.png "a sleeping cat"');
+  expect(result[2].attachments).toEqual([imageAttachment]);
+  expect(result[3].content).toEqual("Describe ![[cat.png]] and [[PageA]]");
+});
+
 test("assembleMessagesWithAttachments should place agent attachments after system message", () => {
   const systemMessage: ChatMessage = {
     role: "system",
@@ -559,25 +593,26 @@ const imageMessages: ChatMessage[] = [
   { role: "assistant", content: "An image ![alt](img.png)" },
 ];
 
-test("enrichChatMessages does not attach images by default", async () => {
+test("enrichChatMessages does not attach files by default", async () => {
   await setupVisionTest({});
   const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
-  expect(messagesWithAttachments[0].message.images).toBeUndefined();
+  expect(messagesWithAttachments[0].attachments).toEqual([]);
 });
 
-test("enrichChatMessages attaches images to user messages when enabled", async () => {
+test("enrichChatMessages attaches images as unified attachments when enabled", async () => {
   await setupVisionTest({ attachImages: true });
   const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
-  expect(messagesWithAttachments[0].message.images).toEqual([{
+  expect(messagesWithAttachments[0].attachments).toEqual([{
     name: "img.png",
-    mimeType: "image/png",
-    url: "data:image/png;base64,AQID",
+    type: "image",
+    binary: { mimeType: "image/png", url: "data:image/png;base64,AQID" },
+    alt: "alt",
   }]);
-  expect(messagesWithAttachments[1].message.images).toBeUndefined();
+  expect(messagesWithAttachments[1].attachments).toEqual([]);
 });
 
 test("enrichChatMessages skips images when the model does not support vision", async () => {
   await setupVisionTest({ attachImages: true }, false);
   const { messagesWithAttachments } = await enrichChatMessages(imageMessages);
-  expect(messagesWithAttachments[0].message.images).toBeUndefined();
+  expect(messagesWithAttachments[0].attachments).toEqual([]);
 });

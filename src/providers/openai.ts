@@ -1,6 +1,7 @@
 import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { SSE } from "sse.js";
 import type {
+  Attachment,
   ChatMessage,
   ChatResponse,
   EmbeddingGenerationOptions,
@@ -37,21 +38,33 @@ function extractReasoning(
 
 type OpenAIContentPart =
   | { type: "text"; text: string }
-  | { type: "image_url"; image_url: { url: string } };
+  | { type: "image_url"; image_url: { url: string } }
+  | { type: "file"; file: { filename: string; file_data: string } };
 
+function attachmentToPart(a: Attachment): OpenAIContentPart {
+  const { mimeType, url } = a.binary!;
+  if (mimeType.startsWith("image/")) {
+    return { type: "image_url", image_url: { url } };
+  }
+  // PDFs and other documents use the OpenAI file part with a data: URL.
+  return { type: "file", file: { filename: a.name, file_data: url } };
+}
+
+/**
+ * Converts messages to the OpenAI wire format. A message carrying binary
+ * attachments becomes multipart content (its text label + each native part).
+ */
 export function toOpenAIMessages(
   messages: ChatMessage[],
 ): Array<Record<string, unknown>> {
   return messages.map((message) => {
-    const { images, ...rest } = message;
-    if (!images?.length) return rest;
+    const { attachments, ...rest } = message;
+    const binary = attachments?.filter((a) => a.binary);
+    if (!binary?.length) return rest;
     const content: OpenAIContentPart[] = [
       { type: "text", text: message.content },
+      ...binary.map(attachmentToPart),
     ];
-    for (const img of images) {
-      content.push({ type: "text", text: `Image: ${img.name}` });
-      content.push({ type: "image_url", image_url: { url: img.url } });
-    }
     return { ...rest, content };
   });
 }

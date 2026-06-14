@@ -23,11 +23,12 @@ export type GeminiChatContent = {
 
 function userParts(message: ChatMessage): GeminiChatPart[] {
   const parts: GeminiChatPart[] = [{ text: message.content }];
-  for (const img of message.images ?? []) {
-    const data = img.url.split(",", 2)[1];
+  // inlineData carries any mime (image, pdf, ...); the label is the message text.
+  for (const a of message.attachments ?? []) {
+    if (!a.binary) continue;
+    const data = a.binary.url.split(",", 2)[1];
     if (data) {
-      parts.push({ text: `Image: ${img.name}` });
-      parts.push({ inlineData: { mimeType: img.mimeType, data } });
+      parts.push({ inlineData: { mimeType: a.binary.mimeType, data } });
     }
   }
   return parts;

@@ -21,30 +21,57 @@ test("mapRolesForGemini maps roles and merges consecutive user messages", () => 
   ]);
 });
 
-test("mapRolesForGemini converts images to labeled inlineData parts", () => {
+test("mapRolesForGemini converts image attachments to inlineData parts", () => {
   const messages: ChatMessage[] = [{
     role: "user",
-    content: "Describe ![[cat.png]]",
-    images: [{ name: "cat.png", mimeType: "image/png", url: "data:image/png;base64,abc" }],
+    content: "Attached image: cat.png",
+    attachments: [{
+      name: "cat.png",
+      type: "image",
+      binary: { mimeType: "image/png", url: "data:image/png;base64,abc" },
+    }],
   }];
 
   expect(mapRolesForGemini(messages)).toEqual([{
     role: "user",
     parts: [
-      { text: "Describe ![[cat.png]]" },
-      { text: "Image: cat.png" },
+      { text: "Attached image: cat.png" },
       { inlineData: { mimeType: "image/png", data: "abc" } },
     ],
   }]);
 });
 
-test("mapRolesForGemini includes images in merged consecutive user messages", () => {
+test("mapRolesForGemini converts pdf attachments to inlineData parts", () => {
+  const messages: ChatMessage[] = [{
+    role: "user",
+    content: "Attached document: report.pdf",
+    attachments: [{
+      name: "report.pdf",
+      type: "document",
+      binary: { mimeType: "application/pdf", url: "data:application/pdf;base64,xyz" },
+    }],
+  }];
+
+  expect(mapRolesForGemini(messages)).toEqual([{
+    role: "user",
+    parts: [
+      { text: "Attached document: report.pdf" },
+      { inlineData: { mimeType: "application/pdf", data: "xyz" } },
+    ],
+  }]);
+});
+
+test("mapRolesForGemini includes attachments in merged consecutive user messages", () => {
   const messages: ChatMessage[] = [
     { role: "user", content: "first" },
     {
       role: "user",
       content: "second",
-      images: [{ name: "a.png", mimeType: "image/png", url: "data:image/png;base64,xyz" }],
+      attachments: [{
+        name: "a.png",
+        type: "image",
+        binary: { mimeType: "image/png", url: "data:image/png;base64,xyz" },
+      }],
     },
   ];
 
@@ -53,7 +80,6 @@ test("mapRolesForGemini includes images in merged consecutive user messages", ()
     parts: [
       { text: "first" },
       { text: "second" },
-      { text: "Image: a.png" },
       { inlineData: { mimeType: "image/png", data: "xyz" } },
     ],
   }]);

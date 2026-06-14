@@ -124,25 +124,36 @@ export type ToolCall = {
   _raw?: Record<string, unknown>;
 };
 
-export type ChatImage = {
-  name: string;
-  mimeType: string;
-  url: string;
-};
-
 export type ChatMessage = {
   content: string;
   role: "user" | "assistant" | "system" | "tool";
-  images?: ChatImage[];
+  attachments?: Attachment[];
   tool_calls?: ToolCall[];
   tool_call_id?: string;
   name?: string;
 };
 
+// Binary attachment kinds, gated independently by model capability.
+export type AttachmentKind = "image" | "document";
+
+// A single attachment is EITHER a text payload (`content`, rendered as a
+// <context> message) OR a binary payload (`binary`, sent as a native provider
+// part). Text provenances (note/rag/...) and binary kinds (image/document/file)
+// share one type so collection and ordered assembly are unified.
 export type Attachment = {
   name: string;
-  content: string;
-  type: "note" | "url" | "embedding" | "rag" | "custom";
+  type:
+    | "note"
+    | "url"
+    | "embedding"
+    | "rag"
+    | "custom"
+    | "image"
+    | "document"
+    | "file";
+  content?: string;
+  binary?: { mimeType: string; url: string };
+  alt?: string; // author-written alt/caption from the markdown reference
 };
 
 export type EnrichmentResult = {
@@ -227,8 +238,9 @@ export type ChatSettings = {
   enableTools: boolean;
   skipToolApproval: boolean;
   attachImages: boolean;
+  attachDocuments: boolean;
   downloadRemoteImages: boolean;
-  maxImageSizeMB: number;
+  maxFileSizeMB: number;
   defaultAgent?: string;
 };
 
@@ -308,6 +320,7 @@ export type ModelConfig = {
   useProxy?: boolean;
   supportsTools?: boolean;
   supportsVision?: boolean;
+  supportsDocuments?: boolean;
 };
 
 export type ImageModelConfig = {

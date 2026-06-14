@@ -1,4 +1,11 @@
-import { asset, clientStore, editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
+import {
+  asset,
+  clientStore,
+  editor,
+  index,
+  lua,
+  space,
+} from "@silverbulletmd/silverbullet/syscalls";
 import type {
   AIAgentTemplate,
   Attachment,
@@ -8,12 +15,35 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, chatSystemPrompt, currentAIProvider, getSelectedTextModel, initIfNeeded, setSessionToggle, toolsEnabled, visionEnabled } from "./init.ts";
-import { assembleMessagesWithAttachments, cleanMessagesForApi, enrichChatMessages, isPathAllowed, log } from "./utils.ts";
-import { extractImagesFromMarkdown } from "./images.ts";
-import { convertToOpenAITools, discoverAllTools, runAgenticChat } from "./tools.ts";
+import {
+  aiSettings,
+  chatSystemPrompt,
+  currentAIProvider,
+  enabledAttachmentKinds,
+  getSelectedTextModel,
+  initIfNeeded,
+  setSessionToggle,
+  toolsEnabled,
+} from "./init.ts";
+import {
+  assembleMessagesWithAttachments,
+  cleanMessagesForApi,
+  enrichChatMessages,
+  isPathAllowed,
+  log,
+} from "./utils.ts";
+import { extractFilesFromMarkdown, getFileHandlerExts } from "./files.ts";
+import {
+  convertToOpenAITools,
+  discoverAllTools,
+  runAgenticChat,
+} from "./tools.ts";
 import { formatReasoningBlock } from "./widgets.ts";
-import { buildAgentSystemPrompt, discoverAgents, filterToolsForAgent } from "./agents.ts";
+import {
+  buildAgentSystemPrompt,
+  discoverAgents,
+  filterToolsForAgent,
+} from "./agents.ts";
 import { getModelContextLimit as lookupModelContextLimit } from "./model-metadata.ts";
 
 let isPanelOpen = false;
@@ -160,12 +190,19 @@ export async function toggleAIAssistant() {
  */
 export async function startPanelChat(
   messages: ChatMessage[],
-): Promise<{ streamId?: string; error?: string; embeddingsContext?: EmbeddingsContext }> {
+): Promise<{
+  streamId?: string;
+  error?: string;
+  embeddingsContext?: EmbeddingsContext;
+}> {
   try {
     await initIfNeeded();
 
     if (!currentAIProvider) {
-      return { error: "No text model configured. Please add a text model in your config." };
+      return {
+        error:
+          "No text model configured. Please add a text model in your config.",
+      };
     }
 
     await initChatAgent();
@@ -178,14 +215,18 @@ export async function startPanelChat(
       status: "streaming",
     });
 
-    let luaTools = toolsEnabled() ? await discoverAllTools() : new Map<string, LuaToolDefinition>();
+    let luaTools = toolsEnabled()
+      ? await discoverAllTools()
+      : new Map<string, LuaToolDefinition>();
     if (currentChatAgent) {
       luaTools = filterToolsForAgent(luaTools, currentChatAgent);
     }
     const tools = convertToOpenAITools(luaTools);
     log.debug(
       `Panel chat: discovered ${tools.length} tools${
-        currentChatAgent ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})` : ""
+        currentChatAgent
+          ? ` (filtered for agent: ${currentChatAgent.aiagent.name || currentChatAgent.ref})`
+          : ""
       }`,
     );
 
@@ -211,9 +252,10 @@ export async function startPanelChat(
         if (selection && selection.text) {
           contextBlock += `\nSelected text: "${selection.text}"`;
         }
-        const truncatedContent = pageContent.length > 4000
-          ? pageContent.substring(0, 4000) + "\n...(truncated)"
-          : pageContent;
+        const truncatedContent =
+          pageContent.length > 4000
+            ? pageContent.substring(0, 4000) + "\n...(truncated)"
+            : pageContent;
         contextBlock += `\n\nPage content:\n${truncatedContent}`;
       }
     } catch (e) {
@@ -250,27 +292,44 @@ export async function startPanelChat(
     };
 
     const cleanedMessages = await cleanMessagesForApi(messages);
-    const enrichOptions = currentChatAgent?.aiagent?.searchEmbeddings !== undefined
-      ? { searchEmbeddings: currentChatAgent.aiagent.searchEmbeddings }
-      : undefined;
-    const { messagesWithAttachments } = await enrichChatMessages(cleanedMessages, undefined, enrichOptions);
+    const enrichOptions =
+      currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+        ? { searchEmbeddings: currentChatAgent.aiagent.searchEmbeddings }
+        : undefined;
+    const { messagesWithAttachments } = await enrichChatMessages(
+      cleanedMessages,
+      undefined,
+      enrichOptions,
+    );
 
     // Prepend page context after enrichment so RAG search uses original user content
     if (contextBlock) {
-      const lastUserIdx = messagesWithAttachments.findLastIndex((m) => m.message.role === "user");
+      const lastUserIdx = messagesWithAttachments.findLastIndex(
+        (m) => m.message.role === "user",
+      );
       if (lastUserIdx !== -1) {
         const lastMessage = messagesWithAttachments[lastUserIdx].message;
         lastMessage.content = `<context>\n${contextBlock}\n</context>\n\n${lastMessage.content}`;
 
-        if (pageImageSource && visionEnabled()) {
-          const seen = new Set((lastMessage.images ?? []).map((i) => i.name));
-          const pageImages = await extractImagesFromMarkdown(
-            pageImageSource.content,
-            pageImageSource.page,
-            seen,
-          );
-          if (pageImages.length > 0) {
-            lastMessage.images = [...(lastMessage.images ?? []), ...pageImages];
+        if (pageImageSource) {
+          const enabledKinds = enabledAttachmentKinds();
+          const handlerExts = await getFileHandlerExts();
+          if (enabledKinds.size > 0 || handlerExts.size > 0) {
+            // Append page-embedded files to the last message
+            const existing = messagesWithAttachments[lastUserIdx].attachments;
+            const seen = new Set(
+              existing
+                .filter((a) => a.binary || a.type === "file")
+                .map((a) => a.name),
+            );
+            const pageFiles = await extractFilesFromMarkdown(
+              pageImageSource.content,
+              pageImageSource.page,
+              enabledKinds,
+              handlerExts,
+              seen,
+            );
+            existing.push(...pageFiles);
           }
         }
       }
@@ -278,19 +337,25 @@ export async function startPanelChat(
 
     let embeddingsContext: EmbeddingsContext | undefined;
     for (const { attachments } of messagesWithAttachments) {
-      const contextAttachment = attachments.find((a) => a.name === "_embeddingsContext");
+      const contextAttachment = attachments.find(
+        (a) => a.name === "_embeddingsContext",
+      );
       if (contextAttachment) {
         try {
           embeddingsContext = JSON.parse(contextAttachment.content);
-        } catch { /* ignore */ }
+        } catch {
+          /* ignore */
+        }
         break;
       }
     }
 
-    const filteredMessagesWithAttachments = messagesWithAttachments.map(({ message, attachments }) => ({
-      message,
-      attachments: attachments.filter((a) => a.name !== "_embeddingsContext"),
-    }));
+    const filteredMessagesWithAttachments = messagesWithAttachments.map(
+      ({ message, attachments }) => ({
+        message,
+        attachments: attachments.filter((a) => a.name !== "_embeddingsContext"),
+      }),
+    );
 
     const workingMessages = assembleMessagesWithAttachments(
       systemMessage,
@@ -345,9 +410,9 @@ async function runToolLoop(
     },
     permissions: currentChatAgent?.aiagent
       ? {
-        allowedReadPaths: currentChatAgent.aiagent.allowedReadPaths,
-        allowedWritePaths: currentChatAgent.aiagent.allowedWritePaths,
-      }
+          allowedReadPaths: currentChatAgent.aiagent.allowedReadPaths,
+          allowedWritePaths: currentChatAgent.aiagent.allowedWritePaths,
+        }
       : undefined,
   });
 
@@ -387,8 +452,13 @@ async function streamFinalResponse(
     },
     onComplete: (response) => {
       // If reasoning exists and enabled, prepend as code block
-      if (buffer.reasoningChunks.length > 0 && aiSettings?.chat?.showReasoning) {
-        const reasoningBlock = formatReasoningBlock(buffer.reasoningChunks.join(""));
+      if (
+        buffer.reasoningChunks.length > 0 &&
+        aiSettings?.chat?.showReasoning
+      ) {
+        const reasoningBlock = formatReasoningBlock(
+          buffer.reasoningChunks.join(""),
+        );
         buffer.chunks.unshift(reasoningBlock);
       }
       updateTokenUsage(response.usage);
@@ -402,9 +472,12 @@ async function streamFinalResponse(
  * This is a workaround so that the panel iframe can still sort of get
  * streaming.  It's called by the panel js repeatedly.
  */
-export function getPanelChatChunk(
-  streamId: string,
-): { chunks: string[]; status: string; error?: string; statusMessage?: string } {
+export function getPanelChatChunk(streamId: string): {
+  chunks: string[];
+  status: string;
+  error?: string;
+  statusMessage?: string;
+} {
   const buffer = streamBuffers.get(streamId);
 
   if (!buffer) {
@@ -537,7 +610,7 @@ function updateTokenUsage(usage: Usage | undefined): void {
 async function loadPersistedTokenUsage(): Promise<void> {
   if (tokenUsageLoaded) return;
   try {
-    const stored = await clientStore.get(TOKEN_USAGE_KEY) as Usage | null;
+    const stored = (await clientStore.get(TOKEN_USAGE_KEY)) as Usage | null;
     if (stored) {
       sessionTokenUsage = stored;
     }
@@ -551,7 +624,10 @@ async function loadPersistedTokenUsage(): Promise<void> {
  * Gets the context window limit for a model.
  * First tries the provider's API (e.g., Ollama), then falls back to LiteLLM metadata.
  */
-async function getContextLimit(modelName: string, providerHint?: string): Promise<number | null> {
+async function getContextLimit(
+  modelName: string,
+  providerHint?: string,
+): Promise<number | null> {
   const providerLimit = await currentAIProvider?.getContextLimit(modelName);
   if (providerLimit) {
     return providerLimit;
@@ -606,13 +682,15 @@ export async function getChatStatus(): Promise<ChatStatus> {
     contextLimit = await getContextLimit(model.modelName, model.providerKey);
   }
 
-  const agentDisabledRag = currentChatAgent?.aiagent?.searchEmbeddings === false;
+  const agentDisabledRag =
+    currentChatAgent?.aiagent?.searchEmbeddings === false;
 
   return {
     rag: {
-      enabled: (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
-        ? currentChatAgent.aiagent.searchEmbeddings
-        : aiSettings?.chat?.searchEmbeddings) ?? false,
+      enabled:
+        (currentChatAgent?.aiagent?.searchEmbeddings !== undefined
+          ? currentChatAgent.aiagent.searchEmbeddings
+          : aiSettings?.chat?.searchEmbeddings) ?? false,
       indexEnabled: aiSettings?.indexEmbeddings ?? false,
       agentDisabledRag,
     },
