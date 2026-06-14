@@ -81,19 +81,21 @@ export function toolsEnabled(): boolean {
   return aiSettings?.chat?.enableTools !== false && modelSupportsTools();
 }
 
-// Which binary attachment kinds may be sent to the current model.
-export function enabledAttachmentKinds(): Set<AttachmentKind> {
+// Binary attachment kinds the current MODEL can accept (capability only). Used by
+// the view_file tool, where the model explicitly asked, so config opt-in is bypassed.
+export function supportedAttachmentKinds(): Set<AttachmentKind> {
   const kinds = new Set<AttachmentKind>();
+  if (currentModel?.supportsVision !== false) kinds.add("image");
+  if (currentModel?.supportsDocuments === true) kinds.add("document");
+  return kinds;
+}
+
+// Kinds sent during auto-enrichment
+export function enabledAttachmentKinds(): Set<AttachmentKind> {
   const chat = aiSettings?.chat;
-  if (chat?.attachImages === true && currentModel?.supportsVision !== false) {
-    kinds.add("image");
-  }
-  if (
-    chat?.attachDocuments === true &&
-    currentModel?.supportsDocuments === true
-  ) {
-    kinds.add("document");
-  }
+  const kinds = supportedAttachmentKinds();
+  if (chat?.attachImages !== true) kinds.delete("image");
+  if (chat?.attachDocuments !== true) kinds.delete("document");
   return kinds;
 }
 

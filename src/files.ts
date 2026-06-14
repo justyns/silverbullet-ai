@@ -213,6 +213,25 @@ async function runFileHandler(
 }
 
 /**
+ * Resolves a single local path into an Attachment
+ * Returns null when the file isn't deliverable to the current model.
+ */
+export async function resolveFileToAttachment(
+  path: string,
+  kinds: Set<AttachmentKind>,
+  handlerExts: Set<string>,
+): Promise<Attachment | null> {
+  const ext = extOf(path);
+  if (ext && handlerExts.has(ext)) {
+    return await runFileHandler(ext, path, kinds);
+  }
+  const mimeType = mimeFromPath(path);
+  const kind = mimeType ? attachmentKind(mimeType) : undefined;
+  if (!kind || !kinds.has(kind)) return null;
+  return await readLocalBinary(path, mimeType!, kind);
+}
+
+/**
  * Finds embedded files (`![alt](url)` and `![[doc.ext]]`) in markdown and resolves
  * each into a unified Attachment: built-in image/pdf become a binary part, a
  * registered `ai.fileHandlers[ext]` returns text (e.g. OCR) or a converted binary.
@@ -258,19 +277,13 @@ export async function extractFilesFromMarkdown(
       url = resolveMarkdownLink(currentPage, decodeURI(url));
     }
     if (seen.has(url)) continue;
+    seen.add(url);
 
-    const ext = extOf(url);
-    let resolved: Attachment | null = null;
-    if (ext && handlerExts.has(ext)) {
-      seen.add(url);
-      resolved = await runFileHandler(ext, url, enabledKinds);
-    } else {
-      const mimeType = mimeFromPath(url);
-      const kind = mimeType ? attachmentKind(mimeType) : undefined;
-      if (!kind || !enabledKinds.has(kind)) continue; // not deliverable, leave unseen
-      seen.add(url);
-      resolved = await readLocalBinary(url, mimeType!, kind);
-    }
+    const resolved = await resolveFileToAttachment(
+      url,
+      enabledKinds,
+      handlerExts,
+    );
     if (resolved) {
       if (transclusion.alias) resolved.alt = transclusion.alias;
       attachments.push(resolved);

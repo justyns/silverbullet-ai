@@ -61,6 +61,39 @@ test("mapRolesForGemini converts pdf attachments to inlineData parts", () => {
   }]);
 });
 
+test("mapRolesForGemini folds an attachment carrier into the tool-result turn", () => {
+  const messages: ChatMessage[] = [
+    { role: "user", content: "what is on this page?" },
+    {
+      role: "assistant",
+      content: "",
+      tool_calls: [
+        { id: "1", type: "function", function: { name: "view_file", arguments: "{}" } },
+      ],
+    },
+    { role: "tool", name: "view_file", content: "Attaching cat.png." },
+    {
+      role: "user",
+      content: "Attached image: cat.png",
+      attachments: [{
+        name: "cat.png",
+        type: "image",
+        binary: { mimeType: "image/png", url: "data:image/png;base64,abc" },
+      }],
+    },
+  ];
+
+  const result = mapRolesForGemini(messages);
+  // The injected carrier merges into the tool-result user turn (no double user turn).
+  const last = result[result.length - 1];
+  expect(last.role).toEqual("user");
+  expect(last.parts).toEqual([
+    { functionResponse: { name: "view_file", response: { result: "Attaching cat.png." } } },
+    { text: "Attached image: cat.png" },
+    { inlineData: { mimeType: "image/png", data: "abc" } },
+  ]);
+});
+
 test("mapRolesForGemini includes attachments in merged consecutive user messages", () => {
   const messages: ChatMessage[] = [
     { role: "user", content: "first" },

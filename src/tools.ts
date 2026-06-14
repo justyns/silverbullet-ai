@@ -6,11 +6,13 @@ import {
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
 import {
+  attachmentMessage,
   computeSimpleDiff,
   type DiffLine,
   isPathAllowed,
   log,
 } from "./utils.ts";
+import { getFileHandlerExts, resolveFileToAttachment } from "./files.ts";
 import type {
   ChatMessage,
   ChatResponse,
@@ -21,7 +23,12 @@ import type {
   Tool,
   Usage,
 } from "./types.ts";
-import { aiSettings, currentModel, initIfNeeded } from "./init.ts";
+import {
+  aiSettings,
+  currentModel,
+  initIfNeeded,
+  supportedAttachmentKinds,
+} from "./init.ts";
 import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
 
 function validatePathPermission(
@@ -93,6 +100,9 @@ export type ToolExecutionResult = {
   result?: string;
   summary?: string;
   error?: string;
+  // Paths the tool asks to attach to the conversation (e.g. view_file). Resolved
+  // into carrier messages that the model sees on its next turn.
+  attachPaths?: string[];
 };
 
 const TOOL_RESULT_CACHE_PREFIX = "ai.toolResults.";
@@ -414,6 +424,7 @@ export async function executeTool(
         success: true,
         result: resultStr,
         summary: String(result.summary),
+        attachPaths: parseAttachPaths(result.attachPaths),
       };
     }
 
@@ -655,6 +666,38 @@ export function toolRequiresApproval(
 /**
  * Processes tool calls: executes them, formats display text, and builds result messages
  */
+// Normalizes a tool's `attachPaths` return (a Lua array deserializes to an array
+// or an object) into a string[].
+function parseAttachPaths(raw: unknown): string[] | undefined {
+  if (!raw) return undefined;
+  const arr = Array.isArray(raw)
+    ? raw
+    : typeof raw === "object"
+      ? Object.values(raw as Record<string, unknown>)
+      : [];
+  const paths = arr.filter((p): p is string => typeof p === "string");
+  return paths.length ? paths : undefined;
+}
+
+// Resolves attach-paths into carrier messages (image/pdf parts or handler text)
+// the model sees next turn. Capability-gated only — the model explicitly asked.
+async function buildAttachmentCarriers(
+  paths: string[],
+): Promise<ChatMessage[]> {
+  if (paths.length === 0) return [];
+  const kinds = supportedAttachmentKinds();
+  const handlerExts = await getFileHandlerExts();
+  const seen = new Set<string>();
+  const messages: ChatMessage[] = [];
+  for (const path of paths) {
+    if (seen.has(path)) continue;
+    seen.add(path);
+    const attachment = await resolveFileToAttachment(path, kinds, handlerExts);
+    if (attachment) messages.push(attachmentMessage(attachment));
+  }
+  return messages;
+}
+
 async function processToolCalls(
   toolCalls: Array<{
     id: string;
@@ -667,9 +710,14 @@ async function processToolCalls(
     result: ToolExecutionResult,
   ) => void,
   permissions?: PathPermissions,
-): Promise<{ toolCallsText: string; toolMessages: ChatMessage[] }> {
+): Promise<{
+  toolCallsText: string;
+  toolMessages: ChatMessage[];
+  attachmentMessages: ChatMessage[];
+}> {
   let toolCallsText = "";
   const toolMessages: ChatMessage[] = [];
+  const attachPaths: string[] = [];
   const emitToolCall = onToolCall ?? (() => {});
 
   for (const toolCall of toolCalls) {
@@ -767,9 +815,12 @@ async function processToolCalls(
       name: toolName,
       content: fullResult,
     });
+
+    if (result.attachPaths) attachPaths.push(...result.attachPaths);
   }
 
-  return { toolCallsText, toolMessages };
+  const attachmentMessages = await buildAttachmentCarriers(attachPaths);
+  return { toolCallsText, toolMessages, attachmentMessages };
 }
 
 /**
@@ -894,14 +945,15 @@ export async function runAgenticChat(
         tool_calls: response.tool_calls,
       });
 
-      const { toolCallsText: newText, toolMessages } = await processToolCalls(
-        response.tool_calls,
-        luaTools,
-        onToolCall,
-        permissions,
-      );
+      const { toolCallsText: newText, toolMessages, attachmentMessages } =
+        await processToolCalls(
+          response.tool_calls,
+          luaTools,
+          onToolCall,
+          permissions,
+        );
       toolCallsText += newText;
-      workingMessages.push(...toolMessages);
+      workingMessages.push(...toolMessages, ...attachmentMessages);
     } else {
       // No tool calls - we have the final response
       return {
@@ -1019,14 +1071,15 @@ export async function runStreamingAgenticChat(
         tool_calls: result.tool_calls,
       });
 
-      const { toolCallsText: newText, toolMessages } = await processToolCalls(
-        result.tool_calls,
-        luaTools,
-        onToolCall,
-        permissions,
-      );
+      const { toolCallsText: newText, toolMessages, attachmentMessages } =
+        await processToolCalls(
+          result.tool_calls,
+          luaTools,
+          onToolCall,
+          permissions,
+        );
       toolCallsText += newText;
-      workingMessages.push(...toolMessages);
+      workingMessages.push(...toolMessages, ...attachmentMessages);
 
       fullResponse = result.content || "";
     } else {

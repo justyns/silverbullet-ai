@@ -86,6 +86,26 @@ local function countLines(str)
   return lines
 end
 
+ai.tools.view_file = {
+  description = "Attach a file from the space (image, PDF, or a type with a custom handler) so you can actually see it. Use this when you only saw a ![[...]] reference and need the file itself.",
+  readOnly = true,
+  readPathParam = "path",
+  parameters = {
+    type = "object",
+    properties = {
+      path = {type = "string", description = "Path of the file to attach, e.g. photos/cat.png"}
+    },
+    required = {"path"}
+  },
+  handler = function(args)
+    return {
+      result = "Attaching " .. args.path .. ". It appears as the next message.",
+      summary = "view " .. args.path,
+      attachPaths = {args.path}
+    }
+  end
+}
+
 ai.tools.read_note = {
   description = "Read the content of a note. Optionally read only a specific section.",
   readOnly = true,

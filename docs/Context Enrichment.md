@@ -104,6 +104,12 @@ ai.fileHandlers.draw = function(file)
 end
 ```
 
+### Requesting a file (view_file tool)
+
+Attachments are normally added up front. If the model instead only sees a reference, it can call the built-in `view_file(path)` tool to request the file.  It'll show up on its next turn since tool results still have to be strings.
+
+This needs tools enabled, and bypasses the `attachImages`/`attachDocuments` toggles.
+
 ## Template Expansion
 
 When `bakeMessages` is enabled, SilverBullet templates and queries in your message are rendered before sending:

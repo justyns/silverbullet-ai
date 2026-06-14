@@ -406,7 +406,7 @@ export async function enrichChatMessages(
  * `<context>` block; binary attachments become a labeled user message that carries
  * the payload for the provider to emit as a native part.
  */
-function attachmentMessage(a: Attachment): ChatMessage {
+export function attachmentMessage(a: Attachment): ChatMessage {
   if (a.binary) {
     // The path is from `![[path]]` in the message; the alt
     // text, when present, is also addedl.

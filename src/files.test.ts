@@ -8,6 +8,7 @@ import {
   extractFilesFromMarkdown,
   getFileHandlerExts,
   mimeFromPath,
+  resolveFileToAttachment,
 } from "./files.ts";
 import type { AttachmentKind } from "./types.ts";
 
@@ -215,6 +216,33 @@ test("getFileHandlerExts reads ai.listFileHandlers (dot/case normalized)", async
 test("getFileHandlerExts returns empty when unavailable", async () => {
   await setup();
   expect(await getFileHandlerExts()).toEqual(new Set());
+});
+
+test("resolveFileToAttachment resolves a local image (view_file path)", async () => {
+  await setup();
+  const a = await resolveFileToAttachment("notes/img.png", IMAGES, NO_HANDLERS);
+  expect(a).toEqual({
+    name: "notes/img.png",
+    type: "image",
+    binary: { mimeType: "image/png", url: dataUrl("image/png", PNG_BYTES) },
+  });
+});
+
+test("resolveFileToAttachment returns null when the kind isn't supported", async () => {
+  await setup();
+  await syscall("mock.setDocument", "notes/report.pdf", SMALL_BYTES);
+  const a = await resolveFileToAttachment("notes/report.pdf", IMAGES, NO_HANDLERS);
+  expect(a).toBeNull();
+});
+
+test("resolveFileToAttachment uses a registered handler", async () => {
+  await setup();
+  await syscall("mock.setDocument", "notes/x.note", SMALL_BYTES);
+  await syscall("mock.setLuaFunction", "ai.runFileHandler", () => ({
+    text: "ocr text",
+  }));
+  const a = await resolveFileToAttachment("notes/x.note", new Set(), new Set(["note"]));
+  expect(a).toEqual({ name: "notes/x.note", type: "file", content: "ocr text" });
 });
 
 test("skips remote files when downloadRemoteImages is off", async () => {
