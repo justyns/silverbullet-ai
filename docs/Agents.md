@@ -210,6 +210,7 @@ aiagent:
 | `inheritBasePrompt` | boolean | Prepend base system prompt (default: true) |
 | `allowedReadPaths` | string[] | Path prefixes tools can read from (e.g., `["Journal/", "Notes/"]`) |
 | `allowedWritePaths` | string[] | Path prefixes tools can write to (e.g., `["Journal/"]`) |
+| `searchEmbeddings` | boolean | Override RAG/embeddings search for this agent. Only runs when `indexEmbeddings` is enabled. |
 
 ### Base Prompt Inheritance
 
@@ -257,6 +258,19 @@ ai.agents.journal = {
 - If not set, no path restrictions apply
 
 This is useful for creating restricted agents that can only operate on specific areas of your space.
+
+### Embeddings Search (RAG)
+
+By default, an agent inherits the global `chat.searchEmbeddings` setting, which controls whether relevant indexed notes are searched and added as context (RAG). Set `searchEmbeddings` on the agent to override it.
+
+Embeddings search only runs when `indexEmbeddings` is enabled in your config. See [[Context Enrichment]].
+
+```lua
+ai.agents.research = {
+  name = "Research Mode",
+  searchEmbeddings = true,
+}
+```
 
 ## Usage
 
