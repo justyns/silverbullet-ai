@@ -2,11 +2,9 @@ import { editor } from "@silverbulletmd/silverbullet/syscalls";
 import { getLineAfter, getLineBefore, getLineOfPos, getPageLength } from "../editorUtils.ts";
 import type { ChatMessage, ChatResponse, PostProcessorData, StreamChatOptions, Tool } from "../types.ts";
 import { assembleMessagesWithAttachments, enrichChatMessages, invokeSpaceLuaFunction, log } from "../utils.ts";
+import { proxiedFetch } from "../proxy.ts";
 import { formatReasoningBlock } from "../widgets.ts";
 import { aiSettings } from "../init.ts";
-
-// nativeFetch is the original fetch before SilverBullet's monkey-patching
-const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
 
 export type ProviderDefaults = {
   baseUrl: string;
@@ -102,22 +100,8 @@ export abstract class AbstractProvider implements ProviderInterface {
     return Promise.resolve(null);
   }
 
-  protected async fetch(url: string, options: RequestInit): Promise<Response> {
-    try {
-      const fetchFn = this.useProxy ? fetch : nativeFetch;
-      return await fetchFn(url, {
-        ...options,
-        signal: AbortSignal.timeout(this.timeout),
-      });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "TimeoutError") {
-        throw new Error(
-          `Request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
-            `Increase timeout in provider config.`,
-        );
-      }
-      throw error;
-    }
+  protected fetch(url: string, options: RequestInit): Promise<Response> {
+    return proxiedFetch(url, options, this.useProxy, this.timeout, this.name);
   }
 
   async streamChatIntoEditor(

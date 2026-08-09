@@ -288,7 +288,7 @@ test("downloads and caches remote images through the proxy", async () => {
     binary: { mimeType: "image/png", url: dataUrl("image/png", PNG_BYTES) },
     alt: "alt",
   }]);
-  expect(fetchMock.mock.calls[0][0]).toContain("/.proxy/");
+  expect(fetchMock.mock.calls[0][0]).toEqual("/.proxy/example.com/cat.png");
 
   const second = await extract(`![alt](${url})`, "Page");
   expect(second).toEqual(first);
