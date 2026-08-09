@@ -49,7 +49,7 @@ export function readStatus(res: Response, useProxy: boolean): number {
 // Rebuild a proxied response as if it came straight from upstream, so callers can
 // use `res.ok`/`res.status`/`res.headers` normally. Mirrors what SilverBullet's
 // own worker fetch shim does with the `x-proxy-*` headers.
-async function unwrapProxyResponse(res: Response): Promise<Response> {
+function unwrapProxyResponse(res: Response): Response {
   const headers = new Headers();
   for (const [key, value] of res.headers.entries()) {
     if (key.toLowerCase().startsWith("x-proxy-header-")) {
@@ -57,11 +57,25 @@ async function unwrapProxyResponse(res: Response): Promise<Response> {
     }
   }
   const status = readStatus(res, true);
-  // The Response constructor rejects a body for these statuses.
+  // Pass the body through rather than buffering it; the Response constructor
+  // rejects a body for these statuses.
   const body = status === 204 || status === 205 || status === 304
     ? null
-    : await res.arrayBuffer();
+    : res.body;
   return new Response(body, { status, headers });
+}
+
+// `RequestInit.headers` may also be a Headers instance or an array of tuples,
+// and `Object.entries` yields nothing for either — which would silently drop
+// every header, Authorization included.
+function toHeaderRecord(
+  headers: HeadersInit | undefined,
+): Record<string, string> | undefined {
+  if (!headers) return undefined;
+  if (headers instanceof Headers || Array.isArray(headers)) {
+    return Object.fromEntries(new Headers(headers).entries());
+  }
+  return headers as Record<string, string>;
 }
 
 // The plug worker's `fetch` is monkey-patched to route through SilverBullet's
@@ -87,11 +101,11 @@ export async function proxiedFetch(
     const res = await rawFetch(useProxy ? buildProxyUrl(url) : url, {
       ...options,
       headers: useProxy
-        ? buildProxyHeaders(options.headers as Record<string, any> | undefined)
+        ? buildProxyHeaders(toHeaderRecord(options.headers))
         : options.headers,
       signal: AbortSignal.timeout(timeout),
     });
-    return useProxy ? await unwrapProxyResponse(res) : res;
+    return useProxy ? unwrapProxyResponse(res) : res;
   } catch (error) {
     if (error instanceof DOMException && error.name === "TimeoutError") {
       throw new Error(

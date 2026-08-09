@@ -55,6 +55,27 @@ test("proxiedFetch proxies the URL exactly once and tunnels headers", async () =
   });
 });
 
+test("proxiedFetch tunnels headers given as a Headers instance", async () => {
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response("{}", { headers: { "x-proxy-status-code": "200" } }),
+  );
+  vi.stubGlobal("fetch", fetchMock);
+
+  await proxiedFetch(
+    "https://example.com/v1/models",
+    { headers: new Headers({ Authorization: "Bearer sk-test" }) },
+    true,
+    1000,
+    "OpenAI",
+  );
+
+  // Headers lowercases names; the proxy re-canonicalizes them upstream.
+  expect(fetchMock.mock.calls[0][1].headers).toEqual({
+    "X-Proxy-Request": "true",
+    "X-Proxy-Header-authorization": "Bearer sk-test",
+  });
+});
+
 test("proxiedFetch applies the configured timeout, not SilverBullet's", async () => {
   // Only settles when our AbortSignal fires, mimicking a model that stalls.
   vi.stubGlobal(
