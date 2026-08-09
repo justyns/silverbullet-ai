@@ -21,6 +21,7 @@ export interface ProviderInterface {
   modelName: string;
   useProxy: boolean;
   timeout: number;
+  reasoningEffort?: string;
   streamChat: (options: StreamChatOptions) => Promise<ChatResponse>;
   chat: (
     messages: ChatMessage[],
@@ -49,6 +50,7 @@ export abstract class AbstractProvider implements ProviderInterface {
   modelName: string;
   useProxy: boolean;
   timeout: number;
+  reasoningEffort?: string;
 
   constructor(
     name: string,

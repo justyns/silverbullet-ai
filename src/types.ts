@@ -262,6 +262,7 @@ export type ProviderConfig = {
   fetchModels?: boolean;
   showPricing?: boolean;
   timeout?: number; // Request timeout in milliseconds
+  reasoningEffort?: string;
 };
 
 export type ProvidersConfig = {
@@ -321,6 +322,7 @@ export type ModelConfig = {
   supportsTools?: boolean;
   supportsVision?: boolean;
   supportsDocuments?: boolean;
+  reasoningEffort?: string;
 };
 
 export type ImageModelConfig = {

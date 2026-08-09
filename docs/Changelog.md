@@ -11,6 +11,7 @@ This page is a brief overview of each version.
   - **via tool**: the `view_file(path)` tool lets the model pull in a file it only saw referenced in context
   - Other `ai.chat` options: `downloadRemoteImages` (fetch & cache remote images, default off), `maxFileSizeMB` (skip larger files, default 10)
 - Fix provider `timeout` being ignored on proxied requests, which capped non-streaming calls at 30s
+- Add `reasoningEffort` config option, per-provider or per-model, sent verbatim to the API
 - Add MCP server as a separate package.
   - See [[MCP Server]] for details.
   - Exposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.

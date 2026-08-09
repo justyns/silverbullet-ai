@@ -1,7 +1,13 @@
 import { expect, test } from "vitest";
 const assertEquals = (actual: unknown, expected: unknown, _msg?: string) => expect(actual).toEqual(expected);
 import "./mocks/syscalls.ts";
-import { aiSettings, getAndConfigureModel, initializeOpenAI } from "./init.ts";
+import {
+  aiSettings,
+  configureSelectedModel,
+  currentAIProvider,
+  getAndConfigureModel,
+  initializeOpenAI,
+} from "./init.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
 const aiConfigSample = {
@@ -223,3 +229,35 @@ test("initializeOpenAI should throw an error if secrets page does not exist", as
     }
   },
 );
+
+test("reasoningEffort resolves from the model, falling back to the provider", async () => {
+  await syscall("mock.setConfig", "ai", {
+    providers: { openai: { reasoningEffort: "low" } },
+    textModels: [
+      { name: "a", provider: "openai", modelName: "gpt-5.6-luna" },
+      {
+        name: "b",
+        provider: "openai",
+        modelName: "gpt-5.6-luna",
+        reasoningEffort: "none",
+      },
+    ],
+  });
+  await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
+  await initializeOpenAI();
+
+  await configureSelectedModel(aiSettings.textModels[0]);
+  assertEquals(currentAIProvider.reasoningEffort, "low");
+
+  await configureSelectedModel(aiSettings.textModels[1]);
+  assertEquals(currentAIProvider.reasoningEffort, "none");
+});
+
+test("reasoningEffort is left unset when not configured", async () => {
+  await syscall("mock.setConfig", "ai", aiConfigSample);
+  await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
+  await initializeOpenAI();
+
+  await configureSelectedModel(aiSettings.textModels[0]);
+  assertEquals(currentAIProvider.reasoningEffort, undefined);
+});

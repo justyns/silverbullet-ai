@@ -242,6 +242,13 @@ export class GeminiProvider extends AbstractProvider {
           };
         }
 
+        if (this.reasoningEffort) {
+          requestBody.generationConfig = {
+            ...(requestBody.generationConfig as Record<string, unknown>),
+            thinkingConfig: { thinkingLevel: this.reasoningEffort },
+          };
+        }
+
         const sseOptions = {
           method: "POST",
           headers: finalHeaders,
@@ -400,6 +407,13 @@ export class GeminiProvider extends AbstractProvider {
             response_format.json_schema.schema as Record<string, unknown>,
           ),
         }),
+      };
+    }
+
+    if (this.reasoningEffort) {
+      requestBody.generationConfig = {
+        ...(requestBody.generationConfig as Record<string, unknown>),
+        thinkingConfig: { thinkingLevel: this.reasoningEffort },
       };
     }
 

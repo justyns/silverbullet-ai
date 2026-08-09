@@ -406,6 +406,8 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
       );
   }
 
+  currentAIProvider.reasoningEffort = model.reasoningEffort;
+
   return currentAIProvider;
 }
 
@@ -534,6 +536,7 @@ export async function configureSelectedModel(model: ModelConfig) {
       model.useProxy ??
       providerConfig.useProxy ??
       getProviderDefaults(model.provider).useProxy,
+    reasoningEffort: model.reasoningEffort ?? providerConfig.reasoningEffort,
   };
 
   // Get timeout from provider config
