@@ -67,6 +67,30 @@ With this configuration:
 | `preferredModels` | Array of model names to show first in the picker |
 | `fetchModels` | Whether to fetch models from API (default: true). Set to `false` for APIs that don't support listing models - only `preferredModels` will be shown |
 | `timeout` | Request timeout in milliseconds. Defaults: OpenAI/Gemini: 60000 (60s), Ollama: 120000 (120s), Image generation: 180000 (180s). For streaming requests, timeout only applies to the initial connection - once data starts flowing, the request can take as long as needed. |
+| `reasoningEffort` | Reasoning effort for models that support it. Can also be set per-model, which wins over the provider value. |
+
+### Reasoning effort
+
+`reasoningEffort` is sent to the API verbatim - the accepted values are the provider's, not this plug's. Where it lands in the request depends on the provider:
+
+| Provider | Request field | Example values |
+|----------|---------------|----------------|
+| OpenAI (and OpenAI-compatible, incl. Ollama and Mistral) | `reasoning_effort` | `none`, `minimal`, `low`, `medium`, `high` (model-dependent) |
+| Gemini | `generationConfig.thinkingConfig.thinkingLevel` | `minimal`, `low`, `medium`, `high` |
+
+```lua
+config.set("ai", {
+  providers = {
+    openai = { apiKey = "sk-...", reasoningEffort = "low" },
+  },
+  textModels = {
+    -- Overrides the provider value for this model only
+    { name = "gpt-5.6-luna", provider = "openai", modelName = "gpt-5.6-luna", reasoningEffort = "none" },
+  },
+})
+```
+
+Some OpenAI reasoning models reject function tools unless `reasoningEffort` is `none`, returning `Function tools with reasoning_effort are not supported ... in /v1/chat/completions`. Set `reasoningEffort = "none"` for those models if you want tool calling.
 
 ## Legacy Configuration (Deprecated)
 

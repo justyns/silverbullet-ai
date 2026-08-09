@@ -135,6 +135,10 @@ export class OpenAIProvider extends AbstractProvider {
           requestBody.think = true;
         }
 
+        if (this.reasoningEffort) {
+          requestBody.reasoning_effort = this.reasoningEffort;
+        }
+
         if (tools && tools.length > 0) {
           requestBody.tools = tools;
           requestBody.tool_choice = this.toolChoiceValue;
@@ -367,6 +371,10 @@ export class OpenAIProvider extends AbstractProvider {
       // Enable thinking mode for providers that support it (e.g., Ollama with qwq, deepseek-r1)
       if (aiSettings?.chat?.showReasoning && this.supportsThinking) {
         requestBody.think = true;
+      }
+
+      if (this.reasoningEffort) {
+        requestBody.reasoning_effort = this.reasoningEffort;
       }
 
       if (tools && tools.length > 0) {

@@ -58,6 +58,10 @@ config.define("ai.providers", {
         type = "number",
         description = "Request timeout in milliseconds. Defaults: OpenAI/Gemini 60000, Ollama 120000, Image 180000. For streaming, timeout only applies to initial connection.",
       },
+      reasoningEffort = {
+        type = "string",
+        description = "Reasoning effort, sent verbatim. OpenAI-compatible: reasoning_effort (e.g. 'none', 'low', 'high'). Gemini: generationConfig.thinkingConfig.thinkingLevel.",
+      },
     },
     additionalProperties = false,
   },

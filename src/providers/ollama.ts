@@ -46,6 +46,7 @@ export class OllamaProvider extends AbstractProvider {
   }
 
   async streamChat(options: StreamChatOptions): Promise<ChatResponse> {
+    this.openaiProvider.reasoningEffort = this.reasoningEffort;
     return await this.openaiProvider.streamChat(options);
   }
 
@@ -54,6 +55,7 @@ export class OllamaProvider extends AbstractProvider {
     tools?: Tool[],
     response_format?: StreamChatOptions["response_format"],
   ): Promise<ChatResponse> {
+    this.openaiProvider.reasoningEffort = this.reasoningEffort;
     return await this.openaiProvider.chat(messages, tools, response_format);
   }
 
