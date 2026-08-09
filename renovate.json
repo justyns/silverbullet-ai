@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "lockFileMaintenance": { "enabled": true },
+  "minimumReleaseAge": "10 days",
+  "packageRules": [
+    {
+      "description": "Must track SilverBullet's own pin, never bump independently. src/mocks/syscalls.ts reimplements SB's markdown parse and has to produce the same tree.",
+      "matchPackageNames": ["@lezer/markdown"],
+      "enabled": false
+    },
+    {
+      "groupName": "mcp-bridge",
+      "matchFileNames": ["mcp-bridge/**"]
+    },
+    {
+      "groupName": "test tooling",
+      "matchFileNames": ["e2e-tests/**", "integration-tests/**"]
+    }
+  ]
+}
