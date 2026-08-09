@@ -1,10 +1,12 @@
 import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
+import { proxiedFetch } from "./proxy.ts";
 import { log } from "./utils.ts";
 
 const CACHE_KEY = "ai.modelMetadataCache";
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
 const LITELLM_URL =
   "https://raw.githubusercontent.com/BerriAI/litellm/refs/heads/main/model_prices_and_context_window.json";
+const LITELLM_TIMEOUT_MS = 60_000;
 
 export type ModelMetadata = {
   max_input_tokens?: number;
@@ -113,9 +115,15 @@ export async function fetchModelMetadata(): Promise<
 
   // Fetch fresh data
   try {
-    const response = await fetch(LITELLM_URL);
+    const response = await proxiedFetch(
+      LITELLM_URL,
+      {},
+      true,
+      LITELLM_TIMEOUT_MS,
+      "LiteLLM",
+    );
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(`HTTP ${response.status}`);
     }
     const data = await response.json() as Record<string, ModelMetadata>;
 

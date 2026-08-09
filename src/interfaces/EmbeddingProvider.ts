@@ -2,8 +2,7 @@ import { EmbeddingGenerationOptions } from "../types.ts";
 import { hashSHA256 } from "@silverbulletmd/silverbullet/lib/crypto";
 import { clientStore } from "@silverbulletmd/silverbullet/syscalls";
 
-// nativeFetch is the original fetch before SilverBullet's monkey-patching
-const nativeFetch: typeof fetch = (globalThis as any).nativeFetch;
+import { proxiedFetch } from "../proxy.ts";
 
 export interface EmbeddingProviderInterface {
   name: string;
@@ -52,22 +51,8 @@ export abstract class AbstractEmbeddingProvider implements EmbeddingProviderInte
     this.timeout = timeout;
   }
 
-  protected async fetch(url: string, options: RequestInit): Promise<Response> {
-    try {
-      const fetchFn = this.useProxy ? fetch : nativeFetch;
-      return await fetchFn(url, {
-        ...options,
-        signal: AbortSignal.timeout(this.timeout),
-      });
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "TimeoutError") {
-        throw new Error(
-          `Request to ${this.name} timed out after ${this.timeout / 1000}s. ` +
-            `Increase timeout in provider config.`,
-        );
-      }
-      throw error;
-    }
+  protected fetch(url: string, options: RequestInit): Promise<Response> {
+    return proxiedFetch(url, options, this.useProxy, this.timeout, this.name);
   }
 
   abstract _generateEmbeddings(

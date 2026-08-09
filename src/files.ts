@@ -16,21 +16,11 @@ import {
 
 import { aiSettings, currentModel } from "./init.ts";
 import { invokeSpaceLuaFunction, isPathAllowed, log } from "./utils.ts";
-import {
-  buildProxyHeaders,
-  buildProxyUrl,
-  readResponseHeader,
-  readStatus,
-} from "./proxy.ts";
+import { proxiedFetch } from "./proxy.ts";
 import type { Attachment, AttachmentKind } from "./types.ts";
 
-// nativeFetch is the original fetch before SilverBullet's proxy monkey-patching;
-// we build the proxy URL/headers ourselves, so call it directly when not proxying.
-// Wrapped so it resolves at call time with the global scope as `this`.
-const nativeFetch: typeof fetch = (url, init) =>
-  ((globalThis as any).nativeFetch as typeof fetch)(url, init);
-
 const DEFAULT_MAX_FILE_MB = 10;
+const REMOTE_IMAGE_TIMEOUT_MS = 30_000;
 
 // Built-in file types that map directly to a native provider part.
 const MIME_BY_EXT: Record<string, string> = {
@@ -106,17 +96,17 @@ async function fetchRemoteImage(url: string): Promise<Attachment | null> {
 
   try {
     const useProxy = currentModel?.useProxy ?? true;
-    const response = await (useProxy ? fetch : nativeFetch)(
-      useProxy ? buildProxyUrl(url) : url,
-      useProxy ? { headers: buildProxyHeaders() } : {},
+    const response = await proxiedFetch(
+      url,
+      {},
+      useProxy,
+      REMOTE_IMAGE_TIMEOUT_MS,
+      "the image host",
     );
-    const status = readStatus(response, useProxy);
-    if (status < 200 || status >= 300) {
-      throw new Error(`HTTP ${status}`);
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
     }
-    const mimeType =
-      readResponseHeader(response, "content-type", useProxy)?.split(";")[0] ||
-      "";
+    const mimeType = response.headers.get("content-type")?.split(";")[0] || "";
     if (!mimeType.startsWith("image/")) {
       throw new Error(`not an image (${mimeType})`);
     }

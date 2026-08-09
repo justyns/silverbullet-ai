@@ -45,3 +45,74 @@ export function readStatus(res: Response, useProxy: boolean): number {
   }
   return res.status;
 }
+
+// Rebuild a proxied response as if it came straight from upstream, so callers can
+// use `res.ok`/`res.status`/`res.headers` normally. Mirrors what SilverBullet's
+// own worker fetch shim does with the `x-proxy-*` headers.
+function unwrapProxyResponse(res: Response): Response {
+  const headers = new Headers();
+  for (const [key, value] of res.headers.entries()) {
+    if (key.toLowerCase().startsWith("x-proxy-header-")) {
+      headers.set(key.slice("x-proxy-header-".length), value);
+    }
+  }
+  const status = readStatus(res, true);
+  // Pass the body through rather than buffering it; the Response constructor
+  // rejects a body for these statuses.
+  const body = status === 204 || status === 205 || status === 304
+    ? null
+    : res.body;
+  return new Response(body, { status, headers });
+}
+
+// `RequestInit.headers` may also be a Headers instance or an array of tuples,
+// and `Object.entries` yields nothing for either — which would silently drop
+// every header, Authorization included.
+function toHeaderRecord(
+  headers: HeadersInit | undefined,
+): Record<string, string> | undefined {
+  if (!headers) return undefined;
+  if (headers instanceof Headers || Array.isArray(headers)) {
+    return Object.fromEntries(new Headers(headers).entries());
+  }
+  return headers as Record<string, string>;
+}
+
+// The plug worker's `fetch` is monkey-patched to route through SilverBullet's
+// `sandboxFetch` syscall, which drops our AbortSignal and applies its own
+// non-configurable 30s cap. We build the proxy URL and headers ourselves, so
+// always go through the original. Resolved at call time; outside a plug worker
+// there is no `nativeFetch`.
+const rawFetch: typeof fetch = (url, init) =>
+  ((globalThis as any).nativeFetch ?? globalThis.fetch)(url, init);
+
+/**
+ * Fetch through `/.proxy/` when `useProxy` is set, with `timeout` as the only
+ * request deadline.
+ */
+export async function proxiedFetch(
+  url: string,
+  options: RequestInit,
+  useProxy: boolean,
+  timeout: number,
+  name: string,
+): Promise<Response> {
+  try {
+    const res = await rawFetch(useProxy ? buildProxyUrl(url) : url, {
+      ...options,
+      headers: useProxy
+        ? buildProxyHeaders(toHeaderRecord(options.headers))
+        : options.headers,
+      signal: AbortSignal.timeout(timeout),
+    });
+    return useProxy ? unwrapProxyResponse(res) : res;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new Error(
+        `Request to ${name} timed out after ${timeout / 1000}s. ` +
+          `Increase timeout in provider config.`,
+      );
+    }
+    throw error;
+  }
+}

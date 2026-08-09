@@ -10,6 +10,7 @@ This page is a brief overview of each version.
   - **Custom types**: register `ai.fileHandlers[ext]` to convert any file to text or a supported image, see [[Context Enrichment]]
   - **via tool**: the `view_file(path)` tool lets the model pull in a file it only saw referenced in context
   - Other `ai.chat` options: `downloadRemoteImages` (fetch & cache remote images, default off), `maxFileSizeMB` (skip larger files, default 10)
+- Fix provider `timeout` being ignored on proxied requests, which capped non-streaming calls at 30s
 - Add MCP server as a separate package.
   - See [[MCP Server]] for details.
   - Exposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.

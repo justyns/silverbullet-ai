@@ -270,14 +270,15 @@ test("downloads and caches remote images through the proxy", async () => {
   await setup({ chat: { downloadRemoteImages: true } });
   // Simulate SilverBullet's proxy reply: its own 200, upstream status/headers
   // carried in x-proxy-* headers.
-  const fetchMock = vi.fn().mockResolvedValue({
-    status: 200,
-    headers: new Headers({
-      "x-proxy-status-code": "200",
-      "x-proxy-header-content-type": "image/png",
+  const fetchMock = vi.fn().mockResolvedValue(
+    new Response(PNG_BYTES, {
+      status: 200,
+      headers: {
+        "x-proxy-status-code": "200",
+        "x-proxy-header-content-type": "image/png",
+      },
     }),
-    arrayBuffer: () => Promise.resolve(PNG_BYTES.buffer),
-  });
+  );
   vi.stubGlobal("fetch", fetchMock);
 
   const url = "https://example.com/cat.png";
@@ -288,7 +289,7 @@ test("downloads and caches remote images through the proxy", async () => {
     binary: { mimeType: "image/png", url: dataUrl("image/png", PNG_BYTES) },
     alt: "alt",
   }]);
-  expect(fetchMock.mock.calls[0][0]).toContain("/.proxy/");
+  expect(fetchMock.mock.calls[0][0]).toEqual("/.proxy/example.com/cat.png");
 
   const second = await extract(`![alt](${url})`, "Page");
   expect(second).toEqual(first);
@@ -299,14 +300,15 @@ test("rejects remote responses without an image content type", async () => {
   await setup({ chat: { downloadRemoteImages: true } });
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValue({
-      status: 200,
-      headers: new Headers({
-        "x-proxy-status-code": "200",
-        "x-proxy-header-content-type": "text/html",
+    vi.fn().mockResolvedValue(
+      new Response(null, {
+        status: 200,
+        headers: {
+          "x-proxy-status-code": "200",
+          "x-proxy-header-content-type": "text/html",
+        },
       }),
-      arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
-    }),
+    ),
   );
   const files = await extract("![alt](https://example.com/page)", "Page");
   expect(files).toEqual([]);
