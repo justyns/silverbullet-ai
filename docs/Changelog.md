@@ -15,6 +15,8 @@ This page is a brief overview of each version.
 - Add MCP server as a separate package.
   - See [[MCP Server]] for details.
   - Exposes all built-in tools and user-defined tools to external MCP clients like Claude Code, Claude Desktop, Cursor, etc.
+- Bump minimum SilverBullet to v2.10.0
+- Update dependencies
 
 ## 0.8.0 (2026-06-12)
 
