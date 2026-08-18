@@ -134,6 +134,10 @@ config.define("ai.textModels", {
         type = "boolean",
         description = "Whether the model can accept PDFs/documents (opt-in; no auto-detection)",
       },
+      reasoningEffort = {
+        type = "string",
+        description = "Reasoning effort, sent verbatim. Overrides the provider-level value for this model.",
+      },
     },
     required = {"name", "modelName", "provider"},
     additionalProperties = false,

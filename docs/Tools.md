@@ -34,6 +34,7 @@ existing notes.
 | Tool | Description | Approval |
 |------|-------------|----------|
 | `read_note` | Read page content, optionally a specific section | No |
+| `view_file` | Pull in an attached file (image, PDF, custom type) the model only saw referenced | No |
 | `list_pages` | List pages with path filtering and recursion options | No |
 | `get_page_info` | Get page metadata (tags, size, modified date, subpages) | No |
 | `navigate` | Navigate to a page or position | No |

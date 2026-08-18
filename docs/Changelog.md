@@ -2,7 +2,7 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
-## 0.9.0 (unreleased)
+## 0.9.0 (2026-08-18)
 
 - Add **file attachments**, files referenced in notes and chat (`![[file]]` / `![alt](file)`) are sent to the model as native parts.
   - **Images** (vision): `attachImages` (default off) + per-model `supportsVision`. Formats: png, jpg/jpeg, gif, webp
