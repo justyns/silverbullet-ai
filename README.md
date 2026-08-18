@@ -271,7 +271,7 @@ npm run build && cp *.plug.js /my/space/_plug/
 
 ### Library Manager (Recommended)
 
-Requires SilverBullet v2.3.0+
+Requires SilverBullet v2.10.0+
 
 1. Run `Library: Install` command
 2. Enter one of the following:
@@ -283,7 +283,7 @@ ghr:justyns/silverbullet-ai/PLUG.md
 
 **Specific release:**
 ```
-ghr:justyns/silverbullet-ai@0.8.0/PLUG.md
+ghr:justyns/silverbullet-ai@0.9.0/PLUG.md
 ```
 
 See [GitHub Releases](https://github.com/justyns/silverbullet-ai/releases) for available versions.
