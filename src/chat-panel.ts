@@ -6,6 +6,7 @@ import {
   lua,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
+import { showPanel } from "./panel.ts";
 import type {
   AIAgentTemplate,
   Attachment,
@@ -130,10 +131,7 @@ async function loadPanelAssets(): Promise<{ html: string; script: string }> {
   return { html, script: purify + "\n" + script };
 }
 
-/**
- * Opens the AI Assistant panel (side panel)
- */
-export async function openAIAssistant() {
+async function showAssistantPanel(slot: "rhs" | "modal") {
   await initIfNeeded();
 
   if (isPanelOpen) {
@@ -141,25 +139,20 @@ export async function openAIAssistant() {
   }
 
   const { html, script } = await loadPanelAssets();
-  await editor.showPanel("rhs", 1, html, script);
+  await showPanel(slot, html, script);
   isPanelOpen = true;
   await clientStore.set(PANEL_STATE_KEY, true);
 }
 
 /**
- * Opens the AI Assistant as a full-screen modal (better for mobile)
+ * Opens the AI Assistant: side panel on desktop, full screen on mobile
  */
+export async function openAIAssistant() {
+  await showAssistantPanel((await editor.isMobile()) ? "modal" : "rhs");
+}
+
 export async function openAIAssistantModal() {
-  await initIfNeeded();
-
-  if (isPanelOpen) {
-    return;
-  }
-
-  const { html, script } = await loadPanelAssets();
-  await editor.showPanel("modal", 20, html, script);
-  isPanelOpen = true;
-  await clientStore.set(PANEL_STATE_KEY, true);
+  await showAssistantPanel("modal");
 }
 
 /**

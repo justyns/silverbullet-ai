@@ -5,6 +5,7 @@ import {
   lua,
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
+import { showPanel } from "./panel.ts";
 import {
   attachmentMessage,
   computeSimpleDiff,
@@ -474,7 +475,7 @@ function requestToolApproval(
         ${script}
       `;
 
-        await editor.showPanel("modal", 20, html, initScript);
+        await showPanel("modal", html, initScript);
       } catch (e) {
         log.error("Error showing tool approval modal:", e);
         pendingApprovals.delete(approvalId);
@@ -583,7 +584,7 @@ export async function requestWriteApproval(
         ${script}
       `;
 
-        await editor.showPanel("modal", 20, html, initScript);
+        await showPanel("modal", html, initScript);
       } catch (e) {
         log.error("Error showing write approval modal:", e);
         pendingWrites.delete(writeId);

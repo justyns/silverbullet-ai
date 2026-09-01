@@ -1,5 +1,6 @@
 import { parse as parseYAML } from "yaml";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
+import { base64EncodedDataUrl } from "@silverbulletmd/silverbullet/lib/crypto";
 import { parser } from "@lezer/markdown";
 
 // TODO: Just use whatever SB uses internally
@@ -43,6 +44,11 @@ const pages: { [key: string]: string } = {};
 const documents: { [key: string]: Uint8Array } = {};
 
 const flashNotifications: { message: string; type: string }[] = [];
+
+const shownPanels: { id: string; html: string }[] = [];
+const assets: { [key: string]: string } = {};
+let uiOptions: { [key: string]: any } = {};
+let isMobile = false;
 
 const clientStore: { [key: string]: string } = {};
 (globalThis as any).clientStore;
@@ -155,6 +161,39 @@ function setNestedValue(obj: any, path: string, value: any): void {
       break;
     case "editor.moveCursor":
       editorCursor = args[0];
+      break;
+
+    case "mock.setUiOptions":
+      uiOptions = args[0];
+      break;
+    case "editor.getUiOption":
+      return uiOptions[args[0]];
+    case "mock.setIsMobile":
+      isMobile = args[0];
+      break;
+    case "editor.isMobile":
+      return isMobile;
+    case "mock.setAsset":
+      assets[args[0]] = args[1];
+      break;
+    case "asset.readAsset":
+      if (!(args[1] in assets)) {
+        throw new Error(`Asset not found: ${args[1]}`);
+      }
+      // The real syscall hands back a data URL that readAsset() decodes
+      return base64EncodedDataUrl(
+        "application/octet-stream",
+        new TextEncoder().encode(assets[args[1]]),
+      );
+    case "editor.showPanel":
+      shownPanels.push({ id: args[0], html: args[2] });
+      break;
+    case "editor.hidePanel":
+      break;
+    case "mock.getShownPanels":
+      return shownPanels;
+    case "mock.clearShownPanels":
+      shownPanels.length = 0;
       break;
 
     case "mock.setPage":

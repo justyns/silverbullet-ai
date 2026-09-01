@@ -1,29 +1,3 @@
-// Wait for SilverBullet CSS to load and inject custom Space Styles
-(async function initTheme() {
-  await Promise.race([
-    new Promise((resolve) => setTimeout(resolve, 75)),
-    new Promise((resolve) => {
-      const link = document.querySelector('link[href*="main.css"]');
-      if (link) link.onload = resolve;
-    }),
-  ]);
-
-  try {
-    const customStyles = await syscall("editor.getUiOption", "customStyles");
-    if (customStyles) {
-      // customStyles is a string of <style> blocks built by SilverBullet core;
-      // extract only the CSS text so no other markup can be injected
-      for (const match of customStyles.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/gi)) {
-        const styleEl = document.createElement("style");
-        styleEl.textContent = match[1];
-        document.head.appendChild(styleEl);
-      }
-    }
-  } catch (e) {
-    console.warn("Could not load custom styles:", e);
-  }
-})();
-
 // Needs to match the key in src/chat-panel.ts
 const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 

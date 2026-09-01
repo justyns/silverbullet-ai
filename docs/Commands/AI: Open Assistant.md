@@ -1,4 +1,4 @@
-Opens an interactive chat panel on the right side of the screen for conversing with the assistant.
+Opens an interactive chat panel on the right side of the screen for conversing with the assistant. On mobile it opens full screen.
 
 The Assistant panel provides:
 
@@ -12,4 +12,4 @@ Use [[Commands/AI: Toggle Assistant Panel]] (++ctrl+shift+a++) to toggle the pan
 
 ## Full-Screen Mode
 
-For a larger chat interface (especially useful on mobile), use `AI: Open Assistant (Full Screen)` to open the assistant as a modal dialog instead of a side panel.
+Use `AI: Open Assistant (Full Screen)` to force the modal dialog on desktop.

@@ -6,6 +6,7 @@ import {
   space,
 } from "@silverbulletmd/silverbullet/syscalls";
 import { renderToText } from "@silverbulletmd/silverbullet/lib/tree";
+import { showPanel } from "./panel.ts";
 import { extractAttributes } from "./lib/attribute.ts";
 import { extractFrontMatter } from "./lib/frontmatter.ts";
 import { aiSettings, enabledAttachmentKinds } from "./init.ts";
@@ -624,9 +625,8 @@ export function showProgressModal(
 
   const statusHtml = options.statusText ? `<p>${options.statusText}</p>` : "";
 
-  return editor.showPanel(
+  return showPanel(
     "modal",
-    20,
     `<style>
       .ai-modal-wrapper {
         display: flex;

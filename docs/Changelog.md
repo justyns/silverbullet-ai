@@ -2,6 +2,12 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## Unreleased
+
+- Fix panel and modal styling breaking when SilverBullet is served under a URL prefix
+- Style panels and modals with SilverBullet's component stylesheet
+- Open the assistant full screen on mobile (`AI: Open Assistant`)
+
 ## 0.9.0 (2026-08-18)
 
 - Add **file attachments**, files referenced in notes and chat (`![[file]]` / `![alt](file)`) are sent to the model as native parts.

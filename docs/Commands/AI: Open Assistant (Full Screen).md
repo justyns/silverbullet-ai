@@ -2,11 +2,8 @@ Opens the AI Assistant as a full-screen modal dialog instead of a side panel.
 
 ## When to Use
 
-This is useful when:
-
-- Working on mobile devices or smaller screens
-- You want more space for the chat interface
-- The side panel is too narrow for your needs
+[[Commands/AI: Open Assistant]] already opens full screen on mobile, so this is for
+forcing the modal on desktop when the side panel is too narrow.
 
 ## Functionality
 
