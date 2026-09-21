@@ -1,6 +1,6 @@
 ## Library Manager (Recommended)
 
-Requires SilverBullet v2.10.0+
+Requires SilverBullet v2.11.0+
 
 1. Run `Library: Install` command
 2. Enter one of the following:
