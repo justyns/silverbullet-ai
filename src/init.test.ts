@@ -7,6 +7,7 @@ import {
   currentAIProvider,
   getAndConfigureModel,
   initializeOpenAI,
+  parseDefaultModelString,
 } from "./init.ts";
 import { syscall } from "@silverbulletmd/silverbullet/syscalls";
 
@@ -260,4 +261,36 @@ test("reasoningEffort is left unset when not configured", async () => {
 
   await configureSelectedModel(aiSettings.textModels[0]);
   assertEquals(currentAIProvider.reasoningEffort, undefined);
+});
+
+test("parseDefaultModelString keeps colons in the model name", async () => {
+  await syscall("mock.setConfig", "ai", aiConfigSample);
+  await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
+  await initializeOpenAI();
+
+  const tagged = parseDefaultModelString("ollama:llama3.2:1b")!;
+  assertEquals(tagged.provider, "ollama");
+  assertEquals(tagged.modelName, "llama3.2:1b");
+
+  const plain = parseDefaultModelString("openai:gpt-4")!;
+  assertEquals(plain.provider, "openai");
+  assertEquals(plain.modelName, "gpt-4");
+
+  assertEquals(parseDefaultModelString("gpt-4"), null);
+});
+
+test("parseDefaultModelString resolves a configured provider key", async () => {
+  await syscall("mock.setConfig", "ai", {
+    providers: {
+      "ollama-home": { provider: "ollama", baseUrl: "http://nas:11434" },
+    },
+  });
+  await syscall("mock.setConfig", "ai.keys", secretsConfigSample);
+  await initializeOpenAI();
+
+  const model = parseDefaultModelString("ollama-home:gemma3:1b")!;
+  assertEquals(model.provider, "ollama");
+  assertEquals(model.providerKey, "ollama-home");
+  assertEquals(model.modelName, "gemma3:1b");
+  assertEquals(model.baseUrl, "http://nas:11434");
 });
