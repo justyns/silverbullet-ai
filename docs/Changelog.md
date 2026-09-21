@@ -2,6 +2,13 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.9.1 (2026-09-21)
+
+- Fix custom text models dropping the provider for names containing a `:` (`ollama:llama3.2:1b`)
+- Reject a custom model entered without a `provider:` prefix
+- Bump minimum SilverBullet to v2.11.0
+- Update dependencies and GitHub Actions
+
 ## 0.9.0 (2026-08-18)
 
 - Add **file attachments**, files referenced in notes and chat (`![[file]]` / `![alt](file)`) are sent to the model as native parts.
