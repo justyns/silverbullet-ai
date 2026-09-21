@@ -27,6 +27,9 @@ import {
   initializeOpenAI,
   initIfNeeded,
   modelSupportsTools,
+  parseDefaultEmbeddingModelString,
+  parseDefaultImageModelString,
+  parseDefaultModelString,
   setSelectedEmbeddingModel,
   setSelectedImageModel,
   setSelectedTextModel,
@@ -39,7 +42,6 @@ import {
   getAllAvailableModels,
   refreshAllModelCaches,
 } from "./src/model-discovery.ts";
-import { parseDefaultEmbeddingModelString, parseDefaultImageModelString } from "./src/init.ts";
 import {
   assembleMessagesWithAttachments,
   cleanMessagesForApi,
@@ -177,29 +179,15 @@ export async function selectModelFromConfig() {
     const customModel = await editor.prompt("Enter model name (provider:model):");
     if (!customModel) return;
 
-    // Parse "provider:model" format or just use as model name
-    const parts = customModel.split(":");
-    let provider = "openai";
-    let modelName = customModel;
-
-    if (parts.length === 2) {
-      provider = parts[0];
-      modelName = parts[1];
+    const modelConfig = parseDefaultModelString(customModel);
+    if (!modelConfig) {
+      await editor.flashNotification("Invalid model format. Use provider:model", "error");
+      return;
     }
-
-    const defaults = getProviderDefaults(provider);
-    const modelConfig: ModelConfig = {
-      name: modelName,
-      description: `Custom model: ${modelName}`,
-      modelName: modelName,
-      provider: provider as any,
-      secretName: "",
-      requireAuth: defaults.requireAuth,
-    };
 
     await setSelectedTextModel(modelConfig);
     await configureSelectedModel(modelConfig);
-    await editor.flashNotification(`Selected custom model: ${modelName}`);
+    await editor.flashNotification(`Selected custom model: ${modelConfig.modelName}`);
     return;
   }
 
@@ -579,7 +567,6 @@ export async function streamChatOnPage() {
   await editor.moveCursor(cursorPos + "\n\n**user**: ".length);
 
   try {
-    // Check if tools are enabled and available
     const useTools = await areToolsEnabled();
     const luaTools = useTools ? await discoverAllTools() : new Map();
     const tools = convertToOpenAITools(luaTools);
