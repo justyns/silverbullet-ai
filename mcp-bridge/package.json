@@ -1,6 +1,7 @@
 {
   "name": "silverbullet-ai-mcp",
   "version": "0.0.0",
+  "mcpName": "io.github.justyns/silverbullet-ai-mcp",
   "description": "MCP server bridge exposing silverbullet-ai tools from a SilverBullet server",
   "license": "AGPL-3.0-only",
   "repository": {

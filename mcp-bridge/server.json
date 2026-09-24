@@ -1,0 +1,41 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.justyns/silverbullet-ai-mcp",
+  "description": "Exposes silverbullet-ai tools from a SilverBullet space to MCP clients",
+  "repository": {
+    "url": "https://github.com/justyns/silverbullet-ai",
+    "source": "github",
+    "subfolder": "mcp-bridge"
+  },
+  "websiteUrl": "https://ai.silverbullet.md/MCP%20Server/",
+  "version": "0.0.0",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "silverbullet-ai-mcp",
+      "version": "0.0.0",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "SB_URL",
+          "description": "Base URL of your SilverBullet server, or 'desktop' for the SilverBullet+ desktop app",
+          "isRequired": true,
+          "format": "string"
+        },
+        {
+          "name": "SB_AUTH_TOKEN",
+          "description": "The server's SB_AUTH_TOKEN, if it runs with token auth",
+          "isSecret": true,
+          "format": "string"
+        },
+        {
+          "name": "SB_SPACE_ID",
+          "description": "In desktop mode, which space to connect to",
+          "format": "string"
+        }
+      ]
+    }
+  ]
+}
