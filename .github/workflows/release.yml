@@ -61,9 +61,15 @@ jobs:
 
       - name: Publish MCP bridge to npm
         working-directory: mcp-bridge
+        env:
+          VERSION: ${{ github.event.inputs.tag || github.ref_name }}
         run: |
+          if npm view "silverbullet-ai-mcp@$VERSION" version | grep -q .; then
+            echo "silverbullet-ai-mcp@$VERSION already published"
+            exit 0
+          fi
           npm ci
-          npm version ${{ github.event.inputs.tag || github.ref_name }} --no-git-tag-version --allow-same-version
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
           npm publish
 
       - name: Publish MCP bridge to MCP Registry
@@ -73,5 +79,6 @@ jobs:
         run: |
           jq --arg v "$VERSION" '.version = $v | .packages[0].version = $v' server.json > server.tmp && mv server.tmp server.json
           curl -L "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          until npm view "silverbullet-ai-mcp@$VERSION" version | grep -q .; do sleep 10; done
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish
