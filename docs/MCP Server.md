@@ -16,10 +16,22 @@ The bridge lives in the [`mcp-bridge/`](https://github.com/justyns/silverbullet-
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SB_URL` | yes | Base URL of your SilverBullet server, e.g. `http://localhost:3000` |
+| `SB_URL` | yes | Base URL of your SilverBullet server, e.g. `http://localhost:3000`, or `desktop` to use a running SilverBullet+ electron app |
 | `SB_AUTH_TOKEN` | no | Same value as the server's `SB_AUTH_TOKEN`, if it runs with token auth |
+| `SB_SPACE_ID` | no | In desktop mode, which space to connect to |
+| `SB_DESKTOP_CONFIG` | no | In desktop mode, path to the app's `runtime.json` if it lives outside the usual locations |
 | `MCP_PORT` | no | If set, the bridge serves streamable HTTP on this port instead of stdio |
 | `MCP_TOKEN` | no | In HTTP mode, require `Authorization: Bearer <token>` on requests |
+
+## Desktop mode
+
+**Note:** Support for the desktop app is experimental.
+
+`SB_URL=desktop` connects to the SilverBullet+ desktop app instead of a server:
+
+```bash
+claude mcp add silverbullet --env SB_URL=desktop -- npx -y silverbullet-ai-mcp
+```
 
 ## Claude Code
 

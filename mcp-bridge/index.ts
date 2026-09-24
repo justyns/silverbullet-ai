@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import { existsSync, readFileSync } from "node:fs";
 import { createServer as createHttpServer } from "node:http";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
@@ -14,10 +17,51 @@ if (!SB_URL) {
   console.error("SB_URL environment variable is required");
   process.exit(1);
 }
-const SB_AUTH_TOKEN = process.env.SB_AUTH_TOKEN;
 const MCP_PORT = process.env.MCP_PORT;
 const MCP_TOKEN = process.env.MCP_TOKEN;
 const EXCLUDED_TOOLS = new Set(["ask_user", "navigate"]);
+
+// Mostly guessing where the config is, only tested on Linux so far
+const DESKTOP_PROFILE = "SilverBullet+ Electron";
+const DESKTOP_CONFIGS = [
+  process.env.SB_ELECTRON_DATA,
+  join(homedir(), ".var/app/plus.silverbullet.desktop/config", DESKTOP_PROFILE),
+  join(
+    process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config"),
+    DESKTOP_PROFILE,
+  ),
+  join(homedir(), "Library/Application Support", DESKTOP_PROFILE),
+  process.env.APPDATA && join(process.env.APPDATA, DESKTOP_PROFILE),
+].map((dir) => dir && join(dir, "runtime.json"));
+
+// The desktop backend picks a new loopback port and token every start, so read
+// runtime.json every request
+function desktopTarget() {
+  const path =
+    process.env.SB_DESKTOP_CONFIG ??
+    DESKTOP_CONFIGS.find((p) => p && existsSync(p));
+  if (!path || !existsSync(path)) {
+    throw new Error(
+      `No SilverBullet+ runtime.json found${path ? ` at ${path}` : ""}. Start the desktop app, or set SB_DESKTOP_CONFIG to the runtime.json.`,
+    );
+  }
+  const { spaces = [] } = JSON.parse(readFileSync(path, "utf8")) as {
+    spaces?: { id: string; origin: string; token?: string }[];
+  };
+  const id = process.env.SB_SPACE_ID;
+  const space = id ? spaces.find((s) => s.id === id) : spaces[0];
+  if (!space) {
+    throw new Error(
+      `No space ${id ? `${id} ` : ""}in ${path}; found: ${spaces.map((s) => s.id).join(", ") || "none"}`,
+    );
+  }
+  return { url: space.origin, token: space.token };
+}
+
+const resolveTarget = () =>
+  SB_URL === "desktop"
+    ? desktopTarget()
+    : { url: SB_URL, token: process.env.SB_AUTH_TOKEN };
 
 type SbTool = {
   name: string;
@@ -57,12 +101,13 @@ function toLuaLiteral(value: unknown): string {
 }
 
 async function evalLuaScript(script: string): Promise<unknown> {
+  const { url, token } = resolveTarget();
   const headers: Record<string, string> = {
     "Content-Type": "text/plain",
     "X-Timeout": "60",
   };
-  if (SB_AUTH_TOKEN) headers["Authorization"] = `Bearer ${SB_AUTH_TOKEN}`;
-  const res = await fetch(`${SB_URL}/.runtime/lua_script`, {
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const res = await fetch(`${url}/.runtime/lua_script`, {
     method: "POST",
     headers,
     body: script,
