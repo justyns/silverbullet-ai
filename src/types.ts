@@ -207,6 +207,7 @@ export enum Provider {
   Gemini = "gemini",
   Ollama = "ollama",
   Mistral = "mistral",
+  ClaudeCli = "claudecli",
 
   Mock = "mock",
 }
