@@ -30,6 +30,7 @@ import {
   supportedAttachmentKinds,
 } from "./init.ts";
 import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
+import { buildSkillTool, discoverSkills, executeSkillTool, SKILL_TOOL_NAME } from "./skills.ts";
 
 function validatePathPermission(
   tool: LuaToolDefinition,
@@ -248,13 +249,16 @@ export async function discoverAllTools(): Promise<
   for (const [name, def] of mcpTools) {
     tools.set(name, def);
   }
+  const skills = await discoverSkills();
+  if (skills.length > 0) {
+    tools.set(SKILL_TOOL_NAME, buildSkillTool(skills));
+  }
   return tools;
 }
 
 /**
- * Lua-callable: run a single tool by name (MCP or Lua) and return its result.
- * Bypasses the LLM — the script author named the tool directly, so no approval
- * modal is shown (mirrors how Lua tool handlers already run when called directly).
+ * Lua-callable: run a single tool by name and return its result. Shows no approval
+ * modal, matching how Lua tool handlers run when called directly.
  *
  * @example From Space Lua:
  * ```lua
@@ -295,7 +299,7 @@ export async function listTools(): Promise<
     name: string;
     description: string;
     parameters: JsonSchemaObject;
-    source: "lua" | "mcp";
+    source: "lua" | "mcp" | "skill";
     mcpServer?: string;
     requiresApproval: boolean;
     readOnly: boolean;
@@ -396,6 +400,9 @@ export async function executeTool(
   if (tool.source === "mcp") {
     return await executeMCPTool(tool, args, aiSettings?.mcpServers);
   }
+  if (tool.source === "skill") {
+    return await executeSkillTool(args);
+  }
 
   const permCheck = validatePathPermission(tool, args, permissions);
   if (!permCheck.allowed) {
@@ -409,7 +416,6 @@ export async function executeTool(
       `ai.tools[${toolNameLiteral}].handler(${luaArgs})`,
     );
 
-    // Check if tool returned structured {result, summary}
     if (
       typeof result === "object" &&
       result !== null &&
@@ -680,9 +686,7 @@ function parseAttachPaths(raw: unknown): string[] | undefined {
 }
 
 // Resolves attach-paths into carrier messages (image/pdf parts or handler text)
-// the model sees next turn. Capability-gated only — the model explicitly asked —
-// but still confined to the agent's allowedReadPaths so a tool can't pull files
-// outside its sandbox.
+// the model sees next turn. Confined to the agent's allowedReadPaths.
 async function buildAttachmentCarriers(
   paths: string[],
   permissions?: PathPermissions,
@@ -1055,7 +1059,6 @@ export async function runStreamingAgenticChat(
     };
   }
 
-  // Tool loop: keep calling until finish_reason is not "tool_calls"
   while (iterations < maxIterations) {
     iterations++;
 

@@ -175,7 +175,7 @@ export type LuaToolDefinition = {
   readOnly?: boolean;
   readPathParam?: string | string[];
   writePathParam?: string | string[];
-  source?: "lua" | "mcp";
+  source?: "lua" | "mcp" | "skill";
   mcpServer?: string;
   mcpToolName?: string;
   trusted?: boolean;
@@ -288,6 +288,9 @@ export type AISettings = {
 
   // External MCP servers whose tools are exposed to the chat
   mcpServers?: MCPServersConfig;
+
+  // Page prefixes scanned for <folder>/SKILL pages
+  skills?: { paths?: string[] };
 
   // Default models to use (format: "provider:modelName", e.g., "ollama:llama3.2")
   defaultTextModel?: string;

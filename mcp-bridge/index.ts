@@ -67,7 +67,7 @@ type SbTool = {
   name: string;
   description: string;
   parameters: { type: "object"; [key: string]: unknown };
-  source: "lua" | "mcp";
+  source: "lua" | "mcp" | "skill";
   readOnly?: boolean;
 };
 
