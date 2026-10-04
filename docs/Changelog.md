@@ -2,6 +2,11 @@ For the full changelog, please refer to the individual release notes on https://
 
 This page is a brief overview of each version.
 
+## 0.10.0 (Unreleased)
+
+- Add AI settings to the SilverBullet Configuration Manager (`Configuration: Open`)
+- Add config schemas for `ai.mcpServers`, `ai.debug`, and the `excludeModels` / `showPricing` provider options
+
 ## 0.9.1 (2026-09-21)
 
 - Fix custom text models dropping the provider for names containing a `:` (`ollama:llama3.2:1b`)
