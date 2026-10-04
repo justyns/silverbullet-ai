@@ -92,6 +92,20 @@ config.set("ai", {
 
 Some OpenAI reasoning models reject function tools unless `reasoningEffort` is `none`, returning `Function tools with reasoning_effort are not supported ... in /v1/chat/completions`. Set `reasoningEffort = "none"` for those models if you want tool calling.
 
+## Configuration Manager
+
+The **AI** category in SilverBullet's Configuration Manager (`Configuration: Open`, `Ctrl-,` / `Cmd-,`) edits default models, chat options, indexing toggles, and debug logging. It writes these to a managed block in your `CONFIG` page.
+
+Providers, API keys, MCP servers, and prompt instructions are not in the Configuration Manager. Set them in Space Lua as shown above, preferably on a separate page from `CONFIG`, using path-style calls so they don't replace values set through the UI:
+
+```lua
+config.set("ai.providers", {
+  openai = { apiKey = "sk-your-openai-key-here" },
+})
+```
+
+A `config.set("ai", {...})` that runs after the managed block replaces the whole `ai` table, including values set in the Configuration Manager.
+
 ## Legacy Configuration (Deprecated)
 
 !!! warning "Deprecated"

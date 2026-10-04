@@ -14,6 +14,12 @@ This page defines the JSON Schema for all silverbullet-ai configuration settings
 ai = {}
 ai.tools = {}
 
+config.defineCategory {
+  name = "AI",
+  description = "Providers, API keys, and MCP servers are set in Space Lua. See https://ai.silverbullet.md/Configuration/",
+  priority = 5,
+}
+
 -- Schema for API keys
 config.define("ai.keys", {
   description = "API keys for AI services (e.g., OPENAI_API_KEY, GEMINI_API_KEY)",
@@ -50,6 +56,15 @@ config.define("ai.providers", {
         items = { type = "string" },
         description = "Model names to show first in the picker",
       },
+      excludeModels = {
+        type = "array",
+        items = { type = "string" },
+        description = "Model names to hide from the picker",
+      },
+      showPricing = {
+        type = "boolean",
+        description = "Whether to show model pricing in the picker (default: true)",
+      },
       fetchModels = {
         type = "boolean",
         description = "Whether to fetch models from API (default: true)",
@@ -70,16 +85,19 @@ config.define("ai.providers", {
 config.define("ai.defaultTextModel", {
   description = "Default text model to use on startup (format: 'provider:modelName')",
   type = "string",
+  ui = { category = "AI", label = "Default text model", priority = 100 },
 })
 
 config.define("ai.defaultEmbeddingModel", {
   description = "Default embedding model to use on startup (format: 'provider:modelName')",
   type = "string",
+  ui = { category = "AI", label = "Default embedding model", priority = 95 },
 })
 
 config.define("ai.defaultImageModel", {
   description = "Default image model to use on startup (format: 'provider:modelName')",
   type = "string",
+  ui = { category = "AI", label = "Default image model", priority = 90 },
 })
 
 -- Schema for text/chat models
@@ -244,6 +262,7 @@ config.define("ai.chat", {
     userInformation = {
       type = "string",
       description = "Information about the user to include in prompts",
+      ui = { category = "AI", label = "User information", priority = 40 },
     },
     userInstructions = {
       type = "string",
@@ -256,14 +275,19 @@ config.define("ai.chat", {
     parseWikiLinks = {
       type = "boolean",
       description = "Whether to parse and resolve wiki-style links",
+      default = true,
+      ui = { category = "AI", label = "Parse wiki links", priority = 70 },
     },
     bakeMessages = {
       type = "boolean",
       description = "Whether to bake messages into the conversation",
+      default = true,
+      ui = { category = "AI", label = "Bake messages", priority = 68 },
     },
     searchEmbeddings = {
       type = "boolean",
       description = "Whether to search embeddings for context (RAG)",
+      ui = { category = "AI", label = "Search embeddings in chat", priority = 66 },
     },
     customEnrichFunctions = {
       type = "array",
@@ -273,34 +297,45 @@ config.define("ai.chat", {
     enableTools = {
       type = "boolean",
       description = "Whether to enable AI tools in the chat panel",
+      default = true,
+      ui = { category = "AI", label = "Enable tools", priority = 80 },
     },
     skipToolApproval = {
       type = "boolean",
       description = "Skip approval prompts for tools (useful for benchmarks)",
+      ui = { category = "AI", label = "Skip tool approval", priority = 78 },
     },
     showReasoning = {
       type = "boolean",
       description = "Show model reasoning/thinking blocks in the chat",
+      default = true,
+      ui = { category = "AI", label = "Show reasoning", priority = 75 },
     },
     attachImages = {
       type = "boolean",
       description = "Send images referenced in messages/pages to vision-capable models",
+      ui = { category = "AI", label = "Attach images", priority = 64 },
     },
     attachDocuments = {
       type = "boolean",
       description = "Send PDFs referenced in messages/pages to document-capable models",
+      ui = { category = "AI", label = "Attach documents", priority = 62 },
     },
     downloadRemoteImages = {
       type = "boolean",
       description = "Download and cache remote https:// image links before sending",
+      ui = { category = "AI", label = "Download remote images", priority = 60 },
     },
     maxFileSizeMB = {
       type = "number",
       description = "Skip referenced files larger than this many MB (default 10)",
+      default = 10,
+      ui = { category = "AI", label = "Max file size (MB)", priority = 58 },
     },
     defaultAgent = {
       type = "string",
       description = "Default agent to use (e.g., 'lua:general' for built-in, or page ref like 'Library/Agents/MyAgent')",
+      ui = { category = "AI", label = "Default agent", priority = 85 },
     },
   },
   additionalProperties = false,
@@ -339,6 +374,7 @@ config.define("ai.promptInstructions", {
 config.define("ai.indexEmbeddings", {
   description = "Whether to generate and index embeddings",
   type = "boolean",
+  ui = { category = "AI", label = "Index embeddings", priority = 30 },
 })
 
 config.define("ai.indexEmbeddingsExcludePages", {
@@ -356,10 +392,51 @@ config.define("ai.indexEmbeddingsExcludeStrings", {
 config.define("ai.indexSummary", {
   description = "Whether to generate AI summaries of pages",
   type = "boolean",
+  ui = { category = "AI", label = "Index summaries", priority = 25 },
 })
 
 config.define("ai.indexSummaryModelName", {
   description = "Model name to use for generating summaries",
   type = "string",
+  ui = { category = "AI", label = "Summary model", priority = 20 },
+})
+
+-- Schema for external MCP servers
+config.define("ai.mcpServers", {
+  description = "External MCP servers whose tools are exposed to the chat, keyed by name",
+  type = "object",
+  additionalProperties = {
+    type = "object",
+    properties = {
+      url = {
+        type = "string",
+        description = "Streamable HTTP endpoint, e.g. http://127.0.0.1:9000/mcp",
+      },
+      enabled = {
+        type = "boolean",
+        description = "Whether to connect to this server (default: true)",
+      },
+      trusted = {
+        type = "boolean",
+        description = "Skip approval prompts for this server's tools",
+      },
+      headers = {
+        type = "object",
+        additionalProperties = schema.string(),
+        description = "Extra HTTP headers sent with each request",
+      },
+      timeout = {
+        type = "number",
+        description = "Request timeout in milliseconds (default: 30000)",
+      },
+    },
+    required = {"url"},
+  },
+})
+
+config.define("ai.debug", {
+  description = "Log verbose diagnostic output to the browser console",
+  type = "boolean",
+  ui = { category = "AI", label = "Debug logging", priority = 10 },
 })
 ```
