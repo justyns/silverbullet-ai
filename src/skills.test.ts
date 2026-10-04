@@ -94,6 +94,16 @@ describe("discoverSkills", () => {
     ]);
   });
 
+  test("reads share.uri from SKILL pages", async () => {
+    await syscall(
+      "mock.setPage",
+      "Library/AISkills/pdf-processing/SKILL",
+      pdfSkill.replace("---\n\n", "share.uri: https://example.com/SKILL.md\nshare.mode: pull\n---\n\n"),
+    );
+    const [skill] = await discoverSkills();
+    expect(skill.source).toBe("https://example.com/SKILL.md");
+  });
+
   test("ignores SKILL pages outside the configured paths", async () => {
     await setup({ skills: { paths: ["Other"] } });
     await syscall("mock.setIndexedObjects", "page", [

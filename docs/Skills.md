@@ -58,7 +58,11 @@ If a folder skill and a tagged page share a name, the folder skill is used.
 
 ### AI: Import Skill
 
-Paste a GitHub skill folder URL, e.g. `https://github.com/anthropics/skills/tree/main/skills/pdf`, to import all of its files. Any other URI to a `SKILL.md` imports just that file.
+Paste a GitHub skill folder URL, e.g. `https://github.com/anthropics/skills/tree/main/skills/pdf`, to import all of its files. Any other URI to a `SKILL.md` imports just that file. The `SKILL.md` gets [Share](https://silverbullet.md/Share) frontmatter (`share.uri`, `share.mode: pull`, `share.hash`).
+
+### AI: Update Skill
+
+Pick an imported skill to pull its `SKILL.md` through Share, which skips unchanged skills and asks before overwriting local edits. When `SKILL.md` changed, bundled files from GitHub are downloaded again. Files removed upstream are not deleted. `Share: Page` on a `SKILL` page updates only the `SKILL.md`.
 
 ### Library: Install
 

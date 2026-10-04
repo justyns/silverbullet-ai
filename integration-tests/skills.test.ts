@@ -81,5 +81,20 @@ describe("Skills integration", () => {
     expect(skillFiles).toContain("Library/AISkills/pdf/SKILL.md");
     expect(skillFiles.length).toBeGreaterThan(1);
     await waitForSkills(["pdf"]);
+
+    const skillText = (await evalLua(
+      `space.readPage("Library/AISkills/pdf/SKILL")`,
+    )) as string;
+    expect(skillText).toContain(
+      `share.uri: "https://github.com/anthropics/skills/blob/main/skills/pdf/SKILL.md"`,
+    );
+    expect(skillText).toContain("share.mode: pull");
+    expect(skillText).toContain("license: Proprietary");
+
+    const changed = await evalLua(
+      `system.invokeFunction("silverbullet-ai.updateSkill", "pdf")`,
+      120,
+    );
+    expect(changed).toBe(false);
   }, 180_000);
 });

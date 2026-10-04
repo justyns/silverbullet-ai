@@ -19,6 +19,8 @@ type Skill = {
   page: string;
   // Folder that relative paths in the skill resolve against
   dir: string;
+  // share.uri the skill was imported from
+  source?: string;
 };
 
 /** Throws on malformed YAML. */
@@ -107,7 +109,13 @@ async function readSkillPage(page: string): Promise<Skill | null> {
   if (name !== folder) {
     log.warn(`Skill name "${name}" does not match its folder ${dir}`);
   }
-  return { name, description: String(frontmatter.description), page, dir };
+  return {
+    name,
+    description: String(frontmatter.description),
+    page,
+    dir,
+    source: frontmatter["share.uri"],
+  };
 }
 
 export function buildSkillTool(skills: Skill[]): LuaToolDefinition {
@@ -235,15 +243,37 @@ async function readUriAsBytes(uri: string): Promise<Uint8Array> {
   return base64Decode(b64);
 }
 
+function githubBlobBase(gh: GitHubSkillLocation): string {
+  return `https://github.com/${gh.owner}/${gh.repo}/blob/${gh.ref}/`;
+}
+
+async function downloadBundledFiles(
+  gh: GitHubSkillLocation,
+  dir: string,
+): Promise<void> {
+  const listing = await lua.evalExpression(
+    `net.readURI(${jsToLuaLiteral(`https://api.github.com/repos/${gh.owner}/${gh.repo}/git/trees/${gh.ref}?recursive=1`)})`,
+  ) as { tree: { path: string; type: string }[] };
+  const prefix = `${gh.dir}/`;
+  const files = listing.tree.filter((e) =>
+    e.type === "blob" && e.path.startsWith(prefix) &&
+    e.path !== `${prefix}SKILL.md`
+  );
+  await Promise.all(files.map(async (e) => {
+    const data = await readUriAsBytes(`${githubBlobBase(gh)}${e.path}`);
+    await space.writeFile(`${dir}/${e.path.slice(prefix.length)}`, data);
+  }));
+}
+
 /**
- * Imports into the first `ai.skills.paths` entry. Returns the SKILL page name, or null if the
- * user declined to overwrite an existing skill.
+ * Imports into the first `ai.skills.paths` entry, with SilverBullet share frontmatter
+ * (`share.uri`, pull mode) on the SKILL page. Returns the SKILL page name, or null if
+ * the user declined to overwrite an existing skill.
  */
 export async function importSkill(uri: string): Promise<string | null> {
   const gh = parseGitHubSkillUrl(uri);
-  const blobBase = (g: GitHubSkillLocation) =>
-    `https://github.com/${g.owner}/${g.repo}/blob/${g.ref}/`;
-  const text = await readUriAsText(gh ? `${blobBase(gh)}${gh.dir}/SKILL.md` : uri);
+  const skillUri = gh ? `${githubBlobBase(gh)}${gh.dir}/SKILL.md` : uri;
+  const text = await readUriAsText(skillUri);
 
   const name = splitFrontmatter(text).frontmatter.name;
   if (typeof name !== "string" || !/^[A-Za-z0-9_-]+$/.test(name)) {
@@ -258,24 +288,37 @@ export async function importSkill(uri: string): Promise<string | null> {
   ) {
     return null;
   }
-  await space.writePage(page, text);
+  const shared = await lua.evalExpression(
+    `(function(t)
+      return share.setFrontmatter({uri=${jsToLuaLiteral(skillUri)}, mode="pull", hash=share.contentHash(t)}, t)
+    end)(${jsToLuaLiteral(text)})`,
+  ) as string;
+  await space.writePage(page, shared);
 
   if (gh) {
-    const listing = await lua.evalExpression(
-      `net.readURI(${jsToLuaLiteral(`https://api.github.com/repos/${gh.owner}/${gh.repo}/git/trees/${gh.ref}?recursive=1`)})`,
-    ) as { tree: { path: string; type: string }[] };
-    const prefix = `${gh.dir}/`;
-    const files = listing.tree.filter((e) =>
-      e.type === "blob" && e.path.startsWith(prefix) &&
-      e.path !== `${prefix}SKILL.md`
-    );
-    await Promise.all(files.map(async (e) => {
-      const data = await readUriAsBytes(`${blobBase(gh)}${e.path}`);
-      await space.writeFile(`${dir}/${e.path.slice(prefix.length)}`, data);
-    }));
+    await downloadBundledFiles(gh, dir);
   }
-
   return page;
+}
+
+/**
+ * Pulls the SKILL page through SilverBullet's share framework, then re-downloads bundled
+ * files for GitHub skills. Returns false when the skill was already up to date or the user
+ * kept local edits.
+ */
+export async function updateSkill(name: string): Promise<boolean> {
+  const skill = (await discoverSkills()).find((s) => s.name === name);
+  if (!skill?.source) {
+    throw new Error(`Skill ${name} has no share.uri to update from`);
+  }
+  const changed = await lua.evalExpression(
+    `share.sharePage(${jsToLuaLiteral(skill.page)})`,
+  ) as boolean;
+  const gh = parseGitHubSkillUrl(skill.source);
+  if (changed && gh) {
+    await downloadBundledFiles(gh, skill.dir);
+  }
+  return changed;
 }
 
 export async function importSkillCommand() {
@@ -292,5 +335,30 @@ export async function importSkillCommand() {
   } catch (e) {
     log.error("Error importing skill:", e);
     await editor.flashNotification(`Skill import failed: ${e}`, "error");
+  }
+}
+
+export async function updateSkillCommand() {
+  await initIfNeeded();
+  const skills = (await discoverSkills()).filter((s) => s.source);
+  if (skills.length === 0) {
+    await editor.flashNotification("No imported skills to update", "error");
+    return;
+  }
+  const selected = await editor.filterBox(
+    "Update Skill",
+    skills.map((s) => ({ name: s.name, description: s.source })),
+  );
+  if (!selected) return;
+  try {
+    const changed = await updateSkill(selected.name);
+    await editor.flashNotification(
+      changed
+        ? `Updated skill ${selected.name}`
+        : `Skill ${selected.name} not changed`,
+    );
+  } catch (e) {
+    log.error("Error updating skill:", e);
+    await editor.flashNotification(`Skill update failed: ${e}`, "error");
   }
 }
