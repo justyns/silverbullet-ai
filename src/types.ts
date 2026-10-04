@@ -1,5 +1,7 @@
 import { ObjectValue } from "@silverbulletmd/silverbullet/type/index";
 
+import type { ToolExecutionResult } from "./tools.ts";
+
 export type sseEvent = {
   data: string;
 };
@@ -179,6 +181,8 @@ export type LuaToolDefinition = {
   mcpServer?: string;
   mcpToolName?: string;
   trusted?: boolean;
+  // Runs the tool in TS instead of through a Lua handler
+  execute?: (args: Record<string, unknown>) => Promise<ToolExecutionResult>;
 };
 
 export type AIAgentTemplate = {

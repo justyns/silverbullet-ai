@@ -30,7 +30,7 @@ import {
   supportedAttachmentKinds,
 } from "./init.ts";
 import { discoverMCPTools, executeMCPTool } from "./mcp/index.ts";
-import { buildSkillTool, discoverSkills, executeSkillTool, SKILL_TOOL_NAME } from "./skills.ts";
+import { buildSkillTool, discoverSkills, SKILL_TOOL_NAME } from "./skills.ts";
 
 function validatePathPermission(
   tool: LuaToolDefinition,
@@ -244,12 +244,14 @@ export async function discoverTools(): Promise<Map<string, LuaToolDefinition>> {
 export async function discoverAllTools(): Promise<
   Map<string, LuaToolDefinition>
 > {
-  const tools = await discoverTools();
-  const mcpTools = await discoverMCPTools(aiSettings?.mcpServers);
+  const [tools, mcpTools, skills] = await Promise.all([
+    discoverTools(),
+    discoverMCPTools(aiSettings?.mcpServers),
+    discoverSkills(),
+  ]);
   for (const [name, def] of mcpTools) {
     tools.set(name, def);
   }
-  const skills = await discoverSkills();
   if (skills.length > 0) {
     tools.set(SKILL_TOOL_NAME, buildSkillTool(skills));
   }
@@ -299,7 +301,7 @@ export async function listTools(): Promise<
     name: string;
     description: string;
     parameters: JsonSchemaObject;
-    source: "lua" | "mcp" | "skill";
+    source: NonNullable<LuaToolDefinition["source"]>;
     mcpServer?: string;
     requiresApproval: boolean;
     readOnly: boolean;
@@ -400,8 +402,8 @@ export async function executeTool(
   if (tool.source === "mcp") {
     return await executeMCPTool(tool, args, aiSettings?.mcpServers);
   }
-  if (tool.source === "skill") {
-    return await executeSkillTool(args);
+  if (tool.execute) {
+    return await tool.execute(args);
   }
 
   const permCheck = validatePathPermission(tool, args, permissions);

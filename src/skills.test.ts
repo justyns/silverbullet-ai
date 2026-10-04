@@ -5,7 +5,6 @@ import { initializeOpenAI } from "./init.ts";
 import {
   buildSkillTool,
   discoverSkills,
-  executeSkillTool,
   parseGitHubSkillUrl,
   splitFrontmatter,
 } from "./skills.ts";
@@ -20,6 +19,10 @@ description: Extract text from PDFs. Use when handling PDFs.
 
 See references/REFERENCE.md.
 `;
+
+async function activate(args: Record<string, unknown>) {
+  return await executeTool("activate_skill", args, await discoverAllTools());
+}
 
 async function setup(ai: Record<string, unknown> = {}) {
   await syscall("mock.setConfig", "ai", {
@@ -155,7 +158,7 @@ describe("activate_skill tool", () => {
   });
 
   test("reads a bundled file", async () => {
-    const result = await executeSkillTool({
+    const result = await activate({
       name: "pdf-processing",
       file: "scripts/extract.py",
     });
@@ -163,7 +166,7 @@ describe("activate_skill tool", () => {
   });
 
   test("rejects paths leaving the skill folder", async () => {
-    const result = await executeSkillTool({
+    const result = await activate({
       name: "pdf-processing",
       file: "../other/SKILL.md",
     });
@@ -171,7 +174,7 @@ describe("activate_skill tool", () => {
   });
 
   test("errors on unknown skills", async () => {
-    const result = await executeSkillTool({ name: "nope" });
+    const result = await activate({ name: "nope" });
     expect(result).toEqual({ success: false, error: "Unknown skill: nope" });
   });
 

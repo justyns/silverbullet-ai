@@ -2,6 +2,7 @@ import { parse as parseYAML } from "yaml";
 
 import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import { base64Decode } from "@silverbulletmd/silverbullet/lib/crypto";
+import { fileName, folderName } from "@silverbulletmd/silverbullet/lib/resolve";
 
 import { aiSettings, initIfNeeded } from "./init.ts";
 import type { ToolExecutionResult } from "./tools.ts";
@@ -52,53 +53,30 @@ export async function discoverSkills(): Promise<Skill[]> {
   });
 
   const paths = skillPaths();
-  const skillPages: Skill[] = [];
-  const taggedPages: Skill[] = [];
+  const isSkillPage = (name: string) =>
+    name.endsWith("/SKILL") && paths.some((p) => name.startsWith(p));
 
+  const skillPages = await Promise.all(
+    pages.filter((p) => isSkillPage(p.name)).map((p) => readSkillPage(p.name)),
+  );
+
+  const taggedPages: Skill[] = [];
   for (const page of pages) {
-    if (
-      page.name.endsWith("/SKILL") &&
-      paths.some((p) => page.name.startsWith(p))
-    ) {
-      const dir = page.name.slice(0, page.name.lastIndexOf("/"));
-      const folder = dir.slice(dir.lastIndexOf("/") + 1);
-      let frontmatter: Record<string, any>;
-      try {
-        frontmatter = splitFrontmatter(await space.readPage(page.name)).frontmatter;
-      } catch (e) {
-        log.error(`Skipping skill ${page.name}: invalid frontmatter`, e);
-        continue;
-      }
-      if (!frontmatter.description) {
-        log.warn(`Skipping skill ${page.name}: missing description`);
-        continue;
-      }
-      const name = String(frontmatter.name || folder);
-      if (name !== folder) {
-        log.warn(`Skill name "${name}" does not match its folder ${dir}`);
-      }
-      skillPages.push({
-        name,
-        description: String(frontmatter.description),
-        page: page.name,
-        dir,
-      });
-    } else if (page.itags?.includes(SKILL_TAG)) {
-      if (!page.description) {
-        log.warn(`Skipping skill ${page.name}: missing description`);
-        continue;
-      }
-      taggedPages.push({
-        name: page.name.slice(page.name.lastIndexOf("/") + 1),
-        description: page.description,
-        page: page.name,
-        dir: page.name,
-      });
+    if (isSkillPage(page.name) || !page.itags?.includes(SKILL_TAG)) continue;
+    if (!page.description) {
+      log.warn(`Skipping skill ${page.name}: missing description`);
+      continue;
     }
+    taggedPages.push({
+      name: fileName(page.name),
+      description: page.description,
+      page: page.name,
+      dir: page.name,
+    });
   }
 
   const skills = new Map<string, Skill>();
-  for (const skill of [...skillPages, ...taggedPages]) {
+  for (const skill of [...skillPages.filter((s) => s !== null), ...taggedPages]) {
     const existing = skills.get(skill.name);
     if (existing) {
       log.warn(
@@ -109,6 +87,27 @@ export async function discoverSkills(): Promise<Skill[]> {
     skills.set(skill.name, skill);
   }
   return [...skills.values()];
+}
+
+async function readSkillPage(page: string): Promise<Skill | null> {
+  const dir = folderName(page);
+  const folder = fileName(dir);
+  let frontmatter: Record<string, any>;
+  try {
+    frontmatter = splitFrontmatter(await space.readPage(page)).frontmatter;
+  } catch (e) {
+    log.error(`Skipping skill ${page}: invalid frontmatter`, e);
+    return null;
+  }
+  if (!frontmatter.description) {
+    log.warn(`Skipping skill ${page}: missing description`);
+    return null;
+  }
+  const name = String(frontmatter.name || folder);
+  if (name !== folder) {
+    log.warn(`Skill name "${name}" does not match its folder ${dir}`);
+  }
+  return { name, description: String(frontmatter.description), page, dir };
 }
 
 export function buildSkillTool(skills: Skill[]): LuaToolDefinition {
@@ -139,22 +138,25 @@ export function buildSkillTool(skills: Skill[]): LuaToolDefinition {
     handler: "",
     source: "skill",
     readOnly: true,
+    execute: (args) => executeSkillTool(skills, args),
   };
 }
 
-export async function executeSkillTool(
+async function executeSkillTool(
+  skills: Skill[],
   args: Record<string, unknown>,
 ): Promise<ToolExecutionResult> {
-  const skill = (await discoverSkills()).find((s) => s.name === args.name);
+  const skill = skills.find((s) => s.name === args.name);
   if (!skill) {
     return { success: false, error: `Unknown skill: ${args.name}` };
   }
 
-  if (typeof args.file === "string" && args.file) {
-    if (args.file.split("/").includes("..")) {
-      return { success: false, error: `Invalid skill file path: ${args.file}` };
+  const file = args.file as string | undefined;
+  if (file) {
+    if (file.split("/").includes("..")) {
+      return { success: false, error: `Invalid skill file path: ${file}` };
     }
-    const path = `${skill.dir}/${args.file}`;
+    const path = `${skill.dir}/${file}`;
     if (!(await space.fileExists(path))) {
       return { success: false, error: `File not found: ${path}` };
     }
@@ -162,7 +164,7 @@ export async function executeSkillTool(
     return {
       success: true,
       result: content,
-      summary: `Read ${args.file} from skill ${skill.name}`,
+      summary: `Read ${file} from skill ${skill.name}`,
     };
   }
 
@@ -239,9 +241,9 @@ async function readUriAsBytes(uri: string): Promise<Uint8Array> {
  */
 export async function importSkill(uri: string): Promise<string | null> {
   const gh = parseGitHubSkillUrl(uri);
-  const blobBase = gh &&
-    `https://github.com/${gh.owner}/${gh.repo}/blob/${gh.ref}/`;
-  const text = await readUriAsText(gh ? `${blobBase}${gh.dir}/SKILL.md` : uri);
+  const blobBase = (g: GitHubSkillLocation) =>
+    `https://github.com/${g.owner}/${g.repo}/blob/${g.ref}/`;
+  const text = await readUriAsText(gh ? `${blobBase(gh)}${gh.dir}/SKILL.md` : uri);
 
   const name = splitFrontmatter(text).frontmatter.name;
   if (typeof name !== "string" || !/^[A-Za-z0-9_-]+$/.test(name)) {
@@ -268,7 +270,7 @@ export async function importSkill(uri: string): Promise<string | null> {
       e.path !== `${prefix}SKILL.md`
     );
     await Promise.all(files.map(async (e) => {
-      const data = await readUriAsBytes(`${blobBase}${e.path}`);
+      const data = await readUriAsBytes(`${blobBase(gh)}${e.path}`);
       await space.writeFile(`${dir}/${e.path.slice(prefix.length)}`, data);
     }));
   }
