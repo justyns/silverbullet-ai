@@ -434,6 +434,19 @@ config.define("ai.mcpServers", {
   },
 })
 
+config.define("ai.skills", {
+  description = "Agent Skills settings",
+  type = "object",
+  properties = {
+    paths = {
+      type = "array",
+      items = { type = "string" },
+      description = "Page prefixes scanned for <folder>/SKILL pages (default: Library/AISkills/)",
+    },
+  },
+  additionalProperties = false,
+})
+
 config.define("ai.debug", {
   description = "Log verbose diagnostic output to the browser console",
   type = "boolean",

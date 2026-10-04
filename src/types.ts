@@ -1,5 +1,7 @@
 import { ObjectValue } from "@silverbulletmd/silverbullet/type/index";
 
+import type { ToolExecutionResult } from "./tools.ts";
+
 export type sseEvent = {
   data: string;
 };
@@ -175,10 +177,12 @@ export type LuaToolDefinition = {
   readOnly?: boolean;
   readPathParam?: string | string[];
   writePathParam?: string | string[];
-  source?: "lua" | "mcp";
+  source?: "lua" | "mcp" | "skill";
   mcpServer?: string;
   mcpToolName?: string;
   trusted?: boolean;
+  // Runs the tool in TS instead of through a Lua handler
+  execute?: (args: Record<string, unknown>) => Promise<ToolExecutionResult>;
 };
 
 export type AIAgentTemplate = {
@@ -288,6 +292,9 @@ export type AISettings = {
 
   // External MCP servers whose tools are exposed to the chat
   mcpServers?: MCPServersConfig;
+
+  // Page prefixes scanned for <folder>/SKILL pages
+  skills?: { paths?: string[] };
 
   // Default models to use (format: "provider:modelName", e.g., "ollama:llama3.2")
   defaultTextModel?: string;

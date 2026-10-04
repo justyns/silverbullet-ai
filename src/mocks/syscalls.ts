@@ -96,9 +96,6 @@ function setNestedValue(obj: any, path: string, value: any): void {
   current[keys[keys.length - 1]] = value;
 }
 
-// let indexedObjects: { [key: string]: string } = {};
-// (globalThis as any).indexedObjects;
-
 (globalThis as any).syscall = async (name: string, ...args: readonly any[]) => {
   switch (name) {
     // I tried a lot of things to get this working differently, but
@@ -161,13 +158,26 @@ function setNestedValue(obj: any, path: string, value: any): void {
       pages[args[0]] = args[1];
       break;
     case "space.readPage":
-      //   console.log("space.readPage", args);
       return await Promise.resolve(pages[args[0]]);
     case "space.writePage":
       pages[args[0]] = args[1];
       break;
     case "space.getPageMeta":
       return { name: args[0], ref: args[0] };
+
+    case "space.listFiles":
+      return [
+        ...Object.keys(pages).map((name) => ({ name: `${name}.md` })),
+        ...Object.keys(documents).map((name) => ({ name })),
+      ];
+    case "space.fileExists":
+      return args[0] in documents || pageForFile(args[0]) in pages;
+    case "space.readFile":
+      if (args[0] in documents) return documents[args[0]];
+      if (pageForFile(args[0]) in pages) {
+        return new TextEncoder().encode(pages[pageForFile(args[0])]);
+      }
+      throw new Error(`File not found: ${args[0]}`);
 
     case "mock.setDocument":
       documents[args[0]] = args[1];
@@ -277,6 +287,10 @@ function setNestedValue(obj: any, path: string, value: any): void {
       throw Error(`Missing mock for: ${name}`);
   }
 };
+
+function pageForFile(name: string): string | undefined {
+  return name.endsWith(".md") ? name.slice(0, -3) : undefined;
+}
 
 function invokeFunctionMock(args: readonly any[]) {
   switch (args[0]) {

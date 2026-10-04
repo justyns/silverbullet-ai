@@ -59,6 +59,18 @@ functions:
     path: sbai.ts:clearAgentCommand
     command:
       name: "AI: Clear Agent"
+  importSkill:
+    path: src/skills.ts:importSkill
+  importSkillCommand:
+    path: src/skills.ts:importSkillCommand
+    command:
+      name: "AI: Import Skill"
+  updateSkill:
+    path: src/skills.ts:updateSkill
+  updateSkillCommand:
+    path: src/skills.ts:updateSkillCommand
+    command:
+      name: "AI: Update Skill"
   testEmbeddingGeneration:
     path: sbai.ts:testEmbeddingGeneration
     command:

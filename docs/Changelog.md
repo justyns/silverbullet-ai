@@ -6,6 +6,8 @@ This page is a brief overview of each version.
 
 - Add AI settings to the SilverBullet Configuration Manager (`Configuration: Open`)
 - Add config schemas for `ai.mcpServers`, `ai.debug`, and the `excludeModels` / `showPricing` provider options
+- Add [[Skills]] support for the Agent Skills format, loaded on demand through the `activate_skill` tool
+- Add `AI: Import Skill` and `AI: Update Skill` commands to import skills from GitHub or any URI and refresh them
 
 ## 0.9.1 (2026-09-21)
 
