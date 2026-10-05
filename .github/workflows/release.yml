@@ -52,7 +52,7 @@ jobs:
         with:
           tag_name: ${{ github.event.inputs.tag || github.ref_name }}
           draft: ${{ github.event.inputs.draft == 'true' }}
-          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          prerelease: ${{ github.event.inputs.prerelease == 'true' || contains(github.event.inputs.tag || github.ref_name, '-') }}
           generate_release_notes: true
           files: |
             dist/silverbullet-ai.plug.js
@@ -70,7 +70,11 @@ jobs:
           fi
           npm ci
           npm version "$VERSION" --no-git-tag-version --allow-same-version
-          npm publish
+          if [[ "$VERSION" == *-* ]]; then
+            npm publish --tag next
+          else
+            npm publish
+          fi
 
       - name: Publish MCP bridge to MCP Registry
         working-directory: mcp-bridge
