@@ -3,7 +3,7 @@ import "../mocks/syscalls.ts";
 // Import init.ts first: provider modules participate in an import cycle that
 // only resolves when module evaluation starts from init.ts
 import "../init.ts";
-import { toOpenAIMessages } from "./openai.ts";
+import { OpenAIProvider, toOpenAIMessages } from "./openai.ts";
 import type { ChatMessage } from "../types.ts";
 
 test("toOpenAIMessages passes through messages without attachments", () => {
@@ -56,4 +56,20 @@ test("toOpenAIMessages renders a document attachment as a file part", () => {
       },
     ],
   }]);
+});
+
+test("chat surfaces an error returned in a 200 response body", async () => {
+  const provider = new OpenAIProvider("key", "model", "https://example.com", true, false);
+  (provider as any).fetch = () =>
+    Promise.resolve(
+      new Response(JSON.stringify({
+        error: {
+          message: "openai/x is temporarily rate-limited upstream.",
+          code: 429,
+        },
+      })),
+    );
+
+  await expect(provider.chat([{ role: "user", content: "hi" }])).rejects
+    .toThrow("API error 429: openai/x is temporarily rate-limited upstream.");
 });
