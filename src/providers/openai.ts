@@ -70,6 +70,12 @@ export function toOpenAIMessages(
   });
 }
 
+// OpenRouter can report errors such as upstream rate limits in a 200 response body
+function apiError(error: { message?: string; code?: number | string }): Error {
+  const message = error.message || JSON.stringify(error);
+  return new Error(error.code ? `API error ${error.code}: ${message}` : message);
+}
+
 export class OpenAIProvider extends AbstractProvider {
   static defaults: ProviderDefaults = {
     baseUrl: "https://api.openai.com/v1",
@@ -211,6 +217,11 @@ export class OpenAIProvider extends AbstractProvider {
             }
 
             const data = JSON.parse(e.data);
+            if (data.error) {
+              source.close();
+              reject(apiError(data.error));
+              return;
+            }
 
             // Capture usage from final chunk (sent when stream_options.include_usage is true)
             if (data.usage) {
@@ -406,6 +417,9 @@ export class OpenAIProvider extends AbstractProvider {
       }
 
       const data = await response.json();
+      if (data?.error) {
+        throw apiError(data.error);
+      }
       if (!data || !data.choices || data.choices.length === 0) {
         throw new Error("Invalid response from OpenAI.");
       }

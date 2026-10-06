@@ -247,8 +247,8 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       "silverbullet-ai.postProcessToolCallHtml",
       html,
     );
-    // DOMPurify is bundled ahead of this script (see loadPanelAssets in
-    // src/chat-panel.ts); the fallback should never be hit
+    // loadPanelAssets in src/chat-panel.ts bundles DOMPurify ahead of this script.
+    // The else branch should never run.
     if (typeof DOMPurify !== "undefined") {
       element.innerHTML = DOMPurify.sanitize(finalHtml, {
         ADD_TAGS: ["details", "summary"],
@@ -469,9 +469,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
           break;
         } else if (result.status === "error") {
           isStreaming = false;
-          messageEl.classList.remove("streaming");
-          messageEl.textContent += "\n\n[Error: " +
-            (result.error || "Unknown error") + "]";
+          showChatError(messageEl, result.error || "Unknown error");
           await updateChatStatus();
           break;
         }
@@ -481,8 +479,7 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
       } catch (e) {
         console.error("Polling error:", e);
         isStreaming = false;
-        messageEl.classList.remove("streaming");
-        messageEl.textContent += "\n\n[Error: " + e.message + "]";
+        showChatError(messageEl, e.message);
         await updateChatStatus();
         break;
       }
@@ -492,6 +489,22 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
     userInput.disabled = false;
     userInput.placeholder = "Type a message...";
     userInput.focus();
+  }
+
+  // Drops the failed user message from history and puts it back in the input
+  function showChatError(messageEl, message) {
+    messageEl.classList.remove("streaming");
+    userInput.value = chatHistory.pop().content;
+    const errorEl = document.createElement("div");
+    errorEl.className = "chat-error";
+    errorEl.textContent = message;
+    const retryBtn = document.createElement("button");
+    retryBtn.textContent = "Retry";
+    retryBtn.addEventListener("click", () => sendMessage());
+    errorEl.appendChild(retryBtn);
+    messageEl.appendChild(errorEl);
+    sendBtn.disabled = false;
+    userInput.disabled = false;
   }
 
   async function sendMessage() {
@@ -530,17 +543,11 @@ const CHAT_HISTORY_KEY = "ai.panelChatHistory";
 
         pollForChunks(result.streamId, assistantEl);
       } else if (result.error) {
-        assistantEl.classList.remove("streaming");
-        assistantEl.textContent = "[Error: " + result.error + "]";
-        sendBtn.disabled = false;
-        userInput.disabled = false;
+        showChatError(assistantEl, result.error);
       }
     } catch (e) {
       console.error("Failed to start chat:", e);
-      assistantEl.classList.remove("streaming");
-      assistantEl.textContent = "[Error: " + e.message + "]";
-      sendBtn.disabled = false;
-      userInput.disabled = false;
+      showChatError(assistantEl, e.message);
     }
 
     await saveHistory();
