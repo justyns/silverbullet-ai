@@ -17,7 +17,7 @@ interface AIPromptTemplate {
     order?: number;
   };
 }
-import { getPageLength, getParagraph, getSelectedText } from "./editorUtils.ts";
+import { getPageLength, getParagraph, getSelectedText, pickItem } from "./editorUtils.ts";
 import { currentAIProvider, initIfNeeded } from "./init.ts";
 import {
   assembleMessagesWithAttachments,
@@ -73,7 +73,6 @@ export async function insertAiPromptFromTemplate(
   } else if (
     !options || !("templatePage" in options) || !options.templatePage
   ) {
-    // Query pages tagged with meta/template/aiPrompt
     const aiPromptTemplates = await index.queryLuaObjects<AIPromptTemplate>(
       "page",
       {
@@ -84,7 +83,7 @@ export async function insertAiPromptFromTemplate(
       },
     );
 
-    selectedTemplate = await editor.filterBox(
+    selectedTemplate = await pickItem(
       "Prompt Template",
       aiPromptTemplates.map((templateObj: AIPromptTemplate) => {
         const niceName = templateObj.ref.split("/").pop()!;
@@ -100,6 +99,7 @@ export async function insertAiPromptFromTemplate(
           postProcessors: templateObj.aiprompt.postProcessors || [],
         };
       }),
+      (t) => ({ name: t.name, description: t.description }),
       `Select the template to use as the prompt.  The prompt will be rendered and sent to the LLM model.`,
     );
   } else {
@@ -426,7 +426,6 @@ export async function insertAiPromptFromTemplate(
     try {
       // Convert ${@varname} to ${varname} for backward compatibility
       // The @ prefix was what we used previously, but isn't really needed now
-      // TODO: Update the docs/examples too ^^
       const templateContent = templateText.replace(/\$\{@/g, "${");
       const templateData = globalMetadata;
       const luaExpression = `spacelua.interpolate(${luaLongString(templateContent)}, ${jsToLuaLiteral(templateData)})`;

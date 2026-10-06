@@ -1,6 +1,7 @@
 import { editor, index, lua, space } from "@silverbulletmd/silverbullet/syscalls";
 import type { AIAgentTemplate, Attachment, LuaToolDefinition } from "./types.ts";
 import { isPathAllowed, log, luaLongString } from "./utils.ts";
+import { pickItem } from "./editorUtils.ts";
 import { chatSystemPrompt } from "./init.ts";
 
 /**
@@ -28,7 +29,7 @@ export async function discoverAgents(): Promise<AIAgentTemplate[]> {
       }
     >;
 
-    // Lua→JS bridges drop boolean `false` values (treated like nil).
+    // Lua-to-JS bridges drop boolean `false` values (treated like nil).
     // Use tostring() in a separate Lua call to reliably detect explicit false.
     const luaBooleans = await lua.evalExpression(`
       (function()
@@ -101,21 +102,16 @@ export async function selectAgent(): Promise<AIAgentTemplate | null> {
     return null;
   }
 
-  const selected = await editor.filterBox(
+  const selected = await pickItem(
     "Select Agent",
-    agents.map((a) => ({
-      ...a,
+    agents,
+    (a) => ({
       name: a.aiagent.name || a.ref.split("/").pop() || a.ref,
       description: a.aiagent.description || "",
-    })),
+    }),
     "Select an AI agent to use for this chat session",
   );
-
-  if (!selected) return null;
-
-  // Find the original agent by ref (filterBox may not preserve all properties)
-  const selectedRef = (selected as { ref?: string }).ref;
-  return agents.find((a) => a.ref === selectedRef) || null;
+  return selected ?? null;
 }
 
 /**

@@ -6,6 +6,7 @@ import type { ToolExecutionResult } from "./tools.ts";
 import type { ModelConfig, PathPermissions, Tool } from "./types.ts";
 import type { ProviderInterface } from "./interfaces/Provider.ts";
 import { showProgressModal } from "./utils.ts";
+import { pickItem } from "./editorUtils.ts";
 
 const BENCHMARK_PAGE = "🧪 AI Benchmark";
 const TEST_PAGE = `${BENCHMARK_PAGE}/Test Page`;
@@ -274,6 +275,11 @@ type SelectionOption = {
   model?: ModelConfig;
 };
 
+const selectionPickRow = (o: SelectionOption) => ({
+  name: o.name,
+  description: o.description,
+});
+
 async function getAllBenchmarkModels(): Promise<ModelConfig[]> {
   const models: ModelConfig[] = [];
   const seenNames = new Set<string>();
@@ -316,7 +322,7 @@ async function selectModelsForBenchmark(): Promise<ModelConfig[]> {
     })),
   ];
 
-  const selection = await editor.filterBox("Select models to benchmark", options) as SelectionOption | undefined;
+  const selection = await pickItem("Select models to benchmark", options, selectionPickRow);
 
   if (!selection) return [];
   if (selection.value === "all") return [...allModels];
@@ -342,10 +348,11 @@ async function pickMultipleModels(allModels: ModelConfig[]): Promise<ModelConfig
       })),
     ];
 
-    const pick = await editor.filterBox(
+    const pick = await pickItem(
       `Select model ${selected.length + 1} (Esc when done)`,
       options,
-    ) as SelectionOption | undefined;
+      selectionPickRow,
+    );
 
     if (!pick || pick.value === "done") break;
     if (pick.model) {
@@ -433,7 +440,6 @@ async function runModelBenchmark(
   const results = new Map<string, TestResult>();
   let passed = 0;
 
-  // Check if model advertises tool support
   const capabilities = await provider.getModelCapabilities();
   const toolsSupported = capabilities === null || capabilities.includes("tools");
   const capabilitiesInfo = capabilities ? capabilities.join(", ") : "unknown";
