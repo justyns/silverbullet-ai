@@ -56,7 +56,11 @@ command.define {
       end
     end
 
-    local selected = editor.filterBox("New page name", options, "Select a page name")
+    local selected = view.pick {
+      title = "New page name",
+      helpText = "Select a page name",
+      source = function() return options end,
+    }
     if not selected then
       editor.flashNotification("No page name selected", "error")
       return

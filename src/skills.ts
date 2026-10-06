@@ -8,6 +8,7 @@ import { aiSettings, initIfNeeded } from "./init.ts";
 import type { ToolExecutionResult } from "./tools.ts";
 import type { LuaToolDefinition } from "./types.ts";
 import { jsToLuaLiteral, log } from "./utils.ts";
+import { pickItem } from "./editorUtils.ts";
 
 const SKILL_TAG = "meta/aiSkill";
 export const SKILL_TOOL_NAME = "activate_skill";
@@ -345,9 +346,10 @@ export async function updateSkillCommand() {
     await editor.flashNotification("No imported skills to update", "error");
     return;
   }
-  const selected = await editor.filterBox(
+  const selected = await pickItem(
     "Update Skill",
-    skills.map((s) => ({ name: s.name, description: s.source })),
+    skills,
+    (s) => ({ name: s.name, description: s.source }),
   );
   if (!selected) return;
   try {

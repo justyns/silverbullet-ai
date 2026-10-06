@@ -1,6 +1,6 @@
 import { extractFrontMatter } from "./src/lib/frontmatter.ts";
 import { editor, markdown, space } from "@silverbulletmd/silverbullet/syscalls";
-import { getPageLength } from "./src/editorUtils.ts";
+import { getPageLength, pickItem } from "./src/editorUtils.ts";
 import type {
   AIAgentTemplate,
   EmbeddingModelConfig,
@@ -71,6 +71,13 @@ type FilterOption = {
   supportsDocuments?: boolean;
 };
 
+const modelPickRow = (o: FilterOption) => ({
+  name: o.name,
+  description: o.description ?? o.category,
+  hint: o.hint,
+  hintInactive: o.hintInactive,
+});
+
 /**
  * Prompts the user to select a text/llm model from the configured models.
  * Supports both legacy textModels config and new providers config with dynamic discovery.
@@ -139,10 +146,8 @@ export async function selectModelFromConfig() {
     }
   }
 
-  // Sort by orderId (lower first)
   options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
 
-  // Add utility options
   options.push({
     name: "Enter custom model...",
     category: "Other",
@@ -159,19 +164,17 @@ export async function selectModelFromConfig() {
     });
   }
 
-  const selected = await editor.filterBox("Select a model", options);
+  const selected = await pickItem("Select a model", options, modelPickRow);
 
   if (!selected) {
     await editor.flashNotification("No model selected.", "error");
     return;
   }
 
-  // Handle utility options
   if (selected.name === "Refresh model lists") {
     await editor.flashNotification("Refreshing model lists...", "info");
     const count = await refreshAllModelCaches();
     await editor.flashNotification(`Refreshed: ${count} models found`, "info");
-    // Re-run selection after refresh
     return selectModelFromConfig();
   }
 
@@ -191,7 +194,6 @@ export async function selectModelFromConfig() {
     return;
   }
 
-  // Build ModelConfig from selection
   // Use providerType (actual provider like "ollama") not provider key name (like "ollama-home")
   // Store providerKey (the config key like "ollama-home") for looking up provider config
   const providerType = selected.providerType || selected.provider || "openai";
@@ -277,10 +279,8 @@ export async function selectImageModelFromConfig() {
     }
   }
 
-  // Sort by orderId (lower first)
   options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
 
-  // Add utility options
   options.push({
     name: "Enter custom image model...",
     category: "Other",
@@ -305,14 +305,13 @@ export async function selectImageModelFromConfig() {
     return;
   }
 
-  const selected = await editor.filterBox("Select an image model", options);
+  const selected = await pickItem("Select an image model", options, modelPickRow);
 
   if (!selected) {
     await editor.flashNotification("No image model selected.", "error");
     return;
   }
 
-  // Handle utility options
   if (selected.name === "Refresh model lists") {
     await editor.flashNotification("Refreshing model lists...", "info");
     const count = await refreshAllModelCaches();
@@ -336,7 +335,6 @@ export async function selectImageModelFromConfig() {
     return;
   }
 
-  // Build ImageModelConfig from selection
   const providerType = selected.providerType || selected.provider || "dalle";
   const defaults = getProviderDefaults(providerType);
   const modelConfig: ImageModelConfig = {
@@ -417,10 +415,8 @@ export async function selectEmbeddingModelFromConfig() {
     }
   }
 
-  // Sort by orderId (lower first)
   options.sort((a, b) => (a.orderId || 0) - (b.orderId || 0));
 
-  // Add utility options
   options.push({
     name: "Enter custom embedding model...",
     category: "Other",
@@ -445,14 +441,13 @@ export async function selectEmbeddingModelFromConfig() {
     return;
   }
 
-  const selected = await editor.filterBox("Select an embedding model", options);
+  const selected = await pickItem("Select an embedding model", options, modelPickRow);
 
   if (!selected) {
     await editor.flashNotification("No embedding model selected.", "error");
     return;
   }
 
-  // Handle utility options
   if (selected.name === "Refresh model lists") {
     await editor.flashNotification("Refreshing model lists...", "info");
     const count = await refreshAllModelCaches();
@@ -476,7 +471,6 @@ export async function selectEmbeddingModelFromConfig() {
     return;
   }
 
-  // Build EmbeddingModelConfig from selection
   const providerType = selected.providerType || selected.provider || "openai";
   const defaults = getProviderDefaults(providerType);
   const modelConfig: EmbeddingModelConfig = {

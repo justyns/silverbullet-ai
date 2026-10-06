@@ -26,12 +26,14 @@ ai.tools.ask_user = {
     local result
 
     if args.options and #args.options > 0 then
-      -- Multiple choice mode - use filterBox
       local filterOptions = {}
       for _, opt in ipairs(args.options) do
         table.insert(filterOptions, {name = opt})
       end
-      local selected = editor.filterBox("AI Assistant: " .. args.question, filterOptions)
+      local selected = view.pick {
+        title = "AI Assistant: " .. args.question,
+        source = function() return filterOptions end,
+      }
       if selected then
         result = selected.name
       end

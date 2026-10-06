@@ -1,12 +1,47 @@
-import { editor, markdown } from "@silverbulletmd/silverbullet/syscalls";
+import { editor, lua, markdown } from "@silverbulletmd/silverbullet/syscalls";
 import {
   collectNodesOfType,
   renderToText,
 } from "@silverbulletmd/silverbullet/lib/tree";
 import { stringify as yamlStringify } from "yaml";
-import { log } from "./utils.ts";
+import { jsToLuaLiteral, log } from "./utils.ts";
 
 type FrontMatter = Record<string, any>;
+
+type PickRow = {
+  name: string;
+  description?: string;
+  hint?: string;
+  hintInactive?: boolean;
+};
+
+/**
+ * Shows a view.pick modal over `items` and returns the picked item, or undefined if dismissed.
+ */
+export async function pickItem<T>(
+  title: string,
+  items: T[],
+  toRow: (item: T) => PickRow,
+  helpText?: string,
+): Promise<T | undefined> {
+  const rows = items.map((item, index) => ({ ...toRow(item), index }));
+  const picked = await lua.evalExpression(`view.pick {
+    title = ${jsToLuaLiteral(title)},
+    helpText = ${jsToLuaLiteral(helpText)},
+    source = function() return ${jsToLuaLiteral(rows)} end,
+    presentation = { row = {
+      primary = "name",
+      description = "description",
+      decorations = function(row)
+        if row.hint then
+          local cssClass = row.hintInactive and "sb-nav-chip-inactive" or "sb-nav-chip-hint"
+          return { { text = row.hint, cssClass = cssClass, position = "right" } }
+        end
+      end,
+    } },
+  }`) as { index: number } | null;
+  return picked ? items[picked.index] : undefined;
+}
 
 export async function getSelectedText() {
   const selectedRange = await editor.getSelection();
