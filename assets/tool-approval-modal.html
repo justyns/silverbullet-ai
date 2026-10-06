@@ -1,17 +1,10 @@
 <link rel="stylesheet" href="/.client/main.css" />
 <style>
   :root {
-    --ai-diff-add-bg: rgba(40, 167, 69, 0.15);
-    --ai-diff-add-text: #2d6a4f;
-    --ai-diff-remove-bg: rgba(220, 53, 69, 0.12);
-    --ai-diff-remove-text: #9d3644;
-  }
-
-  html[data-theme="dark"] {
-    --ai-diff-add-bg: rgba(152, 195, 121, 0.15);
-    --ai-diff-add-text: #a3be8c;
-    --ai-diff-remove-bg: rgba(224, 108, 117, 0.15);
-    --ai-diff-remove-text: #bf616a;
+    --ai-diff-add-bg: var(--editor-code-inserted-bg, rgba(187, 247, 208, 0.25));
+    --ai-diff-add-text: var(--editor-code-inserted-color, #16a34a);
+    --ai-diff-remove-bg: var(--editor-code-deleted-bg, rgba(254, 202, 202, 0.25));
+    --ai-diff-remove-text: var(--editor-code-deleted-color, #dc2626);
   }
 
   * {
