@@ -13,6 +13,7 @@ import {
 } from "./interfaces/Provider.ts";
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
+import { ClaudeCliProvider } from "./providers/claude-cli.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
 import { log } from "./utils.ts";
 import { clearMCPClients } from "./mcp/index.ts";
@@ -154,6 +155,7 @@ const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
   gemini: GeminiProvider,
   ollama: OllamaProvider,
   mistral: MistralProvider,
+  claudecli: ClaudeCliProvider,
 };
 
 const defaultProviderDefaults: ProviderDefaults = {
@@ -389,6 +391,16 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         model.modelName,
         model.baseUrl || "https://api.mistral.ai/v1",
         model.requireAuth ?? defaults.requireAuth,
+        useProxy,
+        effectiveTimeout,
+      );
+      break;
+    case Provider.ClaudeCli:
+      currentAIProvider = new ClaudeCliProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || "/.claude",
+        model.requireAuth ?? false,
         useProxy,
         effectiveTimeout,
       );
