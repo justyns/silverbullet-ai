@@ -279,3 +279,37 @@ test("enforces concurrency limit while another prompt is running", async (t) => 
   controller.abort();
   await reader.cancel().catch(() => {});
 });
+
+test("keeps stdio open while the agent acknowledges cancellation", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "acp-cancel-ack-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const path = join(dir, "cancel");
+  const { chat } = await setup(t, {
+    agentEnv: { ACP_FAKE_CANCEL_FILE: path, ACP_FAKE_CANCEL_DELAY_MS: "100" },
+  });
+  const controller = new AbortController();
+  const response = await chat("HANG", {}, controller.signal);
+  const reader = response.body.getReader();
+  await reader.read();
+  controller.abort();
+  await reader.cancel().catch(() => {});
+  let log = "";
+  for (let i = 0; i < 100; i++) {
+    try {
+      log = await readFile(path, "utf8");
+      if (log.includes("ack:")) break;
+    } catch {}
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.equal(log, "session-1\nack:false\n");
+});
+
+test("terminates a timed-out agent that ignores cancellation", async (t) => {
+  const { chat } = await setup(t, {
+    timeout: 250,
+    agentEnv: { ACP_FAKE_IGNORE_CANCEL: "1" },
+  });
+  const events = await chat("HANG").then(records);
+  assert.equal(events.at(-1).type, "error");
+  assert.match(events.at(-1).message, /timed out/);
+});

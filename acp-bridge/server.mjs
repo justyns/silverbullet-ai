@@ -118,13 +118,28 @@ export function makeBridge(options = {}) {
     let sessionId;
     let disconnected = false;
     let timeoutError;
+    let promptRequest;
+    let cancelling = false;
     const cancel = () => {
+      if (cancelling) return;
+      cancelling = true;
       if (sessionId) {
         try {
           acp.notify("session/cancel", { sessionId });
         } catch {}
       }
-      void acp.shutdown();
+      if (promptRequest) {
+        // Keep stdio open until the agent acknowledges cancellation, or the
+        // grace period expires. EOF otherwise races Codex turn/interrupt.
+        const grace = setTimeout(() => void acp.shutdown(), 1000);
+        const settled = () => {
+          clearTimeout(grace);
+          void acp.shutdown();
+        };
+        void promptRequest.then(settled, settled);
+      } else {
+        void acp.shutdown();
+      }
     };
     const onClose = () => {
       if (!res.writableEnded) {
@@ -208,10 +223,12 @@ export function makeBridge(options = {}) {
         const event = eventForUpdate(update);
         if (event) send(event);
       });
-      const answer = await acp.call("session/prompt", {
+      promptRequest = acp.call("session/prompt", {
         sessionId,
         prompt: [{ type: "text", text: prompt }],
       });
+      const answer = await promptRequest;
+      if (timeoutError) throw timeoutError;
       if (
         ![
           "end_turn",

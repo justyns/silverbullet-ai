@@ -10,7 +10,24 @@ createInterface({ input: process.stdin }).on("line", (line) => {
   if (method === "session/cancel") {
     if (process.env.ACP_FAKE_CANCEL_FILE)
       appendFileSync(process.env.ACP_FAKE_CANCEL_FILE, params.sessionId + "\n");
-    if (pending) send({ id: pending, result: { stopReason: "cancelled" } });
+    if (process.env.ACP_FAKE_IGNORE_CANCEL) return;
+    if (pending) {
+      const acknowledge = () => {
+        if (
+          process.env.ACP_FAKE_CANCEL_DELAY_MS &&
+          process.env.ACP_FAKE_CANCEL_FILE
+        ) {
+          appendFileSync(
+            process.env.ACP_FAKE_CANCEL_FILE,
+            `ack:${process.stdin.readableEnded}\n`,
+          );
+        }
+        send({ id: pending, result: { stopReason: "cancelled" } });
+      };
+      if (process.env.ACP_FAKE_CANCEL_DELAY_MS)
+        setTimeout(acknowledge, Number(process.env.ACP_FAKE_CANCEL_DELAY_MS));
+      else acknowledge();
+    }
     return;
   }
   if (id === "permission") {
