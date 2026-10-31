@@ -3,6 +3,7 @@ import { OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
 import { GeminiProvider } from "./providers/gemini.ts";
 import { OllamaProvider } from "./providers/ollama.ts";
+import { ACPProvider } from "./providers/acp.ts";
 import type { ProviderConfig, ProvidersConfig } from "./types.ts";
 import { aiSettings, getProviderDefaults, initializeOpenAI } from "./init.ts";
 import {
@@ -52,6 +53,7 @@ type DiscoveryProvider = {
 
 export function inferProviderType(keyName: string): string {
   const lower = keyName.toLowerCase();
+  if (lower === "acp" || lower.startsWith("acp-")) return "acp";
   if (lower.includes("ollama")) return "ollama";
   if (lower.includes("gemini")) return "gemini";
   if (lower.includes("openai") || lower.includes("openrouter")) return "openai";
@@ -81,6 +83,14 @@ function createProviderForDiscovery(
       return new GeminiProvider(apiKey, "", useProxy);
     case "ollama":
       return new OllamaProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
+    case "acp":
+      return new ACPProvider(
+        apiKey,
+        "default",
+        baseUrl,
+        useProxy,
+        config.timeout ?? defaults.timeout,
+      );
     case "mistral":
       return new MistralProvider(apiKey, "", baseUrl, !!apiKey, useProxy);
     default:

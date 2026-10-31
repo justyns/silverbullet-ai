@@ -14,6 +14,7 @@ import {
 import { OpenAIEmbeddingProvider, OpenAIProvider } from "./providers/openai.ts";
 import { MistralProvider } from "./providers/mistral.ts";
 import { OllamaEmbeddingProvider, OllamaProvider } from "./providers/ollama.ts";
+import { ACPProvider } from "./providers/acp.ts";
 import { log } from "./utils.ts";
 import { clearMCPClients } from "./mcp/index.ts";
 import { inferProviderType } from "./model-discovery.ts";
@@ -68,6 +69,7 @@ export async function initIfNeeded() {
 }
 
 export function modelSupportsTools(): boolean {
+  if (currentModel?.provider?.toLowerCase() === Provider.ACP) return false;
   if (currentModel?.supportsTools === false) {
     log(
       `Model ${currentModel.modelName} does not support tools, skipping tool use`,
@@ -85,6 +87,7 @@ export function toolsEnabled(): boolean {
 // the view_file tool, where the model explicitly asked, so config opt-in is bypassed.
 export function supportedAttachmentKinds(): Set<AttachmentKind> {
   const kinds = new Set<AttachmentKind>();
+  if (currentModel?.provider?.toLowerCase() === Provider.ACP) return kinds;
   if (currentModel?.supportsVision !== false) kinds.add("image");
   if (currentModel?.supportsDocuments === true) kinds.add("document");
   return kinds;
@@ -154,6 +157,7 @@ const providerRegistry: Record<string, { defaults: ProviderDefaults }> = {
   gemini: GeminiProvider,
   ollama: OllamaProvider,
   mistral: MistralProvider,
+  acp: ACPProvider,
 };
 
 const defaultProviderDefaults: ProviderDefaults = {
@@ -390,6 +394,15 @@ function setupAIProvider(model: ModelConfig, timeout?: number) {
         model.baseUrl || "https://api.mistral.ai/v1",
         model.requireAuth ?? defaults.requireAuth,
         useProxy,
+        effectiveTimeout,
+      );
+      break;
+    case Provider.ACP:
+      currentAIProvider = new ACPProvider(
+        apiKey,
+        model.modelName,
+        model.baseUrl || ACPProvider.defaults.baseUrl,
+        model.useProxy ?? defaults.useProxy,
         effectiveTimeout,
       );
       break;
