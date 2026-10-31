@@ -10,7 +10,8 @@
     "dist": "npx plug-compile silverbullet-ai.plug.yaml && tsx scripts/build-dist.ts",
     "update-readme": "tsx scripts/update-readme.ts",
     "test:acp": "node --test acp-bridge/tests/bridge.test.mjs",
-    "test:acp-provider": "vitest run --config acp-bridge/vitest.config.ts"
+    "test:acp-provider": "vitest run --config acp-bridge/vitest.config.ts",
+    "test:acp-live": "vitest run --config acp-bridge/vitest.live.config.ts"
   },
   "dependencies": {
     "@silverbulletmd/silverbullet": ">=2.11.0",
