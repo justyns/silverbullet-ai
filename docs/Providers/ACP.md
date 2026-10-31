@@ -8,7 +8,7 @@ Use Node.js 24.13 or newer. The bridge itself has no npm dependencies. Install t
 
 ```sh
 export ACP_INSTALL_DIR="$HOME/.local/share/silverbullet-acp"
-npm install --prefix "$ACP_INSTALL_DIR" @agentclientprotocol/codex-acp@2.2.2
+npm install --prefix "$ACP_INSTALL_DIR" @agentclientprotocol/codex-acp@2.1.1
 export PATH="$ACP_INSTALL_DIR/node_modules/.bin:$PATH"
 export ACP_AGENT_COMMAND="$ACP_INSTALL_DIR/node_modules/.bin/codex-acp"
 "$ACP_AGENT_COMMAND" --version
@@ -58,15 +58,16 @@ Prefer an empty dedicated working directory over your notes or source checkout. 
 
 ## Configure SilverBullet AI
 
-Build and install the updated plug, preserving your existing AI Space Lua library:
+Build and install **both** the updated plug and Space Lua library. The library contains the configuration schemas that must accept `acp`, so updating only the plug is insufficient:
 
 ```sh
 npm ci
-npm run build
-cp silverbullet-ai.plug.js /path/to/your/space/_plug/
+npm run dist
+cp dist/silverbullet-ai.plug.js /path/to/your/space/_plug/
+cp dist/silverbullet-ai-library.md /path/to/your/space/silverbullet-ai-library.md
 ```
 
-For a new installation, follow [[Development]] for `npm run dist` and import the generated library. Merge this into your existing Space Lua AI configuration:
+Replace your previously installed AI library rather than loading two copies. See [[Development]] for distribution details. Merge this into your existing Space Lua AI configuration:
 
 ```lua
 config.set {
@@ -121,11 +122,13 @@ With `useProxy = true`, requests go through SilverBullet's server; loopback then
 - **401:** wrong/missing bridge token. Restarting without a fixed token generates a new one.
 - **403 / CORS:** origin mismatch, or a non-loopback Host header. Use the browser's actual origin and a loopback endpoint.
 - **ENOENT:** agent executable not found. Set an absolute `ACP_AGENT_COMMAND`; the regular `codex` CLI is not an ACP server.
+- **Linux sandbox prerequisites:** make sure `bwrap` (bubblewrap) is available on the bridge process's PATH when exercising Codex tools. Keep sandboxing enabled; do not work around missing dependencies by enabling full access.
 - **Authentication required:** run the agent's login under the same OS user and environment as the bridge. Inspect agent stderr locally; do not paste auth files into SilverBullet.
 - **Unsupported protocol:** this bridge speaks ACP v1, rejects other negotiated versions, and does not try draft v2 messages.
 - **Unknown model / thought level:** refresh discovery and select an advertised value. Some agents only expose `default`. Config options are preferred; older agents can expose `models` with `session/set_model` instead.
-- **Timeout:** increase both provider `timeout` and `ACP_AGENT_TIMEOUT_MS` if needed. The browser disconnect or provider AbortSignal sends `session/cancel`; the bridge also closes and eventually kills the owned process group on Unix.
+- **Timeout:** increase both provider `timeout` and `ACP_AGENT_TIMEOUT_MS` if needed. The browser disconnect or provider AbortSignal sends `session/cancel`; the bridge allows up to one second for the prompt to settle before closing stdio, and eventually kills the owned process group on Unix if needed.
 - **503:** four agent requests are already active, including model discovery and process cleanup. Retry after they finish.
+- **Shutdown diagnostics after success:** codex-acp 2.1.1 can log failures to publish available commands when a completed request's process is shutting down. A prior `done` record still indicates success; an error or missing `done` indicates a failed request.
 - **Unexpected process exit / malformed stdout:** protocol errors fail the affected request. The next request starts a new process. Agent diagnostics belong on stderr; stdout must contain JSON-RPC lines only.
 
 ## Scope and verification
@@ -145,4 +148,24 @@ npm run test:acp-provider
 npm run build
 ```
 
-Bridge tests use a deterministic stdio fixture; provider integration tests exercise real loopback HTTP and subprocess streams in temporary directories. They do not prove real Codex authentication or SilverBullet browser connectivity. `codex-acp` was not available locally during implementation, so the real-agent/browser smoke test remains the `/models`, `/chat`, and SilverBullet steps above. No global packages or existing auth configuration were changed by this integration.
+Bridge tests use a deterministic stdio fixture; provider integration tests exercise real loopback HTTP and subprocess streams in temporary directories. The additional live suite uses the installed agent and existing login, makes real model requests, and is opt-in:
+
+```sh
+ACP_REAL_AGENT_COMMAND="$(command -v codex-acp)" npm run test:acp-live
+```
+
+To also exercise the compiled plug in an isolated SilverBullet space and headless Chromium:
+
+```sh
+npm run dist
+export ACP_REAL_AGENT_COMMAND="$(command -v codex-acp)"
+export ACP_REAL_SILVERBULLET_BIN="$(command -v silverbullet)"
+export SB_CHROME_PATH="$(command -v chromium)"
+npm run test:acp-live
+```
+
+Verify these paths are nonempty. Agent tests are skipped without `ACP_REAL_AGENT_COMMAND`; browser tests additionally require both SilverBullet and Chromium paths. `ACP_REAL_MODEL` optionally selects a discovered model supporting high reasoning effort. The tests never use your real SilverBullet space or approve a tool permission. All test work directories and browser profiles are temporary.
+
+Validated on 2026-10-31 with Node 24.21.0, codex-acp 2.1.1, Codex 0.163.0, SilverBullet 2.12.1, and Chromium 143.0.7499.169: all eight live tests passed. This covered existing-login authentication, ACP v1 negotiation, model discovery and selection, streamed text and reasoning, multi-turn history, simultaneous sessions, HTTP abort and ACP session cancellation, real permission denial with no file write, startup timeout, both Lua configuration schemas, and browser-worker chat and editor streaming. The runtime tests use direct browser fetch with an exact allowed Origin; remote devices, Docker routing, other browsers, and newer agent versions still need deployment-specific checks.
+
+The live runtime test found and fixed missing ACP entries in the Space Lua provider and legacy text-model schemas. Install the rebuilt library along with the plug to receive that fix. No global packages were installed and no login or authentication configuration commands were run during validation.

@@ -27,3 +27,11 @@ npm run test:acp-provider
 ```
 
 The first uses Node's built-in test runner; the second uses the repository's Vitest setup to exercise the provider through real HTTP and stdio.
+
+Real-agent compatibility checks are opt-in and use your existing login:
+
+```sh
+ACP_REAL_AGENT_COMMAND="$(command -v codex-acp)" npm run test:acp-live
+```
+
+For compiled-plug/browser tests, also set `ACP_REAL_SILVERBULLET_BIN` and `SB_CHROME_PATH`, and run `npm run dist` first. See the provider guide for the tested version matrix and full instructions. Missing environment variables cause the corresponding live tests to be skipped.
