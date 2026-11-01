@@ -1,0 +1,17 @@
+.git
+.agents
+.codex
+.aws
+.claude
+.env
+.env.*
+!.env.example
+**/node_modules
+**/dist
+**/.chrome-data
+**/auth.json
+*.zip
+silverbullet-ai.plug.js
+silverbullet
+runtime-data
+deploy/runtime

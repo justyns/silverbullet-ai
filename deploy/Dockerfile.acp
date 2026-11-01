@@ -1,0 +1,34 @@
+FROM docker.io/library/node:24.21.0-bookworm-slim AS plug
+WORKDIR /build
+COPY package.json package-lock.json ./
+RUN npm ci
+COPY src ./src
+COPY assets ./assets
+COPY sbai.ts silverbullet-ai.plug.yaml PLUG.md ./
+COPY scripts ./scripts
+COPY docs/Changelog.md ./docs/Changelog.md
+COPY silverbullet-ai ./silverbullet-ai
+RUN npm run dist
+
+FROM docker.io/library/node:24.21.0-bookworm-slim AS agent
+WORKDIR /opt/agent
+COPY deploy/acp/package.json deploy/acp/package-lock.json ./
+RUN npm ci --omit=dev
+
+FROM docker.io/library/node:24.21.0-bookworm-slim
+RUN apt-get update && apt-get install --yes --no-install-recommends tini ca-certificates bubblewrap git \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=agent /opt/agent /opt/agent
+WORKDIR /app
+COPY acp-bridge ./acp-bridge
+COPY deploy/install-plug.mjs deploy/check-acp.mjs deploy/smoke.mjs ./deploy/
+COPY --from=plug /build/dist ./dist
+ENV PATH="/opt/agent/node_modules/.bin:${PATH}" \
+    CODEX_PATH=/opt/agent/node_modules/.bin/codex \
+    CODEX_HOME=/home/node/.codex \
+    ACP_WORKDIR=/workspace
+RUN mkdir -p /home/node/.codex && chown node:node /home/node/.codex
+USER node
+EXPOSE 3210
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "acp-bridge/server.mjs"]

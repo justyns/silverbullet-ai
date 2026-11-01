@@ -1,0 +1,19 @@
+FROM docker.io/library/node:24.21.0-bookworm-slim AS build
+WORKDIR /app
+COPY mcp-bridge/package.json mcp-bridge/package-lock.json ./
+RUN npm ci
+COPY mcp-bridge/index.ts mcp-bridge/tsconfig.json ./
+RUN npm run build && npm prune --omit=dev
+
+FROM docker.io/library/node:24.21.0-bookworm-slim
+RUN apt-get update && apt-get install --yes --no-install-recommends tini ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json ./
+COPY deploy/check-mcp.mjs ./deploy/
+USER node
+EXPOSE 3001
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "dist/index.js"]

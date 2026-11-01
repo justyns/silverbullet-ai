@@ -1,0 +1,11 @@
+{
+  "default": [{ "type": "reject" }],
+  "transports": {
+    "docker": {
+      "docker.io/library/node": [{ "type": "insecureAcceptAnything" }],
+      "ghcr.io/silverbulletmd/silverbullet": [
+        { "type": "insecureAcceptAnything" }
+      ]
+    }
+  }
+}
