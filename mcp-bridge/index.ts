@@ -137,7 +137,8 @@ async function refreshTools(): Promise<number> {
     `return system.invokeFunction("silverbullet-ai.listTools")`,
   )) as SbTool[];
   toolList = tools.filter(
-    (t) => t.source !== "mcp" && !EXCLUDED_TOOLS.has(t.name),
+    (t) => t.source !== "mcp" && !EXCLUDED_TOOLS.has(t.name) &&
+      (process.env.MCP_READ_ONLY !== "1" || t.readOnly === true),
   );
   return toolList.length;
 }
