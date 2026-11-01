@@ -1,5 +1,7 @@
 # Container deployment validation
 
+## Disposable automated validation (2026-10-31)
+
 Executed on 2026-10-31 on this NixOS x86_64 host. All container commands ran as the normal user with **rootless Podman 5.4.1** and **podman-compose 1.3.0**. Test project: `sbai-container-check`; data and workspace: `/tmp/sbai-compose-check/{data,space}`. Host test ports were 33089 and 33289, avoiding the proposed production ports. Existing user spaces and Codex credentials were not mounted. The disposable containers, network, test pod, marker-only Codex volume, account data and test credentials were removed after verification; the built images remain available.
 
 ## Passed
@@ -47,9 +49,9 @@ It uses no ACP prompt and no login. Tests used no real model requests.
 - Fresh MCP startup discovers tools through a headless browser and is asynchronous. ACP now waits for MCP's health condition instead of racing its listening port.
 - ACP container binding and HTTP MCP session configuration were added as explicit host-controlled options. Local defaults remain loopback-only, and the network listener still requires authentication, exact Host names and exact-origin CORS.
 
-This shell's Podman installation lacked a system `policy.json`. For test image pulls/builds only, a temporary policy (now supplied as `deploy/image-policy.json` for explicit development use) allowed the pinned `docker.io/library/node` and `ghcr.io/silverbulletmd/silverbullet` repositories and rejected other repositories. No host configuration file was changed. Plain `podman-compose build` was also attempted and failed because that host policy was absent, even with cached images. Rebuilding with the explicit repository-scoped policy succeeded. A production NixOS setup should enable/configure the rootless Podman subsystem normally or deliberately select the supplied development policy as documented.
+This shell's Podman installation lacked a system `policy.json`. For test image pulls/builds only, a temporary policy (now supplied as `deploy/image-policy.json` for explicit development use) allowed the pinned `docker.io/library/node` and `ghcr.io/silverbulletmd/silverbullet` remote repositories and rejected other remote repositories. The current repository policy also explicitly accepts local `containers-storage` images; the later installation showed this scope is required for intermediate build images. A remote pull allowance alone does not authorize locally stored build images. No host configuration file was changed. Plain `podman-compose build` was also attempted and failed because that host policy was absent, even with cached images. Rebuilding with the explicit repository-scoped policy succeeded. A production NixOS setup should enable/configure the rootless Podman subsystem normally or deliberately select the supplied development policy as documented.
 
-## Remaining limitations and manual checks
+## Limitations of the disposable validation and manual checks
 
 - Root plug TypeScript checking still reports the two pre-existing `src/tools.ts` errors at lines 411 and 746. No unrelated source was changed to suppress them. The affected MCP project compiles cleanly.
 - **Subscription login is manual.** No real login was copied into the volume, so persistence was verified with a harmless file marker rather than an actual credential. Run `podman-compose exec acp-bridge codex login --device-auth`, then check `codex login status`.
@@ -57,3 +59,16 @@ This shell's Podman installation lacked a system `policy.json`. For test image p
 - The Lua provider/schema and browser-worker ACP flow were previously tested by the opt-in live suite; that suite was not rerun here because it submits real model requests. Container networking, authentication, current library loading and Runtime API execution were tested separately without such requests.
 - Local Codex shell execution under nested bubblewrap, write-enabled MCP tools, remote devices, custom hostname/reverse-proxy layouts, SELinux, and other host UID values were not exercised. The default read-only/path-based profile was tested.
 - OS packages use the versioned base image's current package repositories rather than an immutable Debian snapshot. Existing root/MCP dependency lockfiles were reused; updating unrelated dependencies was out of scope.
+
+## Later real installation (user-reported, 2026-11-01)
+
+These results come from the real rootless Podman/NixOS installation, separately from the disposable automated checks above. They were not rerun for this documentation revision.
+
+- The existing development image policy was corrected to permit `containers-storage` intermediate images in addition to the remote repository rules. That correction is preserved.
+- The installer wrote into `/workspace`, but the dashboard default `spaces/notes` selected `/data/spaces/notes`. Changing the existing space's folder to `/workspace` resolved `Plug silverbullet-ai not found` without deleting the space or reinstalling the stack.
+- SilverBullet account-token authentication and Write + Runtime API permissions were required independently of ACP/MCP bridge-token authentication.
+- Intentional `MCP_READ_ONLY=0` exposed write-capable tools. The default smoke assertion failed as designed; `--allow-write-tools` passed with 11 listed tools, internal DNS, ACP authentication/Host/Origin checks, authenticated Runtime tool refresh, codex-acp 2.1.1 / Codex 0.163.0 and real adapter/App Server initialization. Its old “read-only annotations checked” output was misleading in this mode; the diagnostic now describes the selected mode. No smoke assertion was weakened.
+- `codex login --device-auth` succeeded with a ChatGPT subscription after enabling device authorization in account settings. No OpenAI API key was needed.
+- The Space Lua ACP provider configuration passed provider configuration, model availability and non-streaming API connectivity checks.
+
+These findings do not establish streaming success or actual model-driven note creation/editing. Those remain explicit manual checks in the deployment guide. Neither smoke variant submits a prompt or tests note editing. The earlier untested-host limitations (nested bubblewrap shell execution, remote devices, custom routing, SELinux and other host UIDs) remain applicable. This revision did not access real `.env` values, run containers/model requests, or modify a SilverBullet workspace.

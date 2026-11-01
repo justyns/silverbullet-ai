@@ -56,7 +56,13 @@ const tools = JSON.parse(payload).result.tools;
 assert.ok(tools.length > 1);
 if (!process.argv.includes("--allow-write-tools"))
   assert.ok(tools.every((tool) => tool.annotations?.readOnlyHint === true));
-console.log(`MCP tools listed: ${tools.length}; read-only annotations checked`);
+console.log(
+  `MCP tools listed: ${tools.length}; ${
+    process.argv.includes("--allow-write-tools")
+      ? "write-capable tools allowed; read-only restriction not asserted"
+      : "read-only annotations checked"
+  }`,
+);
 if (!process.argv.includes("--allow-write-tools")) {
   const blocked = await rpc("tools/call", {
     name: "create_note",

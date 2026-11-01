@@ -1,10 +1,27 @@
 {
-  "default": [{ "type": "reject" }],
+  "default": [
+    {
+      "type": "reject"
+    }
+  ],
   "transports": {
     "docker": {
-      "docker.io/library/node": [{ "type": "insecureAcceptAnything" }],
+      "docker.io/library/node": [
+        {
+          "type": "insecureAcceptAnything"
+        }
+      ],
       "ghcr.io/silverbulletmd/silverbullet": [
-        { "type": "insecureAcceptAnything" }
+        {
+          "type": "insecureAcceptAnything"
+        }
+      ]
+    },
+    "containers-storage": {
+      "": [
+        {
+          "type": "insecureAcceptAnything"
+        }
       ]
     }
   }
