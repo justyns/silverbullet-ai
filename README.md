@@ -22,7 +22,7 @@ If you are new here, start with either the `AI: Chat on current page` command or
 - **Note Summaries**: *Experimental* - Generate and index page summaries
 - **Image Generation**: DALL-E integration with auto-upload and caption insertion
 - **Bundled Prompts**: Generate tags, suggest page names, generate frontmatter, enhance notes
-- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, any OpenAI-compatible API
+- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, ACP (including Codex via codex-acp), any OpenAI-compatible API
 
 <!-- end-features -->
 
@@ -171,6 +171,30 @@ config.set {
   }
 }
 ```
+
+#### ACP (Codex)
+
+Connect to an ACP agent through the local HTTP bridge:
+
+```lua
+config.set {
+  ai = {
+    providers = {
+      acp = {
+        provider = "acp",
+        baseUrl = "http://127.0.0.1:3210",
+        apiKey = "your-acp-bridge-token",
+        useProxy = false,
+        timeout = 300000,
+        preferredModels = {"default"}
+      }
+    },
+    defaultTextModel = "acp:default"
+  }
+}
+```
+
+The bridge URL must be reachable from your browser. ACP supports text chat, streaming text and reasoning, and model discovery. See the [ACP setup guide](docs/Providers/ACP.md) for agent installation, Codex/ChatGPT authentication, and bridge security settings, or the [Podman deployment guide](deploy/README.md) for the container stack.
 
 #### Multiple Provider Instances
 

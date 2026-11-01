@@ -43,16 +43,16 @@ export ACP_AGENT_ARGS='["--some-agent-flag"]'
 node acp-bridge/server.mjs
 ```
 
-| Environment variable   | Default                    | Meaning                                               |
-| ---------------------- | -------------------------- | ----------------------------------------------------- |
-| `ACP_BRIDGE_HOST`      | `127.0.0.1`                | Only `127.0.0.1`, `::1`, or `localhost` permitted     |
-| `ACP_BRIDGE_PORT`      | `3210`                     | HTTP listening port                                   |
-| `ACP_BRIDGE_TOKEN`     | Random per launch          | Bearer token required on every non-preflight endpoint |
-| `ACP_ALLOWED_ORIGIN`   | `http://localhost:3000`    | One exact allowed browser origin                      |
-| `ACP_AGENT_COMMAND`    | `codex-acp`                | Agent executable, launched without a shell            |
-| `ACP_AGENT_ARGS`       | `[]`                       | JSON array of executable arguments                    |
-| `ACP_WORKDIR`          | Bridge's current directory | Existing absolute/relative agent working directory    |
-| `ACP_AGENT_TIMEOUT_MS` | `300000`                   | Total initialization/session/prompt deadline          |
+| Environment variable   | Default                    | Meaning                                                         |
+| ---------------------- | -------------------------- | --------------------------------------------------------------- |
+| `ACP_BRIDGE_HOST`      | `127.0.0.1`                | Loopback by default; container binding requires explicit opt-in |
+| `ACP_BRIDGE_PORT`      | `3210`                     | HTTP listening port                                             |
+| `ACP_BRIDGE_TOKEN`     | Random per launch          | Bearer token required on every non-preflight endpoint           |
+| `ACP_ALLOWED_ORIGIN`   | `http://localhost:3000`    | One exact allowed browser origin                                |
+| `ACP_AGENT_COMMAND`    | `codex-acp`                | Agent executable, launched without a shell                      |
+| `ACP_AGENT_ARGS`       | `[]`                       | JSON array of executable arguments                              |
+| `ACP_WORKDIR`          | Bridge's current directory | Existing absolute/relative agent working directory              |
+| `ACP_AGENT_TIMEOUT_MS` | `300000`                   | Total initialization/session/prompt deadline                    |
 
 Prefer an empty dedicated working directory over your notes or source checkout. The bridge forces `INITIAL_AGENT_MODE=read-only`, selects an advertised `read-only` session mode, advertises no client filesystem or terminal capabilities, and rejects permission requests. It has no automatic approval or write-enable switch. These are protocol boundaries, not an OS sandbox: an agent can implement its own tools and read local files under your account. Other agents may not implement Codex's read-only mode; configure their own sandbox restrictions before use. The bridge token is removed from the child's environment.
 
@@ -115,7 +115,7 @@ In SilverBullet, send a normal chat, then a follow-up referring to the first ans
 
 With `useProxy = false`, requests originate in the browser's plug worker. `127.0.0.1` is the **browser device**, so a bridge on your desktop is unreachable through that address from your phone. The browser must permit access to local HTTP services, including any local-network permissions or HTTPS/mixed-content restrictions it enforces. CORS must match the SilverBullet origin exactly, even if the server runs elsewhere.
 
-With `useProxy = true`, requests go through SilverBullet's server; loopback then refers to that server or its container. Docker's loopback is inside the container, not the host. This bridge intentionally refuses public/container-network bindings. Use a deliberate trusted deployment (for example a shared network namespace or authenticated TLS route) if server-side access is required. Preserve streaming, restrict access, and do not expose the bridge directly on the Internet. Changing `useProxy` alone does not solve network routing or browser policy restrictions.
+With `useProxy = true`, requests go through SilverBullet's server; loopback then refers to that server or its container. Docker's loopback is inside the container, not the host. This bridge rejects non-loopback binding by default. The [rootless Podman recipe](../../deploy/README.md) explicitly enables an authenticated container-network listener while publishing only on host loopback. Use a deliberate trusted deployment (for example a shared network namespace or authenticated TLS route) if server-side access is required. Preserve streaming, restrict access, and do not expose the bridge directly on the Internet. Changing `useProxy` alone does not solve network routing or browser policy restrictions.
 
 ## Troubleshooting
 
@@ -130,6 +130,8 @@ With `useProxy = true`, requests go through SilverBullet's server; loopback then
 - **503:** four agent requests are already active, including model discovery and process cleanup. Retry after they finish.
 - **Shutdown diagnostics after success:** codex-acp 2.1.1 can log failures to publish available commands when a completed request's process is shutting down. A prior `done` record still indicates success; an error or missing `done` indicates a failed request.
 - **Unexpected process exit / malformed stdout:** protocol errors fail the affected request. The next request starts a new process. Agent diagnostics belong on stderr; stdout must contain JSON-RPC lines only.
+
+For container deployment only, `ACP_ALLOW_NETWORK=1` permits `ACP_BRIDGE_HOST=0.0.0.0` with an explicit token; `ACP_ALLOWED_HOSTS` adds exact comma-separated Host names (no ports or wildcards). `ACP_MCP_URL` and optional `ACP_MCP_TOKEN` attach one authenticated HTTP MCP server to every new ACP session. Agents must advertise HTTP MCP support. These are process configuration, never settings accepted from an HTTP request. Known bridge/MCP secrets are redacted from agent diagnostics and HTTP errors.
 
 ## Scope and verification
 
