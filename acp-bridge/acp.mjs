@@ -1,15 +1,29 @@
 import { spawn } from "node:child_process";
+import { createInterface } from "node:readline";
 
 /** A single-use ACP v1 connection. Each HTTP request owns its process. */
 export class AcpClient {
-  constructor({ command, args = [], cwd, env = {}, timeout = 300000 }) {
-    Object.assign(this, { command, args, cwd, env, timeout });
+  constructor({
+    command,
+    args = [],
+    cwd,
+    env = {},
+    timeout = 300000,
+    secrets = [],
+  }) {
+    Object.assign(this, { command, args, cwd, env, timeout, secrets });
     this.nextId = 1;
     this.pending = new Map();
     this.listeners = new Map();
     this.failure = null;
     this.child = null;
     this.closing = null;
+  }
+
+  redact(text) {
+    for (const secret of this.secrets)
+      if (secret) text = text.replaceAll(secret, "[redacted]");
+    return text;
   }
 
   async start() {
@@ -47,7 +61,9 @@ export class AcpClient {
     child.stdout.on("end", () =>
       this.fail(new Error("ACP stdout closed before request completed")),
     );
-    child.stderr.on("data", (data) => process.stderr.write(`[agent] ${data}`));
+    createInterface({ input: child.stderr }).on("line", (line) =>
+      process.stderr.write(`[agent] ${this.redact(line)}\n`),
+    );
     child.stdin.on("error", (error) => this.fail(error));
     child.on("error", (error) => this.fail(error));
     child.on("exit", (code, signal) =>
@@ -127,7 +143,9 @@ export class AcpClient {
       clearTimeout(task.timer);
       this.pending.delete(msg.id);
       if (msg.error)
-        task.reject(new Error(`ACP ${msg.error.code}: ${msg.error.message}`));
+        task.reject(
+          new Error(this.redact(`ACP ${msg.error.code}: ${msg.error.message}`)),
+        );
       else task.resolve(msg.result);
     } else if (msg.id !== undefined) {
       if (msg.method === "session/request_permission") {

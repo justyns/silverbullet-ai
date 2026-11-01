@@ -15,7 +15,11 @@ function parseArgs(raw) {
 
 export function makeBridge(options = {}) {
   const host = options.host ?? process.env.ACP_BRIDGE_HOST ?? "127.0.0.1";
-  if (!["127.0.0.1", "::1", "localhost"].includes(host))
+  const network = options.allowNetwork ?? process.env.ACP_ALLOW_NETWORK === "1";
+  if (
+    !["127.0.0.1", "::1", "localhost"].includes(host) &&
+    !(network && host === "0.0.0.0")
+  )
     throw new Error("Bridge only supports loopback binding");
   const port = Number(options.port ?? process.env.ACP_BRIDGE_PORT ?? 3210);
   const origin =
@@ -34,6 +38,50 @@ export function makeBridge(options = {}) {
     randomBytes(24).toString("hex");
   if (typeof token !== "string" || !token.trim() || /[\r\n]/.test(token))
     throw new Error("Bridge token must be nonempty and contain no newlines");
+  if (network && !process.env.ACP_BRIDGE_TOKEN && !options.token)
+    throw new Error("Network binding requires an explicit ACP_BRIDGE_TOKEN");
+  const allowedHosts = new Set([
+    "127.0.0.1",
+    "localhost",
+    "[::1]",
+    ...(options.allowedHosts ??
+      (process.env.ACP_ALLOWED_HOSTS ?? "").split(",").filter(Boolean)),
+  ]);
+  if (
+    [...allowedHosts].some(
+      (value) => !/^(?:[a-zA-Z0-9][a-zA-Z0-9.-]*|\[::1\])$/.test(value),
+    )
+  )
+    throw new Error(
+      "ACP_ALLOWED_HOSTS must contain exact hostnames without ports",
+    );
+  const mcpUrl = options.mcpUrl ?? process.env.ACP_MCP_URL;
+  const mcpToken = options.mcpToken ?? process.env.ACP_MCP_TOKEN;
+  if (mcpUrl) {
+    const parsed = new URL(mcpUrl);
+    if (
+      !["http:", "https:"].includes(parsed.protocol) ||
+      parsed.username ||
+      parsed.password
+    )
+      throw new Error(
+        "ACP_MCP_URL must be an HTTP(S) URL without embedded credentials",
+      );
+  }
+  const mcpServers =
+    options.mcpServers ??
+    (mcpUrl
+      ? [
+          {
+            type: "http",
+            name: "silverbullet",
+            url: mcpUrl,
+            headers: mcpToken
+              ? [{ name: "Authorization", value: `Bearer ${mcpToken}` }]
+              : [],
+          },
+        ]
+      : []);
   const cwd = resolve(options.cwd ?? process.env.ACP_WORKDIR ?? process.cwd());
   const timeout = Number(
     options.timeout ?? process.env.ACP_AGENT_TIMEOUT_MS ?? 300000,
@@ -50,10 +98,12 @@ export function makeBridge(options = {}) {
     args: options.args ?? parseArgs(process.env.ACP_AGENT_ARGS ?? "[]"),
     cwd,
     timeout,
+    secrets: [token, mcpToken].filter(Boolean),
     env: {
       ...options.agentEnv,
       INITIAL_AGENT_MODE: "read-only",
       ACP_BRIDGE_TOKEN: undefined,
+      ACP_MCP_TOKEN: undefined,
     },
   };
 
@@ -68,10 +118,7 @@ export function makeBridge(options = {}) {
     res.setHeader("X-Content-Type-Options", "nosniff");
     // Reject DNS rebinding Host values, even on requests without Origin.
     const authority = req.headers.host;
-    if (
-      !authority ||
-      !/^(127\.0\.0\.1|localhost|\[::1\])(:\d+)?$/.test(authority)
-    ) {
+    if (!authority || !allowedHosts.has(authority.replace(/:\d+$/, ""))) {
       res.writeHead(403).end("Host not allowed");
       return;
     }
@@ -193,8 +240,13 @@ export function makeBridge(options = {}) {
         timeoutError = new Error(`ACP request timed out after ${timeout}ms`);
         cancel();
       }, timeout);
-      await acp.start();
-      const session = await acp.call("session/new", { cwd, mcpServers: [] });
+      const initialized = await acp.start();
+      if (
+        mcpServers.some((server) => server.type === "http") &&
+        !initialized.agentCapabilities?.mcpCapabilities?.http
+      )
+        throw new Error("ACP agent does not support HTTP MCP servers");
+      const session = await acp.call("session/new", { cwd, mcpServers });
       sessionId = session?.sessionId;
       if (typeof sessionId !== "string" || !sessionId)
         throw new Error("ACP session/new did not return sessionId");
@@ -244,7 +296,7 @@ export function makeBridge(options = {}) {
     } catch (error) {
       cancel();
       if (!disconnected && !res.destroyed) {
-        const message = (timeoutError ?? error).message;
+        const message = acp.redact((timeoutError ?? error).message);
         if (!res.headersSent)
           res.writeHead(timeoutError ? 504 : status, {
             "Content-Type": "application/json",

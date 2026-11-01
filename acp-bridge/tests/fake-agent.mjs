@@ -66,10 +66,17 @@ createInterface({ input: process.stdin }).on("line", (line) => {
       id,
       result: {
         protocolVersion: process.env.ACP_FAKE_MODE === "v2" ? 2 : 1,
-        agentCapabilities: {},
+        agentCapabilities: {
+          mcpCapabilities: { http: process.env.ACP_FAKE_NO_HTTP_MCP !== "1" },
+        },
       },
     });
   } else if (method === "session/new") {
+    if (process.env.ACP_FAKE_SESSION_FILE)
+      appendFileSync(
+        process.env.ACP_FAKE_SESSION_FILE,
+        JSON.stringify(params) + "\n",
+      );
     if (process.env.ACP_FAKE_MODE === "auth") {
       send({
         id,
@@ -158,7 +165,14 @@ createInterface({ input: process.stdin }).on("line", (line) => {
       return;
     }
     if (text.includes("FAIL")) {
-      send({ id, error: { code: -32001, message: "Intentional agent error" } });
+      send({
+        id,
+        error: {
+          code: -32001,
+          message:
+            process.env.ACP_FAKE_ERROR_MESSAGE ?? "Intentional agent error",
+        },
+      });
       return;
     }
     if (text.includes("IMAGE")) {

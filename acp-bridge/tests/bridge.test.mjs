@@ -313,3 +313,79 @@ test("terminates a timed-out agent that ignores cancellation", async (t) => {
   assert.equal(events.at(-1).type, "error");
   assert.match(events.at(-1).message, /timed out/);
 });
+
+test("container binding is opt-in, authenticated, and Host restricted", async (t) => {
+  assert.throws(
+    () => makeBridge({ host: "0.0.0.0", allowNetwork: true }),
+    /explicit ACP_BRIDGE_TOKEN/,
+  );
+  assert.throws(() => makeBridge({ allowedHosts: ["*"] }), /exact hostnames/);
+  const { url } = await setup(t, {
+    host: "0.0.0.0",
+    allowNetwork: true,
+    allowedHosts: ["acp-bridge"],
+  });
+  const status = await new Promise((resolve, reject) => {
+    const req = request(
+      url + "/health",
+      { headers: { ...auth, Host: "acp-bridge:3210" } },
+      (res) => {
+        res.resume();
+        resolve(res.statusCode);
+      },
+    );
+    req.on("error", reject);
+    req.end();
+  });
+  assert.equal(status, 200);
+});
+test("passes configured authenticated MCP servers to every fresh session", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "acp-mcp-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const path = join(dir, "sessions");
+  const { url, chat } = await setup(t, {
+    mcpUrl: "http://mcp-bridge:3001/mcp",
+    mcpToken: "test-mcp-secret",
+    agentEnv: { ACP_FAKE_SESSION_FILE: path },
+  });
+  assert.equal((await fetch(url + "/models", { headers: auth })).status, 200);
+  assert.equal((await chat("hello").then(records)).at(-1).type, "done");
+  const sessions = (await readFile(path, "utf8"))
+    .trim()
+    .split("\n")
+    .map(JSON.parse);
+  assert.equal(sessions.length, 2);
+  for (const session of sessions)
+    assert.deepEqual(session.mcpServers, [
+      {
+        type: "http",
+        name: "silverbullet",
+        url: "http://mcp-bridge:3001/mcp",
+        headers: [{ name: "Authorization", value: "Bearer test-mcp-secret" }],
+      },
+    ]);
+  assert.throws(() => makeBridge({ mcpUrl: "file:///tmp/not-http" }), /HTTP/);
+});
+
+test("redacts configured credentials from agent error responses", async (t) => {
+  const { chat } = await setup(t, {
+    mcpToken: "secret-mcp-value",
+    agentEnv: {
+      ACP_FAKE_ERROR_MESSAGE: "MCP rejected secret-mcp-value and test-token",
+    },
+  });
+  const response = await chat("FAIL");
+  const text = await response.text();
+  assert.doesNotMatch(text, /secret-mcp-value|test-token/);
+  assert.match(text, /\[redacted\]/);
+});
+
+test("rejects an agent without the configured HTTP MCP capability", async (t) => {
+  const { url } = await setup(t, {
+    mcpUrl: "http://mcp-bridge:3001/mcp",
+    agentEnv: { ACP_FAKE_NO_HTTP_MCP: "1" },
+  });
+  const response = await fetch(url + "/models", { headers: auth });
+  assert.equal(response.status, 502);
+  assert.match(await response.text(), /does not support HTTP MCP/);
+});
