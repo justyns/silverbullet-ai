@@ -36,7 +36,7 @@ config.define("ai.providers", {
     properties = {
       provider = {
         type = "string",
-        enum = {"openai", "gemini", "ollama", "mistral", "mock"},
+        enum = {"openai", "gemini", "ollama", "mistral", "acp", "mock"},
         description = "Provider type (defaults to key name if omitted)",
       },
       apiKey = {
@@ -121,7 +121,7 @@ config.define("ai.textModels", {
       },
       provider = {
         type = "string",
-        enum = {"openai", "gemini", "ollama", "mistral", "mock"},
+        enum = {"openai", "gemini", "ollama", "mistral", "acp", "mock"},
         description = "AI provider for this model",
       },
       secretName = {

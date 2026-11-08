@@ -31,3 +31,9 @@ Claude Desktop (`claude_desktop_config.json`):
   }
 }
 ```
+
+## HTTP/container configuration
+
+Set `MCP_PORT` to serve Streamable HTTP instead of stdio, and `MCP_TOKEN` to require `Authorization: Bearer ...`. `SB_URL` selects the target space URL (including its multi-space path); `SB_AUTH_TOKEN` supplies its account API token. `MCP_READ_ONLY=1` exposes only tools explicitly marked read-only; the default standalone behavior is unchanged when this variable is unset. HTTP mode listens on the container interfaces; publish it only if you deliberately need external access.
+
+See [the rootless Podman deployment](../deploy/README.md) for the complete authenticated SilverBullet/ACP/MCP stack.

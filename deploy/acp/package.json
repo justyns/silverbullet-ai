@@ -1,0 +1,14 @@
+{
+  "name": "silverbullet-ai-container-agent",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@agentclientprotocol/codex-acp": "2.1.1",
+    "@openai/codex": "0.163.0"
+  },
+  "overrides": {
+    "@agentclientprotocol/codex-acp": {
+      "@openai/codex": "0.163.0"
+    }
+  }
+}

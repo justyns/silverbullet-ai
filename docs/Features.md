@@ -9,4 +9,4 @@
 - **Note Summaries**: *Experimental* - Generate and index page summaries
 - **Image Generation**: DALL-E integration with auto-upload and caption insertion
 - **Bundled Prompts**: Generate tags, suggest page names, generate frontmatter, enhance notes
-- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, any OpenAI-compatible API
+- **Provider Support**: OpenAI, Google Gemini, Ollama, Mistral AI, Perplexity AI, OpenRouter, ACP (including Codex via codex-acp), any OpenAI-compatible API

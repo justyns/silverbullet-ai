@@ -53,7 +53,7 @@ beforeAll(async () => {
   const tsxBin = join(REPO_ROOT, "node_modules", ".bin", "tsx");
   proc = spawn(tsxBin, ["mcp-bridge/index.ts"], {
     cwd: REPO_ROOT,
-    env: { ...process.env, SB_URL: baseUrl(), MCP_PORT: "" },
+    env: { ...process.env, SB_URL: baseUrl(), MCP_PORT: "", MCP_READ_ONLY: "0" },
     stdio: ["pipe", "pipe", "inherit"],
   });
   rl = createInterface({ input: proc.stdout! });
@@ -92,6 +92,7 @@ describe("MCP bridge", () => {
     expect(names).toContain("refresh_tools");
     expect(names).not.toContain("ask_user");
     expect(names).not.toContain("navigate");
+    expect(names).not.toContain("eval_lua");
     expect(names.some((n) => n.startsWith("mcp__"))).toBe(false);
 
     const readNote = tools.find((t) => t.name === "read_note");

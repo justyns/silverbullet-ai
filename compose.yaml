@@ -1,0 +1,85 @@
+# Separate containers are required for rootless keep-id with podman-compose 1.3.
+x-podman:
+  in_pod: false
+services:
+  silverbullet:
+    image: ghcr.io/silverbulletmd/silverbullet:2.12.1
+    userns_mode: keep-id:uid=1000,gid=1000
+    user: 1000:1000
+    environment:
+      - SB_FOLDER=/data
+      - SB_HOSTNAME=0.0.0.0
+      - SB_PORT=3000
+      - SB_CHROME_LOG_CONSOLE=0
+    volumes:
+      - ${SB_DATA_DIR:?Set SB_DATA_DIR in .env}:/data:rw
+      - ${SB_SPACE_DIR:?Set SB_SPACE_DIR in .env}:/workspace:rw
+    ports:
+      - 127.0.0.1:${SB_HOST_PORT:-3000}:3000
+    restart: unless-stopped
+    stop_grace_period: 20s
+  mcp-bridge:
+    image: localhost/silverbullet-ai-mcp:local
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.mcp
+    userns_mode: keep-id:uid=1000,gid=1000
+    user: 1000:1000
+    environment:
+      - SB_URL=http://silverbullet:3000${SB_SPACE_PATH:-/notes}
+      - SB_AUTH_TOKEN=${SB_API_TOKEN:?Set a per-account SilverBullet API token}
+      - MCP_PORT=3001
+      - MCP_TOKEN=${MCP_TOKEN:?Set MCP_TOKEN in .env}
+      - MCP_READ_ONLY=${MCP_READ_ONLY:-1}
+    depends_on:
+      - silverbullet
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - deploy/check-mcp.mjs
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    stop_grace_period: 10s
+  acp-bridge:
+    image: localhost/silverbullet-ai-acp:local
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.acp
+    userns_mode: keep-id:uid=1000,gid=1000
+    user: 1000:1000
+    environment:
+      - ACP_BRIDGE_HOST=0.0.0.0
+      - ACP_ALLOW_NETWORK=1
+      - ACP_ALLOWED_HOSTS=acp-bridge
+      - ACP_BRIDGE_TOKEN=${ACP_BRIDGE_TOKEN:?Set ACP_BRIDGE_TOKEN in .env}
+      - ACP_ALLOWED_ORIGIN=${SB_BROWSER_ORIGIN:-http://localhost:3000}
+      - ACP_AGENT_TIMEOUT_MS=${ACP_AGENT_TIMEOUT_MS:-300000}
+      - ACP_ALLOW_NOTE_WRITES=${ACP_ALLOW_NOTE_WRITES:-0}
+      - ACP_DIAGNOSTICS=${ACP_DIAGNOSTICS:-0}
+      - ACP_MCP_URL=http://mcp-bridge:3001/mcp
+      - ACP_MCP_TOKEN=${MCP_TOKEN:?Set MCP_TOKEN in .env}
+    volumes:
+      - codex-home:/home/node/.codex
+      - ${SB_SPACE_DIR:?Set SB_SPACE_DIR in .env}:/workspace:ro
+    ports:
+      - 127.0.0.1:${ACP_HOST_PORT:-3210}:3210
+    depends_on:
+      mcp-bridge:
+        # condition: service_healthy - There seems to be an issue with the health script or some podman tooling
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - deploy/check-acp.mjs
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    stop_grace_period: 15s
+volumes:
+  codex-home: null

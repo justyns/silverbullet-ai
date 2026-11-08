@@ -87,8 +87,8 @@ const rawFetch: typeof fetch = (url, init) =>
   ((globalThis as any).nativeFetch ?? globalThis.fetch)(url, init);
 
 /**
- * Fetch through `/.proxy/` when `useProxy` is set, with `timeout` as the only
- * request deadline.
+ * Fetch through `/.proxy/` when `useProxy` is set, preserving caller cancellation
+ * alongside the configured request timeout.
  */
 export async function proxiedFetch(
   url: string,
@@ -103,7 +103,9 @@ export async function proxiedFetch(
       headers: useProxy
         ? buildProxyHeaders(toHeaderRecord(options.headers))
         : options.headers,
-      signal: AbortSignal.timeout(timeout),
+      signal: options.signal
+        ? AbortSignal.any([options.signal, AbortSignal.timeout(timeout)])
+        : AbortSignal.timeout(timeout),
     });
     return useProxy ? unwrapProxyResponse(res) : res;
   } catch (error) {

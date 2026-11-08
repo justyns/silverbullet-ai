@@ -17,6 +17,7 @@ import type {
 } from "./types.ts";
 import {
   aiSettings,
+  agentToolInstructions,
   chatSystemPrompt,
   currentAIProvider,
   enabledAttachmentKinds,
@@ -281,6 +282,9 @@ export async function startPanelChat(
       // Use agent prompt if we have one
       const agentResult = await buildAgentSystemPrompt(currentChatAgent);
       systemContent = agentResult.systemPrompt;
+      const instructions = agentToolInstructions();
+      if (instructions && !systemContent.includes(instructions))
+        systemContent += "\n\n" + instructions;
       agentAttachments = agentResult.attachments;
     } else {
       systemContent = chatSystemPrompt.content;

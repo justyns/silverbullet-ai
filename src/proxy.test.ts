@@ -94,3 +94,15 @@ test("proxiedFetch applies the configured timeout, not SilverBullet's", async ()
     proxiedFetch("https://example.com/v1/chat/completions", {}, true, 20, "Ollama"),
   ).rejects.toThrow("Request to Ollama timed out after 0.02s");
 });
+
+test("proxiedFetch preserves caller cancellation alongside its timeout", async () => {
+  const controller = new AbortController();
+  vi.stubGlobal("fetch", vi.fn(async (_url: string, init: RequestInit) => {
+    return await new Promise<Response>((_resolve, reject) => {
+      init.signal!.addEventListener("abort", () => reject(init.signal!.reason));
+    });
+  }));
+  const pending = proxiedFetch("http://127.0.0.1:3210/chat", { signal: controller.signal }, false, 1000, "ACP");
+  controller.abort(new Error("Cancelled by caller"));
+  await expect(pending).rejects.toThrow("Cancelled by caller");
+});

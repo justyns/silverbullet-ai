@@ -26,6 +26,8 @@ export type StreamChatOptions = {
   onReasoningChunk?: (chunk: string) => void;
   onComplete?: (response: ChatResponse) => void;
   postProcessors?: string[];
+  /** Caller cancellation; currently honored by the ACP provider. */
+  signal?: AbortSignal;
 };
 
 export type Usage = {
@@ -211,6 +213,7 @@ export enum Provider {
   Gemini = "gemini",
   Ollama = "ollama",
   Mistral = "mistral",
+  ACP = "acp",
 
   Mock = "mock",
 }

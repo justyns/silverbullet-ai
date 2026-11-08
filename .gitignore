@@ -30,3 +30,10 @@ e2e-tests/test-results/
 e2e-tests/playwright-report/
 e2e-tests/.auth/
 e2e-tests/node_modules/
+
+# Container deployment secrets and local runtime state
+.env
+.env.*
+!.env.example
+runtime-data/
+deploy/runtime/
