@@ -10,11 +10,14 @@ export class AcpClient {
     env = {},
     timeout = 300000,
     secrets = [],
+    diagnostic = () => {},
   }) {
     Object.assign(this, { command, args, cwd, env, timeout, secrets });
+    this.diagnostic = diagnostic;
     this.nextId = 1;
     this.pending = new Map();
     this.listeners = new Map();
+    this.toolCalls = new Map();
     this.failure = null;
     this.child = null;
     this.closing = null;
@@ -61,9 +64,14 @@ export class AcpClient {
     child.stdout.on("end", () =>
       this.fail(new Error("ACP stdout closed before request completed")),
     );
-    createInterface({ input: child.stderr }).on("line", (line) =>
-      process.stderr.write(`[agent] ${this.redact(line)}\n`),
-    );
+    // Agent stderr can contain tool arguments, note text or unknown credentials.
+    // Emit categories only; never forward the raw line.
+    createInterface({ input: child.stderr }).on("line", (line) => {
+      this.diagnostic({
+        event: /mcp/i.test(line) ? "mcp_agent_stderr" : "agent_stderr",
+        failure: /error|fail|unauthorized|timed out/i.test(line),
+      });
+    });
     child.stdin.on("error", (error) => this.fail(error));
     child.on("error", (error) => this.fail(error));
     child.on("exit", (code, signal) =>
@@ -149,9 +157,36 @@ export class AcpClient {
       else task.resolve(msg.result);
     } else if (msg.id !== undefined) {
       if (msg.method === "session/request_permission") {
-        const option = msg.params?.options?.find(
-          (o) => o.kind === "reject_once" || o.kind === "reject_always",
-        );
+        const observed = this.toolCalls.get(msg.params?.toolCall?.toolCallId);
+        const permitted =
+          this.noteWriteSession === msg.params?.sessionId &&
+          typeof this.noteWriteSession === "string" &&
+          msg.params?._meta?.is_mcp_tool_approval === true &&
+          observed?.mcp === true &&
+          ["pending", "in_progress"].includes(observed.status) &&
+          observed.sessionId === this.noteWriteSession &&
+          !observed.approved &&
+          /^mcp\.silverbullet\.(?:create_note|update_note|search_replace|update_frontmatter|rename_note)$/.test(
+            observed.tool,
+          );
+        const allowedOption = permitted
+          ? msg.params?.options?.find((o) => o.kind === "allow_once")
+          : undefined;
+        const option =
+          allowedOption ??
+          msg.params?.options?.find(
+            (o) => o.kind === "reject_once" || o.kind === "reject_always",
+          );
+        if (allowedOption) observed.approved = true;
+        else this.permissionDenied = true;
+        this.diagnostic({
+          event: allowedOption
+            ? "note_write_permission_authorized"
+            : "permission_denied",
+          reason: allowedOption
+            ? "deployment_authorization"
+            : "interactive_approval_unsupported",
+        });
         this.send({
           id: msg.id,
           result: {
@@ -170,6 +205,30 @@ export class AcpClient {
         });
       }
     } else if (msg.method === "session/update") {
+      const update = msg.params?.update;
+      const diagnostic = diagnosticForUpdate(update);
+      if (diagnostic) {
+        // Correlate incremental updates without logging agent-supplied IDs.
+        if (
+          update.sessionUpdate === "tool_call" &&
+          typeof update.toolCallId === "string"
+        ) {
+          this.toolCalls.set(update.toolCallId, {
+            call: this.toolCalls.size + 1,
+            tool: diagnostic.tool,
+            mcp: update._meta?.is_mcp_tool_call === true,
+            sessionId: msg.params.sessionId,
+            status: update.status,
+          });
+        }
+        const observed = this.toolCalls.get(update.toolCallId);
+        if (observed && update.status) observed.status = update.status;
+        if (update.status === "failed") this.toolFailed = true;
+        this.diagnostic({
+          ...diagnostic,
+          ...(observed ? { call: observed.call, tool: observed.tool } : {}),
+        });
+      }
       this.listeners.get(msg.params?.sessionId)?.(msg.params.update);
     } else if (!msg.method) throw new Error("Invalid JSON-RPC notification");
   }
@@ -282,4 +341,23 @@ export async function configureSession(client, session, model, effort) {
   ) {
     await client.call("session/set_mode", { sessionId, modeId: "read-only" });
   }
+}
+
+/** Allowlisted metadata only: titles, arguments, content and errors may contain notes. */
+export function diagnosticForUpdate(update) {
+  const type = update?.sessionUpdate ?? update?.type;
+  if (!["tool_call", "tool_call_update"].includes(type)) return null;
+  const title = typeof update.title === "string" ? update.title : "";
+  const tool =
+    /^(?:mcp\.[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+|mcp__[a-zA-Z0-9_-]+__[a-zA-Z0-9_-]+)$/.test(
+      title,
+    )
+      ? title
+      : "[withheld]";
+  const status = ["pending", "in_progress", "completed", "failed"].includes(
+    update.status,
+  )
+    ? update.status
+    : "unknown";
+  return { event: type, tool, status, failed: status === "failed" };
 }

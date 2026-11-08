@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 import http from "node:http";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { AcpClient, configureSession, modelIds } from "./acp.mjs";
 import { eventForUpdate, formatTranscript } from "./format.mjs";
@@ -82,6 +84,27 @@ export function makeBridge(options = {}) {
           },
         ]
       : []);
+  if (mcpToken && !mcpUrl && !options.mcpServers)
+    throw new Error("ACP_MCP_TOKEN requires ACP_MCP_URL");
+  const names = new Set();
+  for (const server of mcpServers) {
+    if (!/^[a-zA-Z0-9_-]+$/.test(server.name) || names.has(server.name))
+      throw new Error("Invalid or duplicate session MCP server name");
+    names.add(server.name);
+    if (server.type !== "http")
+      throw new Error("Only HTTP MCP servers are supported");
+    const url = new URL(server.url);
+    if (
+      !["http:", "https:"].includes(url.protocol) ||
+      url.username || url.password || url.search || url.hash
+    )
+      throw new Error("MCP URL must be HTTP(S) without credentials, query or fragment");
+    if (!(server.headers ?? []).every((h) =>
+      typeof h.name === "string" && typeof h.value === "string" &&
+      !/[\r\n]/.test(h.name + h.value)
+    ))
+      throw new Error("Invalid MCP headers");
+  }
   const cwd = resolve(options.cwd ?? process.env.ACP_WORKDIR ?? process.cwd());
   const timeout = Number(
     options.timeout ?? process.env.ACP_AGENT_TIMEOUT_MS ?? 300000,
@@ -91,6 +114,20 @@ export function makeBridge(options = {}) {
     throw new Error("Invalid ACP timeout");
   if (!Number.isInteger(port) || port < 0 || port > 65535)
     throw new Error("Invalid bridge port");
+  const allowNoteWrites =
+    options.allowNoteWrites ?? process.env.ACP_ALLOW_NOTE_WRITES === "1";
+  const diagnostics =
+    options.diagnostics ?? process.env.ACP_DIAGNOSTICS === "1";
+  const diagnostic = (event) => {
+    if (diagnostics && event) {
+      let encoded = JSON.stringify(event);
+      for (const secret of agentOptions.secrets)
+        encoded = encoded.replaceAll(secret, "[redacted]");
+      (options.log ?? ((value) => console.error(JSON.stringify(value))))(
+        JSON.parse(encoded),
+      );
+    }
+  };
   const active = new Set();
   let closing = false;
   const agentOptions = {
@@ -98,7 +135,12 @@ export function makeBridge(options = {}) {
     args: options.args ?? parseArgs(process.env.ACP_AGENT_ARGS ?? "[]"),
     cwd,
     timeout,
-    secrets: [token, mcpToken].filter(Boolean),
+    secrets: [
+      token,
+      mcpToken,
+      ...mcpServers.flatMap((s) => (s.headers ?? []).map((h) => h.value)),
+    ].filter(Boolean),
+    diagnostic,
     env: {
       ...options.agentEnv,
       INITIAL_AGENT_MODE: "read-only",
@@ -232,7 +274,19 @@ export function makeBridge(options = {}) {
           if (body[key] !== undefined && typeof body[key] !== "string")
             throw new Error(`${key} must be a string`);
         }
-        prompt = formatTranscript(body.messages);
+        prompt = formatTranscript(body.messages, {
+          allowNoteWrites,
+          mcpNames: mcpServers.map((s) => s.name),
+        });
+        diagnostic({
+          event: "chat_request",
+          modelSelected: !!body.model,
+          messages: body.messages.map((m) => ({
+            role: m.role,
+            characters: m.content.length,
+          })),
+          noteWrites: allowNoteWrites,
+        });
       }
       status = 502;
       if (disconnected) return;
@@ -240,16 +294,60 @@ export function makeBridge(options = {}) {
         timeoutError = new Error(`ACP request timed out after ${timeout}ms`);
         cancel();
       }, timeout);
+      if (basename(agentOptions.command) === "codex-acp" && mcpServers.length) {
+        await assertNoDuplicateMcpServers(
+          mcpServers,
+          options.listGlobalMcpServers,
+          { cwd, env: { ...process.env, ...options.agentEnv } },
+        );
+      }
+      diagnostic({ event: "agent_start" });
       const initialized = await acp.start();
       if (
         mcpServers.some((server) => server.type === "http") &&
         !initialized.agentCapabilities?.mcpCapabilities?.http
       )
         throw new Error("ACP agent does not support HTTP MCP servers");
-      const session = await acp.call("session/new", { cwd, mcpServers });
+      // The server enforces write authorization; the prompt alone is not a boundary.
+      const sessionServers = mcpServers.map((server) =>
+        server.type === "http"
+          ? {
+              ...server,
+              headers: [
+                ...(server.headers ?? []).filter(
+                  (h) => h.name.toLowerCase() !== "x-silverbullet-note-writes",
+                ),
+                ...(chat && allowNoteWrites && server.name === "silverbullet"
+                  ? [{ name: "X-SilverBullet-Note-Writes", value: "allow" }]
+                  : []),
+              ],
+            }
+          : server,
+      );
+      diagnostic({
+        event: "session_new",
+        mcpServers: sessionServers.map((s) => ({
+          name: s.name,
+          type: s.type,
+          endpoint: new URL(s.url).origin + new URL(s.url).pathname,
+          authenticated: !!s.headers?.some((h) => h.name.toLowerCase() === "authorization"),
+        })),
+      });
+      const session = await acp.call("session/new", {
+        cwd,
+        mcpServers: sessionServers,
+      });
       sessionId = session?.sessionId;
       if (typeof sessionId !== "string" || !sessionId)
         throw new Error("ACP session/new did not return sessionId");
+      if (
+        chat &&
+        allowNoteWrites &&
+        sessionServers.some(
+          (s) => s.type === "http" && s.name === "silverbullet",
+        )
+      )
+        acp.noteWriteSession = sessionId;
       if (models) {
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(
@@ -291,9 +389,27 @@ export function makeBridge(options = {}) {
         ].includes(answer?.stopReason)
       )
         throw new Error("ACP prompt returned an invalid stopReason");
-      send({ type: "done", stopReason: answer.stopReason });
+      diagnostic({
+        event: "session_complete",
+        stopReason: answer.stopReason,
+        permissionDenied: acp.permissionDenied === true,
+      });
+      if (acp.permissionDenied)
+        send({
+          type: "error",
+          message:
+            "ACP permission request denied: interactive approval is unsupported. No permission was granted.",
+        });
+      else if (acp.toolFailed)
+        send({ type: "error", message: "An ACP tool call failed; completion is not verified." });
+      else send({ type: "done", stopReason: answer.stopReason });
       res.end();
     } catch (error) {
+      diagnostic({
+        event: "request_failed",
+        phase: sessionId ? "prompt" : "startup",
+        timeout: !!timeoutError,
+      });
       cancel();
       if (!disconnected && !res.destroyed) {
         const message = acp.redact((timeoutError ?? error).message);
@@ -347,4 +463,34 @@ if (
   });
   process.on("SIGINT", () => void bridge.close());
   process.on("SIGTERM", () => void bridge.close());
+}
+
+export async function assertNoDuplicateMcpServers(
+  servers,
+  list,
+  execution = {},
+) {
+  list ??= async () => {
+    try {
+      const { stdout } = await promisify(execFile)(
+        execution.env?.CODEX_PATH ?? process.env.CODEX_PATH ?? "codex",
+        ["mcp", "list", "--json"],
+        { ...execution, timeout: 15000, maxBuffer: 2000000 },
+      );
+      return JSON.parse(stdout);
+    } catch {
+      throw new Error(
+        "Cannot inspect global Codex MCP configuration; check codex mcp list --json locally (may contain secrets).",
+      );
+    }
+  };
+  const global = await list();
+  if (!Array.isArray(global))
+    throw new Error("Invalid global Codex MCP configuration");
+  if (
+    servers.some((server) => global.some((item) => item.name === server.name))
+  )
+    throw new Error(
+      "Duplicate global/session Codex MCP registration. Remove the global registration for the session server; credentials must come from ACP session/new.",
+    );
 }

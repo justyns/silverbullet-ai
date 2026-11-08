@@ -19,7 +19,27 @@ if (!SB_URL) {
 }
 const MCP_PORT = process.env.MCP_PORT;
 const MCP_TOKEN = process.env.MCP_TOKEN;
-const EXCLUDED_TOOLS = new Set(["ask_user", "navigate"]);
+const EXCLUDED_TOOLS = new Set(["ask_user", "navigate", "eval_lua"]);
+const NOTE_WRITE_TOOLS = new Set([
+  "create_note",
+  "update_note",
+  "search_replace",
+  "update_frontmatter",
+  "rename_note",
+]);
+export function toolAllowed(
+  t: { name: string; source: string; readOnly?: boolean },
+  readOnly = process.env.MCP_READ_ONLY !== "0",
+) {
+  return (
+    t.source !== "mcp" &&
+    !EXCLUDED_TOOLS.has(t.name) &&
+    ((
+      ["view_file", "read_note", "list_pages", "get_page_info"].includes(t.name) &&
+      t.readOnly === true
+    ) || (!readOnly && NOTE_WRITE_TOOLS.has(t.name)))
+  );
+}
 
 // Mostly guessing where the config is, only tested on Linux so far
 const DESKTOP_PROFILE = "SilverBullet+ Electron";
@@ -71,7 +91,12 @@ type SbTool = {
   readOnly?: boolean;
 };
 
-type SbToolResult = { success: boolean; result?: string; error?: string };
+type SbToolResult = {
+  success: boolean;
+  result?: string;
+  error?: string;
+  summary?: string;
+};
 
 // Space Lua has no json.decode, so pass arguments as Lua literals.
 // TODO: export this from sb or sbai?
@@ -136,10 +161,7 @@ async function refreshTools(): Promise<number> {
   const tools = (await evalLuaScript(
     `return system.invokeFunction("silverbullet-ai.listTools")`,
   )) as SbTool[];
-  toolList = tools.filter(
-    (t) => t.source !== "mcp" && !EXCLUDED_TOOLS.has(t.name) &&
-      (process.env.MCP_READ_ONLY !== "1" || t.readOnly === true),
-  );
+  toolList = tools.filter((t) => toolAllowed(t));
   return toolList.length;
 }
 
@@ -164,7 +186,7 @@ const err = (text: string) => ({
   isError: true,
 });
 
-function buildServer(): Server {
+function buildServer(allowNoteWrites = !MCP_PORT): Server {
   const server = new Server(
     { name: "silverbullet-ai-mcp", version: "0.0.0" },
     { capabilities: { tools: { listChanged: true } } },
@@ -173,11 +195,11 @@ function buildServer(): Server {
   server.setRequestHandler(ListToolsRequestSchema, () => ({
     tools: [
       REFRESH_TOOL,
-      ...toolList.map((t) => ({
+      ...toolList.filter((t) => !NOTE_WRITE_TOOLS.has(t.name) || allowNoteWrites).map((t) => ({
         name: t.name,
         description: t.description,
         inputSchema: t.parameters,
-        annotations: { readOnlyHint: t.readOnly === true },
+        annotations: { readOnlyHint: !NOTE_WRITE_TOOLS.has(t.name) },
       })),
     ],
   }));
@@ -198,15 +220,23 @@ function buildServer(): Server {
     if (!toolList.some((t) => t.name === name)) {
       return err(`Unknown tool: ${name}`);
     }
+    if (
+      NOTE_WRITE_TOOLS.has(name) &&
+      !allowNoteWrites
+    )
+      return err(
+        "Remote note writes are disabled for this ACP deployment.",
+      );
     try {
       const r = (await evalLuaScript(
         `return system.invokeFunction("silverbullet-ai.callTool", ${toLuaLiteral(
           name,
         )}, ${toLuaLiteral(args ?? {})})`,
       )) as SbToolResult;
-      return r.success
+      // Builtin Lua note tools also return Error: strings for expected failures.
+      return r.success && (r.summary !== undefined || !/^Error:/.test(r.result ?? ""))
         ? ok(r.result ?? "")
-        : err(r.error ?? "Tool call failed");
+        : err(r.error ?? r.result ?? "Tool call failed");
     } catch (e) {
       return err(errText(e));
     }
@@ -218,7 +248,7 @@ function buildServer(): Server {
 try {
   await refreshTools();
 } catch (e) {
-  console.error(`Failed to load tools from SilverBullet: ${errText(e)}`);
+  console.error("Failed to load tools from SilverBullet; check Runtime access and configuration (details withheld)");
   process.exit(1);
 }
 console.error(
@@ -233,7 +263,9 @@ if (MCP_PORT) {
       res.writeHead(401).end();
       return;
     }
-    const server = buildServer();
+    const server = buildServer(
+      req.headers["x-silverbullet-note-writes"] === "allow",
+    );
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
@@ -245,12 +277,16 @@ if (MCP_PORT) {
       await server.connect(transport);
       await transport.handleRequest(req, res);
     } catch (e) {
-      console.error("Error handling request:", e);
+      console.error(
+        "MCP transport request failed; details withheld to protect arguments and notes",
+      );
       if (!res.headersSent) res.writeHead(500).end();
     }
   });
   httpServer.listen(Number(MCP_PORT), () => {
-    console.error(`silverbullet-ai-mcp listening on port ${MCP_PORT}`);
+    console.error(
+      `silverbullet-ai-mcp listening on port ${(httpServer.address() as { port: number }).port}`,
+    );
   });
 } else {
   await buildServer().connect(new StdioServerTransport());

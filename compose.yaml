@@ -58,6 +58,8 @@ services:
       - ACP_BRIDGE_TOKEN=${ACP_BRIDGE_TOKEN:?Set ACP_BRIDGE_TOKEN in .env}
       - ACP_ALLOWED_ORIGIN=${SB_BROWSER_ORIGIN:-http://localhost:3000}
       - ACP_AGENT_TIMEOUT_MS=${ACP_AGENT_TIMEOUT_MS:-300000}
+      - ACP_ALLOW_NOTE_WRITES=${ACP_ALLOW_NOTE_WRITES:-0}
+      - ACP_DIAGNOSTICS=${ACP_DIAGNOSTICS:-0}
       - ACP_MCP_URL=http://mcp-bridge:3001/mcp
       - ACP_MCP_TOKEN=${MCP_TOKEN:?Set MCP_TOKEN in .env}
     volumes:

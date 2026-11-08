@@ -30,6 +30,14 @@ createInterface({ input: process.stdin }).on("line", (line) => {
     }
     return;
   }
+  if (id === "note-permission") {
+    chunk(
+      "text",
+      result?.outcome?.optionId === "allow" ? "note-allowed" : "note-denied",
+    );
+    send({ id: pending, result: { stopReason: "end_turn" } });
+    return;
+  }
   if (id === "permission") {
     if (
       result?.outcome?.outcome !== "selected" ||
@@ -192,6 +200,39 @@ createInterface({ input: process.stdin }).on("line", (line) => {
       chunk("text", "waiting");
       return;
     }
+    if (text.includes("NOTE_PERMISSION")) {
+      const title =
+        process.env.ACP_FAKE_PERMISSION_TOOL ?? "mcp.silverbullet.update_note";
+      send({
+        method: "session/update",
+        params: {
+          sessionId,
+          update: {
+            sessionUpdate: "tool_call",
+            toolCallId: "note-1",
+            title,
+            status: "in_progress",
+            _meta: {
+              is_mcp_tool_call: process.env.ACP_FAKE_PERMISSION_NO_MCP !== "1",
+            },
+          },
+        },
+      });
+      send({
+        id: "note-permission",
+        method: "session/request_permission",
+        params: {
+          sessionId,
+          _meta: { is_mcp_tool_approval: true },
+          toolCall: { toolCallId: "note-1" },
+          options: [
+            { kind: "allow_once", optionId: "allow" },
+            { kind: "reject_once", optionId: "deny" },
+          ],
+        },
+      });
+      return;
+    }
     if (text.includes("PERMISSION")) {
       send({
         id: "permission",
@@ -205,6 +246,25 @@ createInterface({ input: process.stdin }).on("line", (line) => {
         },
       });
       return;
+    }
+    if (text.includes("TOOL_EVENTS")) {
+      for (const update of [
+        {
+          sessionUpdate: "tool_call",
+          toolCallId: "1",
+          title: "mcp.silverbullet.list_pages",
+          status: "in_progress",
+          rawInput: { secret: "secret-argument" },
+        },
+        {
+          sessionUpdate: "tool_call_update",
+          toolCallId: "1",
+          status: "failed",
+          content: [{ text: "private-note" }],
+          error: "secret-error",
+        },
+      ])
+        send({ method: "session/update", params: { sessionId, update } });
     }
     chunk("reasoning", "thinking");
     const finish = () => {

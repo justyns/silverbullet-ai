@@ -54,6 +54,7 @@ const payload = listedText.startsWith("{")
       .trim();
 const tools = JSON.parse(payload).result.tools;
 assert.ok(tools.length > 1);
+assert.ok(!tools.some(tool => tool.name === "eval_lua"), "eval_lua must not be exposed");
 if (!process.argv.includes("--allow-write-tools"))
   assert.ok(tools.every((tool) => tool.annotations?.readOnlyHint === true));
 console.log(
@@ -68,7 +69,9 @@ if (!process.argv.includes("--allow-write-tools")) {
     name: "create_note",
     arguments: { page: "must-not-be-created" },
   });
-  assert.match(await blocked.text(), /Unknown tool: create_note/);
+  const denied = await blocked.text();
+  assert.match(denied, /"isError":true/);
+  assert.match(denied, /Unknown tool: create_note|Remote note writes are disabled/);
 }
 const refreshed = await rpc("tools/call", {
   name: "refresh_tools",

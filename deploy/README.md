@@ -171,9 +171,10 @@ The default `.env.example` uses `MCP_READ_ONLY=1`, exposing only tools explicitl
 
 ```dotenv
 MCP_READ_ONLY=0
+ACP_ALLOW_NOTE_WRITES=1
 ```
 
-Then recreate MCP using the command above. Codex's `/workspace` mount and local agent mode remain read-only, but authenticated MCP tools can write through SilverBullet's Runtime API. The filesystem mount does not prevent these API writes. Write-capable tools, particularly `eval_lua`, can execute broad SilverBullet operations and bypass tool path restrictions. Use a space-scoped service account and backups; do not rely on the read-only mount or ACP permission denials to constrain remote API writes.
+Then recreate MCP and ACP using the commands above. Codex's `/workspace` mount and local agent mode remain read-only, but authenticated MCP tools can write through SilverBullet's Runtime API. The filesystem mount does not prevent these API writes. Only the five allowlisted note-writing operations are exposed; `eval_lua` is excluded. MCP enforces the read-only flag and ACP-provided authorization header in code. Use a space-scoped service account and protect the bearer tokens.
 
 ## 8. Start ACP and check health
 
@@ -183,22 +184,17 @@ podman-compose ps
 podman-compose logs --tail 100 mcp-bridge acp-bridge
 ```
 
-`up` can appear to hang while ACP waits for MCP's authenticated health check. Inspect MCP's state and logs before rebuilding anything. ACP health tests authenticated HTTP liveness; it does not prove Codex login or model connectivity.
+The local Compose workaround uses `service_started` rather than waiting for MCP health. Inspect MCP's state and logs before rebuilding anything. ACP health tests authenticated HTTP liveness; it does not prove Codex login or model connectivity.
 
 ## 9. Run the smoke test without a model request
 
-Choose the command matching `MCP_READ_ONLY`:
+Run the default check in either deployment mode:
 
 ```sh
-# Default MCP_READ_ONLY=1: require all tools to be annotated read-only.
 podman-compose exec -T acp-bridge node deploy/smoke.mjs
-
-# Intentional MCP_READ_ONLY=0: permit write-capable tools in the listing.
-podman-compose exec -T acp-bridge \
-  node deploy/smoke.mjs --allow-write-tools
 ```
 
-The default test's `tools.every(...readOnlyHint === true)` assertion is expected to fail in writable mode. The flag permits that listing; it does not change server permissions or perform a write.
+The smoke session supplies no note-write authorization header, so it must see only read tools even when `MCP_READ_ONLY=0`. It verifies a guessed `create_note` call fails and `eval_lua` is absent. The legacy `--allow-write-tools` flag skips the read-only listing/denied-write assertions; it grants no permissions and performs no writes. Use the opt-in live test below to verify authorized writes.
 
 Both variants check internal DNS, ACP and MCP authentication, Host/Origin restrictions, MCP tool listing, authenticated tool refresh through SilverBullet's Runtime API, pinned adapter/CLI versions, the device-login flag, and real ACP v1/App Server initialization with HTTP MCP support. They perform no login, ACP `session/new`, `session/prompt`, or model request, and do not validate note editing. They work before Codex login.
 
@@ -248,7 +244,7 @@ Change the ACP port if needed. Use **AI: Refresh Config**, **AI: Refresh Model L
 
 `useProxy = false` matters: `127.0.0.1:3210` is the computer running the browser, not a container address. Do not put `http://acp-bridge:3210` in a browser configuration. This profile supports a browser on the same host; phones, another computer, HTTPS/mixed-content rules, or remote reverse proxies need a deliberate TLS/network design. Changing `useProxy` is not sufficient: the Runtime browser and Host/Origin restrictions must also agree. See [the ACP provider guide](../docs/Providers/ACP.md).
 
-The Compose file explicitly opts the bridge into `0.0.0.0` **inside its container** using `ACP_ALLOW_NETWORK=1`. Host publishing remains loopback-only. Host validation still allows only loopback names and the exact `acp-bridge` service name, with exact-origin CORS and mandatory Bearer authentication. ACP startup waits for MCP's authenticated health check to succeed. Local non-container usage remains loopback-only by default.
+The Compose file explicitly opts the bridge into `0.0.0.0` **inside its container** using `ACP_ALLOW_NETWORK=1`. Host publishing remains loopback-only. Host validation still allows only loopback names and the exact `acp-bridge` service name, with exact-origin CORS and mandatory Bearer authentication. The local Compose workaround starts ACP after MCP starts; MCP health is checked separately. Local non-container usage remains loopback-only by default.
 
 ## 12. Verify AI connectivity (manual model requests)
 
@@ -280,9 +276,11 @@ podman unshare cat /proc/self/uid_map
 
 There are no unconditional SELinux labels. On SELinux-enabled hosts, add an appropriate override: the workspace is shared between two containers, so it needs `:z`, not separate private `:Z` labels. NixOS without SELinux does not need either. Ensure NixOS has rootless Podman enabled (including subordinate UID/GID mappings and network helpers). An installed shell binary alone may not supply `/etc/containers/policy.json`; configure the host container subsystem properly rather than weakening verification globally. The supplied development policy scopes remote pulls to the two base-image repositories and also permits local `containers-storage` images for builds, as explained in step 2.
 
-The ACP bridge denies every ACP permission request, runs Codex in read-only mode, and mounts the notes read-only. Nevertheless, Codex is a local program with access to that container's files and login. It can read the whole mounted workspace. Use a separate copy or a narrower folder if that access is too broad.
+The ACP bridge runs Codex in read-only mode and mounts the notes read-only. It rejects local filesystem, shell and arbitrary tool permission requests; deployment-authorized remote note tools can receive correlated one-operation ACP approval. Nevertheless, Codex is a local program with access to that container's files and login. It can read the whole mounted workspace. Use a separate copy or a narrower folder if that access is too broad.
 
-MCP access is a separate trust boundary: its account token grants Runtime API execution in the selected space, and its write tools could modify notes through SilverBullet regardless of ACP's read-only filesystem. This deployment defaults `MCP_READ_ONLY=1`, exposing only tools explicitly marked read-only. Set `MCP_READ_ONLY=0` only if you intentionally want to expose write tools, then recreate MCP. ACP permission requests remain denied even then; this is not an automatic-approval mode. Use the matching smoke-test variant in step 9.
+MCP access is a separate trust boundary: its account token grants Runtime API execution in the selected space. The MCP bridge exposes only `view_file`, `read_note`, `list_pages`, `get_page_info`, `refresh_tools`, and, when `MCP_READ_ONLY=0`, `create_note`, `update_note`, `search_replace`, `update_frontmatter`, `rename_note`. `eval_lua`, navigation, interactive tools and other writes are excluded. Missing `MCP_READ_ONLY` defaults to read-only.
+
+ACP remote writes additionally require `ACP_ALLOW_NOTE_WRITES=1` (default `0`). The bridge supplies an authorization header to MCP only when enabled; MCP hides and rejects note writers without that header. This authorizes the allowlisted operations for the deployment, with edits performed in response to explicit user requests. There is no per-turn checkbox. Prompt instructions are guidance; code enforces the tool allowlist and authorization. This does not authorize local file edits, shell commands or arbitrary Lua. Recreate ACP and MCP after changing flags, preserving the existing `service_started` startup workaround.
 
 Codex's bubblewrap sandbox may be unable to create a nested namespace under some Podman/kernel policies. Do not grant privileged access to fix that. Text chat and remote MCP tools do not require a local shell tool; operations requiring unavailable sandboxing can remain unsupported. Test those separately if you need them.
 
@@ -351,7 +349,7 @@ Start with `podman-compose ps` and `podman-compose logs --tail 100 mcp-bridge ac
 | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Pull succeeds; build says `containers-storage:... is rejected by policy` | Remote and local transports have separate rules. Use the existing policy including its local rule and the step 2 build flag.                                                   |
 | Missing system `policy.json` in a Nix shell                              | Configure Podman through NixOS for permanent use; use the explicit development policy for this build/pull only.                                                                |
-| `Failed to load tools from SilverBullet: ... HTTP 401 Unauthorized`      | MCP → SilverBullet authentication: issue/check the account `SB_API_TOKEN`, then recreate MCP. Changing `MCP_TOKEN` will not fix this boundary.                                 |
+| `Failed to load tools from SilverBullet; ... (details withheld)`      | MCP → SilverBullet authentication: issue/check the account `SB_API_TOKEN`, then recreate MCP. Changing `MCP_TOKEN` will not fix this boundary.                                 |
 | `runtime access denied`                                                  | Enable the server Runtime API and give the token's account Write + Runtime API access to the correct space. Retry the harmless Runtime diagnostic.                             |
 | `Plug silverbullet-ai not found`                                         | Check the saved space folder is `/workspace`, not `spaces/notes`; check the two mounted files and reload the space/plug/library. Installation alone does not register a space. |
 | Runtime URL 404                                                          | Check `SB_SPACE_PATH=/notes` and Primary hostname/path binding; custom hostnames can break internal routing.                                                                   |
@@ -359,8 +357,8 @@ Start with `podman-compose ps` and `podman-compose logs --tail 100 mcp-bridge ac
 | ACP → MCP initialize/list returns 401                                    | ACP's `ACP_MCP_TOKEN` must equal MCP's `MCP_TOKEN` (both use `.env` `MCP_TOKEN`). Recreate both after changes.                                                                 |
 | Browser ACP 401                                                          | Provider `apiKey` must equal `ACP_BRIDGE_TOKEN`. Update the page and refresh config; recreate ACP after `.env` changes.                                                        |
 | Browser ACP 403                                                          | Check exact Origin/Host, `localhost` versus `127.0.0.1`, and `SB_BROWSER_ORIGIN` without path/trailing slash. Keep authentication/CORS enabled.                                |
-| `up` appears stuck starting ACP; MCP exits/restarts                      | ACP waits for healthy MCP. Check MCP logs/state and the Runtime diagnostic before rebuilding.                                                                                  |
-| Smoke read-only annotation assertion fails with writable MCP             | Use `--allow-write-tools` only for intentionally enabled write tools.                                                                                                          |
+| `up` appears stuck starting ACP; MCP exits/restarts                      | The local Compose workaround starts ACP after MCP starts. Check MCP logs/state and the Runtime diagnostic before rebuilding.                                                                                  |
+| Smoke read-only annotation assertion fails                              | Confirm the updated MCP image is running: sessions without the authorization header must list only read tools.                                                                                                          |
 | Permission denied on a bind mount                                        | Check ownership, parent-directory traversal and keep-id mappings. Avoid recursive ownership changes on existing notes.                                                         |
 | Device login disabled/interrupted                                        | Enable device-code login in ChatGPT security settings/workspace permissions; rerun the login command for a fresh code.                                                         |
 | Codex login disappears                                                   | Check `CODEX_HOME=/home/node/.codex`, Compose project name and persistent volume. Do not use `down --volumes`.                                                                 |
@@ -371,7 +369,7 @@ Adapter 2.1.1 can log command-publication warnings during normal cancellation/te
 
 ## Validation record
 
-See [VALIDATION.md](VALIDATION.md) for executed checks and remaining manual steps. The earlier disposable automated validation mounted no existing user space/authentication and submitted no model requests. The record separately identifies the later user-reported installation results; this documentation revision did not rerun live checks.
+See [VALIDATION.md](VALIDATION.md) for dated executed checks and remaining manual steps. The latest sections cover real model requests, completed MCP calls and independently verified note edits against the existing official container; earlier no-model checks are retained as historical records.
 
 ## References
 
@@ -379,3 +377,57 @@ See [VALIDATION.md](VALIDATION.md) for executed checks and remaining manual step
 - [SilverBullet Runtime API](https://docs.silverbullet.md/Runtime%20API) and [multi-space configuration](https://docs.silverbullet.md/Install/Configuration)
 - [podman-compose](https://github.com/containers/podman-compose), with supported flags checked against the installed 1.3.0 executable
 - [codex-acp](https://github.com/agentclientprotocol/codex-acp) and [ACP session setup](https://agentclientprotocol.com/protocol/v1/session-setup)
+
+
+## Verify real ACP tool execution
+
+Provider connectivity and smoke tests establish transport/initialization, not agent tool execution. Each `session/new` receives one HTTP server named `silverbullet`, the internal `ACP_MCP_URL`, and a Bearer header from `ACP_MCP_TOKEN`. Codex must advertise HTTP MCP support. Duplicate session names and global Codex registrations with the same name fail before prompting. Inspect `codex mcp list --json` only locally: it can contain secrets; remove a conflicting global registration rather than registering the same server twice.
+
+Set `ACP_DIAGNOSTICS=1` and recreate ACP to log session registration metadata and numbered tool starts/completions, permission denials and failure categories. Raw agent stderr, prompts, arguments, results, notes and credentials are withheld. A tool failure or denied permission ends the HTTP stream with an error. ACP-managed tools do not enable SilverBullet-native function calling; its connectivity probe may correctly report no tool support.
+
+Run the opt-in real-agent check inside the existing ACP container:
+
+```sh
+podman exec silverbullet-ai_acp-bridge_1 mkdir -p /tmp/sb-acp-verification/deploy
+podman cp acp-bridge silverbullet-ai_acp-bridge_1:/tmp/sb-acp-verification/acp-bridge
+podman cp deploy/e2e-acp-mcp.mjs silverbullet-ai_acp-bridge_1:/tmp/sb-acp-verification/deploy/e2e-acp-mcp.mjs
+podman exec --env ACP_E2E=1 silverbullet-ai_acp-bridge_1 node /tmp/sb-acp-verification/deploy/e2e-acp-mcp.mjs
+```
+
+Add `--env ACP_E2E_WRITES=1` to the final command to create, update, search/replace, update frontmatter and rename a unique disposable note, independently read it through MCP, and verify a deployment-denied edit leaves it unchanged. This requires `MCP_READ_ONLY=0`; the isolated test bridges exercise both ACP write settings. Notes remain for inspection. This test asserts actual completed MCP events for direct and panel-shaped requests, including mistaken earlier assistant history.
+
+To exercise the installed handlers through the official SilverBullet 2.12.1 Runtime (never the obsolete host executable), use an isolated test listener matching the Runtime browser's origin. The browser-facing listener remains unchanged. In one terminal:
+
+```sh
+podman exec -it silverbullet-ai_acp-bridge_1 node --input-type=module -e '
+import { makeBridge } from "/app/acp-bridge/server.mjs";
+const b = makeBridge({port:3212, origin:"http://127.0.0.1:3000", diagnostics:true});
+b.server.listen(b.port,b.host);
+process.on("SIGINT",()=>b.close());'
+```
+
+In another terminal (the write variant requires both deployment flags enabled):
+
+```sh
+podman cp deploy/e2e-acp-interfaces.mjs silverbullet-ai_mcp-bridge_1:/tmp/e2e-acp-interfaces.mjs
+(
+set -a
+. ./.env
+set +a
+podman exec --env ACP_E2E=1 --env ACP_E2E_WRITES=1 \
+  --env ACP_BRIDGE_TOKEN --env ACP_E2E_BRIDGE_URL=http://acp-bridge:3212 \
+  silverbullet-ai_mcp-bridge_1 node /tmp/e2e-acp-interfaces.mjs
+)
+```
+
+Omit `--env ACP_E2E_WRITES=1` for reads only. Stop the isolated listener with Ctrl-C afterward. The test temporarily configures the Runtime's own provider selection and restores its configuration; it does not change configuration pages or the user's browser selection.
+This creates disposable pages and invokes both existing handlers. The write variant creates a note through chat-on-page and updates it through the panel, verifying content directly through Runtime. The test defers the chat-on-page invocation so its Runtime request does not block the agent’s MCP callbacks. Check ACP diagnostics for a completed `mcp.silverbullet.list_pages` in each request; textual answers alone are insufficient. In the browser, reload the updated plug, refresh AI config, select ACP, and repeat in **AI: Chat on current page** and the existing panel. Ask to create and edit a disposable note, then inspect the saved note. Switch to another provider and back; ACP-specific instructions must follow the selection. No tool status UI is added.
+
+Limitations: fresh ACP sessions receive a labeled text transcript, not native system-role messages; startup adds latency. Only assembled text is supported. ACP client terminal/filesystem methods and interactive approvals remain unsupported; Codex built-in tools remain subject to its own sandbox and inherited configuration. The general integration suite requires its separate OpenRouter credentials.
+
+
+### Inherited Codex tools
+
+`codex_apps` is Codex's account-provided app namespace, not the `silverbullet` HTTP MCP server registered by this bridge. A read-only App Server thread with no configured MCP servers still advertised that namespace during review. Its advertised tools contained no SilverBullet note or Runtime operations; document-control schemas covered only Excel, PowerPoint, Word and Sheets. No app credentials or unrelated tool settings were changed.
+
+The deployment flags restrict this SilverBullet bridge, not every service connected to the Codex account. ACP approval is scoped to correlated `mcp.silverbullet` note writers and never authorizes `codex_apps`, another server, a shell or filesystem method. A caller holding the MCP bearer token can deliberately request the write header when `MCP_READ_ONLY=0`; keep that token private. Unrelated globally configured servers/apps retain their own permissions. Review them if adding another route to the same notes space; the bridge cannot govern independent credentials or services. See the [official app permission configuration](https://learn.chatgpt.com/docs/config-file/config-reference) and [App Server discovery API](https://learn.chatgpt.com/docs/app-server).

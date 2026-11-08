@@ -147,7 +147,8 @@ test("denies permission and client filesystem execution", async (t) => {
   const { chat } = await setup(t);
   const events = await chat("PERMISSION").then(records);
   assert.equal(events[0].text, "denied");
-  assert.equal(events.at(-1).type, "done");
+  assert.equal(events.at(-1).type, "error");
+  assert.match(events.at(-1).message, /permission request denied/);
 });
 test("reports ACP errors, authentication, malformed protocol, version mismatch and spawn errors", async (t) => {
   const { chat } = await setup(t);
@@ -315,6 +316,12 @@ test("terminates a timed-out agent that ignores cancellation", async (t) => {
 });
 
 test("container binding is opt-in, authenticated, and Host restricted", async (t) => {
+  const previousToken = process.env.ACP_BRIDGE_TOKEN;
+  delete process.env.ACP_BRIDGE_TOKEN;
+  t.after(() => {
+    if (previousToken !== undefined)
+      process.env.ACP_BRIDGE_TOKEN = previousToken;
+  });
   assert.throws(
     () => makeBridge({ host: "0.0.0.0", allowNetwork: true }),
     /explicit ACP_BRIDGE_TOKEN/,
@@ -369,6 +376,7 @@ test("passes configured authenticated MCP servers to every fresh session", async
 
 test("redacts configured credentials from agent error responses", async (t) => {
   const { chat } = await setup(t, {
+    mcpUrl: "http://localhost:3001/mcp",
     mcpToken: "secret-mcp-value",
     agentEnv: {
       ACP_FAKE_ERROR_MESSAGE: "MCP rejected secret-mcp-value and test-token",
@@ -389,3 +397,197 @@ test("rejects an agent without the configured HTTP MCP capability", async (t) =>
   assert.equal(response.status, 502);
   assert.match(await response.text(), /does not support HTTP MCP/);
 });
+
+test("requires deployment authorization regardless of request fields", async (t) => {
+  const disabled = await setup(t, { allowNoteWrites: false });
+  assert.equal(
+    (await disabled.chat("edit", { allowNoteWrites: true })).status,
+    200,
+  );
+  const dir = await mkdtemp(join(tmpdir(), "acp-writes-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const path = join(dir, "sessions");
+  const enabled = await setup(t, {
+    allowNoteWrites: true,
+    mcpUrl: "http://mcp-bridge:3001/mcp",
+    agentEnv: { ACP_FAKE_SESSION_FILE: path },
+  });
+  await enabled.chat("edit", { allowNoteWrites: true }).then(records);
+  await enabled.chat("read").then(records);
+  const sessions = (await readFile(path, "utf8"))
+    .trim()
+    .split("\n")
+    .map(JSON.parse);
+  assert.deepEqual(sessions[0].mcpServers[0].headers, [
+    { name: "X-SilverBullet-Note-Writes", value: "allow" },
+  ]);
+  assert.deepEqual(sessions[1].mcpServers[0].headers, sessions[0].mcpServers[0].headers);
+});
+
+test("observes protocol tool events without leaking tool arguments, results or errors", async (t) => {
+  const logs = [];
+  const { chat } = await setup(t, {
+    diagnostics: true,
+    log: (event) => logs.push(event),
+  });
+  const events = await chat("TOOL_EVENTS").then(records);
+  assert.equal(events.at(-1).type, "error");
+  assert.ok(
+    logs.some(
+      (e) =>
+        e.event === "tool_call" && e.tool === "mcp.silverbullet.list_pages",
+    ),
+  );
+  assert.ok(
+    logs.some((e) => e.event === "tool_call_update" && e.status === "failed"),
+  );
+  assert.doesNotMatch(
+    JSON.stringify(logs),
+    /private-note|secret-argument|secret-error|Authorization/,
+  );
+});
+
+test("detects duplicate global MCP registrations without exposing configuration", async () => {
+  const { assertNoDuplicateMcpServers } = await import("../server.mjs");
+  await assert.rejects(
+    assertNoDuplicateMcpServers([{ name: "silverbullet" }], async () => [
+      { name: "silverbullet", token: "secret" },
+    ]),
+    /Duplicate global\/session/,
+  );
+  await assertNoDuplicateMcpServers([{ name: "silverbullet" }], async () => [
+    { name: "other" },
+  ]);
+});
+
+test("retains mistaken assistant history but instructs current tool verification", async (t) => {
+  const { chat } = await setup(t);
+  const res = await chat("", {
+    messages: [
+      { role: "system", content: "Use configured MCP tools." },
+      { role: "user", content: "List notes" },
+      { role: "assistant", content: "MCP is unavailable." },
+      { role: "user", content: "TRANSCRIPT Try again" },
+    ],
+  });
+  const text = (await records(res)).find((e) => e.type === "text").text;
+  assert.match(text, /MCP is unavailable/);
+  assert.match(text, /Retry relevant tools/);
+  assert.match(text, /Do not execute shell commands/);
+  assert.match(text, /remote MCP tools/);
+});
+
+test("only a correlated SilverBullet note writer can use deployment ACP permission", async (t) => {
+  for (const [tool, authorized, mcp, allowed] of [
+    ["mcp.silverbullet.update_note", true, true, true],
+    ["mcp.silverbullet.update_note", false, true, false],
+    ["mcp.silverbullet.eval_lua", true, true, false],
+    ["mcp.other.update_note", true, true, false],
+    ["mcp.codex_apps.update_note", true, true, false],
+    ["mcp.codex_apps.eval_lua", true, true, false],
+    ["mcp.codex_apps.execute_document_command", true, true, false],
+    ["shell", true, true, false],
+    ["mcp.silverbullet.update_note", true, false, false],
+  ]) {
+    const logs = [];
+    const { chat } = await setup(t, {
+      allowNoteWrites: authorized,
+      mcpUrl: "http://mcp-bridge:3001/mcp",
+      diagnostics: true,
+      log: (event) => logs.push(event),
+      agentEnv: {
+        ACP_FAKE_PERMISSION_TOOL: tool,
+        ACP_FAKE_PERMISSION_NO_MCP: mcp ? "0" : "1",
+      },
+    });
+    const events = await chat("NOTE_PERMISSION", {
+      allowNoteWrites: authorized,
+    }).then(records);
+    assert.equal(events[0].text, allowed ? "note-allowed" : "note-denied");
+    assert.equal(events.at(-1).type, allowed ? "done" : "error");
+    assert.ok(
+      logs.some(
+        (e) =>
+          e.event ===
+          (allowed ? "note_write_permission_authorized" : "permission_denied"),
+      ),
+    );
+  }
+});
+
+test("note-write approvals require matching active session/call metadata and cannot be reused or persisted", async () => {
+  const { AcpClient } = await import("../acp.mjs");
+  const client = new AcpClient({ command: "unused" });
+  const sent = [];
+  client.send = (message) => sent.push(message);
+  client.noteWriteSession = "authorized-session";
+  const notification = {
+    jsonrpc: "2.0",
+    method: "session/update",
+    params: {
+      sessionId: "authorized-session",
+      update: {
+        sessionUpdate: "tool_call",
+        toolCallId: "one-call",
+        title: "mcp.silverbullet.create_note",
+        status: "in_progress",
+        _meta: { is_mcp_tool_call: true },
+      },
+    },
+  };
+  client.receive(notification);
+  const permission = {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "session/request_permission",
+    params: {
+      sessionId: "authorized-session",
+      _meta: { is_mcp_tool_approval: true },
+      toolCall: { toolCallId: "one-call" },
+      options: [
+        { kind: "allow_always", optionId: "always" },
+        { kind: "allow_once", optionId: "once" },
+        { kind: "reject_once", optionId: "deny" },
+      ],
+    },
+  };
+  for (const params of [
+    { ...permission.params, sessionId: "other-session" },
+    { ...permission.params, toolCall: { toolCallId: "unknown" } },
+    { ...permission.params, _meta: {} },
+    {
+      ...permission.params,
+      options: permission.params.options.filter((o) => o.kind !== "allow_once"),
+    },
+  ]) {
+    client.receive({ ...permission, params });
+    assert.equal(sent.at(-1).result.outcome.optionId, "deny");
+  }
+  client.receive(permission);
+  assert.equal(sent.at(-1).result.outcome.optionId, "once");
+  client.receive(permission);
+  assert.equal(sent.at(-1).result.outcome.optionId, "deny");
+  client.receive(notification);
+  client.receive({
+    jsonrpc: "2.0",
+    method: "session/update",
+    params: {
+      sessionId: "authorized-session",
+      update: {
+        sessionUpdate: "tool_call_update",
+        toolCallId: "one-call",
+        status: "completed",
+      },
+    },
+  });
+  client.receive(permission);
+  assert.equal(sent.at(-1).result.outcome.optionId, "deny");
+});
+
+ test("rejects missing, invalid and duplicate MCP configuration", () => {
+   assert.throws(() => makeBridge({mcpToken: "unused"}), /requires ACP_MCP_URL/);
+   for (const url of ["file:///tmp/mcp", "http://user:pass@localhost/mcp", "http://localhost/mcp?secret=value"]) {
+     assert.throws(() => makeBridge({mcpUrl: url}));
+   }
+   assert.throws(() => makeBridge({mcpServers: [1, 2].map(() => ({name: "silverbullet", type: "http", url: "http://localhost/mcp"}))}), /duplicate/);
+ });
